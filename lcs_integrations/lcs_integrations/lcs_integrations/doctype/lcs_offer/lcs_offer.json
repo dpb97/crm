@@ -1,0 +1,167 @@
+{
+    "actions": [],
+    "allow_rename": 1,
+    "autoname": "LCS-OFF-.YYYY.-.####",
+    "creation": "2026-04-20 00:00:00",
+    "doctype": "DocType",
+    "engine": "InnoDB",
+    "field_order": [
+        "section_offer",
+        "project",
+        "offer_title",
+        "version",
+        "column_break_offer",
+        "status",
+        "offer_date",
+        "valid_until",
+        "section_commercial",
+        "value",
+        "currency",
+        "column_break_commercial",
+        "probability",
+        "won_lost_reason",
+        "section_details",
+        "notes",
+        "attachment"
+    ],
+    "fields": [
+        {
+            "fieldname": "section_offer",
+            "fieldtype": "Section Break",
+            "label": "Offer"
+        },
+        {
+            "fieldname": "project",
+            "fieldtype": "Link",
+            "in_list_view": 1,
+            "in_standard_filter": 1,
+            "label": "Project",
+            "options": "LCS Project",
+            "reqd": 1
+        },
+        {
+            "fieldname": "offer_title",
+            "fieldtype": "Data",
+            "in_list_view": 1,
+            "label": "Offer Title",
+            "reqd": 1
+        },
+        {
+            "default": "1",
+            "fieldname": "version",
+            "fieldtype": "Int",
+            "in_list_view": 1,
+            "label": "Version"
+        },
+        {
+            "fieldname": "column_break_offer",
+            "fieldtype": "Column Break"
+        },
+        {
+            "default": "Draft",
+            "fieldname": "status",
+            "fieldtype": "Select",
+            "in_list_view": 1,
+            "in_standard_filter": 1,
+            "label": "Status",
+            "options": "Draft\nSent\nIn Review\nAccepted\nRejected\nExpired\nRevised"
+        },
+        {
+            "fieldname": "offer_date",
+            "fieldtype": "Date",
+            "in_list_view": 1,
+            "label": "Offer Date"
+        },
+        {
+            "fieldname": "valid_until",
+            "fieldtype": "Date",
+            "label": "Valid Until"
+        },
+        {
+            "fieldname": "section_commercial",
+            "fieldtype": "Section Break",
+            "label": "Commercial"
+        },
+        {
+            "fieldname": "value",
+            "fieldtype": "Currency",
+            "in_list_view": 1,
+            "label": "Value"
+        },
+        {
+            "default": "EUR",
+            "fieldname": "currency",
+            "fieldtype": "Link",
+            "label": "Currency",
+            "options": "Currency"
+        },
+        {
+            "fieldname": "column_break_commercial",
+            "fieldtype": "Column Break"
+        },
+        {
+            "fieldname": "probability",
+            "fieldtype": "Percent",
+            "label": "Win Probability"
+        },
+        {
+            "depends_on": "eval:doc.status=='Rejected' || doc.status=='Accepted'",
+            "fieldname": "won_lost_reason",
+            "fieldtype": "Small Text",
+            "label": "Reason (Won/Lost)"
+        },
+        {
+            "fieldname": "section_details",
+            "fieldtype": "Section Break",
+            "label": "Details"
+        },
+        {
+            "fieldname": "notes",
+            "fieldtype": "Text Editor",
+            "label": "Notes"
+        },
+        {
+            "fieldname": "attachment",
+            "fieldtype": "Attach",
+            "label": "Offer Document"
+        }
+    ],
+    "index_web_pages_for_search": 0,
+    "links": [],
+    "modified": "2026-04-20 00:00:00",
+    "modified_by": "Administrator",
+    "module": "LCS Integrations",
+    "name": "LCS Offer",
+    "owner": "Administrator",
+    "permissions": [
+        {
+            "create": 1,
+            "delete": 1,
+            "export": 1,
+            "read": 1,
+            "report": 1,
+            "role": "System Manager",
+            "write": 1
+        },
+        {
+            "create": 1,
+            "export": 1,
+            "read": 1,
+            "report": 1,
+            "role": "Sales User",
+            "write": 1
+        },
+        {
+            "create": 1,
+            "delete": 1,
+            "export": 1,
+            "read": 1,
+            "report": 1,
+            "role": "Sales Manager",
+            "write": 1
+        }
+    ],
+    "sort_field": "offer_date",
+    "sort_order": "DESC",
+    "track_changes": 1
+}

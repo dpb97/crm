@@ -99,6 +99,29 @@ def get_opportunity_matrix(project):
 
 
 @frappe.whitelist()
+def get_project_offers(project):
+    """Get all offers for a project, ordered by version descending."""
+    return frappe.get_all(
+        "LCS Offer",
+        filters={"project": project},
+        fields=[
+            "name",
+            "offer_title",
+            "version",
+            "status",
+            "offer_date",
+            "valid_until",
+            "value",
+            "currency",
+            "probability",
+            "won_lost_reason",
+            "modified",
+        ],
+        order_by="version desc",
+    )
+
+
+@frappe.whitelist()
 def create_project_from_deal(deal_name):
     """Create an LCS Project from a CRM Deal."""
     deal = frappe.get_doc("CRM Deal", deal_name)

@@ -132,6 +132,7 @@
             <th class="px-4 py-3">{{ __('Type') }}</th>
             <th class="px-4 py-3">{{ __('Country') }}</th>
             <th class="px-4 py-3">{{ __('Phase') }}</th>
+            <th class="px-4 py-3">{{ __('Status') }}</th>
             <th class="px-4 py-3">{{ __('Salesperson') }}</th>
             <th class="px-4 py-3 text-right cursor-pointer hover:text-gray-700" @click="toggleSort('probability')">
               {{ __('Prob.') }}
@@ -156,8 +157,15 @@
           >
             <td class="px-5 py-3.5 font-mono text-xs text-gray-500">{{ p.project_number }}</td>
             <td class="px-4 py-3.5">
-              <div class="font-medium text-gray-900 group-hover:text-lcs-primary">{{ p.project_name }}</div>
-              <!-- H8: Reduce memory load — show org inline if available -->
+              <div class="flex items-center gap-2">
+                <span class="font-medium text-gray-900 group-hover:text-lcs-primary">{{ p.project_name }}</span>
+                <!-- Notes indicator — visible sign that project has notes -->
+                <Tooltip v-if="p.notes" :text="notesPreview(p.notes)">
+                  <span class="flex items-center rounded-full bg-amber-100 px-1 py-0.5 text-amber-700" @click.stop>
+                    <FeatherIcon name="edit-3" class="h-2.5 w-2.5" />
+                  </span>
+                </Tooltip>
+              </div>
               <div v-if="p.organization" class="mt-0.5 text-xs text-gray-400">{{ p.organization }}</div>
             </td>
             <td class="px-4 py-3.5">
@@ -179,6 +187,15 @@
               >
                 <span class="h-1.5 w-1.5 rounded-full" :class="phaseDotClass(p.phase)" />
                 {{ __(p.phase) }}
+              </span>
+            </td>
+            <td class="px-4 py-3.5">
+              <span
+                :class="statusClass(p.status)"
+                class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium"
+              >
+                <span class="h-1.5 w-1.5 rounded-full" :class="statusDotClass(p.status)" />
+                {{ __(p.status || 'Open') }}
               </span>
             </td>
             <td class="px-4 py-3.5 text-gray-600">{{ p.salesperson || '—' }}</td>
@@ -359,7 +376,7 @@ const projects = createListResource({
   fields: [
     'name', 'project_name', 'project_number', 'project_type',
     'country', 'phase', 'status', 'salesperson', 'organization',
-    'probability', 'estimated_value', 'modified',
+    'probability', 'estimated_value', 'notes', 'modified',
   ],
   filters: activeFilters,
   orderBy: orderBy,
@@ -467,6 +484,36 @@ function phaseDotClass(phase) {
     Lost: 'bg-red-500',
   }
   return map[phase] || 'bg-gray-400'
+}
+
+// Status badge helpers — prominent status visibility
+function statusClass(status) {
+  const map = {
+    Open: 'bg-blue-50 text-blue-700',
+    Active: 'bg-green-50 text-green-700',
+    'On Hold': 'bg-amber-50 text-amber-700',
+    Completed: 'bg-gray-50 text-gray-600',
+    Cancelled: 'bg-red-50 text-red-700',
+  }
+  return map[status] || 'bg-gray-50 text-gray-600'
+}
+
+function statusDotClass(status) {
+  const map = {
+    Open: 'bg-blue-500',
+    Active: 'bg-green-500',
+    'On Hold': 'bg-amber-500',
+    Completed: 'bg-gray-400',
+    Cancelled: 'bg-red-500',
+  }
+  return map[status] || 'bg-gray-400'
+}
+
+// Notes preview — first 100 chars for tooltip
+function notesPreview(notes) {
+  if (!notes) return ''
+  const plain = notes.replace(/<[^>]+>/g, '').trim()
+  return plain.length > 120 ? plain.slice(0, 120) + '...' : plain
 }
 
 // H1: Visibility — probability color reflects confidence level
