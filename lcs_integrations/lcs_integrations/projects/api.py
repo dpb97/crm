@@ -32,20 +32,26 @@ def get_project_list(filters=None, order_by="modified desc", limit=20, start=0):
 @frappe.whitelist()
 def get_project_summary():
     """Dashboard summary data."""
-    phases = frappe.get_all(
-        "LCS Project",
-        fields=["phase", "count(name) as count", "sum(estimated_value) as value"],
-        group_by="phase",
+    LCSProject = frappe.qb.DocType("LCS Project")
+    from pypika import functions as fn
+
+    phases = (
+        frappe.qb.from_(LCSProject)
+        .select(LCSProject.phase, fn.Count("*").as_("count"), fn.Sum(LCSProject.estimated_value).as_("value"))
+        .groupby(LCSProject.phase)
+        .run(as_dict=True)
     )
-    types = frappe.get_all(
-        "LCS Project",
-        fields=["project_type", "count(name) as count"],
-        group_by="project_type",
+    types = (
+        frappe.qb.from_(LCSProject)
+        .select(LCSProject.project_type, fn.Count("*").as_("count"))
+        .groupby(LCSProject.project_type)
+        .run(as_dict=True)
     )
-    countries = frappe.get_all(
-        "LCS Project",
-        fields=["country", "count(name) as count", "sum(estimated_value) as value"],
-        group_by="country",
+    countries = (
+        frappe.qb.from_(LCSProject)
+        .select(LCSProject.country, fn.Count("*").as_("count"), fn.Sum(LCSProject.estimated_value).as_("value"))
+        .groupby(LCSProject.country)
+        .run(as_dict=True)
     )
     return {"phases": phases, "types": types, "countries": countries}
 

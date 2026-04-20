@@ -1,7 +1,7 @@
 {
     "actions": [],
     "allow_rename": 1,
-    "autoname": "naming_series:LCS-PROJ-.YYYY.-.####",
+    "autoname": "LCS-PROJ-.YYYY.-.####",
     "creation": "2026-04-20 00:00:00",
     "doctype": "DocType",
     "engine": "InnoDB",
