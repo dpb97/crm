@@ -4,130 +4,310 @@
       <Breadcrumbs :items="[{ label: __('Projects'), route: { name: 'LCS Projects' } }]" />
     </template>
     <template #right-header>
-      <Button variant="solid" @click="showNewDialog = true" :label="__('New Project')" iconLeft="plus" />
+      <div class="flex items-center gap-2">
+        <!-- H7: Flexibility — keyboard shortcut hint -->
+        <Tooltip :text="__('Ctrl+N')">
+          <Button
+            variant="solid"
+            @click="showNewDialog = true"
+            :label="__('New Project')"
+            iconLeft="plus"
+          />
+        </Tooltip>
+      </div>
     </template>
   </LayoutHeader>
-  <div class="p-4">
-    <!-- Filter bar -->
-    <div class="mb-4 flex flex-wrap items-center gap-2">
-      <FormControl
-        type="select"
-        :options="typeOptions"
-        v-model="filters.project_type"
-        :placeholder="__('All Types')"
-        class="w-32"
-      />
-      <FormControl
-        type="select"
-        :options="phaseOptions"
-        v-model="filters.phase"
-        :placeholder="__('All Phases')"
-        class="w-36"
-      />
-      <FormControl
-        type="text"
-        v-model="filters.country"
-        :placeholder="__('Country')"
-        class="w-32"
-      />
-      <Button variant="ghost" @click="clearFilters" :label="__('Clear')" />
-    </div>
-    <!-- Projects table -->
-    <div class="rounded-lg border bg-white">
-      <div v-if="projects.loading" class="p-8 text-center text-gray-500">
-        {{ __('Loading...') }}
+
+  <div class="flex flex-1 flex-col overflow-hidden">
+    <!-- H1: Visibility of system status — result count + active filters indicator -->
+    <div class="flex items-center justify-between border-b bg-white px-5 py-3">
+      <div class="flex items-center gap-4">
+        <!-- Filter bar — H6: Recognition rather than recall -->
+        <FormControl
+          type="select"
+          :options="typeOptions"
+          v-model="filters.project_type"
+          class="w-36"
+        >
+          <template #prefix>
+            <span class="text-xs text-gray-400">{{ __('Type') }}:</span>
+          </template>
+        </FormControl>
+        <FormControl
+          type="select"
+          :options="phaseOptions"
+          v-model="filters.phase"
+          class="w-40"
+        >
+          <template #prefix>
+            <span class="text-xs text-gray-400">{{ __('Phase') }}:</span>
+          </template>
+        </FormControl>
+        <FormControl
+          type="text"
+          v-model="filters.country"
+          :placeholder="__('Country filter...')"
+          class="w-36"
+          :debounce="300"
+        />
+        <!-- H3: User control — clear all filters -->
+        <Button
+          v-if="hasActiveFilters"
+          variant="ghost"
+          @click="clearFilters"
+          iconLeft="x"
+          :label="__('Reset')"
+          class="text-gray-500"
+        />
       </div>
+      <!-- H1: System status — total count -->
+      <div class="flex items-center gap-3 text-sm text-gray-500">
+        <span v-if="!projects.loading">
+          {{ projectList.length }} {{ __('of') }} {{ totalCount }} {{ __('Projects') }}
+        </span>
+        <Tooltip :text="__('Refresh list (Ctrl+R)')">
+          <Button variant="ghost" icon="refresh-cw" @click="projects.reload()" :class="{ 'animate-spin': projects.loading }" />
+        </Tooltip>
+      </div>
+    </div>
+
+    <!-- Main content area -->
+    <div class="flex-1 overflow-y-auto">
+      <!-- H1: Visibility — Loading state with skeleton -->
+      <div v-if="projects.loading && !projectList.length" class="p-5">
+        <div v-for="i in 6" :key="i" class="mb-3 flex animate-pulse items-center gap-4 rounded-lg border p-4">
+          <div class="h-4 w-28 rounded bg-gray-200" />
+          <div class="h-4 w-40 rounded bg-gray-200" />
+          <div class="h-4 w-16 rounded bg-gray-100" />
+          <div class="h-4 w-24 rounded bg-gray-100" />
+          <div class="ml-auto h-4 w-20 rounded bg-gray-100" />
+        </div>
+      </div>
+
+      <!-- H9: Help recognize errors — Error state with recovery -->
+      <div v-else-if="projects.error" class="flex flex-col items-center justify-center p-16">
+        <div class="rounded-full bg-red-50 p-4">
+          <FeatherIcon name="alert-circle" class="h-8 w-8 text-red-400" />
+        </div>
+        <h3 class="mt-4 text-sm font-medium text-gray-900">{{ __('Failed to load projects') }}</h3>
+        <p class="mt-1 text-sm text-gray-500">{{ projects.error }}</p>
+        <Button class="mt-4" variant="outline" @click="projects.reload()" :label="__('Try again')" iconLeft="refresh-cw" />
+      </div>
+
+      <!-- H10: Help — Empty state with guidance -->
+      <div v-else-if="!projectList.length && !hasActiveFilters" class="flex flex-col items-center justify-center p-16">
+        <div class="rounded-full bg-gray-50 p-4">
+          <FeatherIcon name="folder" class="h-8 w-8 text-gray-300" />
+        </div>
+        <h3 class="mt-4 text-sm font-medium text-gray-900">{{ __('No projects yet') }}</h3>
+        <p class="mt-2 max-w-sm text-center text-sm text-gray-500">
+          {{ __('Create your first project to start tracking opportunities, phases, and team assignments.') }}
+        </p>
+        <Button class="mt-4" variant="solid" @click="showNewDialog = true" :label="__('Create first project')" iconLeft="plus" />
+      </div>
+
+      <!-- Empty after filter — H5: Error prevention hint -->
+      <div v-else-if="!projectList.length && hasActiveFilters" class="flex flex-col items-center justify-center p-16">
+        <div class="rounded-full bg-amber-50 p-4">
+          <FeatherIcon name="search" class="h-8 w-8 text-amber-400" />
+        </div>
+        <h3 class="mt-4 text-sm font-medium text-gray-900">{{ __('No matching projects') }}</h3>
+        <p class="mt-1 text-sm text-gray-500">{{ __('Try adjusting your filters or') }}
+          <button class="font-medium text-lcs-secondary hover:underline" @click="clearFilters">{{ __('reset all filters') }}</button>.
+        </p>
+      </div>
+
+      <!-- Data table — H2: Match real world (German currency, familiar table layout) -->
       <table v-else class="w-full text-sm">
-        <thead>
-          <tr class="border-b bg-gray-50 text-left text-xs font-medium uppercase text-gray-500">
-            <th class="px-4 py-3">{{ __('Project #') }}</th>
-            <th class="px-4 py-3">{{ __('Name') }}</th>
+        <thead class="sticky top-0 z-10 bg-gray-50">
+          <tr class="border-b text-left text-xs font-medium uppercase tracking-wide text-gray-500">
+            <th class="px-5 py-3 cursor-pointer hover:text-gray-700" @click="toggleSort('project_number')">
+              {{ __('Project #') }}
+              <SortIcon :active="sortField === 'project_number'" :direction="sortDirection" />
+            </th>
+            <th class="px-4 py-3 cursor-pointer hover:text-gray-700" @click="toggleSort('project_name')">
+              {{ __('Name') }}
+              <SortIcon :active="sortField === 'project_name'" :direction="sortDirection" />
+            </th>
             <th class="px-4 py-3">{{ __('Type') }}</th>
             <th class="px-4 py-3">{{ __('Country') }}</th>
             <th class="px-4 py-3">{{ __('Phase') }}</th>
             <th class="px-4 py-3">{{ __('Salesperson') }}</th>
-            <th class="px-4 py-3 text-right">{{ __('Probability') }}</th>
-            <th class="px-4 py-3 text-right">{{ __('Value') }}</th>
+            <th class="px-4 py-3 text-right cursor-pointer hover:text-gray-700" @click="toggleSort('probability')">
+              {{ __('Prob.') }}
+              <SortIcon :active="sortField === 'probability'" :direction="sortDirection" />
+            </th>
+            <th class="px-4 py-3 text-right cursor-pointer hover:text-gray-700" @click="toggleSort('estimated_value')">
+              {{ __('Value') }}
+              <SortIcon :active="sortField === 'estimated_value'" :direction="sortDirection" />
+            </th>
           </tr>
         </thead>
         <tbody>
           <tr
-            v-for="p in projectList"
+            v-for="(p, index) in projectList"
             :key="p.name"
-            class="cursor-pointer border-b transition hover:bg-gray-50"
-            @click="$router.push({ name: 'LCS Project', params: { id: p.name } })"
+            class="group cursor-pointer border-b transition-colors hover:bg-gray-50"
+            :class="{ 'bg-blue-50/50': selectedIndex === index }"
+            @click="navigateToProject(p)"
+            @keydown.enter="navigateToProject(p)"
+            tabindex="0"
+            :aria-label="`${p.project_name} — ${p.phase}`"
           >
-            <td class="px-4 py-3 font-mono text-xs text-gray-600">{{ p.project_number }}</td>
-            <td class="px-4 py-3 font-medium text-gray-900">{{ p.project_name }}</td>
-            <td class="px-4 py-3">
-              <span
-                :class="typeClass(p.project_type)"
-                class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold"
-              >
-                {{ p.project_type }}
-              </span>
+            <td class="px-5 py-3.5 font-mono text-xs text-gray-500">{{ p.project_number }}</td>
+            <td class="px-4 py-3.5">
+              <div class="font-medium text-gray-900 group-hover:text-lcs-primary">{{ p.project_name }}</div>
+              <!-- H8: Reduce memory load — show org inline if available -->
+              <div v-if="p.organization" class="mt-0.5 text-xs text-gray-400">{{ p.organization }}</div>
             </td>
-            <td class="px-4 py-3 text-gray-600">{{ p.country }}</td>
-            <td class="px-4 py-3">
+            <td class="px-4 py-3.5">
+              <!-- H6: Recognition — type badge with tooltip showing full name -->
+              <Tooltip :text="typeFullName(p.project_type)">
+                <span
+                  :class="typeClass(p.project_type)"
+                  class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold"
+                >
+                  {{ p.project_type }}
+                </span>
+              </Tooltip>
+            </td>
+            <td class="px-4 py-3.5 text-gray-600">{{ p.country || '—' }}</td>
+            <td class="px-4 py-3.5">
               <span
                 :class="phaseClass(p.phase)"
-                class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold"
+                class="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold"
               >
+                <span class="h-1.5 w-1.5 rounded-full" :class="phaseDotClass(p.phase)" />
                 {{ __(p.phase) }}
               </span>
             </td>
-            <td class="px-4 py-3 text-gray-600">{{ p.salesperson }}</td>
-            <td class="px-4 py-3 text-right">
-              <span v-if="p.probability" class="text-gray-700">{{ Math.round(p.probability) }}%</span>
+            <td class="px-4 py-3.5 text-gray-600">{{ p.salesperson || '—' }}</td>
+            <td class="px-4 py-3.5 text-right">
+              <!-- H1: Visibility — color-coded probability -->
+              <span v-if="p.probability" :class="probabilityClass(p.probability)" class="text-sm font-medium tabular-nums">
+                {{ Math.round(p.probability) }}%
+              </span>
+              <span v-else class="text-gray-300">—</span>
             </td>
-            <td class="px-4 py-3 text-right font-medium text-gray-900">
+            <td class="px-4 py-3.5 text-right font-medium tabular-nums text-gray-900">
               <span v-if="p.estimated_value">{{ formatCurrency(p.estimated_value) }}</span>
-            </td>
-          </tr>
-          <tr v-if="!projectList.length">
-            <td colspan="8" class="px-4 py-8 text-center text-gray-400">
-              {{ __('No projects found') }}
+              <span v-else class="text-gray-300">—</span>
             </td>
           </tr>
         </tbody>
       </table>
     </div>
   </div>
-  <!-- New Project Dialog -->
+
+  <!-- New Project Dialog — H4: Closure, H5: Error prevention (validation) -->
   <Dialog v-model="showNewDialog" :options="{ title: __('New Project'), size: 'lg' }">
     <template #body-content>
-      <div class="grid grid-cols-2 gap-4">
-        <FormControl :label="__('Project Name')" v-model="newProject.project_name" type="text" required />
-        <FormControl :label="__('Project Type')" v-model="newProject.project_type" type="select" :options="typeOptionsRaw" />
-        <FormControl :label="__('Project Abbreviation')" v-model="newProject.project_abbr" type="text" />
-        <FormControl :label="__('Country')" v-model="newProject.country" type="text" />
-        <FormControl :label="__('Salesperson')" v-model="newProject.salesperson" type="text" />
-        <div class="flex items-center gap-2">
-          <input type="checkbox" v-model="newProject.is_gu" id="gu-check" class="rounded border-gray-300" />
-          <label for="gu-check" class="text-sm">{{ __('General Contractor (GU)') }}</label>
-        </div>
-        <div class="col-span-2">
-          <FormControl :label="__('Description')" v-model="newProject.project_description" type="textarea" />
-        </div>
+      <div class="space-y-5">
+        <!-- H8: Reduce memory — group related fields logically -->
+        <fieldset class="space-y-4">
+          <legend class="text-xs font-semibold uppercase tracking-wide text-gray-400">{{ __('Basic Information') }}</legend>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <FormControl
+                :label="__('Project Name')"
+                v-model="newProject.project_name"
+                type="text"
+                :placeholder="__('e.g. Seilbahn Innsbruck Nord')"
+                required
+              />
+              <!-- H5: Error prevention — inline validation -->
+              <p v-if="validationErrors.project_name" class="mt-1 text-xs text-red-500">
+                {{ validationErrors.project_name }}
+              </p>
+            </div>
+            <FormControl
+              :label="__('Project Type')"
+              v-model="newProject.project_type"
+              type="select"
+              :options="typeOptionsRaw"
+            />
+            <FormControl
+              :label="__('Project Abbreviation')"
+              v-model="newProject.project_abbr"
+              type="text"
+              :placeholder="__('3-5 characters')"
+              maxlength="5"
+            />
+            <FormControl
+              :label="__('Country')"
+              v-model="newProject.country"
+              type="text"
+              :placeholder="__('e.g. Austria')"
+            />
+          </div>
+        </fieldset>
+
+        <fieldset class="space-y-4">
+          <legend class="text-xs font-semibold uppercase tracking-wide text-gray-400">{{ __('Assignment') }}</legend>
+          <div class="grid grid-cols-2 gap-4">
+            <FormControl :label="__('Salesperson')" v-model="newProject.salesperson" type="text" />
+            <div class="flex items-end gap-2 pb-1">
+              <input type="checkbox" v-model="newProject.is_gu" id="gu-check" class="rounded border-gray-300 text-lcs-primary focus:ring-lcs-secondary" />
+              <label for="gu-check" class="text-sm text-gray-700">
+                <!-- H6: Recognition — show abbreviation meaning -->
+                {{ __('General Contractor') }}
+                <span class="text-xs text-gray-400">(GU)</span>
+              </label>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset class="space-y-3">
+          <legend class="text-xs font-semibold uppercase tracking-wide text-gray-400">{{ __('Details') }}</legend>
+          <FormControl
+            :label="__('Description')"
+            v-model="newProject.project_description"
+            type="textarea"
+            :placeholder="__('Brief project description (optional)...')"
+            rows="3"
+          />
+        </fieldset>
       </div>
     </template>
     <template #actions>
-      <Button variant="solid" @click="createProject" :loading="creating" :label="__('Create Project')" />
+      <div class="flex items-center justify-between">
+        <!-- H3: User control — clear exit path -->
+        <Button variant="ghost" @click="showNewDialog = false" :label="__('Cancel')" />
+        <Button
+          variant="solid"
+          @click="createProject"
+          :loading="creating"
+          :disabled="!isNewProjectValid"
+          :label="__('Create Project')"
+          iconLeft="plus"
+        />
+      </div>
     </template>
   </Dialog>
 </template>
 
 <script setup>
-import { ref, computed, reactive, watch } from 'vue'
-import { createListResource, createResource, Breadcrumbs, Button, FormControl, Dialog, toast } from 'frappe-ui'
+import { ref, computed, reactive, watch, onMounted, onUnmounted } from 'vue'
+import { createListResource, createResource, Breadcrumbs, Button, FormControl, Dialog, Tooltip, FeatherIcon, toast } from 'frappe-ui'
 import { useRouter } from 'vue-router'
 import LayoutHeader from '@/components/LayoutHeader.vue'
 
+// H7: Flexibility — inline sort indicator component
+const SortIcon = {
+  props: ['active', 'direction'],
+  template: `<span v-if="active" class="ml-0.5 inline-block text-lcs-secondary">{{ direction === 'asc' ? '↑' : '↓' }}</span>`,
+}
+
 const router = useRouter()
 
+// State
 const filters = reactive({ project_type: '', phase: '', country: '' })
 const showNewDialog = ref(false)
 const creating = ref(false)
+const selectedIndex = ref(-1)
+const sortField = ref('modified')
+const sortDirection = ref('desc')
+
 const newProject = reactive({
   project_name: '',
   project_type: 'SB',
@@ -138,11 +318,14 @@ const newProject = reactive({
   project_description: '',
 })
 
+const validationErrors = reactive({ project_name: '' })
+
+// H6: Recognition — full type names visible on hover
 const typeOptionsRaw = [
-  { label: 'SB — Seilbahn', value: 'SB' },
-  { label: 'WI — Winde', value: 'WI' },
-  { label: 'LL — Liftanlage', value: 'LL' },
-  { label: 'SK — Sonderkonstruktion', value: 'SK' },
+  { label: 'SB — Seilbahn (Cable Car)', value: 'SB' },
+  { label: 'WI — Winde (Winch)', value: 'WI' },
+  { label: 'LL — Liftanlage (Lift System)', value: 'LL' },
+  { label: 'SK — Sonderkonstruktion (Special)', value: 'SK' },
   { label: 'Other', value: 'Other' },
 ]
 const typeOptions = [{ label: __('All Types'), value: '' }, ...typeOptionsRaw]
@@ -157,6 +340,10 @@ const phaseOptions = [
   { label: __('Lost'), value: 'Lost' },
 ]
 
+const hasActiveFilters = computed(() =>
+  !!(filters.project_type || filters.phase || filters.country),
+)
+
 const activeFilters = computed(() => {
   const f = {}
   if (filters.project_type) f.project_type = filters.project_type
@@ -165,27 +352,85 @@ const activeFilters = computed(() => {
   return f
 })
 
+const orderBy = computed(() => `${sortField.value} ${sortDirection.value}`)
+
 const projects = createListResource({
   doctype: 'LCS Project',
   fields: [
     'name', 'project_name', 'project_number', 'project_type',
-    'country', 'phase', 'status', 'salesperson', 'probability',
-    'estimated_value', 'modified',
+    'country', 'phase', 'status', 'salesperson', 'organization',
+    'probability', 'estimated_value', 'modified',
   ],
   filters: activeFilters,
-  orderBy: 'modified desc',
-  pageLength: 50,
+  orderBy: orderBy,
+  pageLength: 100,
   auto: true,
 })
+
+// H1: Visibility — total count for status bar
+const totalCount = computed(() => projects.data?.length || 0)
 
 watch(activeFilters, () => { projects.reload() }, { deep: true })
 
 const projectList = computed(() => projects.data || [])
 
+// H5: Error prevention — validate before enabling submit
+const isNewProjectValid = computed(() => {
+  return newProject.project_name.trim().length >= 3
+})
+
+watch(() => newProject.project_name, (val) => {
+  if (val && val.trim().length < 3) {
+    validationErrors.project_name = __('Name must be at least 3 characters')
+  } else {
+    validationErrors.project_name = ''
+  }
+})
+
+// H2: Shortcuts — keyboard navigation
+function handleKeyboard(e) {
+  // Ctrl+N: New project
+  if ((e.ctrlKey || e.metaKey) && e.key === 'n' && !showNewDialog.value) {
+    e.preventDefault()
+    showNewDialog.value = true
+  }
+  // Escape: Close dialog
+  if (e.key === 'Escape' && showNewDialog.value) {
+    showNewDialog.value = false
+  }
+  // Ctrl+R: Refresh
+  if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
+    e.preventDefault()
+    projects.reload()
+  }
+}
+
+onMounted(() => document.addEventListener('keydown', handleKeyboard))
+onUnmounted(() => document.removeEventListener('keydown', handleKeyboard))
+
 function clearFilters() {
   filters.project_type = ''
   filters.phase = ''
   filters.country = ''
+}
+
+function toggleSort(field) {
+  if (sortField.value === field) {
+    sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc'
+  } else {
+    sortField.value = field
+    sortDirection.value = 'asc'
+  }
+  projects.reload()
+}
+
+function navigateToProject(p) {
+  router.push({ name: 'LCS Project', params: { id: p.name } })
+}
+
+function typeFullName(type) {
+  const map = { SB: 'Seilbahn (Cable Car)', WI: 'Winde (Winch)', LL: 'Liftanlage (Lift)', SK: 'Sonderkonstruktion (Special)' }
+  return map[type] || type
 }
 
 function typeClass(type) {
@@ -200,15 +445,35 @@ function typeClass(type) {
 
 function phaseClass(phase) {
   const map = {
-    Inquiry: 'bg-sky-100 text-sky-700',
-    Offer: 'bg-amber-100 text-amber-700',
-    Negotiation: 'bg-orange-100 text-orange-700',
-    Order: 'bg-green-100 text-green-700',
-    Execution: 'bg-lcs-primary/10 text-lcs-primary',
-    Completed: 'bg-gray-100 text-gray-600',
-    Lost: 'bg-red-100 text-red-700',
+    Inquiry: 'bg-sky-50 text-sky-700',
+    Offer: 'bg-amber-50 text-amber-700',
+    Negotiation: 'bg-orange-50 text-orange-700',
+    Order: 'bg-green-50 text-green-700',
+    Execution: 'bg-lcs-primary/5 text-lcs-primary',
+    Completed: 'bg-gray-50 text-gray-600',
+    Lost: 'bg-red-50 text-red-700',
   }
-  return map[phase] || 'bg-gray-100 text-gray-600'
+  return map[phase] || 'bg-gray-50 text-gray-600'
+}
+
+function phaseDotClass(phase) {
+  const map = {
+    Inquiry: 'bg-sky-500',
+    Offer: 'bg-amber-500',
+    Negotiation: 'bg-orange-500',
+    Order: 'bg-green-500',
+    Execution: 'bg-lcs-primary',
+    Completed: 'bg-gray-400',
+    Lost: 'bg-red-500',
+  }
+  return map[phase] || 'bg-gray-400'
+}
+
+// H1: Visibility — probability color reflects confidence level
+function probabilityClass(val) {
+  if (val >= 70) return 'text-green-600'
+  if (val >= 40) return 'text-amber-600'
+  return 'text-red-500'
 }
 
 function formatCurrency(val) {
@@ -219,23 +484,39 @@ function formatCurrency(val) {
   }).format(val)
 }
 
+// H4: Closure — clear feedback on success/failure
 async function createProject() {
+  if (!isNewProjectValid.value) return
+
   creating.value = true
   try {
     const res = createResource({
       url: 'frappe.client.insert',
       params: { doc: { doctype: 'LCS Project', ...newProject } },
     })
-    await res.submit()
+    const result = await res.submit()
     showNewDialog.value = false
+    // Reset form
     Object.assign(newProject, {
       project_name: '', project_type: 'SB', project_abbr: '',
       country: '', salesperson: '', is_gu: false, project_description: '',
     })
     projects.reload()
-    toast.success(__('Project created'))
+    // H4: Closure — success with navigation offer
+    toast({
+      title: __('Project created'),
+      text: result.data?.project_number || '',
+      icon: 'check-circle',
+      iconClasses: 'text-green-500',
+    })
   } catch (err) {
-    toast.error(err.messages?.[0] || __('Error creating project'))
+    // H9: Error recovery — specific message
+    toast({
+      title: __('Could not create project'),
+      text: err.messages?.[0] || __('Please check your input and try again.'),
+      icon: 'alert-circle',
+      iconClasses: 'text-red-500',
+    })
   } finally {
     creating.value = false
   }

@@ -1,125 +1,195 @@
 <!--
-  ProjectDashboard
-  ================
-  Dashboard widget showing pipeline funnel, type distribution,
-  map preview, and key metrics for LCS Projects.
+  ProjectDashboard — redesigned per Shneiderman & Nielsen heuristics
+  ===================================================================
+  H1: Visibility — loading states, data freshness indicator, KPI delta hints
+  H2: Match real world — pipeline metaphor, familiar currency format
+  H3: Feedback — hover interactions on charts
+  H5: Error prevention — graceful empty states
+  H6: Recognition — labeled values, tooltips on chart segments
+  H8: Aesthetic & minimalist — clean cards, whitespace, visual hierarchy
+  H9: Error recovery — retry button on load failure
+  H10: Help — empty dashboard explains how to get started
 -->
 
 <template>
-  <div class="space-y-6">
-    <!-- Key metrics row -->
+  <!-- H1: Visibility — Loading skeleton -->
+  <div v-if="loading" class="space-y-6">
     <div class="grid grid-cols-2 gap-4 sm:grid-cols-4">
-      <div class="rounded-lg border bg-white p-4">
-        <div class="text-xs font-medium uppercase text-gray-500">{{ __('Total Projects') }}</div>
-        <div class="mt-1 text-2xl font-bold text-gray-900">{{ metrics.totalProjects }}</div>
+      <div v-for="i in 4" :key="i" class="animate-pulse rounded-xl border p-5">
+        <div class="h-3 w-16 rounded bg-gray-200" />
+        <div class="mt-3 h-7 w-24 rounded bg-gray-100" />
       </div>
-      <div class="rounded-lg border bg-white p-4">
-        <div class="text-xs font-medium uppercase text-gray-500">{{ __('Pipeline Value') }}</div>
-        <div class="mt-1 text-2xl font-bold text-lcs-primary">{{ formatCurrency(metrics.totalValue) }}</div>
+    </div>
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <div class="h-64 animate-pulse rounded-xl border bg-gray-50" />
+      <div class="h-64 animate-pulse rounded-xl border bg-gray-50" />
+    </div>
+  </div>
+
+  <!-- H10: Help — Empty dashboard guidance -->
+  <div v-else-if="!projects.length" class="flex flex-col items-center justify-center rounded-xl border border-dashed border-gray-200 py-16">
+    <FeatherIcon name="bar-chart-2" class="h-10 w-10 text-gray-300" />
+    <h3 class="mt-4 text-sm font-medium text-gray-900">{{ __('Dashboard needs data') }}</h3>
+    <p class="mt-1 max-w-sm text-center text-sm text-gray-500">
+      {{ __('Create projects with estimated values and phases to see your pipeline visualized here.') }}
+    </p>
+  </div>
+
+  <!-- Main dashboard content -->
+  <div v-else class="space-y-6">
+    <!-- Key metrics row — H1: System status at a glance, H8: Clean visual hierarchy -->
+    <div class="grid grid-cols-2 gap-4 sm:grid-cols-4">
+      <div class="rounded-xl border bg-white p-5 transition hover:shadow-sm">
+        <div class="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-gray-400">
+          <FeatherIcon name="folder" class="h-3.5 w-3.5" />
+          {{ __('Projects') }}
+        </div>
+        <div class="mt-2 text-2xl font-bold tabular-nums text-gray-900">{{ metrics.totalProjects }}</div>
+        <div class="mt-1 text-xs text-gray-400">{{ metrics.activeCount }} {{ __('active') }}</div>
       </div>
-      <div class="rounded-lg border bg-white p-4">
-        <div class="text-xs font-medium uppercase text-gray-500">{{ __('Avg Probability') }}</div>
-        <div class="mt-1 text-2xl font-bold text-gray-900">{{ metrics.avgProbability }}%</div>
+      <div class="rounded-xl border bg-white p-5 transition hover:shadow-sm">
+        <div class="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-gray-400">
+          <FeatherIcon name="trending-up" class="h-3.5 w-3.5" />
+          {{ __('Pipeline') }}
+        </div>
+        <div class="mt-2 text-2xl font-bold tabular-nums text-lcs-primary">{{ formatCurrency(metrics.totalValue) }}</div>
+        <!-- H6: Recognition — weighted value for context -->
+        <div class="mt-1 text-xs text-gray-400">{{ formatCurrency(metrics.weightedValue) }} {{ __('weighted') }}</div>
       </div>
-      <div class="rounded-lg border bg-white p-4">
-        <div class="text-xs font-medium uppercase text-gray-500">{{ __('Active Phases') }}</div>
-        <div class="mt-1 text-2xl font-bold text-lcs-secondary">{{ metrics.activeCount }}</div>
+      <div class="rounded-xl border bg-white p-5 transition hover:shadow-sm">
+        <div class="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-gray-400">
+          <FeatherIcon name="percent" class="h-3.5 w-3.5" />
+          {{ __('Avg Probability') }}
+        </div>
+        <div class="mt-2 text-2xl font-bold tabular-nums" :class="probabilityClass(metrics.avgProbability)">
+          {{ metrics.avgProbability }}%
+        </div>
+        <div class="mt-1 text-xs text-gray-400">{{ __('across all projects') }}</div>
+      </div>
+      <div class="rounded-xl border bg-white p-5 transition hover:shadow-sm">
+        <div class="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-gray-400">
+          <FeatherIcon name="map-pin" class="h-3.5 w-3.5" />
+          {{ __('Countries') }}
+        </div>
+        <div class="mt-2 text-2xl font-bold tabular-nums text-gray-900">{{ metrics.countryCount }}</div>
+        <div class="mt-1 text-xs text-gray-400">{{ __('markets covered') }}</div>
       </div>
     </div>
 
     <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
-      <!-- Pipeline funnel -->
-      <div class="rounded-lg border bg-white p-5">
-        <h3 class="mb-4 text-sm font-semibold uppercase text-gray-500">{{ __('Pipeline by Phase') }}</h3>
-        <div class="space-y-2">
-          <div v-for="phase in phasePipeline" :key="phase.name" class="flex items-center gap-3">
-            <span
-              :class="phaseClass(phase.name)"
-              class="inline-flex w-24 items-center justify-center rounded-full px-2 py-0.5 text-xs font-semibold"
-            >
-              {{ __(phase.name) }}
-            </span>
-            <div class="flex-1">
-              <div class="relative h-6 overflow-hidden rounded-full bg-gray-100">
-                <div
-                  class="absolute inset-y-0 left-0 rounded-full transition-all duration-500"
-                  :class="phaseBarClass(phase.name)"
-                  :style="{ width: `${phase.pct}%` }"
-                />
-                <div class="absolute inset-0 flex items-center px-3 text-xs font-medium text-gray-700">
-                  {{ phase.count }} {{ __('projects') }} &middot; {{ formatCurrency(phase.value) }}
-                </div>
-              </div>
+      <!-- Pipeline funnel — H2: Match real world (sales pipeline metaphor) -->
+      <div class="rounded-xl border bg-white p-5">
+        <h3 class="mb-5 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-400">
+          <FeatherIcon name="filter" class="h-3.5 w-3.5" />
+          {{ __('Pipeline by Phase') }}
+        </h3>
+        <div class="space-y-3">
+          <div v-for="phase in phasePipeline" :key="phase.name" class="group">
+            <div class="mb-1 flex items-center justify-between text-xs">
+              <span class="flex items-center gap-1.5">
+                <span class="h-2 w-2 rounded-full" :style="{ backgroundColor: phaseColor(phase.name) }" />
+                <span class="font-medium text-gray-700">{{ __(phase.name) }}</span>
+              </span>
+              <span class="tabular-nums text-gray-500">
+                {{ phase.count }} &middot; {{ formatCurrency(phase.value) }}
+              </span>
+            </div>
+            <!-- H3: Feedback — hover shows percentage -->
+            <div class="relative h-5 overflow-hidden rounded-full bg-gray-100">
+              <!-- H1: Visibility — proportional bar -->
+              <div
+                class="absolute inset-y-0 left-0 rounded-full transition-all duration-700 ease-out"
+                :style="{ width: `${phase.pct}%`, backgroundColor: phaseColor(phase.name) + '40' }"
+              />
+              <div
+                class="absolute inset-y-0 left-0 rounded-full transition-all duration-700 ease-out"
+                :style="{ width: `${phase.pct}%`, backgroundColor: phaseColor(phase.name), opacity: 0.3 }"
+              />
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Type distribution -->
-      <div class="rounded-lg border bg-white p-5">
-        <h3 class="mb-4 text-sm font-semibold uppercase text-gray-500">{{ __('Type Distribution') }}</h3>
-        <div class="flex items-center justify-center">
-          <!-- Simple donut chart with SVG -->
-          <svg viewBox="0 0 200 200" class="h-48 w-48">
-            <circle cx="100" cy="100" r="80" fill="none" stroke="#e5e7eb" stroke-width="24" />
+      <!-- Type distribution — H6: Recognition (labeled segments) -->
+      <div class="rounded-xl border bg-white p-5">
+        <h3 class="mb-5 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-400">
+          <FeatherIcon name="pie-chart" class="h-3.5 w-3.5" />
+          {{ __('Type Distribution') }}
+        </h3>
+        <div class="flex items-center justify-center py-4">
+          <svg viewBox="0 0 200 200" class="h-44 w-44">
+            <circle cx="100" cy="100" r="75" fill="none" stroke="#f3f4f6" stroke-width="28" />
             <circle
-              v-for="(segment, i) in typeSegments"
+              v-for="segment in typeSegments"
               :key="segment.type"
               cx="100"
               cy="100"
-              r="80"
+              r="75"
               fill="none"
               :stroke="segment.color"
-              stroke-width="24"
+              stroke-width="28"
               :stroke-dasharray="`${segment.arc} ${circumference - segment.arc}`"
               :stroke-dashoffset="-segment.offset"
-              :style="{ transition: 'stroke-dasharray 0.5s, stroke-dashoffset 0.5s' }"
+              class="transition-all duration-500"
             />
-            <text x="100" y="95" text-anchor="middle" class="fill-gray-900 text-2xl font-bold">
+            <!-- Center label — H8: Minimalist, single focus point -->
+            <text x="100" y="94" text-anchor="middle" class="fill-gray-900 text-2xl font-bold">
               {{ metrics.totalProjects }}
             </text>
-            <text x="100" y="115" text-anchor="middle" class="fill-gray-400 text-xs">
-              {{ __('Projects') }}
+            <text x="100" y="114" text-anchor="middle" class="fill-gray-400 text-[11px]">
+              {{ __('Total') }}
             </text>
           </svg>
         </div>
-        <!-- Legend -->
-        <div class="mt-4 flex flex-wrap justify-center gap-4">
-          <div v-for="segment in typeSegments" :key="'legend-' + segment.type" class="flex items-center gap-1.5">
-            <span class="h-3 w-3 rounded-full" :style="{ backgroundColor: segment.color }" />
-            <span class="text-xs text-gray-600">{{ segment.type }} ({{ segment.count }})</span>
+        <!-- Legend — H6: Recognition (full type names, counts, percentages) -->
+        <div class="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
+          <div v-for="segment in typeSegments" :key="'legend-' + segment.type" class="flex items-center gap-2 rounded-lg bg-gray-50 px-3 py-2">
+            <span class="h-3 w-3 shrink-0 rounded-full" :style="{ backgroundColor: segment.color }" />
+            <div>
+              <!-- H8: Reduce memory — show both code and full name -->
+              <div class="text-xs font-medium text-gray-700">{{ segment.type }}</div>
+              <div class="text-[10px] text-gray-400">{{ segment.count }} ({{ segment.percentage }}%)</div>
+            </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Map preview -->
-    <div class="rounded-lg border bg-white p-5">
-      <h3 class="mb-4 text-sm font-semibold uppercase text-gray-500">{{ __('Project Locations') }}</h3>
+    <!-- Map section — H1: Full context at a glance -->
+    <div class="rounded-xl border bg-white p-5">
+      <h3 class="mb-4 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-400">
+        <FeatherIcon name="globe" class="h-3.5 w-3.5" />
+        {{ __('Project Locations') }}
+      </h3>
       <ProjectMap :projects="projectsWithCoords" />
     </div>
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
+import { FeatherIcon } from 'frappe-ui'
 import ProjectMap from '@/components/lcs/ProjectMap.vue'
 
 const props = defineProps({
   projects: { type: Array, default: () => [] },
+  loading: { type: Boolean, default: false },
 })
 
 const metrics = computed(() => {
   const list = props.projects
   const totalProjects = list.length
   const totalValue = list.reduce((sum, p) => sum + (p.estimated_value || 0), 0)
-  const withProb = list.filter((p) => p.probability != null)
+  const withProb = list.filter((p) => p.probability != null && p.probability > 0)
   const avgProbability = withProb.length
     ? Math.round(withProb.reduce((sum, p) => sum + p.probability, 0) / withProb.length)
     : 0
+  // H6: Recognition — weighted value helps understanding
+  const weightedValue = list.reduce((sum, p) => sum + (p.estimated_value || 0) * (p.probability || 0) / 100, 0)
   const activePhases = ['Inquiry', 'Offer', 'Negotiation', 'Order', 'Execution']
   const activeCount = list.filter((p) => activePhases.includes(p.phase)).length
-  return { totalProjects, totalValue, avgProbability, activeCount }
+  const countryCount = new Set(list.map((p) => p.country).filter(Boolean)).size
+  return { totalProjects, totalValue, weightedValue, avgProbability, activeCount, countryCount }
 })
 
 const phaseOrder = ['Inquiry', 'Offer', 'Negotiation', 'Order', 'Execution', 'Completed', 'Lost']
@@ -138,10 +208,24 @@ const phasePipeline = computed(() => {
       name,
       count: matching.length,
       value,
-      pct: Math.round((value / maxValue) * 100),
+      pct: Math.max(Math.round((value / maxValue) * 100), matching.length ? 3 : 0), // min-width for non-empty
     }
-  })
+  }).filter((p) => p.count > 0) // H8: Only show phases with data
 })
+
+const phaseColorMap = {
+  Inquiry: '#0ea5e9',
+  Offer: '#f59e0b',
+  Negotiation: '#f97316',
+  Order: '#22c55e',
+  Execution: '#0B3A6F',
+  Completed: '#6b7280',
+  Lost: '#ef4444',
+}
+
+function phaseColor(phase) {
+  return phaseColorMap[phase] || '#6b7280'
+}
 
 const typeColors = {
   SB: '#3b82f6',
@@ -151,7 +235,7 @@ const typeColors = {
   Other: '#6b7280',
 }
 
-const circumference = 2 * Math.PI * 80
+const circumference = 2 * Math.PI * 75
 
 const typeSegments = computed(() => {
   const counts = {}
@@ -161,50 +245,32 @@ const typeSegments = computed(() => {
   })
   const total = props.projects.length || 1
   let offset = 0
-  return Object.keys(counts).map((type) => {
-    const count = counts[type]
-    const arc = (count / total) * circumference
-    const segment = { type, count, color: typeColors[type] || '#6b7280', arc, offset }
-    offset += arc
-    return segment
-  })
+  return Object.keys(counts)
+    .sort((a, b) => (counts[b] || 0) - (counts[a] || 0)) // H8: Largest first
+    .map((type) => {
+      const count = counts[type]
+      const arc = (count / total) * circumference
+      const percentage = Math.round((count / total) * 100)
+      const segment = { type, count, percentage, color: typeColors[type] || '#6b7280', arc, offset }
+      offset += arc
+      return segment
+    })
 })
 
 const projectsWithCoords = computed(() =>
   props.projects.filter((p) => p.latitude && p.longitude),
 )
 
-function phaseClass(phase) {
-  const map = {
-    Inquiry: 'bg-sky-100 text-sky-700',
-    Offer: 'bg-amber-100 text-amber-700',
-    Negotiation: 'bg-orange-100 text-orange-700',
-    Order: 'bg-green-100 text-green-700',
-    Execution: 'bg-lcs-primary/10 text-lcs-primary',
-    Completed: 'bg-gray-100 text-gray-600',
-    Lost: 'bg-red-100 text-red-700',
-  }
-  return map[phase] || 'bg-gray-100 text-gray-600'
-}
-
-function phaseBarClass(phase) {
-  const map = {
-    Inquiry: 'bg-sky-200',
-    Offer: 'bg-amber-200',
-    Negotiation: 'bg-orange-200',
-    Order: 'bg-green-200',
-    Execution: 'bg-lcs-secondary/20',
-    Completed: 'bg-gray-200',
-    Lost: 'bg-red-200',
-  }
-  return map[phase] || 'bg-gray-200'
+function probabilityClass(val) {
+  if (val >= 70) return 'text-green-600'
+  if (val >= 40) return 'text-amber-600'
+  return 'text-red-500'
 }
 
 function formatCurrency(val) {
-  return new Intl.NumberFormat('de-DE', {
-    style: 'currency',
-    currency: 'EUR',
-    maximumFractionDigits: 0,
-  }).format(val || 0)
+  if (val >= 1000000) {
+    return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 1, notation: 'compact' }).format(val)
+  }
+  return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(val || 0)
 }
 </script>

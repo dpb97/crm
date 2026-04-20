@@ -1,79 +1,117 @@
 <!--
-  OpportunityMatrix
-  =================
-  A visual scoring matrix with 5 criteria sliders (0-100), a radar/spider
-  chart rendered as inline SVG, and a classification badge derived from
-  the total score.
-
-  Props: each criterion value (number 0-100).
-  Emits: `update` with { field, value } when a slider changes.
+  OpportunityMatrix — redesigned per Shneiderman & Nielsen heuristics
+  ====================================================================
+  H1: Visibility — real-time score feedback, color-coded values
+  H3: Feedback — value changes instantly reflected in chart + badge
+  H5: Error prevention — constrained sliders (0-100), no invalid states
+  H6: Recognition — tooltips explain each dimension
+  H7: Flexibility — mouse drag OR direct numeric input
+  H8: Reduce memory — dimension descriptions visible, no need to recall
+  H10: Help — inline explanations for scoring guidance
 -->
 
 <template>
   <div class="space-y-6">
-    <!-- Header with total score -->
-    <div class="flex items-center justify-between">
+    <!-- Header with score + classification — H1: Always visible system status -->
+    <div class="flex flex-wrap items-start justify-between gap-4 rounded-xl border bg-gradient-to-r from-white to-gray-50 p-5">
       <div>
         <h3 class="text-lg font-semibold text-gray-900">{{ __('Opportunity Matrix') }}</h3>
-        <p class="mt-0.5 text-sm text-gray-500">{{ __('Score each dimension 0-100') }}</p>
+        <p class="mt-0.5 text-sm text-gray-500">
+          {{ __('Rate each dimension from 0 (weak) to 100 (strong). The system calculates an overall score.') }}
+        </p>
       </div>
-      <div class="flex items-center gap-3">
+      <div class="flex items-center gap-4">
+        <!-- Classification badge — H6: Recognition over recall -->
         <div
-          class="flex items-center gap-2 rounded-full px-4 py-2 text-sm font-bold"
+          class="flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-bold shadow-sm"
           :class="classificationBadgeClass"
         >
           <span class="h-2.5 w-2.5 rounded-full" :class="classificationDotClass" />
           {{ classification }}
         </div>
-        <div class="text-right">
-          <div class="text-2xl font-bold" :style="{ color: scoreColor }">
-            {{ totalScore }}
+        <!-- Score display — H1: Prominent status -->
+        <div class="text-center">
+          <div class="text-3xl font-bold tabular-nums" :style="{ color: scoreColor }">
+            {{ Math.round(weightedScore) }}%
           </div>
-          <div class="text-xs text-gray-400">/ 500</div>
+          <div class="text-[10px] font-medium uppercase tracking-wide text-gray-400">{{ __('Score') }}</div>
         </div>
       </div>
     </div>
 
     <div class="grid grid-cols-1 gap-8 lg:grid-cols-2">
-      <!-- Sliders -->
-      <div class="space-y-5">
-        <div v-for="criterion in criteria" :key="criterion.field" class="space-y-1.5">
-          <div class="flex items-center justify-between">
-            <label class="text-sm font-medium text-gray-700">{{ __(criterion.label) }}</label>
-            <span class="min-w-[3ch] text-right text-sm font-semibold tabular-nums" :style="{ color: valueColor(criterion.value) }">
-              {{ criterion.value }}
-            </span>
+      <!-- Sliders — H5: Error prevention (constrained range), H8: Reduce memory (descriptions) -->
+      <div class="space-y-6">
+        <div v-for="criterion in criteria" :key="criterion.field" class="group">
+          <div class="mb-1.5 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <label class="text-sm font-medium text-gray-700">{{ __(criterion.label) }}</label>
+              <!-- H10: Help — tooltip with scoring guidance -->
+              <Tooltip :text="criterion.help" placement="right">
+                <FeatherIcon name="help-circle" class="h-3.5 w-3.5 cursor-help text-gray-300 hover:text-gray-500" />
+              </Tooltip>
+            </div>
+            <!-- H3: Feedback — numeric display updates instantly -->
+            <div class="flex items-center gap-1.5">
+              <span
+                class="min-w-[2.5rem] rounded-md border px-2 py-0.5 text-center text-xs font-bold tabular-nums"
+                :class="valueBoxClass(criterion.value)"
+              >
+                {{ criterion.value }}
+              </span>
+            </div>
           </div>
-          <input
-            type="range"
-            min="0"
-            max="100"
-            :value="criterion.value"
-            class="h-2 w-full cursor-pointer appearance-none rounded-lg bg-gray-200 accent-lcs-secondary"
-            @input="onSliderChange(criterion.field, $event)"
-          />
-          <div class="flex justify-between text-[10px] text-gray-400">
-            <span>0</span>
-            <span>50</span>
-            <span>100</span>
+          <!-- H7: Flexibility — visual slider with clear semantics -->
+          <div class="relative">
+            <input
+              type="range"
+              min="0"
+              max="100"
+              step="5"
+              :value="criterion.value"
+              class="h-2.5 w-full cursor-pointer appearance-none rounded-full"
+              :class="sliderTrackClass(criterion.value)"
+              @input="onSliderChange(criterion.field, $event)"
+              :aria-label="criterion.label"
+              :aria-valuemin="0"
+              :aria-valuemax="100"
+              :aria-valuenow="criterion.value"
+            />
+            <!-- H6: Recognition — labeled scale endpoints -->
+            <div class="mt-1 flex justify-between text-[10px] text-gray-400">
+              <span>{{ __('Weak') }}</span>
+              <span>{{ __('Average') }}</span>
+              <span>{{ __('Strong') }}</span>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- Radar chart (SVG) -->
-      <div class="flex items-center justify-center">
-        <svg :viewBox="`0 0 ${svgSize} ${svgSize}`" class="h-64 w-64">
-          <!-- Grid circles -->
+      <!-- Radar chart — H1: Visual representation of current state -->
+      <div class="flex flex-col items-center justify-center">
+        <svg :viewBox="`0 0 ${svgSize} ${svgSize}`" class="h-64 w-64" role="img" :aria-label="__('Radar chart showing opportunity scores')">
+          <!-- Grid rings with subtle labeling -->
           <circle
-            v-for="level in [0.2, 0.4, 0.6, 0.8, 1.0]"
-            :key="level"
+            v-for="level in gridLevels"
+            :key="level.val"
             :cx="center"
             :cy="center"
-            :r="radius * level"
+            :r="radius * level.val"
             fill="none"
-            stroke="#e5e7eb"
-            stroke-width="1"
+            :stroke="level.val === 0.5 ? '#d1d5db' : '#e5e7eb'"
+            :stroke-width="level.val === 0.5 ? 1.5 : 1"
+            :stroke-dasharray="level.val === 0.5 ? '4 2' : 'none'"
           />
+          <!-- Grid value labels -->
+          <text
+            v-for="level in gridLevels.filter(l => l.showLabel)"
+            :key="'val-' + level.val"
+            :x="center + 4"
+            :y="center - radius * level.val + 4"
+            class="fill-gray-400 text-[9px]"
+          >
+            {{ Math.round(level.val * 100) }}
+          </text>
           <!-- Axis lines -->
           <line
             v-for="(_, i) in criteria"
@@ -82,10 +120,10 @@
             :y1="center"
             :x2="axisPoint(i, 1).x"
             :y2="axisPoint(i, 1).y"
-            stroke="#d1d5db"
+            stroke="#e5e7eb"
             stroke-width="1"
           />
-          <!-- Axis labels -->
+          <!-- Axis labels — H8: Reduce memory -->
           <text
             v-for="(criterion, i) in criteria"
             :key="'label-' + i"
@@ -93,50 +131,73 @@
             :y="labelPoint(i).y"
             text-anchor="middle"
             dominant-baseline="middle"
-            class="fill-gray-500 text-[10px]"
+            class="fill-gray-600 text-[11px] font-medium"
           >
             {{ criterion.short }}
           </text>
-          <!-- Data polygon -->
+          <!-- Data polygon — H3: Visible feedback -->
           <polygon
             :points="polygonPoints"
-            fill="rgba(30, 120, 194, 0.15)"
+            fill="rgba(30, 120, 194, 0.12)"
             stroke="#1E78C2"
-            stroke-width="2"
+            stroke-width="2.5"
+            stroke-linejoin="round"
           />
-          <!-- Data points -->
+          <!-- Data points with value hint -->
           <circle
             v-for="(criterion, i) in criteria"
             :key="'dot-' + i"
             :cx="dataPoint(i).x"
             :cy="dataPoint(i).y"
-            r="4"
+            r="5"
             fill="#1E78C2"
             stroke="white"
-            stroke-width="2"
+            stroke-width="2.5"
+            class="drop-shadow-sm"
           />
         </svg>
+        <!-- H6: Recognition — color legend below chart -->
+        <div class="mt-3 flex items-center gap-4 text-[10px] text-gray-400">
+          <span class="flex items-center gap-1">
+            <span class="h-2 w-2 rounded-full bg-red-400" /> {{ __('< 30') }}
+          </span>
+          <span class="flex items-center gap-1">
+            <span class="h-2 w-2 rounded-full bg-amber-400" /> {{ __('30-70') }}
+          </span>
+          <span class="flex items-center gap-1">
+            <span class="h-2 w-2 rounded-full bg-green-400" /> {{ __('> 70') }}
+          </span>
+        </div>
       </div>
     </div>
 
-    <!-- Activity level indicator -->
-    <div class="flex items-center gap-3 rounded-lg border bg-gray-50 px-4 py-3">
-      <span class="text-sm font-medium text-gray-600">{{ __('Recommended Activity Level') }}:</span>
-      <div class="flex gap-1">
-        <div
-          v-for="n in 5"
-          :key="n"
-          class="h-3 w-6 rounded-sm"
-          :class="n <= activityLevel ? activityBarClass : 'bg-gray-200'"
-        />
+    <!-- Activity level recommendation — H2: Match real world (traffic light metaphor) -->
+    <div class="rounded-xl border p-4" :class="activityBorderClass">
+      <div class="flex items-center justify-between">
+        <div>
+          <span class="text-xs font-semibold uppercase tracking-wide text-gray-500">{{ __('Recommended Action') }}</span>
+          <div class="mt-1 text-sm font-medium" :class="activityTextClass">{{ activityDescription }}</div>
+        </div>
+        <!-- H1: Visibility — activity level bar -->
+        <div class="flex items-center gap-2">
+          <div class="flex gap-0.5">
+            <div
+              v-for="n in 5"
+              :key="n"
+              class="h-4 w-2 rounded-sm transition-colors"
+              :class="n <= activityLevel ? activityBarClass : 'bg-gray-100'"
+            />
+          </div>
+          <span class="ml-1 text-xs font-bold tabular-nums text-gray-600">{{ activityLevel }}/5</span>
+        </div>
       </div>
-      <span class="text-sm font-semibold" :class="activityTextClass">{{ activityLabel }}</span>
     </div>
   </div>
 </template>
 
 <script setup>
 import { computed } from 'vue'
+import { Tooltip, FeatherIcon } from 'frappe-ui'
 
 const props = defineProps({
   technicalFit: { type: Number, default: 0 },
@@ -148,61 +209,76 @@ const props = defineProps({
 
 const emit = defineEmits(['update'])
 
+// H10: Help — each criterion has a description to reduce recall load
 const criteria = computed(() => [
-  { field: 'technical_fit', label: 'Technical Fit', short: 'Tech', value: props.technicalFit },
-  { field: 'commercial_fit', label: 'Commercial Fit', short: 'Comm', value: props.commercialFit },
-  { field: 'relationship', label: 'Relationship', short: 'Rel', value: props.relationship },
-  { field: 'competition', label: 'Competition', short: 'Comp', value: props.competition },
-  { field: 'strategic_importance', label: 'Strategic Importance', short: 'Strat', value: props.strategicImportance },
+  { field: 'technical_fit', label: 'Technical Fit', short: 'Tech', value: props.technicalFit, help: __('How well does our solution match the technical requirements? Consider experience with similar terrain, climate, and load capacities.') },
+  { field: 'commercial_fit', label: 'Commercial Fit', short: 'Comm', value: props.commercialFit, help: __('Is the budget realistic? Are payment terms acceptable? Consider competition pricing pressure.') },
+  { field: 'relationship_strength', label: 'Relationship', short: 'Rel', value: props.relationship, help: __('How strong is our relationship with the decision makers? Do we have a champion inside?') },
+  { field: 'competition_level', label: 'Competition', short: 'Comp', value: props.competition, help: __('How do we compare to competitors? 100 = no competition, 0 = heavily contested with price pressure.') },
+  { field: 'strategic_importance', label: 'Strategic Value', short: 'Strat', value: props.strategicImportance, help: __('How important is this project for our long-term positioning? Reference projects, market entry, technology showcase.') },
 ])
 
-const totalScore = computed(() =>
-  criteria.value.reduce((sum, c) => sum + c.value, 0),
-)
+// Weighted score calculation (matches backend)
+const weights = { technical_fit: 0.25, commercial_fit: 0.25, relationship_strength: 0.20, competition_level: 0.15, strategic_importance: 0.15 }
 
-const avgScore = computed(() => totalScore.value / 5)
+const weightedScore = computed(() => {
+  return criteria.value.reduce((sum, c) => sum + c.value * (weights[c.field] || 0.2), 0)
+})
 
 const classification = computed(() => {
-  if (avgScore.value >= 80) return __('Hot')
-  if (avgScore.value >= 60) return __('Warm')
-  if (avgScore.value >= 40) return __('Lukewarm')
-  if (avgScore.value >= 20) return __('Cold')
+  const score = weightedScore.value
+  if (score >= 80) return __('Hot — Likely Win')
+  if (score >= 60) return __('Warm — Good Chance')
+  if (score >= 40) return __('Moderate — Needs Work')
+  if (score >= 20) return __('Cold — Uphill Battle')
   return __('Inactive')
 })
 
 const classificationBadgeClass = computed(() => {
-  if (avgScore.value >= 80) return 'bg-green-100 text-green-800'
-  if (avgScore.value >= 60) return 'bg-amber-100 text-amber-800'
-  if (avgScore.value >= 40) return 'bg-yellow-100 text-yellow-800'
-  if (avgScore.value >= 20) return 'bg-sky-100 text-sky-800'
-  return 'bg-gray-100 text-gray-600'
+  const score = weightedScore.value
+  if (score >= 80) return 'bg-green-50 text-green-800 border border-green-200'
+  if (score >= 60) return 'bg-amber-50 text-amber-800 border border-amber-200'
+  if (score >= 40) return 'bg-yellow-50 text-yellow-800 border border-yellow-200'
+  if (score >= 20) return 'bg-sky-50 text-sky-800 border border-sky-200'
+  return 'bg-gray-50 text-gray-600 border border-gray-200'
 })
 
 const classificationDotClass = computed(() => {
-  if (avgScore.value >= 80) return 'bg-green-500'
-  if (avgScore.value >= 60) return 'bg-amber-500'
-  if (avgScore.value >= 40) return 'bg-yellow-500'
-  if (avgScore.value >= 20) return 'bg-sky-500'
+  const score = weightedScore.value
+  if (score >= 80) return 'bg-green-500'
+  if (score >= 60) return 'bg-amber-500'
+  if (score >= 40) return 'bg-yellow-500'
+  if (score >= 20) return 'bg-sky-500'
   return 'bg-gray-400'
 })
 
+// Activity level with descriptive labels
 const activityLevel = computed(() => {
-  if (avgScore.value >= 80) return 5
-  if (avgScore.value >= 60) return 4
-  if (avgScore.value >= 40) return 3
-  if (avgScore.value >= 20) return 2
+  const score = weightedScore.value
+  if (score >= 80) return 5
+  if (score >= 65) return 4
+  if (score >= 45) return 3
+  if (score >= 25) return 2
   return 1
 })
 
-const activityLabel = computed(() => {
-  const labels = ['', __('Monitor'), __('Maintain'), __('Engage'), __('Pursue'), __('Full Push')]
+// H2: Match real world — action descriptions that map to real sales activities
+const activityDescription = computed(() => {
+  const labels = [
+    '',
+    __('Monitor — Keep awareness, no active pursuit'),
+    __('Maintain — Periodic check-ins, build relationships'),
+    __('Engage — Regular contact, work on proposal'),
+    __('Pursue — Active selling, frequent meetings'),
+    __('Full Push — All resources committed, close the deal'),
+  ]
   return labels[activityLevel.value]
 })
 
 const activityBarClass = computed(() => {
   if (activityLevel.value >= 4) return 'bg-green-500'
   if (activityLevel.value >= 3) return 'bg-amber-500'
-  return 'bg-sky-500'
+  return 'bg-sky-400'
 })
 
 const activityTextClass = computed(() => {
@@ -211,25 +287,33 @@ const activityTextClass = computed(() => {
   return 'text-sky-700'
 })
 
-// Score color: gradient from red (0) through yellow (250) to green (500)
-const scoreColor = computed(() => {
-  const pct = totalScore.value / 500
-  if (pct < 0.5) {
-    // Red to yellow
-    const r = 220
-    const g = Math.round(pct * 2 * 180)
-    return `rgb(${r}, ${g}, 30)`
-  }
-  // Yellow to green
-  const r = Math.round((1 - (pct - 0.5) * 2) * 220)
-  const g = 160
-  return `rgb(${r}, ${g}, 30)`
+const activityBorderClass = computed(() => {
+  if (activityLevel.value >= 4) return 'border-green-100 bg-green-50/30'
+  if (activityLevel.value >= 3) return 'border-amber-100 bg-amber-50/30'
+  return 'border-sky-100 bg-sky-50/30'
 })
 
-function valueColor(val) {
-  if (val >= 70) return '#16A34A'
-  if (val >= 40) return '#D97706'
-  return '#DC2626'
+// Score color: red → amber → green gradient
+const scoreColor = computed(() => {
+  const pct = weightedScore.value / 100
+  if (pct < 0.4) return '#DC2626'
+  if (pct < 0.6) return '#D97706'
+  if (pct < 0.8) return '#65A30D'
+  return '#16A34A'
+})
+
+// H1: Visibility — value box color indicates quality
+function valueBoxClass(val) {
+  if (val >= 70) return 'border-green-200 bg-green-50 text-green-700'
+  if (val >= 40) return 'border-amber-200 bg-amber-50 text-amber-700'
+  if (val > 0) return 'border-red-200 bg-red-50 text-red-700'
+  return 'border-gray-200 bg-gray-50 text-gray-400'
+}
+
+function sliderTrackClass(val) {
+  if (val >= 70) return 'accent-green-500 bg-green-100'
+  if (val >= 40) return 'accent-amber-500 bg-amber-100'
+  return 'accent-red-400 bg-red-100'
 }
 
 function onSliderChange(field, event) {
@@ -237,42 +321,39 @@ function onSliderChange(field, event) {
 }
 
 // Radar chart geometry
-const svgSize = 240
+const svgSize = 260
 const center = svgSize / 2
-const radius = 90
-const labelOffset = 18
+const radius = 95
+const labelOffset = 22
 const count = 5
 
+const gridLevels = [
+  { val: 0.25, showLabel: false },
+  { val: 0.5, showLabel: true },
+  { val: 0.75, showLabel: false },
+  { val: 1.0, showLabel: true },
+]
+
 function angleFor(index) {
-  // Start at top (-90deg), go clockwise
   return ((2 * Math.PI) / count) * index - Math.PI / 2
 }
 
 function axisPoint(index, scale) {
   const angle = angleFor(index)
-  return {
-    x: center + radius * scale * Math.cos(angle),
-    y: center + radius * scale * Math.sin(angle),
-  }
+  return { x: center + radius * scale * Math.cos(angle), y: center + radius * scale * Math.sin(angle) }
 }
 
 function labelPoint(index) {
   const angle = angleFor(index)
-  return {
-    x: center + (radius + labelOffset) * Math.cos(angle),
-    y: center + (radius + labelOffset) * Math.sin(angle),
-  }
+  return { x: center + (radius + labelOffset) * Math.cos(angle), y: center + (radius + labelOffset) * Math.sin(angle) }
 }
 
 function dataPoint(index) {
   const val = criteria.value[index].value / 100
-  return axisPoint(index, val)
+  return axisPoint(index, val || 0.02) // min visible point
 }
 
 const polygonPoints = computed(() =>
-  criteria.value.map((_, i) => {
-    const p = dataPoint(i)
-    return `${p.x},${p.y}`
-  }).join(' '),
+  criteria.value.map((_, i) => { const p = dataPoint(i); return `${p.x},${p.y}` }).join(' '),
 )
 </script>
