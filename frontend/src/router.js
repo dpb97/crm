@@ -43,6 +43,17 @@ const routes = [
     props: true,
   },
   {
+    path: '/projects',
+    name: 'LCS Projects',
+    component: () => import('@/pages/LCSProjects.vue'),
+  },
+  {
+    path: '/projects/:id',
+    name: 'LCS Project',
+    component: () => import('@/pages/LCSProject.vue'),
+    props: true,
+  },
+  {
     alias: '/notes',
     path: '/notes/view/:viewType?',
     name: 'Notes',

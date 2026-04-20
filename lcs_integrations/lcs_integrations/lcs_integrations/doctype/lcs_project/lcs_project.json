@@ -1,0 +1,230 @@
+{
+    "actions": [],
+    "allow_rename": 1,
+    "autoname": "naming_series:LCS-PROJ-.YYYY.-.####",
+    "creation": "2026-04-20 00:00:00",
+    "doctype": "DocType",
+    "engine": "InnoDB",
+    "field_order": [
+        "section_project_details",
+        "project_name",
+        "project_number",
+        "project_abbr",
+        "project_type",
+        "project_description",
+        "column_break_details",
+        "country",
+        "is_gu",
+        "salesperson",
+        "phase",
+        "status",
+        "section_customer_contacts",
+        "organization",
+        "primary_contact",
+        "contacts",
+        "section_opportunity",
+        "deal",
+        "probability",
+        "estimated_value",
+        "section_links",
+        "team_link",
+        "sharepoint_link",
+        "document_link",
+        "section_notes",
+        "notes"
+    ],
+    "fields": [
+        {
+            "fieldname": "section_project_details",
+            "fieldtype": "Section Break",
+            "label": "Project Details"
+        },
+        {
+            "fieldname": "project_name",
+            "fieldtype": "Data",
+            "in_list_view": 1,
+            "label": "Project Name",
+            "reqd": 1
+        },
+        {
+            "fieldname": "project_number",
+            "fieldtype": "Data",
+            "in_list_view": 1,
+            "label": "Project Number",
+            "read_only": 1,
+            "unique": 1
+        },
+        {
+            "fieldname": "project_abbr",
+            "fieldtype": "Data",
+            "label": "Project Abbreviation"
+        },
+        {
+            "fieldname": "project_type",
+            "fieldtype": "Select",
+            "in_list_view": 1,
+            "in_standard_filter": 1,
+            "label": "Project Type",
+            "options": "SB\nWI\nLL\nSK\nOther"
+        },
+        {
+            "fieldname": "project_description",
+            "fieldtype": "Small Text",
+            "label": "Description"
+        },
+        {
+            "fieldname": "column_break_details",
+            "fieldtype": "Column Break"
+        },
+        {
+            "fieldname": "country",
+            "fieldtype": "Link",
+            "label": "Country",
+            "options": "Country"
+        },
+        {
+            "default": "0",
+            "fieldname": "is_gu",
+            "fieldtype": "Check",
+            "label": "General Contractor (GU)"
+        },
+        {
+            "fieldname": "salesperson",
+            "fieldtype": "Link",
+            "label": "Salesperson",
+            "options": "User"
+        },
+        {
+            "default": "Inquiry",
+            "fieldname": "phase",
+            "fieldtype": "Select",
+            "in_list_view": 1,
+            "in_standard_filter": 1,
+            "label": "Phase",
+            "options": "Inquiry\nOffer\nNegotiation\nOrder\nExecution\nCompleted\nLost"
+        },
+        {
+            "default": "Open",
+            "fieldname": "status",
+            "fieldtype": "Select",
+            "in_list_view": 1,
+            "in_standard_filter": 1,
+            "label": "Status",
+            "options": "Open\nActive\nOn Hold\nCompleted\nCancelled"
+        },
+        {
+            "fieldname": "section_customer_contacts",
+            "fieldtype": "Section Break",
+            "label": "Customer & Contacts"
+        },
+        {
+            "fieldname": "organization",
+            "fieldtype": "Link",
+            "label": "Customer/Organization",
+            "options": "CRM Organization"
+        },
+        {
+            "fieldname": "primary_contact",
+            "fieldtype": "Link",
+            "label": "Primary Contact",
+            "options": "Contact"
+        },
+        {
+            "fieldname": "contacts",
+            "fieldtype": "Table",
+            "label": "Project Contacts",
+            "options": "LCS Project Contact"
+        },
+        {
+            "fieldname": "section_opportunity",
+            "fieldtype": "Section Break",
+            "label": "Opportunity"
+        },
+        {
+            "fieldname": "deal",
+            "fieldtype": "Link",
+            "label": "Linked Deal",
+            "options": "CRM Deal"
+        },
+        {
+            "fieldname": "probability",
+            "fieldtype": "Percent",
+            "label": "Win Probability"
+        },
+        {
+            "fieldname": "estimated_value",
+            "fieldtype": "Currency",
+            "label": "Estimated Value"
+        },
+        {
+            "fieldname": "section_links",
+            "fieldtype": "Section Break",
+            "label": "Links"
+        },
+        {
+            "fieldname": "team_link",
+            "fieldtype": "Data",
+            "label": "MS Teams Link"
+        },
+        {
+            "fieldname": "sharepoint_link",
+            "fieldtype": "Data",
+            "label": "SharePoint Link"
+        },
+        {
+            "fieldname": "document_link",
+            "fieldtype": "Attach",
+            "label": "Initial Document"
+        },
+        {
+            "fieldname": "section_notes",
+            "fieldtype": "Section Break",
+            "label": "Notes"
+        },
+        {
+            "fieldname": "notes",
+            "fieldtype": "Text Editor",
+            "label": "Notes"
+        }
+    ],
+    "index_web_pages_for_search": 0,
+    "is_submittable": 0,
+    "links": [],
+    "modified": "2026-04-20 00:00:00",
+    "modified_by": "Administrator",
+    "module": "LCS Integrations",
+    "name": "LCS Project",
+    "name_case": "",
+    "owner": "Administrator",
+    "permissions": [
+        {
+            "create": 1,
+            "delete": 1,
+            "export": 1,
+            "read": 1,
+            "report": 1,
+            "role": "System Manager",
+            "write": 1
+        },
+        {
+            "create": 1,
+            "export": 1,
+            "read": 1,
+            "report": 1,
+            "role": "Sales User",
+            "write": 1
+        },
+        {
+            "read": 1,
+            "role": "Sales Manager",
+            "write": 1,
+            "create": 1,
+            "delete": 1,
+            "export": 1,
+            "report": 1
+        }
+    ],
+    "sort_field": "modified",
+    "sort_order": "DESC",
+    "track_changes": 1
+}

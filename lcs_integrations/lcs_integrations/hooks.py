@@ -42,6 +42,12 @@ doc_events = {
     "Communication": {
         "after_insert": "lcs_integrations.email_domain_autolink.hooks.auto_link",
     },
+    "LCS Project": {
+        "validate": "lcs_integrations.projects.notifications.on_project_phase_change",
+    },
+    "LCS Opportunity Matrix": {
+        "validate": "lcs_integrations.projects.notifications.on_high_probability",
+    },
 }
 
 # Scheduled tasks.
