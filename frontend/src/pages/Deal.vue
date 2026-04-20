@@ -127,6 +127,23 @@
           </div>
         </div>
       </div>
+      <!-- LCS: abas Sync Status + Deep Link -->
+      <div
+        v-if="doc.name"
+        class="flex flex-wrap items-center gap-2 border-b px-5 py-3"
+      >
+        <SyncStatusBadge
+          :status="doc.abas_id ? 'synced' : 'disabled'"
+          system="abas"
+          :detail="doc.abas_id ? `abas ID: ${doc.abas_id}` : __('Deal — not yet synced to abas')"
+        />
+        <AbasDeepLink
+          v-if="doc.abas_id"
+          :entity="doc.abas_id"
+          kind="customer"
+          :label="__('Open in abas')"
+        />
+      </div>
       <SLASection
         v-if="doc.sla_status"
         v-model="doc"
@@ -367,6 +384,8 @@ import CollapsibleSection from '@/components/CollapsibleSection.vue'
 import SidePanelLayout from '@/components/SidePanelLayout.vue'
 import SLASection from '@/components/SLASection.vue'
 import CustomActions from '@/components/CustomActions.vue'
+import SyncStatusBadge from '@/components/lcs/SyncStatusBadge.vue'
+import AbasDeepLink from '@/components/lcs/AbasDeepLink.vue'
 import {
   openWebsite,
   setupCustomizations,

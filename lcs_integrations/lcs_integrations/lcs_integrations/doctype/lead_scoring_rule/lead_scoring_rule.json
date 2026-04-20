@@ -1,0 +1,52 @@
+{
+    "actions": [],
+    "creation": "2026-04-16 00:00:00",
+    "doctype": "DocType",
+    "engine": "InnoDB",
+    "field_order": [
+        "rule_name",
+        "active",
+        "column_break_1",
+        "priority",
+        "section_condition",
+        "field_name",
+        "operator",
+        "value",
+        "section_effect",
+        "score_delta",
+        "notes"
+    ],
+    "fields": [
+        { "fieldname": "rule_name", "fieldtype": "Data", "in_list_view": 1, "label": "Rule Name", "reqd": 1, "unique": 1 },
+        { "fieldname": "active", "fieldtype": "Check", "default": "1", "in_list_view": 1, "label": "Active" },
+        { "fieldname": "column_break_1", "fieldtype": "Column Break" },
+        { "fieldname": "priority", "fieldtype": "Int", "default": "0", "label": "Priority", "description": "Higher runs first" },
+        { "fieldname": "section_condition", "fieldtype": "Section Break", "label": "Condition" },
+        { "fieldname": "field_name", "fieldtype": "Data", "label": "Field Name", "reqd": 1, "description": "Lead field to evaluate (e.g. lcs_source, country)" },
+        { "fieldname": "operator", "fieldtype": "Select", "label": "Operator", "options": "eq\nneq\nin\nnot_in\ngt\nlt\ncontains", "reqd": 1 },
+        { "fieldname": "value", "fieldtype": "Data", "label": "Value", "reqd": 1 },
+        { "fieldname": "section_effect", "fieldtype": "Section Break", "label": "Effect" },
+        { "fieldname": "score_delta", "fieldtype": "Int", "in_list_view": 1, "label": "Score Delta", "reqd": 1 },
+        { "fieldname": "notes", "fieldtype": "Small Text", "label": "Notes" }
+    ],
+    "index_web_pages_for_search": 0,
+    "links": [],
+    "modified": "2026-04-16 00:00:00",
+    "modified_by": "Administrator",
+    "module": "LCS Integrations",
+    "name": "Lead Scoring Rule",
+    "owner": "Administrator",
+    "permissions": [
+        {
+            "role": "System Manager",
+            "read": 1, "write": 1, "create": 1, "delete": 1, "export": 1, "report": 1
+        },
+        {
+            "role": "Sales Manager",
+            "read": 1, "write": 1, "create": 1, "delete": 0, "export": 1, "report": 1
+        }
+    ],
+    "sort_field": "priority",
+    "sort_order": "DESC",
+    "track_changes": 1
+}

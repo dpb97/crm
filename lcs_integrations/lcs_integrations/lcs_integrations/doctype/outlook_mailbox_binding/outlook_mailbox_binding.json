@@ -1,0 +1,44 @@
+{
+    "actions": [],
+    "creation": "2026-04-16 00:00:00",
+    "doctype": "DocType",
+    "engine": "InnoDB",
+    "field_order": [
+        "user",
+        "graph_mailbox",
+        "column_break_1",
+        "is_active",
+        "section_sync",
+        "delta_token",
+        "last_sync",
+        "section_error",
+        "last_error"
+    ],
+    "fields": [
+        { "fieldname": "user", "fieldtype": "Link", "in_list_view": 1, "label": "User", "options": "User", "reqd": 1, "unique": 1 },
+        { "fieldname": "graph_mailbox", "fieldtype": "Data", "in_list_view": 1, "label": "Graph Mailbox", "reqd": 1 },
+        { "fieldname": "column_break_1", "fieldtype": "Column Break" },
+        { "fieldname": "is_active", "fieldtype": "Check", "default": "1", "label": "Active" },
+        { "fieldname": "section_sync", "fieldtype": "Section Break", "label": "Sync State" },
+        { "fieldname": "delta_token", "fieldtype": "Long Text", "label": "Delta Token", "read_only": 1 },
+        { "fieldname": "last_sync", "fieldtype": "Datetime", "label": "Last Sync", "read_only": 1 },
+        { "fieldname": "section_error", "fieldtype": "Section Break", "label": "Error", "depends_on": "eval:doc.last_error" },
+        { "fieldname": "last_error", "fieldtype": "Long Text", "label": "Last Error", "read_only": 1 }
+    ],
+    "index_web_pages_for_search": 0,
+    "links": [],
+    "modified": "2026-04-16 00:00:00",
+    "modified_by": "Administrator",
+    "module": "LCS Integrations",
+    "name": "Outlook Mailbox Binding",
+    "owner": "Administrator",
+    "permissions": [
+        {
+            "role": "System Manager",
+            "read": 1, "write": 1, "create": 1, "delete": 1, "export": 1, "report": 1
+        }
+    ],
+    "sort_field": "modified",
+    "sort_order": "DESC",
+    "track_changes": 1
+}

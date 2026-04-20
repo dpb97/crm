@@ -177,6 +177,25 @@
           </div>
         </template>
       </FileUploader>
+      <!-- LCS: Lead Score + Sync Status -->
+      <div
+        v-if="doc.name"
+        class="flex flex-wrap items-center gap-2 border-b px-5 py-3"
+      >
+        <div
+          v-if="doc.lcs_score != null"
+          class="inline-flex items-center gap-1.5 rounded-full bg-lcs-primary/10 px-2.5 py-0.5 text-xs font-semibold text-lcs-primary ring-1 ring-inset ring-lcs-primary/30"
+          :title="__('Lead Score (computed by LCS rules)')"
+        >
+          <svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          Score: {{ doc.lcs_score }}
+        </div>
+        <SyncStatusBadge
+          :status="doc.abas_id ? 'synced' : 'disabled'"
+          system="abas"
+          :detail="doc.abas_id ? `abas ID: ${doc.abas_id}` : __('Lead — not yet synced to abas')"
+        />
+      </div>
       <SLASection
         v-if="doc.sla_status"
         v-model="doc"
@@ -259,6 +278,7 @@ import FilesUploader from '@/components/FilesUploader/FilesUploader.vue'
 import SidePanelLayout from '@/components/SidePanelLayout.vue'
 import SLASection from '@/components/SLASection.vue'
 import CustomActions from '@/components/CustomActions.vue'
+import SyncStatusBadge from '@/components/lcs/SyncStatusBadge.vue'
 import ConvertToDealModal from '@/components/Modals/ConvertToDealModal.vue'
 import {
   openWebsite,

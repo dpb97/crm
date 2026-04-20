@@ -1,0 +1,1 @@
+lcs_integrations.patches.v1_0.install_custom_fields
