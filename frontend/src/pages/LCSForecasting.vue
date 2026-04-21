@@ -80,7 +80,10 @@
             <div
               v-for="(bucket, idx) in filteredBuckets"
               :key="bucket.period"
-              class="group relative flex flex-1 flex-col justify-end"
+              class="group relative flex flex-1 flex-col justify-end focus:outline-none focus:ring-2 focus:ring-lcs-secondary rounded"
+              role="img"
+              tabindex="0"
+              :aria-label="`${formatPeriod(bucket.period)}: ${bucket.projects.length} ${__('projects')}, ${formatCurrency(bucket.total_value)} ${__('pipeline')}, ${formatCurrency(bucket.weighted_value)} ${__('weighted')}`"
             >
               <!-- Tooltip on hover — H3: Feedback -->
               <div class="absolute -top-14 left-1/2 z-10 hidden -translate-x-1/2 whitespace-nowrap rounded-lg bg-gray-900 px-3 py-2 text-xs text-white shadow-lg group-hover:block">

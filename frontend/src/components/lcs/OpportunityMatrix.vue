@@ -17,7 +17,7 @@
       <div>
         <h3 class="text-lg font-semibold text-gray-900">{{ __('Opportunity Matrix') }}</h3>
         <p class="mt-0.5 text-sm text-gray-500">
-          {{ __('Rate each dimension from 0 (weak) to 100 (strong). The system calculates an overall score.') }}
+          {{ __('Rate each dimension from 0 (weak) to 100 (strong). Use mouse or arrow keys.') }}
         </p>
       </div>
       <div class="flex items-center gap-4">

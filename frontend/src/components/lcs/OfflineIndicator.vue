@@ -11,6 +11,25 @@
     @close="resolverMutation = null"
   />
 
+  <!-- Discard confirmation -->
+  <Dialog
+    :model-value="discardCandidateId !== null"
+    @update:model-value="v => !v && (discardCandidateId = null)"
+    :options="{ title: __('Discard pending change?'), size: 'sm' }"
+  >
+    <template #body-content>
+      <p class="text-sm text-gray-700">
+        {{ __('This change will not be sent to the server. It cannot be recovered.') }}
+      </p>
+    </template>
+    <template #actions>
+      <div class="flex justify-end gap-2">
+        <Button variant="ghost" @click="discardCandidateId = null" :label="__('Cancel')" />
+        <Button variant="solid" theme="red" @click="confirmDiscard" :label="__('Discard')" iconLeft="trash-2" />
+      </div>
+    </template>
+  </Dialog>
+
   <!-- Top banner -->
   <Transition
     enter-active-class="transition ease-out duration-200"
@@ -157,7 +176,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { FeatherIcon } from 'frappe-ui'
+import { FeatherIcon, Dialog, Button } from 'frappe-ui'
 import { listMutations, onQueueChange } from '@/utils/offlineDB'
 import { drain, retryMutation, discardMutation } from '@/utils/syncEngine'
 import ConflictResolver from '@/components/lcs/ConflictResolver.vue'
@@ -243,9 +262,16 @@ async function onRetry(id) {
   refresh()
 }
 
-async function onDiscard(id) {
-  if (!confirm(__('Discard this pending change? It will not be sent to the server.'))) return
-  await discardMutation(id)
+// Custom confirmation instead of native confirm() — native dialog is
+// blocked under strict CSP and looks out of place in the app.
+const discardCandidateId = ref(null)
+function onDiscard(id) {
+  discardCandidateId.value = id
+}
+async function confirmDiscard() {
+  if (discardCandidateId.value == null) return
+  await discardMutation(discardCandidateId.value)
+  discardCandidateId.value = null
   refresh()
 }
 

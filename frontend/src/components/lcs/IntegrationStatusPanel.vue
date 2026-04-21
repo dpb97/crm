@@ -18,16 +18,18 @@
         {{ __('Integrated Systems') }}
       </h3>
       <button
-        class="text-xs text-gray-400 hover:text-gray-600"
+        class="flex items-center gap-1 text-xs text-gray-400 transition hover:text-gray-600 disabled:cursor-not-allowed disabled:opacity-50"
         @click="refresh"
         :disabled="loading"
+        :aria-label="__('Refresh integration status')"
+        :aria-busy="loading"
       >
-        <FeatherIcon name="refresh-cw" class="h-3 w-3 inline" :class="loading ? 'animate-spin' : ''" />
-        {{ __('Refresh') }}
+        <FeatherIcon name="refresh-cw" class="h-3 w-3" :class="loading ? 'animate-spin' : ''" />
+        {{ loading ? __('Refreshing...') : __('Refresh') }}
       </button>
     </div>
 
-    <div class="grid grid-cols-2 gap-2 sm:grid-cols-3">
+    <div class="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6 lg:gap-3">
       <SystemCard
         label="CRM"
         icon="users"

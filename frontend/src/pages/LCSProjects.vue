@@ -150,11 +150,21 @@
       <table v-else class="w-full text-sm">
         <thead class="sticky top-0 z-10 bg-gray-50">
           <tr class="border-b text-left text-xs font-medium uppercase tracking-wide text-gray-500">
-            <th class="px-5 py-3 cursor-pointer hover:text-gray-700" @click="toggleSort('project_number')">
+            <th
+              class="px-5 py-3 cursor-pointer select-none transition hover:bg-gray-100 hover:text-gray-900"
+              @click="toggleSort('project_number')"
+              :title="__('Click to sort by project number')"
+              :aria-sort="sortField === 'project_number' ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'"
+            >
               {{ __('Project #') }}
               <SortIcon :active="sortField === 'project_number'" :direction="sortDirection" />
             </th>
-            <th class="px-4 py-3 cursor-pointer hover:text-gray-700" @click="toggleSort('project_name')">
+            <th
+              class="px-4 py-3 cursor-pointer select-none transition hover:bg-gray-100 hover:text-gray-900"
+              @click="toggleSort('project_name')"
+              :title="__('Click to sort by name')"
+              :aria-sort="sortField === 'project_name' ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'"
+            >
               {{ __('Name') }}
               <SortIcon :active="sortField === 'project_name'" :direction="sortDirection" />
             </th>
@@ -163,11 +173,21 @@
             <th class="px-4 py-3">{{ __('Phase') }}</th>
             <th class="px-4 py-3">{{ __('Status') }}</th>
             <th class="px-4 py-3">{{ __('Salesperson') }}</th>
-            <th class="px-4 py-3 text-right cursor-pointer hover:text-gray-700" @click="toggleSort('probability')">
+            <th
+              class="px-4 py-3 text-right cursor-pointer select-none transition hover:bg-gray-100 hover:text-gray-900"
+              @click="toggleSort('probability')"
+              :title="__('Click to sort by probability')"
+              :aria-sort="sortField === 'probability' ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'"
+            >
               {{ __('Prob.') }}
               <SortIcon :active="sortField === 'probability'" :direction="sortDirection" />
             </th>
-            <th class="px-4 py-3 text-right cursor-pointer hover:text-gray-700" @click="toggleSort('estimated_value')">
+            <th
+              class="px-4 py-3 text-right cursor-pointer select-none transition hover:bg-gray-100 hover:text-gray-900"
+              @click="toggleSort('estimated_value')"
+              :title="__('Click to sort by value')"
+              :aria-sort="sortField === 'estimated_value' ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'"
+            >
               {{ __('Value') }}
               <SortIcon :active="sortField === 'estimated_value'" :direction="sortDirection" />
             </th>

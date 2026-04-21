@@ -340,9 +340,20 @@
                 </div>
               </div>
 
-              <!-- Offers list -->
-              <div v-if="offersResource.loading" class="flex items-center justify-center py-12">
-                <div class="h-6 w-6 animate-spin rounded-full border-2 border-gray-200 border-t-lcs-secondary" />
+              <!-- Offers list — skeleton prevents layout shift on slow network -->
+              <div v-if="offersResource.loading && !offers.length" class="space-y-2">
+                <div v-for="i in 3" :key="i" class="animate-pulse rounded-xl border bg-white p-4">
+                  <div class="flex items-start justify-between gap-4">
+                    <div class="flex-1 space-y-2">
+                      <div class="h-4 w-48 rounded bg-gray-200" />
+                      <div class="h-3 w-36 rounded bg-gray-100" />
+                    </div>
+                    <div class="space-y-2">
+                      <div class="h-5 w-20 rounded-full bg-gray-200" />
+                      <div class="h-5 w-24 rounded bg-gray-100" />
+                    </div>
+                  </div>
+                </div>
               </div>
               <div v-else-if="!offers.length" class="flex flex-col items-center rounded-xl border border-dashed border-gray-200 py-12">
                 <FeatherIcon name="file-text" class="h-8 w-8 text-gray-300" />
@@ -615,7 +626,7 @@
     <template #actions>
       <div class="flex justify-end gap-2">
         <Button variant="ghost" @click="showNewOfferDialog = false" :label="__('Cancel')" />
-        <Button variant="solid" @click="createOffer" :loading="creatingOffer" :disabled="!newOffer.offer_title" :label="__('Create')" iconLeft="plus" />
+        <Button variant="solid" @click="createOffer" :loading="creatingOffer" :disabled="!newOffer.offer_title || creatingOffer" :label="__('Create')" iconLeft="plus" />
       </div>
     </template>
   </Dialog>
@@ -773,7 +784,7 @@ const justCopied = ref(false)
 function copyId() {
   copyToClipboard(projectId.value)
   justCopied.value = true
-  setTimeout(() => { justCopied.value = false }, 2000)
+  setTimeout(() => { justCopied.value = false }, 3500)
   toast({ title: __('Copied'), icon: 'check', iconClasses: 'text-green-500' })
 }
 
@@ -832,6 +843,7 @@ const newOffer = ref({
 })
 
 async function createOffer() {
+  if (creatingOffer.value) return  // guard against double-submit
   creatingOffer.value = true
   try {
     const res = createResource({
