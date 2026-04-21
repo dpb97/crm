@@ -4,6 +4,7 @@
     <Layout v-else-if="session.isLoggedIn" class="isolate">
       <router-view :key="$route.fullPath" />
     </Layout>
+    <OfflineIndicator />
     <Dialogs />
     <EventNotificationPopup />
   </FrappeUIProvider>
@@ -12,6 +13,7 @@
 <script setup>
 import NotPermitted from '@/pages/NotPermitted.vue'
 import EventNotificationPopup from '@/components/EventNotificationPopup.vue'
+import OfflineIndicator from '@/components/lcs/OfflineIndicator.vue'
 import { Dialogs } from '@/utils/dialogs'
 import { sessionStore } from '@/stores/session'
 import { FrappeUIProvider, setConfig, useTheme } from 'frappe-ui'

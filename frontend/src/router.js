@@ -54,6 +54,11 @@ const routes = [
     props: true,
   },
   {
+    path: '/forecasting',
+    name: 'LCS Forecasting',
+    component: () => import('@/pages/LCSForecasting.vue'),
+  },
+  {
     alias: '/notes',
     path: '/notes/view/:viewType?',
     name: 'Notes',

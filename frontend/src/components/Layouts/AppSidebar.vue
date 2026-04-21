@@ -152,6 +152,7 @@
 import BrushCleaningIcon from '~icons/lucide/brush-cleaning'
 import LucideLayoutDashboard from '~icons/lucide/layout-dashboard'
 import LucideFolderKanban from '~icons/lucide/folder-kanban'
+import LucideTrendingUp from '~icons/lucide/trending-up'
 import CRMLogo from '@/components/Icons/CRMLogo.vue'
 import InviteIcon from '@/components/Icons/InviteIcon.vue'
 import ConvertIcon from '@/components/Icons/ConvertIcon.vue'
@@ -234,6 +235,11 @@ const links = [
     label: 'Projects',
     icon: LucideFolderKanban,
     to: 'LCS Projects',
+  },
+  {
+    label: 'Forecasting',
+    icon: LucideTrendingUp,
+    to: 'LCS Forecasting',
   },
   {
     label: 'Contacts',

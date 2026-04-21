@@ -24,6 +24,8 @@
         "contacts",
         "section_opportunity",
         "deal",
+        "source",
+        "expected_close_date",
         "probability",
         "section_pricing",
         "budget_customer",
@@ -150,6 +152,20 @@
             "fieldtype": "Link",
             "label": "Linked Deal",
             "options": "CRM Deal"
+        },
+        {
+            "description": "How this opportunity came to us",
+            "fieldname": "source",
+            "fieldtype": "Select",
+            "in_standard_filter": 1,
+            "label": "Source / Channel",
+            "options": "\nDirect\nReferral\nWebsite\nTrade Fair\nPartner\nEmail Campaign\nCold Call\nExisting Customer\nOther"
+        },
+        {
+            "description": "Expected deal close / order date — used for forecasting",
+            "fieldname": "expected_close_date",
+            "fieldtype": "Date",
+            "label": "Expected Close Date"
         },
         {
             "fieldname": "probability",

@@ -180,16 +180,24 @@
                   />
                 </div>
                 <div v-if="editingNotes" class="space-y-2">
-                  <textarea
-                    v-model="editNotesValue"
-                    class="w-full rounded-lg border border-amber-200 bg-white px-3 py-2 text-sm text-gray-800 focus:border-amber-400 focus:ring-1 focus:ring-amber-400"
-                    rows="5"
-                    :placeholder="__('Write project notes, internal reminders, or next steps...')"
-                    ref="notesInput"
-                  />
-                  <div class="flex gap-2">
-                    <Button variant="solid" size="sm" @click="saveNotes" :label="__('Save')" iconLeft="check" />
-                    <Button variant="ghost" size="sm" @click="cancelNotesEdit" :label="__('Cancel')" />
+                  <div class="relative">
+                    <textarea
+                      v-model="editNotesValue"
+                      class="w-full rounded-lg border border-amber-200 bg-white px-3 py-2 pr-10 text-sm text-gray-800 focus:border-amber-400 focus:ring-1 focus:ring-amber-400"
+                      rows="5"
+                      :placeholder="__('Write project notes, internal reminders, or next steps...')"
+                      ref="notesInput"
+                    />
+                    <div class="absolute right-2 top-2">
+                      <VoiceInput lang="de-DE" @transcript="onVoiceNote" />
+                    </div>
+                  </div>
+                  <div class="flex items-center justify-between gap-2">
+                    <div class="flex gap-2">
+                      <Button variant="solid" size="sm" @click="saveNotes" :label="__('Save')" iconLeft="check" />
+                      <Button variant="ghost" size="sm" @click="cancelNotesEdit" :label="__('Cancel')" />
+                    </div>
+                    <span class="text-[10px] text-gray-400">{{ __('Click mic for voice input') }}</span>
                   </div>
                 </div>
                 <div v-else-if="doc.notes" class="whitespace-pre-wrap text-sm text-gray-800">
@@ -564,6 +572,24 @@
   <Dialog v-model="showNewOfferDialog" :options="{ title: __('New Offer'), size: 'md' }">
     <template #body-content>
       <div class="space-y-4">
+        <!-- Template selector — quick-start from predefined template -->
+        <div v-if="offerTemplates.length" class="rounded-lg border border-lcs-secondary/20 bg-lcs-secondary/5 p-3">
+          <label class="text-xs font-semibold uppercase tracking-wide text-lcs-primary">{{ __('Start from Template') }}</label>
+          <div class="mt-2 flex flex-wrap gap-2">
+            <button
+              v-for="t in offerTemplates"
+              :key="t.name"
+              class="rounded-lg border bg-white px-3 py-1.5 text-xs font-medium text-gray-700 transition hover:border-lcs-secondary hover:bg-lcs-secondary/10"
+              @click="applyTemplate(t)"
+            >
+              <span class="flex items-center gap-1">
+                <FeatherIcon name="file-plus" class="h-3 w-3" />
+                {{ t.template_name }}
+                <span v-if="t.usage_count" class="ml-1 text-[10px] text-gray-400">{{ t.usage_count }}×</span>
+              </span>
+            </button>
+          </div>
+        </div>
         <FormControl :label="__('Offer Title')" v-model="newOffer.offer_title" type="text" :placeholder="__('e.g. Initial proposal, Revision 2, ...')" required />
         <div class="grid grid-cols-2 gap-4">
           <FormControl :label="__('Value (EUR)')" v-model="newOffer.value" type="number" />
@@ -600,6 +626,7 @@ import SyncStatusBadge from '@/components/lcs/SyncStatusBadge.vue'
 import AbasDeepLink from '@/components/lcs/AbasDeepLink.vue'
 import OpportunityMatrix from '@/components/lcs/OpportunityMatrix.vue'
 import PriceStageCard from '@/components/lcs/PriceStageCard.vue'
+import VoiceInput from '@/components/lcs/VoiceInput.vue'
 import { copyToClipboard, timeAgo } from '@/utils'
 
 const SideField = {
@@ -693,6 +720,14 @@ function saveNotes() {
   editingNotes.value = false
 }
 
+// Voice input — append transcript to current notes
+let voiceBaseline = ''
+function onVoiceNote({ final, interim }) {
+  if (final && voiceBaseline === '') voiceBaseline = editNotesValue.value || ''
+  const separator = voiceBaseline ? (voiceBaseline.endsWith('\n') ? '' : '\n') : ''
+  editNotesValue.value = voiceBaseline + separator + (final || '') + (interim || '')
+}
+
 // Description edit
 const editingDescription = ref(false)
 const editDescriptionValue = ref('')
@@ -734,6 +769,33 @@ const offerStatusCounts = computed(() => {
 
 const showNewOfferDialog = ref(false)
 const creatingOffer = ref(false)
+
+// Offer templates
+const templatesResource = createResource({
+  url: 'lcs_integrations.projects.api.get_offer_templates',
+  auto: true,
+  onSuccess: () => {},
+})
+const offerTemplates = computed(() => templatesResource.data || [])
+
+function applyTemplate(t) {
+  const projectName = doc.value.project_name || ''
+  const projectNumber = doc.value.project_number || ''
+  newOffer.value = {
+    ...newOffer.value,
+    offer_title: (t.default_title || '')
+      .replace('{project_number}', projectNumber)
+      .replace('{project_name}', projectName) || `Offer for ${projectName}`,
+    probability: t.default_probability || null,
+    notes: t.default_notes || '',
+    value: doc.value.richtpreis || doc.value.budget_customer || null,
+    valid_until: t.default_validity_days
+      ? new Date(Date.now() + t.default_validity_days * 86400000).toISOString().split('T')[0]
+      : '',
+  }
+  toast({ title: __('Template applied'), text: t.template_name, icon: 'check', iconClasses: 'text-green-500' })
+}
+
 const newOffer = ref({
   offer_title: '',
   value: null,

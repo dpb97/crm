@@ -22,6 +22,28 @@
     <!-- H1: Visibility of system status — result count + active filters indicator -->
     <div class="flex items-center justify-between border-b bg-white px-5 py-3">
       <div class="flex items-center gap-4">
+        <!-- My Projects toggle — personalized view -->
+        <div class="flex rounded-lg border bg-white p-0.5">
+          <Tooltip :text="__('Show all projects')">
+            <button
+              class="rounded-md px-3 py-1 text-xs font-medium transition"
+              :class="!onlyMine ? 'bg-lcs-primary text-white' : 'text-gray-600 hover:bg-gray-50'"
+              @click="onlyMine = false"
+            >
+              {{ __('All') }}
+            </button>
+          </Tooltip>
+          <Tooltip :text="__('Show only projects assigned to me')">
+            <button
+              class="flex items-center gap-1 rounded-md px-3 py-1 text-xs font-medium transition"
+              :class="onlyMine ? 'bg-lcs-primary text-white' : 'text-gray-600 hover:bg-gray-50'"
+              @click="onlyMine = true"
+            >
+              <FeatherIcon name="user" class="h-3 w-3" />
+              {{ __('Mine') }}
+            </button>
+          </Tooltip>
+        </div>
         <!-- Filter bar — H6: Recognition rather than recall -->
         <FormControl
           type="select"
@@ -325,7 +347,11 @@
 import { ref, computed, reactive, watch, onMounted, onUnmounted } from 'vue'
 import { createListResource, createResource, Breadcrumbs, Button, FormControl, Dialog, Tooltip, FeatherIcon, toast } from 'frappe-ui'
 import { useRouter } from 'vue-router'
+import { useStorage } from '@vueuse/core'
+import { sessionStore } from '@/stores/session'
 import LayoutHeader from '@/components/LayoutHeader.vue'
+
+const session = sessionStore()
 
 // H7: Flexibility — inline sort indicator component
 const SortIcon = {
@@ -337,6 +363,8 @@ const router = useRouter()
 
 // State
 const filters = reactive({ project_type: '', phase: '', country: '' })
+// User preference persists across reloads
+const onlyMine = useStorage('lcs-projects-only-mine', false)
 const showNewDialog = ref(false)
 const creating = ref(false)
 const selectedIndex = ref(-1)
@@ -386,6 +414,7 @@ const activeFilters = computed(() => {
   if (filters.project_type) f.project_type = filters.project_type
   if (filters.phase) f.phase = filters.phase
   if (filters.country) f.country = ['like', `%${filters.country}%`]
+  if (onlyMine.value) f.salesperson = session.user
   return f
 })
 
