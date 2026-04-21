@@ -5,7 +5,16 @@
     </template>
     <template v-if="doc.name" #right-header>
       <div class="flex items-center gap-3">
-        <span v-if="lastSaved" class="text-xs text-gray-400">{{ __('Saved') }} {{ lastSaved }}</span>
+        <!-- Pending-sync indicator for this specific project -->
+        <span
+          v-if="pendingChangeCount > 0"
+          class="flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700 border border-amber-200"
+          :title="__('Changes queued for sync')"
+        >
+          <FeatherIcon name="clock" class="h-3 w-3 animate-pulse" />
+          {{ pendingChangeCount }} {{ __('pending') }}
+        </span>
+        <span v-else-if="lastSaved" class="text-xs text-gray-400">{{ __('Saved') }} {{ lastSaved }}</span>
         <Dropdown v-if="phaseDropdownOptions.length" :options="phaseDropdownOptions" placement="right">
           <template #default="{ open }">
             <Button :iconRight="open ? 'chevron-up' : 'chevron-down'">
@@ -613,7 +622,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, nextTick } from 'vue'
+import { ref, computed, watch, nextTick, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   createDocumentResource, createListResource, createResource,
@@ -627,6 +636,8 @@ import AbasDeepLink from '@/components/lcs/AbasDeepLink.vue'
 import OpportunityMatrix from '@/components/lcs/OpportunityMatrix.vue'
 import PriceStageCard from '@/components/lcs/PriceStageCard.vue'
 import VoiceInput from '@/components/lcs/VoiceInput.vue'
+import { queueMutation, cachePut, listMutations, onQueueChange } from '@/utils/offlineDB'
+import { drain } from '@/utils/syncEngine'
 import { copyToClipboard, timeAgo } from '@/utils'
 
 const SideField = {
@@ -658,6 +669,18 @@ const breadcrumbs = computed(() => [
 ])
 
 const lastSaved = computed(() => doc.value.modified ? (timeAgo ? timeAgo(doc.value.modified) : '') : '')
+
+// Pending mutations for this project
+const pendingChangeCount = ref(0)
+async function refreshPending() {
+  const all = await listMutations()
+  pendingChangeCount.value = all.filter(m =>
+    m.doctype === 'LCS Project' && m.name === projectId.value && (m.status === 'pending' || m.status === 'syncing' || m.status === 'failed')
+  ).length
+}
+refreshPending()
+const unsubQueue = onQueueChange(refreshPending)
+onUnmounted(() => { if (unsubQueue) unsubQueue() })
 
 // Budget vs Angebot variance (% under/over customer budget)
 const budgetVsAngebot = computed(() => {
@@ -902,11 +925,54 @@ const activities = createListResource({
   auto: true,
 })
 
-function updateField(fieldname, value) {
-  project.setValue.submit({ [fieldname]: value }).then(() => {
-    toast({ title: __('Updated'), icon: 'check-circle', iconClasses: 'text-green-500' })
-  }).catch((err) => {
-    toast({ title: __('Update failed'), text: err.messages?.[0], icon: 'alert-circle', iconClasses: 'text-red-500' })
+async function updateField(fieldname, value) {
+  // Optimistic: cache the updated doc immediately so offline reads see it
+  if (project.doc) {
+    const updated = { ...project.doc, [fieldname]: value }
+    await cachePut('LCS Project', projectId.value, updated)
+  }
+
+  if (navigator.onLine) {
+    // Online path: direct server call via existing Frappe resource
+    try {
+      await project.setValue.submit({ [fieldname]: value })
+      toast({ title: __('Updated'), icon: 'check-circle', iconClasses: 'text-green-500' })
+    } catch (err) {
+      // Fallback: queue so sync engine retries when connection recovers
+      await queueMutation({
+        doctype: 'LCS Project',
+        name: projectId.value,
+        method: 'update',
+        params: { [fieldname]: value },
+        description: `Update ${fieldname}`,
+      })
+      toast({
+        title: __('Queued for sync'),
+        text: err.messages?.[0] || __('Network error — will retry automatically'),
+        icon: 'clock',
+        iconClasses: 'text-amber-500',
+      })
+    }
+    return
+  }
+
+  // Offline path: queue, apply optimistic update to visible doc
+  await queueMutation({
+    doctype: 'LCS Project',
+    name: projectId.value,
+    method: 'update',
+    params: { [fieldname]: value },
+    description: `Update ${fieldname}`,
+  })
+  // Refresh the Frappe resource's in-memory doc so the UI reflects the change
+  if (project.doc) {
+    project.doc[fieldname] = value
+  }
+  toast({
+    title: __('Saved offline'),
+    text: __('Will sync when reconnected'),
+    icon: 'wifi-off',
+    iconClasses: 'text-amber-500',
   })
 }
 
