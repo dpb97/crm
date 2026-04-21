@@ -19,3 +19,11 @@ class LCSProject(Document):
     def validate(self):
         if self.project_abbr:
             self.project_abbr = self.project_abbr.upper()
+        self.backfill_estimated_value()
+
+    def backfill_estimated_value(self):
+        """Estimated value falls back: Angebot → Richtpreis → Budget.
+        User can still override manually, but only applies the fallback
+        when estimated_value is empty."""
+        if not self.estimated_value:
+            self.estimated_value = self.angebot_total or self.richtpreis or self.budget_customer or 0

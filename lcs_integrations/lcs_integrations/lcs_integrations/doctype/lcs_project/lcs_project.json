@@ -25,6 +25,11 @@
         "section_opportunity",
         "deal",
         "probability",
+        "section_pricing",
+        "budget_customer",
+        "richtpreis",
+        "column_break_pricing",
+        "angebot_total",
         "estimated_value",
         "section_links",
         "team_link",
@@ -152,6 +157,34 @@
             "label": "Win Probability"
         },
         {
+            "fieldname": "section_pricing",
+            "fieldtype": "Section Break",
+            "label": "Pricing Stages"
+        },
+        {
+            "description": "What the customer indicates they are willing to spend",
+            "fieldname": "budget_customer",
+            "fieldtype": "Currency",
+            "label": "Budget (Customer)"
+        },
+        {
+            "description": "Internal rough estimate before formal quote",
+            "fieldname": "richtpreis",
+            "fieldtype": "Currency",
+            "label": "Richtpreis (Internal Estimate)"
+        },
+        {
+            "fieldname": "column_break_pricing",
+            "fieldtype": "Column Break"
+        },
+        {
+            "description": "Formal quoted total (from accepted or latest offer)",
+            "fieldname": "angebot_total",
+            "fieldtype": "Currency",
+            "label": "Angebot (Quoted Total)"
+        },
+        {
+            "description": "Working estimate used for pipeline value (falls back to Angebot → Richtpreis → Budget)",
             "fieldname": "estimated_value",
             "fieldtype": "Currency",
             "label": "Estimated Value"

@@ -275,6 +275,24 @@
         </fieldset>
 
         <fieldset class="space-y-3">
+          <legend class="text-xs font-semibold uppercase tracking-wide text-gray-400">{{ __('Pricing (optional)') }}</legend>
+          <div class="grid grid-cols-2 gap-4">
+            <FormControl
+              :label="__('Budget (Customer)')"
+              v-model.number="newProject.budget_customer"
+              type="number"
+              :placeholder="__('What customer wants to spend')"
+            />
+            <FormControl
+              :label="__('Richtpreis (Internal)')"
+              v-model.number="newProject.richtpreis"
+              type="number"
+              :placeholder="__('Rough internal estimate')"
+            />
+          </div>
+        </fieldset>
+
+        <fieldset class="space-y-3">
           <legend class="text-xs font-semibold uppercase tracking-wide text-gray-400">{{ __('Details') }}</legend>
           <FormControl
             :label="__('Description')"
@@ -332,6 +350,8 @@ const newProject = reactive({
   country: '',
   salesperson: '',
   is_gu: false,
+  budget_customer: null,
+  richtpreis: null,
   project_description: '',
 })
 
@@ -546,7 +566,9 @@ async function createProject() {
     // Reset form
     Object.assign(newProject, {
       project_name: '', project_type: 'SB', project_abbr: '',
-      country: '', salesperson: '', is_gu: false, project_description: '',
+      country: '', salesperson: '', is_gu: false,
+      budget_customer: null, richtpreis: null,
+      project_description: '',
     })
     projects.reload()
     // H4: Closure — success with navigation offer

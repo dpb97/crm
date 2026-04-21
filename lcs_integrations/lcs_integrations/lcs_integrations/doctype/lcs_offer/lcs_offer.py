@@ -29,7 +29,10 @@ class LCSOffer(Document):
         new_phase = status_to_phase.get(self.status)
         if new_phase:
             current_phase = frappe.db.get_value("LCS Project", self.project, "phase")
-            # Only move forward, never backward automatically
             phase_order = ["Inquiry", "Offer", "Negotiation", "Order", "Execution", "Completed", "Lost"]
             if phase_order.index(new_phase) > phase_order.index(current_phase or "Inquiry"):
                 frappe.db.set_value("LCS Project", self.project, "phase", new_phase)
+
+        # When offer accepted, copy its value into project's angebot_total
+        if self.status == "Accepted" and self.value:
+            frappe.db.set_value("LCS Project", self.project, "angebot_total", self.value)

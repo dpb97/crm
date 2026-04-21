@@ -108,16 +108,40 @@
         <!-- Spacer -->
         <div class="flex-1" />
 
-        <!-- Value + probability -->
-        <div class="text-right">
-          <div class="text-[10px] font-bold uppercase tracking-wider text-gray-400">{{ __('Value') }}</div>
-          <div class="mt-0.5 flex items-center justify-end gap-2">
-            <span class="text-lg font-bold text-gray-900">
-              {{ doc.estimated_value ? formatCurrency(doc.estimated_value) : '—' }}
-            </span>
-            <span v-if="doc.probability" :class="probabilityClass(doc.probability)" class="rounded-md bg-gray-50 px-2 py-0.5 text-xs font-bold">
+        <!-- 💰 3 Pricing stages — always visible -->
+        <div class="flex items-end gap-1">
+          <Tooltip :text="__('What the customer indicates they are willing to spend')">
+            <div class="rounded-lg border border-gray-200 bg-white px-3 py-1.5">
+              <div class="text-[9px] font-bold uppercase tracking-wider text-gray-400">{{ __('Budget') }}</div>
+              <div class="mt-0.5 text-sm font-semibold tabular-nums" :class="doc.budget_customer ? 'text-gray-700' : 'text-gray-300'">
+                {{ doc.budget_customer ? formatCurrency(doc.budget_customer) : '—' }}
+              </div>
+            </div>
+          </Tooltip>
+          <span class="mb-2 text-gray-300">→</span>
+          <Tooltip :text="__('Internal rough estimate before formal quote')">
+            <div class="rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5">
+              <div class="text-[9px] font-bold uppercase tracking-wider text-blue-600">{{ __('Richtpreis') }}</div>
+              <div class="mt-0.5 text-sm font-semibold tabular-nums" :class="doc.richtpreis ? 'text-blue-900' : 'text-blue-300'">
+                {{ doc.richtpreis ? formatCurrency(doc.richtpreis) : '—' }}
+              </div>
+            </div>
+          </Tooltip>
+          <span class="mb-2 text-gray-300">→</span>
+          <Tooltip :text="__('Formal quoted total — synced from accepted offer')">
+            <div class="rounded-lg border px-3 py-1.5" :class="doc.angebot_total ? 'border-green-300 bg-green-50' : 'border-gray-200 bg-white'">
+              <div class="text-[9px] font-bold uppercase tracking-wider" :class="doc.angebot_total ? 'text-green-700' : 'text-gray-400'">{{ __('Angebot') }}</div>
+              <div class="mt-0.5 text-sm font-bold tabular-nums" :class="doc.angebot_total ? 'text-green-800' : 'text-gray-300'">
+                {{ doc.angebot_total ? formatCurrency(doc.angebot_total) : '—' }}
+              </div>
+            </div>
+          </Tooltip>
+          <!-- Win probability badge -->
+          <div v-if="doc.probability" class="ml-2 flex flex-col items-center">
+            <span :class="probabilityClass(doc.probability)" class="rounded-md bg-gray-50 px-2 py-0.5 text-sm font-bold">
               {{ Math.round(doc.probability) }}%
             </span>
+            <span class="mt-0.5 text-[9px] uppercase text-gray-400">{{ __('Win') }}</span>
           </div>
         </div>
       </div>
@@ -205,27 +229,66 @@
                 </div>
               </section>
 
-              <!-- Key Metrics -->
-              <section v-if="doc.estimated_value || doc.probability">
+              <!-- Pricing stages — editable cards showing Budget → Richtpreis → Angebot progression -->
+              <section>
                 <h3 class="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-400">
-                  <FeatherIcon name="bar-chart-2" class="h-3.5 w-3.5" />
-                  {{ __('Key Metrics') }}
+                  <FeatherIcon name="trending-up" class="h-3.5 w-3.5" />
+                  {{ __('Pricing Stages') }}
+                  <span class="ml-2 text-[10px] font-normal normal-case text-gray-400">
+                    {{ __('Customer budget → internal estimate → formal quote') }}
+                  </span>
                 </h3>
-                <div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                  <div v-if="doc.estimated_value" class="rounded-lg border bg-white p-3">
-                    <div class="text-xs text-gray-500">{{ __('Value') }}</div>
-                    <div class="mt-1 text-lg font-bold text-gray-900">{{ formatCurrency(doc.estimated_value) }}</div>
+                <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  <PriceStageCard
+                    :label="__('Budget')"
+                    :sublabel="__('Customer indication')"
+                    :value="doc.budget_customer"
+                    color="gray"
+                    icon="user"
+                    :editable="true"
+                    @save="updateField('budget_customer', $event)"
+                  />
+                  <PriceStageCard
+                    :label="__('Richtpreis')"
+                    :sublabel="__('Internal estimate')"
+                    :value="doc.richtpreis"
+                    color="blue"
+                    icon="clipboard"
+                    :editable="true"
+                    @save="updateField('richtpreis', $event)"
+                  />
+                  <PriceStageCard
+                    :label="__('Angebot')"
+                    :sublabel="__('Formal quote')"
+                    :value="doc.angebot_total"
+                    color="green"
+                    icon="file-text"
+                    :editable="true"
+                    @save="updateField('angebot_total', $event)"
+                  />
+                </div>
+                <!-- Forecasting row: weighted value and variance -->
+                <div class="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+                  <div class="rounded-lg border bg-gray-50 p-3">
+                    <div class="text-xs text-gray-500">{{ __('Weighted Value') }}</div>
+                    <div class="mt-1 text-base font-bold text-gray-700">
+                      {{ formatCurrency((doc.estimated_value || 0) * (doc.probability || 0) / 100) }}
+                    </div>
+                    <div class="mt-0.5 text-[10px] text-gray-400">{{ __('value × probability') }}</div>
                   </div>
-                  <div v-if="doc.probability != null" class="rounded-lg border bg-white p-3">
-                    <div class="text-xs text-gray-500">{{ __('Probability') }}</div>
-                    <div class="mt-1 text-lg font-bold" :class="probabilityClass(doc.probability)">
+                  <div v-if="doc.probability != null" class="rounded-lg border bg-gray-50 p-3">
+                    <div class="text-xs text-gray-500">{{ __('Win Probability') }}</div>
+                    <div class="mt-1 text-base font-bold" :class="probabilityClass(doc.probability)">
                       {{ Math.round(doc.probability) }}%
                     </div>
                   </div>
-                  <div class="rounded-lg border bg-white p-3">
-                    <div class="text-xs text-gray-500">{{ __('Weighted Value') }}</div>
-                    <div class="mt-1 text-lg font-bold text-gray-700">
-                      {{ formatCurrency((doc.estimated_value || 0) * (doc.probability || 0) / 100) }}
+                  <div v-if="budgetVsAngebot" class="rounded-lg border bg-gray-50 p-3">
+                    <div class="text-xs text-gray-500">{{ __('Budget vs. Angebot') }}</div>
+                    <div class="mt-1 text-base font-bold" :class="budgetVsAngebot >= 0 ? 'text-green-600' : 'text-amber-600'">
+                      {{ budgetVsAngebot >= 0 ? '+' : '' }}{{ Math.round(budgetVsAngebot) }}%
+                    </div>
+                    <div class="mt-0.5 text-[10px] text-gray-400">
+                      {{ budgetVsAngebot >= 0 ? __('under customer budget') : __('over customer budget') }}
                     </div>
                   </div>
                 </div>
@@ -426,6 +489,26 @@
               </SideField>
             </div>
 
+            <!-- Pricing quick reference in side panel -->
+            <div class="space-y-2 px-5 py-4">
+              <h4 class="text-[10px] font-bold uppercase tracking-wider text-gray-400">{{ __('Pricing') }}</h4>
+              <SideField :label="__('Budget')">
+                <span class="text-sm tabular-nums" :class="doc.budget_customer ? 'text-gray-800' : 'text-gray-400'">
+                  {{ doc.budget_customer ? formatCurrency(doc.budget_customer) : '—' }}
+                </span>
+              </SideField>
+              <SideField :label="__('Richtpreis')">
+                <span class="text-sm tabular-nums" :class="doc.richtpreis ? 'text-blue-700 font-medium' : 'text-gray-400'">
+                  {{ doc.richtpreis ? formatCurrency(doc.richtpreis) : '—' }}
+                </span>
+              </SideField>
+              <SideField :label="__('Angebot')">
+                <span class="text-sm tabular-nums" :class="doc.angebot_total ? 'text-green-700 font-semibold' : 'text-gray-400'">
+                  {{ doc.angebot_total ? formatCurrency(doc.angebot_total) : '—' }}
+                </span>
+              </SideField>
+            </div>
+
             <!-- Quick Notes shortcut in sidepanel -->
             <div v-if="doc.notes" class="space-y-2 bg-amber-50/30 px-5 py-4">
               <h4 class="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-amber-700">
@@ -516,6 +599,7 @@ import Resizer from '@/components/Resizer.vue'
 import SyncStatusBadge from '@/components/lcs/SyncStatusBadge.vue'
 import AbasDeepLink from '@/components/lcs/AbasDeepLink.vue'
 import OpportunityMatrix from '@/components/lcs/OpportunityMatrix.vue'
+import PriceStageCard from '@/components/lcs/PriceStageCard.vue'
 import { copyToClipboard, timeAgo } from '@/utils'
 
 const SideField = {
@@ -547,6 +631,14 @@ const breadcrumbs = computed(() => [
 ])
 
 const lastSaved = computed(() => doc.value.modified ? (timeAgo ? timeAgo(doc.value.modified) : '') : '')
+
+// Budget vs Angebot variance (% under/over customer budget)
+const budgetVsAngebot = computed(() => {
+  const budget = doc.value.budget_customer
+  const angebot = doc.value.angebot_total
+  if (!budget || !angebot) return null
+  return ((budget - angebot) / budget) * 100
+})
 
 // Tabs — Offers tab added prominently
 const tabIndex = ref(0)
