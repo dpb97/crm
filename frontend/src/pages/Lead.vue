@@ -191,9 +191,9 @@
           Score: {{ doc.lcs_score }}
         </div>
         <SyncStatusBadge
-          :status="doc.abas_id ? 'synced' : 'disabled'"
-          system="abas"
-          :detail="doc.abas_id ? `abas ID: ${doc.abas_id}` : __('Lead — not yet synced to abas')"
+          :status="doc.erpnext_customer ? 'synced' : 'disabled'"
+          system="erpnext"
+          :detail="doc.erpnext_customer ? `ERPNext: ${doc.erpnext_customer}` : __('Lead — not yet linked to ERPNext')"
         />
       </div>
       <SLASection

@@ -2,7 +2,8 @@
   SyncStatusBadge
   ===============
   Uniform visual indicator for the outbound sync state of a CRM record
-  towards an external system (abas, Outlook, Proxess). Intended to be placed
+  towards an external system (ERPNext, Fusion Manage, Outlook, Proxess).
+  Intended to be placed
   next to record titles so operators immediately see whether a Lead / Deal
   is in flight, out of sync, or fully reconciled.
 

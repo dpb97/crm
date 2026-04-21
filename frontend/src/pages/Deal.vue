@@ -127,21 +127,21 @@
           </div>
         </div>
       </div>
-      <!-- LCS: abas Sync Status + Deep Link -->
+      <!-- LCS: ERPNext Customer Sync Status + Deep Link -->
       <div
         v-if="doc.name"
         class="flex flex-wrap items-center gap-2 border-b px-5 py-3"
       >
         <SyncStatusBadge
-          :status="doc.abas_id ? 'synced' : 'disabled'"
-          system="abas"
-          :detail="doc.abas_id ? `abas ID: ${doc.abas_id}` : __('Deal — not yet synced to abas')"
+          :status="doc.erpnext_customer ? 'synced' : 'disabled'"
+          system="erpnext"
+          :detail="doc.erpnext_customer ? `ERPNext: ${doc.erpnext_customer}` : __('Deal — not yet linked to ERPNext')"
         />
-        <AbasDeepLink
-          v-if="doc.abas_id"
-          :entity="doc.abas_id"
-          kind="customer"
-          :label="__('Open in abas')"
+        <ErpNextDeepLink
+          v-if="doc.erpnext_customer"
+          doctype="Customer"
+          :name="doc.erpnext_customer"
+          :label="__('Customer')"
         />
       </div>
       <SLASection
@@ -385,7 +385,7 @@ import SidePanelLayout from '@/components/SidePanelLayout.vue'
 import SLASection from '@/components/SLASection.vue'
 import CustomActions from '@/components/CustomActions.vue'
 import SyncStatusBadge from '@/components/lcs/SyncStatusBadge.vue'
-import AbasDeepLink from '@/components/lcs/AbasDeepLink.vue'
+import ErpNextDeepLink from '@/components/lcs/ErpNextDeepLink.vue'
 import {
   openWebsite,
   setupCustomizations,

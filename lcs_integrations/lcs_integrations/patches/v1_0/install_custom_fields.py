@@ -2,7 +2,8 @@
 
 Idempotent — Frappe's `create_custom_fields` upserts when called with
 `update=True`. Targets ERPNext DocTypes (Lead / Customer / Quotation /
-Sales Order / Contact); the frappe/crm DocTypes are not part of this stack.
+Sales Order / Contact) and CRM Organization to wire the cross-module
+links used by LCS Integrations.
 """
 
 from __future__ import annotations
@@ -14,81 +15,60 @@ from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
 CUSTOM_FIELDS: dict[str, list[dict]] = {
     "Lead": [
         {
-            "fieldname": "lcs_source",
-            "label": "LCS Source",
-            "fieldtype": "Select",
-            "options": "\nFair\nWebsite\nCold Call\nReferral\nOther",
-            "insert_after": "source",
-        },
-        {
             "fieldname": "lcs_score",
             "label": "Lead Score",
             "fieldtype": "Int",
             "read_only": 1,
-            "insert_after": "lcs_source",
+            "insert_after": "source",
         },
     ],
-    "Customer": [
+    "CRM Organization": [
         {
-            "fieldname": "abas_id",
-            "label": "abas Customer ID",
-            "fieldtype": "Data",
-            "unique": 0,
+            "fieldname": "erpnext_customer",
+            "label": "ERPNext Customer",
+            "fieldtype": "Link",
+            "options": "Customer",
             "read_only": 1,
-            "insert_after": "customer_name",
+            "insert_after": "organization_name",
         },
     ],
-    "Quotation": [
+    "CRM Deal": [
         {
-            "fieldname": "abas_quotation_no",
-            "label": "abas Quotation #",
-            "fieldtype": "Data",
+            "fieldname": "erpnext_customer",
+            "label": "ERPNext Customer",
+            "fieldtype": "Link",
+            "options": "Customer",
             "read_only": 1,
-            "insert_after": "status",
+            "insert_after": "organization",
+        },
+    ],
+    "CRM Lead": [
+        {
+            "fieldname": "erpnext_customer",
+            "label": "ERPNext Customer",
+            "fieldtype": "Link",
+            "options": "Customer",
+            "read_only": 1,
+            "insert_after": "organization",
         },
     ],
     "Sales Order": [
         {
-            "fieldname": "abas_order_no",
-            "label": "abas Order #",
-            "fieldtype": "Data",
-            "read_only": 1,
+            "fieldname": "lcs_project",
+            "label": "LCS Project",
+            "fieldtype": "Link",
+            "options": "LCS Project",
             "insert_after": "status",
         },
-        # `delivery_status` already exists as an ERPNext core field with
-        # ERPNext semantics (Not Delivered/Fully Delivered/...). The LCS
-        # fields carry abas's own lifecycle and are namespaced with `lcs_`
-        # so they never collide with core ERPNext fields.
-        {
-            "fieldname": "lcs_delivery_status",
-            "label": "LCS Delivery Status (abas)",
-            "fieldtype": "Select",
-            "options": "\nPending\nPlanned\nShipped\nDelivered",
-            "read_only": 1,
-            "insert_after": "abas_order_no",
-        },
-        {
-            "fieldname": "lcs_planned_ship_date",
-            "label": "Planned Ship Date (abas)",
-            "fieldtype": "Date",
-            "read_only": 1,
-            "insert_after": "lcs_delivery_status",
-        },
-        {
-            "fieldname": "lcs_real_revenue",
-            "label": "Real Revenue (abas)",
-            "fieldtype": "Currency",
-            "read_only": 1,
-            "insert_after": "lcs_planned_ship_date",
-        },
     ],
-    "Contact": [
+    "Quotation": [
         {
-            "fieldname": "abas_contact_id",
-            "label": "abas Contact ID",
-            "fieldtype": "Data",
+            "fieldname": "lcs_offer",
+            "label": "LCS Offer",
+            "fieldtype": "Link",
+            "options": "LCS Offer",
             "read_only": 1,
-            "insert_after": "company_name",
+            "insert_after": "status",
         },
     ],
 }

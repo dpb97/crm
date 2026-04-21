@@ -21,6 +21,9 @@
         "probability",
         "lost_reason",
         "won_notes",
+        "section_erpnext",
+        "erpnext_quotation",
+        "erpnext_sales_order",
         "section_details",
         "notes",
         "attachment"
@@ -118,6 +121,27 @@
             "fieldname": "won_notes",
             "fieldtype": "Small Text",
             "label": "Won Notes"
+        },
+        {
+            "fieldname": "section_erpnext",
+            "fieldtype": "Section Break",
+            "label": "ERPNext"
+        },
+        {
+            "description": "Auto-created when offer status becomes 'Sent'",
+            "fieldname": "erpnext_quotation",
+            "fieldtype": "Link",
+            "label": "ERPNext Quotation",
+            "options": "Quotation",
+            "read_only": 1
+        },
+        {
+            "description": "Auto-created when offer status becomes 'Accepted'",
+            "fieldname": "erpnext_sales_order",
+            "fieldtype": "Link",
+            "label": "ERPNext Sales Order",
+            "options": "Sales Order",
+            "read_only": 1
         },
         {
             "fieldname": "section_details",

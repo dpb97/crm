@@ -34,6 +34,15 @@
         "column_break_pricing",
         "angebot_total",
         "estimated_value",
+        "section_external_systems",
+        "erpnext_customer",
+        "fusion_workspace",
+        "fusion_item_id",
+        "column_break_external",
+        "fusion_item_number",
+        "fusion_item_state",
+        "fusion_item_description",
+        "fusion_last_sync",
         "section_links",
         "team_link",
         "sharepoint_link",
@@ -214,6 +223,59 @@
             "fieldname": "estimated_value",
             "fieldtype": "Currency",
             "label": "Estimated Value"
+        },
+        {
+            "fieldname": "section_external_systems",
+            "fieldtype": "Section Break",
+            "label": "External Systems"
+        },
+        {
+            "description": "ERPNext Customer record — created automatically when first offer is sent",
+            "fieldname": "erpnext_customer",
+            "fieldtype": "Link",
+            "label": "ERPNext Customer",
+            "options": "Customer",
+            "read_only": 1
+        },
+        {
+            "description": "Autodesk Fusion Manage workspace this project's item lives in",
+            "fieldname": "fusion_workspace",
+            "fieldtype": "Data",
+            "label": "Fusion Workspace ID"
+        },
+        {
+            "description": "Fusion Manage item ID for this project's product",
+            "fieldname": "fusion_item_id",
+            "fieldtype": "Data",
+            "label": "Fusion Item ID"
+        },
+        {
+            "fieldname": "column_break_external",
+            "fieldtype": "Column Break"
+        },
+        {
+            "fieldname": "fusion_item_number",
+            "fieldtype": "Data",
+            "label": "Fusion Item Number",
+            "read_only": 1
+        },
+        {
+            "fieldname": "fusion_item_state",
+            "fieldtype": "Data",
+            "label": "Fusion State",
+            "read_only": 1
+        },
+        {
+            "fieldname": "fusion_item_description",
+            "fieldtype": "Small Text",
+            "label": "Fusion Description",
+            "read_only": 1
+        },
+        {
+            "fieldname": "fusion_last_sync",
+            "fieldtype": "Datetime",
+            "label": "Fusion Last Sync",
+            "read_only": 1
         },
         {
             "fieldname": "section_links",

@@ -5,9 +5,9 @@ import SyncStatusBadge from '../SyncStatusBadge.vue'
 describe('SyncStatusBadge', () => {
   it('renders the synchronised state with the success palette', () => {
     const wrapper = mount(SyncStatusBadge, {
-      props: { status: 'synced', system: 'abas' },
+      props: { status: 'synced', system: 'ERPNext' },
     })
-    expect(wrapper.text()).toContain('abas')
+    expect(wrapper.text()).toContain('ERPNext')
     expect(wrapper.text()).toContain('synchronised')
     expect(wrapper.classes().join(' ')).toMatch(/lcs-success/)
   })

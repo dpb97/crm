@@ -1,0 +1,77 @@
+{
+    "actions": [],
+    "creation": "2026-04-21 00:00:00",
+    "doctype": "DocType",
+    "engine": "InnoDB",
+    "field_order": [
+        "section_connection",
+        "enabled",
+        "tenant",
+        "default_workspace",
+        "section_auth",
+        "access_token",
+        "token_expires_at"
+    ],
+    "fields": [
+        {
+            "fieldname": "section_connection",
+            "fieldtype": "Section Break",
+            "label": "Connection"
+        },
+        {
+            "default": "0",
+            "fieldname": "enabled",
+            "fieldtype": "Check",
+            "label": "Enabled"
+        },
+        {
+            "description": "Your Fusion Manage tenant name, e.g. 'lcs' for lcs.autodeskplm360.net",
+            "fieldname": "tenant",
+            "fieldtype": "Data",
+            "label": "Tenant"
+        },
+        {
+            "description": "Default workspace ID used for search autocomplete",
+            "fieldname": "default_workspace",
+            "fieldtype": "Data",
+            "label": "Default Workspace ID"
+        },
+        {
+            "fieldname": "section_auth",
+            "fieldtype": "Section Break",
+            "label": "Authentication"
+        },
+        {
+            "fieldname": "access_token",
+            "fieldtype": "Password",
+            "label": "Access Token"
+        },
+        {
+            "fieldname": "token_expires_at",
+            "fieldtype": "Datetime",
+            "label": "Token Expires At"
+        }
+    ],
+    "index_web_pages_for_search": 0,
+    "issingle": 1,
+    "links": [],
+    "modified": "2026-04-21 00:00:00",
+    "modified_by": "Administrator",
+    "module": "LCS Integrations",
+    "name": "LCS Fusion Manage Settings",
+    "owner": "Administrator",
+    "permissions": [
+        {
+            "create": 1,
+            "delete": 1,
+            "export": 1,
+            "read": 1,
+            "report": 1,
+            "role": "System Manager",
+            "write": 1
+        }
+    ],
+    "sort_field": "modified",
+    "sort_order": "DESC",
+    "track_changes": 1
+}
