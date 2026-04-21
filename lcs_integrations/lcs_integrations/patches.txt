@@ -2,3 +2,4 @@ lcs_integrations.patches.v1_0.install_custom_fields
 lcs_integrations.patches.seed_lookup_data
 lcs_integrations.patches.migrate_legacy_source_reason
 lcs_integrations.patches.remove_abas_legacy
+lcs_integrations.patches.reinstall_bsm_fields

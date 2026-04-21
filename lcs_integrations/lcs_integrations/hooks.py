@@ -42,13 +42,19 @@ doc_events = {
         "after_insert": "lcs_integrations.email_domain_autolink.hooks.auto_link",
     },
     "LCS Project": {
-        "validate": "lcs_integrations.projects.notifications.on_project_phase_change",
+        "validate": [
+            "lcs_integrations.projects.notifications.on_project_phase_change",
+            "lcs_integrations.cross_module.training_check.on_project_validate",
+        ],
     },
     "LCS Opportunity Matrix": {
         "validate": "lcs_integrations.projects.notifications.on_high_probability",
     },
     "LCS Offer": {
         "on_update": "lcs_integrations.erpnext_sync.quotation_sync.on_offer_updated",
+    },
+    "Sales Order": {
+        "after_insert": "lcs_integrations.cross_module.bsm_sync.on_sales_order_created",
     },
 }
 

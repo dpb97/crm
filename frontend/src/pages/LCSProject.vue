@@ -476,29 +476,9 @@
 
       <!-- Side panel -->
       <Resizer side="right" class="flex flex-col justify-between border-l bg-white">
-        <!-- External systems: ERPNext + Fusion Manage -->
-        <div v-if="doc.name" class="flex flex-wrap items-center gap-2 border-b px-5 py-3">
-          <SyncStatusBadge
-            :status="doc.erpnext_customer ? 'synced' : 'disabled'"
-            system="erpnext"
-            :detail="doc.erpnext_customer ? `ERPNext: ${doc.erpnext_customer}` : __('Not linked to ERPNext yet')"
-          />
-          <ErpNextDeepLink
-            v-if="doc.erpnext_customer"
-            doctype="Customer"
-            :name="doc.erpnext_customer"
-            :label="__('Customer')"
-          />
-          <SyncStatusBadge
-            :status="doc.fusion_item_id ? 'synced' : 'disabled'"
-            system="fusion"
-            :detail="doc.fusion_item_id ? `Fusion: ${doc.fusion_item_number || doc.fusion_item_id} (${doc.fusion_item_state || '—'})` : __('No Fusion Manage item linked')"
-          />
-          <FusionManageDeepLink
-            v-if="doc.fusion_item_id && doc.fusion_workspace"
-            :workspace="doc.fusion_workspace"
-            :item-id="doc.fusion_item_id"
-          />
+        <!-- Integrated systems: CRM · ERPNext · BSM · HRMS · LMS · Fusion Manage -->
+        <div v-if="doc.name" class="border-b px-5 py-4">
+          <IntegrationStatusPanel :project="projectId" />
         </div>
 
         <div class="flex-1 overflow-y-auto">
@@ -654,6 +634,7 @@ import Resizer from '@/components/Resizer.vue'
 import SyncStatusBadge from '@/components/lcs/SyncStatusBadge.vue'
 import ErpNextDeepLink from '@/components/lcs/ErpNextDeepLink.vue'
 import FusionManageDeepLink from '@/components/lcs/FusionManageDeepLink.vue'
+import IntegrationStatusPanel from '@/components/lcs/IntegrationStatusPanel.vue'
 import OpportunityMatrix from '@/components/lcs/OpportunityMatrix.vue'
 import PriceStageCard from '@/components/lcs/PriceStageCard.vue'
 import VoiceInput from '@/components/lcs/VoiceInput.vue'

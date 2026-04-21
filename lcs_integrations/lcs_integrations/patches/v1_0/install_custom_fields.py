@@ -71,6 +71,23 @@ CUSTOM_FIELDS: dict[str, list[dict]] = {
             "insert_after": "status",
         },
     ],
+    "BSM Project": [
+        {
+            "fieldname": "lcs_project",
+            "label": "LCS Project",
+            "fieldtype": "Link",
+            "options": "LCS Project",
+            "insert_after": "project_name",
+        },
+        {
+            "fieldname": "sales_order",
+            "label": "Sales Order",
+            "fieldtype": "Link",
+            "options": "Sales Order",
+            "read_only": 1,
+            "insert_after": "lcs_project",
+        },
+    ],
 }
 
 

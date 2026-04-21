@@ -34,8 +34,12 @@
         "column_break_pricing",
         "angebot_total",
         "estimated_value",
+        "section_team",
+        "project_manager",
+        "team_members",
         "section_external_systems",
         "erpnext_customer",
+        "bsm_project",
         "fusion_workspace",
         "fusion_item_id",
         "column_break_external",
@@ -43,6 +47,8 @@
         "fusion_item_state",
         "fusion_item_description",
         "fusion_last_sync",
+        "section_training",
+        "required_trainings",
         "section_links",
         "team_link",
         "sharepoint_link",
@@ -225,6 +231,24 @@
             "label": "Estimated Value"
         },
         {
+            "fieldname": "section_team",
+            "fieldtype": "Section Break",
+            "label": "Project Team"
+        },
+        {
+            "description": "Head of project (HRMS Employee). Drives day-to-day execution.",
+            "fieldname": "project_manager",
+            "fieldtype": "Link",
+            "label": "Project Manager",
+            "options": "Employee"
+        },
+        {
+            "fieldname": "team_members",
+            "fieldtype": "Table",
+            "label": "Team Members",
+            "options": "LCS Project Team Member"
+        },
+        {
             "fieldname": "section_external_systems",
             "fieldtype": "Section Break",
             "label": "External Systems"
@@ -235,6 +259,14 @@
             "fieldtype": "Link",
             "label": "ERPNext Customer",
             "options": "Customer",
+            "read_only": 1
+        },
+        {
+            "description": "BSM construction-site project — auto-created when Sales Order is placed",
+            "fieldname": "bsm_project",
+            "fieldtype": "Link",
+            "label": "BSM Project",
+            "options": "BSM Project",
             "read_only": 1
         },
         {
@@ -276,6 +308,18 @@
             "fieldtype": "Datetime",
             "label": "Fusion Last Sync",
             "read_only": 1
+        },
+        {
+            "fieldname": "section_training",
+            "fieldtype": "Section Break",
+            "label": "Required Trainings (LMS)"
+        },
+        {
+            "description": "LMS certifications every team member must hold before working on-site",
+            "fieldname": "required_trainings",
+            "fieldtype": "Table",
+            "label": "Required Trainings",
+            "options": "LCS Project Required Training"
         },
         {
             "fieldname": "section_links",
