@@ -3,6 +3,15 @@ from frappe.model.document import Document
 
 
 class LCSOffer(Document):
+    def on_trash(self):
+        """Clear back-links on ERPNext Quotation + Sales Order when this
+        offer is deleted — leaves the commercial artefacts intact but
+        removes the stale pointer back to a non-existent offer."""
+        import frappe as _frappe
+        if self.erpnext_quotation and _frappe.db.exists("Quotation", self.erpnext_quotation):
+            _frappe.db.set_value("Quotation", self.erpnext_quotation, "lcs_offer", None)
+        if self.erpnext_sales_order and _frappe.db.exists("Sales Order", self.erpnext_sales_order):
+            _frappe.db.set_value("Sales Order", self.erpnext_sales_order, "lcs_project", None)
     def validate(self):
         self.validate_version()
         self.sync_project_phase()

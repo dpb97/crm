@@ -34,7 +34,10 @@ def on_project_validate(doc, method=None):
             continue
         user = frappe.db.get_value("Employee", member.employee, "user_id")
         if not user:
-            member.training_status = "Unknown"
+            # No LMS-evaluable identity for this employee — treat as a compliance
+            # gap so the project cannot proceed to site work with blind assumptions.
+            has_mandatory = any(is_mandatory for _, is_mandatory, _ in required_courses)
+            member.training_status = "Missing Certifications" if has_mandatory else "Unknown"
             continue
 
         member.training_status = _evaluate_member(user, required_courses, today)

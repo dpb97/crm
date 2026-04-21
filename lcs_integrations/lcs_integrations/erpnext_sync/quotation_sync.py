@@ -54,6 +54,9 @@ def upsert_quotation(offer):
     quotation.transaction_date = offer.offer_date or frappe.utils.nowdate()
     quotation.valid_till = offer.valid_until
     quotation.currency = offer.currency or "EUR"
+    # Back-link so duplicate detection + integration_status can find us
+    if hasattr(quotation, "lcs_offer"):
+        quotation.lcs_offer = offer.name
 
     # Add a single item placeholder for the total value if items list is empty
     # (real items come from Fusion Manage BOM sync — stub for now)
@@ -101,6 +104,9 @@ def create_sales_order(offer):
         from erpnext.selling.doctype.quotation.quotation import make_sales_order
         so = make_sales_order(quotation.name)
         so.delivery_date = frappe.utils.add_days(frappe.utils.nowdate(), 90)
+        # Back-link to project so after_insert hook can spawn BSM Project
+        if hasattr(so, "lcs_project"):
+            so.lcs_project = offer.project
         so.insert(ignore_permissions=True)
         frappe.db.set_value("LCS Offer", offer.name, "erpnext_sales_order", so.name)
         frappe.db.commit()
