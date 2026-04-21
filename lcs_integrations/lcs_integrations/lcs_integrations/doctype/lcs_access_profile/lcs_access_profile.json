@@ -1,0 +1,205 @@
+{
+    "actions": [],
+    "allow_rename": 1,
+    "autoname": "field:profile_name",
+    "creation": "2026-04-21 00:00:00",
+    "doctype": "DocType",
+    "engine": "InnoDB",
+    "field_order": [
+        "section_identity",
+        "profile_name",
+        "description",
+        "is_active",
+        "section_data_scope",
+        "scope_countries",
+        "scope_project_types",
+        "scope_own_only",
+        "column_break_scope",
+        "scope_team_members",
+        "section_field_level",
+        "hide_pricing",
+        "hide_team",
+        "hide_fusion",
+        "column_break_fields",
+        "hide_bsm",
+        "hide_forecasting",
+        "hide_opportunity_matrix",
+        "section_actions",
+        "can_export",
+        "can_create_projects",
+        "can_delete_projects",
+        "column_break_actions",
+        "can_accept_offers",
+        "can_edit_phase"
+    ],
+    "fields": [
+        {
+            "fieldname": "section_identity",
+            "fieldtype": "Section Break",
+            "label": "Identity"
+        },
+        {
+            "fieldname": "profile_name",
+            "fieldtype": "Data",
+            "in_list_view": 1,
+            "label": "Profile Name",
+            "reqd": 1,
+            "unique": 1
+        },
+        {
+            "fieldname": "description",
+            "fieldtype": "Small Text",
+            "label": "Description"
+        },
+        {
+            "default": "1",
+            "fieldname": "is_active",
+            "fieldtype": "Check",
+            "in_list_view": 1,
+            "label": "Active"
+        },
+        {
+            "fieldname": "section_data_scope",
+            "fieldtype": "Section Break",
+            "label": "Data Scope (What projects can they see?)"
+        },
+        {
+            "description": "Leave empty for all countries",
+            "fieldname": "scope_countries",
+            "fieldtype": "Table MultiSelect",
+            "label": "Countries",
+            "options": "LCS Access Profile Country"
+        },
+        {
+            "description": "Leave empty for all project types",
+            "fieldname": "scope_project_types",
+            "fieldtype": "Table MultiSelect",
+            "label": "Project Types",
+            "options": "LCS Access Profile Project Type"
+        },
+        {
+            "default": "0",
+            "description": "User only sees projects where they are the assigned salesperson",
+            "fieldname": "scope_own_only",
+            "fieldtype": "Check",
+            "label": "Only Own Projects"
+        },
+        {
+            "fieldname": "column_break_scope",
+            "fieldtype": "Column Break"
+        },
+        {
+            "description": "Also see projects of these team members (by User)",
+            "fieldname": "scope_team_members",
+            "fieldtype": "Table MultiSelect",
+            "label": "Team Members (Additional Access)",
+            "options": "LCS Access Profile Team"
+        },
+        {
+            "fieldname": "section_field_level",
+            "fieldtype": "Section Break",
+            "label": "Field-Level Visibility (What fields are hidden?)"
+        },
+        {
+            "default": "0",
+            "description": "Hide Budget, Richtpreis, Angebot, estimated_value",
+            "fieldname": "hide_pricing",
+            "fieldtype": "Check",
+            "label": "Hide Pricing"
+        },
+        {
+            "default": "0",
+            "fieldname": "hide_team",
+            "fieldtype": "Check",
+            "label": "Hide Team / HRMS Section"
+        },
+        {
+            "default": "0",
+            "fieldname": "hide_fusion",
+            "fieldtype": "Check",
+            "label": "Hide Fusion Manage (PLM)"
+        },
+        {
+            "fieldname": "column_break_fields",
+            "fieldtype": "Column Break"
+        },
+        {
+            "default": "0",
+            "fieldname": "hide_bsm",
+            "fieldtype": "Check",
+            "label": "Hide BSM (Construction)"
+        },
+        {
+            "default": "0",
+            "fieldname": "hide_forecasting",
+            "fieldtype": "Check",
+            "label": "Hide Forecasting Page"
+        },
+        {
+            "default": "0",
+            "fieldname": "hide_opportunity_matrix",
+            "fieldtype": "Check",
+            "label": "Hide Opportunity Matrix Tab"
+        },
+        {
+            "fieldname": "section_actions",
+            "fieldtype": "Section Break",
+            "label": "Action Permissions"
+        },
+        {
+            "default": "1",
+            "fieldname": "can_export",
+            "fieldtype": "Check",
+            "label": "Can Export"
+        },
+        {
+            "default": "1",
+            "fieldname": "can_create_projects",
+            "fieldtype": "Check",
+            "label": "Can Create Projects"
+        },
+        {
+            "default": "0",
+            "fieldname": "can_delete_projects",
+            "fieldtype": "Check",
+            "label": "Can Delete Projects"
+        },
+        {
+            "fieldname": "column_break_actions",
+            "fieldtype": "Column Break"
+        },
+        {
+            "default": "0",
+            "fieldname": "can_accept_offers",
+            "fieldtype": "Check",
+            "label": "Can Accept Offers (status → Accepted)"
+        },
+        {
+            "default": "1",
+            "fieldname": "can_edit_phase",
+            "fieldtype": "Check",
+            "label": "Can Edit Project Phase"
+        }
+    ],
+    "index_web_pages_for_search": 0,
+    "links": [],
+    "modified": "2026-04-21 00:00:00",
+    "modified_by": "Administrator",
+    "module": "LCS Integrations",
+    "name": "LCS Access Profile",
+    "owner": "Administrator",
+    "permissions": [
+        {
+            "create": 1,
+            "delete": 1,
+            "export": 1,
+            "read": 1,
+            "report": 1,
+            "role": "System Manager",
+            "write": 1
+        }
+    ],
+    "sort_field": "modified",
+    "sort_order": "DESC",
+    "track_changes": 1
+}

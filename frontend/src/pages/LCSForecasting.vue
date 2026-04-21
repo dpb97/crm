@@ -40,8 +40,17 @@
   </LayoutHeader>
 
   <div class="flex-1 overflow-y-auto p-5">
+    <!-- Access denied state — admin profile hides this page -->
+    <div v-if="accessDenied" class="flex flex-col items-center rounded-xl border border-dashed border-amber-200 bg-amber-50 py-16">
+      <FeatherIcon name="lock" class="h-10 w-10 text-amber-400" />
+      <h3 class="mt-4 text-sm font-medium text-amber-900">{{ __('Forecasting is not available for your role') }}</h3>
+      <p class="mt-1 max-w-sm text-center text-sm text-amber-700">
+        {{ __('Your access profile does not include forecasting. Contact your administrator to request access.') }}
+      </p>
+    </div>
+
     <!-- Loading -->
-    <div v-if="forecast.loading" class="space-y-4">
+    <div v-else-if="forecast.loading" class="space-y-4">
       <div class="h-48 animate-pulse rounded-xl border bg-gray-50" />
       <div class="h-72 animate-pulse rounded-xl border bg-gray-50" />
     </div>
@@ -208,6 +217,7 @@ import { ref, computed, watch } from 'vue'
 import { createResource, Breadcrumbs, Tooltip, FeatherIcon } from 'frappe-ui'
 import LayoutHeader from '@/components/LayoutHeader.vue'
 import { sessionStore } from '@/stores/session'
+import { useUserPreferences } from '@/composables/useUserPreferences'
 
 // Inline KPI card
 const KpiCard = {
@@ -232,9 +242,12 @@ const KpiCard = {
 }
 
 const session = sessionStore()
+const userPrefs = useUserPreferences()
 
-const period = ref('month')
-const onlyMine = ref(false)
+const period = ref(userPrefs.state.prefs.default_period_forecasting || 'month')
+const onlyMine = ref(!!userPrefs.state.prefs.default_show_only_mine)
+
+const accessDenied = computed(() => userPrefs.state.accessProfile?.hide_forecasting)
 
 const periodOptions = [
   { label: 'Month', value: 'month' },

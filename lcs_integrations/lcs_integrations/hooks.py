@@ -30,6 +30,15 @@ fixtures = [
 #
 # Target ERP is ERPNext (installed alongside frappe/crm on the LCS bench).
 # Fusion Manage is the PLM of record for product data.
+# Row-level and document-level permission filters — driven by LCS Access Profile
+permission_query_conditions = {
+    "LCS Project": "lcs_integrations.visibility.service.get_permission_query_conditions",
+}
+
+has_permission = {
+    "LCS Project": "lcs_integrations.visibility.service.has_permission",
+}
+
 doc_events = {
     "Lead": {
         "on_update": "lcs_integrations.lead_scoring.hooks.recompute_score",

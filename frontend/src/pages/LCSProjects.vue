@@ -5,6 +5,14 @@
     </template>
     <template #right-header>
       <div class="flex items-center gap-2">
+        <Tooltip :text="__('Display preferences — choose what to show')">
+          <Button
+            variant="ghost"
+            icon="sliders"
+            @click="openPreferences"
+            :aria-label="__('Open display preferences')"
+          />
+        </Tooltip>
         <!-- H7: Flexibility — keyboard shortcut hint -->
         <Tooltip :text="__('Ctrl+N')">
           <Button
@@ -380,6 +388,10 @@ import { useOfflineList } from '@/composables/useOfflineList'
 import LayoutHeader from '@/components/LayoutHeader.vue'
 
 const session = sessionStore()
+
+function openPreferences() {
+  window.dispatchEvent(new CustomEvent('lcs-open-preferences'))
+}
 
 // H7: Flexibility — inline sort indicator component
 const SortIcon = {

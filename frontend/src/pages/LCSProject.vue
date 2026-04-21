@@ -247,7 +247,7 @@
               </section>
 
               <!-- Pricing stages — editable cards showing Budget → Richtpreis → Angebot progression -->
-              <section>
+              <section v-if="canShow('show_pricing_details')">
                 <h3 class="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-400">
                   <FeatherIcon name="trending-up" class="h-3.5 w-3.5" />
                   {{ __('Pricing Stages') }}
@@ -487,8 +487,9 @@
 
       <!-- Side panel -->
       <Resizer side="right" class="flex flex-col justify-between border-l bg-white">
-        <!-- Integrated systems: CRM · ERPNext · BSM · HRMS · LMS · Fusion Manage -->
-        <div v-if="doc.name" class="border-b px-5 py-4">
+        <!-- Integrated systems: CRM · ERPNext · BSM · HRMS · LMS · Fusion Manage
+           Hidden if user disabled this panel in preferences OR profile hides it. -->
+        <div v-if="doc.name && canShow('show_integration_panel')" class="border-b px-5 py-4">
           <IntegrationStatusPanel :project="projectId" />
         </div>
 
@@ -517,8 +518,8 @@
               </SideField>
             </div>
 
-            <!-- Pricing quick reference in side panel -->
-            <div class="space-y-2 px-5 py-4">
+            <!-- Pricing quick reference in side panel — respects prefs + access profile -->
+            <div v-if="canShow('show_pricing_details')" class="space-y-2 px-5 py-4">
               <h4 class="text-[10px] font-bold uppercase tracking-wider text-gray-400">{{ __('Pricing') }}</h4>
               <SideField :label="__('Budget')">
                 <span class="text-sm tabular-nums" :class="doc.budget_customer ? 'text-gray-800' : 'text-gray-400'">
@@ -652,6 +653,9 @@ import VoiceInput from '@/components/lcs/VoiceInput.vue'
 import { queueMutation, cachePut, listMutations, onQueueChange } from '@/utils/offlineDB'
 import { drain } from '@/utils/syncEngine'
 import { copyToClipboard, timeAgo } from '@/utils'
+import { useUserPreferences } from '@/composables/useUserPreferences'
+
+const { canShow } = useUserPreferences()
 
 const SideField = {
   props: ['label'],
@@ -705,13 +709,16 @@ const budgetVsAngebot = computed(() => {
 
 // Tabs — Offers tab added prominently
 const tabIndex = ref(0)
-const tabs = computed(() => [
-  { name: 'Overview', label: __('Overview') },
-  { name: 'Offers', label: __('Offers') + (offers.value.length ? ` (${offers.value.length})` : '') },
-  { name: 'Contacts', label: __('Contacts') },
-  { name: 'Matrix', label: __('Opportunity Matrix') },
-  { name: 'Activity', label: __('Activity') },
-])
+const tabs = computed(() => {
+  const all = [
+    { name: 'Overview', label: __('Overview'), show: true },
+    { name: 'Offers', label: __('Offers') + (offers.value.length ? ` (${offers.value.length})` : ''), show: true },
+    { name: 'Contacts', label: __('Contacts'), show: true },
+    { name: 'Matrix', label: __('Opportunity Matrix'), show: canShow('show_opportunity_matrix') },
+    { name: 'Activity', label: __('Activity'), show: true },
+  ]
+  return all.filter(t => t.show)
+})
 const activeTab = computed(() => tabs.value[tabIndex.value]?.name || 'Overview')
 
 // Phase change

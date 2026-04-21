@@ -1,0 +1,186 @@
+{
+    "actions": [],
+    "allow_rename": 0,
+    "autoname": "field:user",
+    "creation": "2026-04-21 00:00:00",
+    "doctype": "DocType",
+    "engine": "InnoDB",
+    "field_order": [
+        "user",
+        "access_profile",
+        "section_display",
+        "show_forecasting",
+        "show_integration_panel",
+        "show_team_section",
+        "show_fusion_section",
+        "column_break_display",
+        "show_bsm_section",
+        "show_training_section",
+        "show_opportunity_matrix",
+        "show_pricing_details",
+        "section_list_defaults",
+        "default_list_view",
+        "default_show_only_mine",
+        "default_period_forecasting",
+        "column_break_list",
+        "compact_mode",
+        "confirm_phase_changes",
+        "voice_input_language"
+    ],
+    "fields": [
+        {
+            "fieldname": "user",
+            "fieldtype": "Link",
+            "in_list_view": 1,
+            "label": "User",
+            "options": "User",
+            "reqd": 1,
+            "unique": 1
+        },
+        {
+            "description": "Admin-controlled: defines which data the user is allowed to see.",
+            "fieldname": "access_profile",
+            "fieldtype": "Link",
+            "label": "Access Profile (Admin-Controlled)",
+            "options": "LCS Access Profile"
+        },
+        {
+            "fieldname": "section_display",
+            "fieldtype": "Section Break",
+            "label": "Display Preferences — What Do I Want to See?"
+        },
+        {
+            "default": "1",
+            "fieldname": "show_forecasting",
+            "fieldtype": "Check",
+            "label": "Show Forecasting Page in Sidebar"
+        },
+        {
+            "default": "1",
+            "fieldname": "show_integration_panel",
+            "fieldtype": "Check",
+            "label": "Show Integration Status Panel (CRM, ERP, BSM, HRMS, LMS, Fusion)"
+        },
+        {
+            "default": "1",
+            "fieldname": "show_team_section",
+            "fieldtype": "Check",
+            "label": "Show Team / HRMS Section"
+        },
+        {
+            "default": "1",
+            "fieldname": "show_fusion_section",
+            "fieldtype": "Check",
+            "label": "Show Fusion Manage Fields"
+        },
+        {
+            "fieldname": "column_break_display",
+            "fieldtype": "Column Break"
+        },
+        {
+            "default": "1",
+            "fieldname": "show_bsm_section",
+            "fieldtype": "Check",
+            "label": "Show BSM (Construction) Section"
+        },
+        {
+            "default": "1",
+            "fieldname": "show_training_section",
+            "fieldtype": "Check",
+            "label": "Show LMS Training Requirements"
+        },
+        {
+            "default": "1",
+            "fieldname": "show_opportunity_matrix",
+            "fieldtype": "Check",
+            "label": "Show Opportunity Matrix Tab"
+        },
+        {
+            "default": "1",
+            "fieldname": "show_pricing_details",
+            "fieldtype": "Check",
+            "label": "Show Detailed Pricing Stages (Budget, Richtpreis, Angebot)"
+        },
+        {
+            "fieldname": "section_list_defaults",
+            "fieldtype": "Section Break",
+            "label": "List & Navigation Defaults"
+        },
+        {
+            "default": "Table",
+            "fieldname": "default_list_view",
+            "fieldtype": "Select",
+            "label": "Default Project List View",
+            "options": "Table\nCards\nKanban"
+        },
+        {
+            "default": "0",
+            "fieldname": "default_show_only_mine",
+            "fieldtype": "Check",
+            "label": "Start with 'My Projects' filter enabled"
+        },
+        {
+            "default": "month",
+            "fieldname": "default_period_forecasting",
+            "fieldtype": "Select",
+            "label": "Forecasting Default Period",
+            "options": "month\nquarter\nyear"
+        },
+        {
+            "fieldname": "column_break_list",
+            "fieldtype": "Column Break"
+        },
+        {
+            "default": "0",
+            "fieldname": "compact_mode",
+            "fieldtype": "Check",
+            "label": "Compact Mode (denser layouts)"
+        },
+        {
+            "default": "1",
+            "fieldname": "confirm_phase_changes",
+            "fieldtype": "Check",
+            "label": "Confirm Before Changing Project Phase Backwards"
+        },
+        {
+            "default": "de-DE",
+            "fieldname": "voice_input_language",
+            "fieldtype": "Select",
+            "label": "Voice Input Language",
+            "options": "de-DE\nen-US\nit-IT\nfr-FR"
+        }
+    ],
+    "index_web_pages_for_search": 0,
+    "links": [],
+    "modified": "2026-04-21 00:00:00",
+    "modified_by": "Administrator",
+    "module": "LCS Integrations",
+    "name": "LCS User Preferences",
+    "owner": "Administrator",
+    "permissions": [
+        {
+            "create": 1,
+            "delete": 1,
+            "export": 1,
+            "read": 1,
+            "role": "System Manager",
+            "write": 1
+        },
+        {
+            "create": 1,
+            "read": 1,
+            "role": "Sales Manager",
+            "write": 1
+        },
+        {
+            "create": 1,
+            "read": 1,
+            "role": "Sales User",
+            "if_owner": 1,
+            "write": 1
+        }
+    ],
+    "sort_field": "modified",
+    "sort_order": "DESC",
+    "track_changes": 1
+}
