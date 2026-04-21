@@ -372,8 +372,13 @@
                         </span>
                         <span v-if="offer.probability">🎯 {{ Math.round(offer.probability) }}%</span>
                       </div>
-                      <p v-if="offer.won_lost_reason" class="mt-2 rounded-md bg-gray-50 px-2 py-1 text-xs italic text-gray-600">
-                        {{ offer.won_lost_reason }}
+                      <p v-if="offer.lost_reason" class="mt-2 rounded-md bg-red-50 px-2 py-1 text-xs italic text-red-700">
+                        <FeatherIcon name="x-circle" class="mr-1 inline h-3 w-3" />
+                        {{ __('Lost') }}: {{ offer.lost_reason }}
+                      </p>
+                      <p v-else-if="offer.won_notes" class="mt-2 rounded-md bg-green-50 px-2 py-1 text-xs italic text-green-700">
+                        <FeatherIcon name="check-circle" class="mr-1 inline h-3 w-3" />
+                        {{ offer.won_notes }}
                       </p>
                     </div>
                     <div class="flex flex-col items-end gap-2">

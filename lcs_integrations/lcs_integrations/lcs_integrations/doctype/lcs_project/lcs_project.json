@@ -20,6 +20,7 @@
         "status",
         "section_customer_contacts",
         "organization",
+        "industry",
         "primary_contact",
         "contacts",
         "section_opportunity",
@@ -131,6 +132,15 @@
             "options": "CRM Organization"
         },
         {
+            "description": "Auto-filled from the linked Organization — edit there for the master record",
+            "fetch_from": "organization.industry",
+            "fieldname": "industry",
+            "fieldtype": "Link",
+            "label": "Industry",
+            "options": "CRM Industry",
+            "read_only": 1
+        },
+        {
             "fieldname": "primary_contact",
             "fieldtype": "Link",
             "label": "Primary Contact",
@@ -154,12 +164,12 @@
             "options": "CRM Deal"
         },
         {
-            "description": "How this opportunity came to us",
+            "description": "How this opportunity came to us — managed centrally in CRM Lead Source",
             "fieldname": "source",
-            "fieldtype": "Select",
+            "fieldtype": "Link",
             "in_standard_filter": 1,
             "label": "Source / Channel",
-            "options": "\nDirect\nReferral\nWebsite\nTrade Fair\nPartner\nEmail Campaign\nCold Call\nExisting Customer\nOther"
+            "options": "CRM Lead Source"
         },
         {
             "description": "Expected deal close / order date — used for forecasting",
