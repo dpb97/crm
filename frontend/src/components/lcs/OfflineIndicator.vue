@@ -5,6 +5,12 @@
 -->
 
 <template>
+  <!-- Conflict resolver dialog -->
+  <ConflictResolver
+    :mutation="resolverMutation"
+    @close="resolverMutation = null"
+  />
+
   <!-- Top banner -->
   <Transition
     enter-active-class="transition ease-out duration-200"
@@ -77,6 +83,10 @@
                 <span v-if="m.retry_count" class="text-[10px] text-gray-400">
                   {{ __('retry') }} {{ m.retry_count }}
                 </span>
+                <!-- Conflict field count badge -->
+                <span v-if="m.status === 'conflict' && m.conflicts" class="rounded-full bg-orange-100 px-1.5 py-0 text-[10px] font-bold text-orange-800">
+                  {{ Object.keys(m.conflicts).length }} {{ __('field(s)') }}
+                </span>
               </div>
               <div class="mt-1 truncate text-sm font-medium text-gray-800">{{ m.description }}</div>
               <div class="mt-0.5 truncate font-mono text-[10px] text-gray-400">
@@ -85,8 +95,26 @@
               <div v-if="m.error" class="mt-1 rounded-md bg-red-50 px-2 py-1 text-[10px] text-red-700">
                 {{ m.error }}
               </div>
+              <!-- Conflict summary — click to resolve -->
+              <div v-if="m.status === 'conflict'" class="mt-2 rounded-md bg-orange-50 border border-orange-200 px-2 py-1.5">
+                <div class="text-[10px] font-semibold text-orange-800">
+                  {{ __('Server changed while you were editing') }}
+                </div>
+                <div class="mt-0.5 text-[10px] text-orange-700">
+                  {{ __('Conflicting fields') }}: {{ Object.keys(m.conflicts || {}).join(', ') }}
+                </div>
+              </div>
             </div>
             <div class="flex shrink-0 flex-col gap-1">
+              <!-- Resolve button for conflicts -->
+              <button
+                v-if="m.status === 'conflict'"
+                class="rounded-md bg-orange-500 p-1.5 text-white hover:bg-orange-600"
+                @click="openResolver(m)"
+                :title="__('Resolve conflict')"
+              >
+                <FeatherIcon name="git-merge" class="h-3 w-3" />
+              </button>
               <button
                 v-if="m.status === 'failed' || (m.status === 'pending' && online)"
                 class="rounded-md bg-gray-100 p-1.5 text-gray-600 hover:bg-lcs-secondary hover:text-white"
@@ -132,11 +160,17 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { FeatherIcon } from 'frappe-ui'
 import { listMutations, onQueueChange } from '@/utils/offlineDB'
 import { drain, retryMutation, discardMutation } from '@/utils/syncEngine'
+import ConflictResolver from '@/components/lcs/ConflictResolver.vue'
 
 const online = ref(navigator.onLine)
 const mutations = ref([])
 const drawerOpen = ref(false)
 const syncing = ref(false)
+const resolverMutation = ref(null)
+
+function openResolver(mutation) {
+  resolverMutation.value = mutation
+}
 
 function updateOnline() {
   online.value = navigator.onLine
@@ -149,15 +183,17 @@ async function refresh() {
 
 const pending = computed(() => mutations.value.filter(m => m.status === 'pending' || m.status === 'syncing'))
 const failed = computed(() => mutations.value.filter(m => m.status === 'failed'))
+const conflicts = computed(() => mutations.value.filter(m => m.status === 'conflict'))
 
 const sortedMutations = computed(() =>
   [...mutations.value].sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))
 )
 
-const showBanner = computed(() => !online.value || pending.value.length > 0 || failed.value.length > 0)
+const showBanner = computed(() => !online.value || pending.value.length > 0 || failed.value.length > 0 || conflicts.value.length > 0)
 
 const bannerClass = computed(() => {
   if (!online.value) return 'border-red-200 bg-red-50 text-red-800'
+  if (conflicts.value.length) return 'border-orange-200 bg-orange-50 text-orange-800'
   if (failed.value.length) return 'border-red-200 bg-red-50 text-red-800'
   if (pending.value.length) return 'border-amber-200 bg-amber-50 text-amber-800'
   return 'border-green-200 bg-green-50 text-green-800'
@@ -165,28 +201,31 @@ const bannerClass = computed(() => {
 
 const pingClass = computed(() => {
   if (!online.value || failed.value.length) return 'bg-red-400'
+  if (conflicts.value.length) return 'bg-orange-400'
   return 'bg-amber-400'
 })
 
 const dotClass = computed(() => {
   if (!online.value || failed.value.length) return 'bg-red-500'
+  if (conflicts.value.length) return 'bg-orange-500'
   return 'bg-amber-500'
 })
 
 const bannerMessage = computed(() => {
   if (!online.value) return __('Offline — changes will sync when reconnected')
+  if (conflicts.value.length) return `${conflicts.value.length} ${__('conflict(s) — tap to resolve')}`
   if (failed.value.length) return `${failed.value.length} ${__('sync error(s)')}`
   if (pending.value.length) return `${__('Syncing')} ${pending.value.length} ${__('change(s)')}...`
   return __('All synced')
 })
 
 function statusDotClass(status) {
-  const m = { pending: 'bg-amber-400', syncing: 'bg-blue-500 animate-pulse', failed: 'bg-red-500', done: 'bg-green-500' }
+  const m = { pending: 'bg-amber-400', syncing: 'bg-blue-500 animate-pulse', failed: 'bg-red-500', conflict: 'bg-orange-500 animate-pulse', done: 'bg-green-500' }
   return m[status] || 'bg-gray-400'
 }
 
 function statusTextClass(status) {
-  const m = { pending: 'text-amber-700', syncing: 'text-blue-700', failed: 'text-red-700', done: 'text-green-700' }
+  const m = { pending: 'text-amber-700', syncing: 'text-blue-700', failed: 'text-red-700', conflict: 'text-orange-700', done: 'text-green-700' }
   return m[status] || 'text-gray-500'
 }
 

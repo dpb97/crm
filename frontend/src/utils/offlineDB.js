@@ -57,7 +57,7 @@ function awaitTx(t) {
 
 // --- MUTATIONS ---
 
-export async function queueMutation({ doctype, name, method, params, description }) {
+export async function queueMutation({ doctype, name, method, params, description, baseValues, baseModified }) {
   const db = await getDB()
   const mutation = {
     doctype,
@@ -65,10 +65,14 @@ export async function queueMutation({ doctype, name, method, params, description
     method,
     params,
     description: description || `${method} ${doctype}${name ? ` ${name}` : ''}`,
-    status: 'pending',
+    status: 'pending',             // pending | syncing | failed | conflict | done
     error: null,
     retry_count: 0,
     timestamp: Date.now(),
+    // Optimistic concurrency control fields
+    base_values: baseValues || null,   // server values at queue time, per field
+    base_modified: baseModified || null, // doc.modified at queue time
+    conflicts: null,               // populated when status='conflict'
   }
   const t = tx(db, 'mutations', 'readwrite')
   const id = await awaitReq(t.objectStore('mutations').add(mutation))

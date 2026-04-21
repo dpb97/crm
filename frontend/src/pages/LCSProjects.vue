@@ -82,13 +82,20 @@
           class="text-gray-500"
         />
       </div>
-      <!-- H1: System status — total count -->
+      <!-- H1: System status — total count + cache indicator -->
       <div class="flex items-center gap-3 text-sm text-gray-500">
-        <span v-if="!projects.loading">
+        <!-- Stale-data indicator when showing cached results -->
+        <Tooltip v-if="projectsFromCache" :text="__('Showing cached results from') + ' ' + cacheAgeLabel">
+          <span class="flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700 border border-amber-200">
+            <FeatherIcon name="database" class="h-3 w-3" />
+            {{ __('cached') }}
+          </span>
+        </Tooltip>
+        <span v-if="!projectsLoading">
           {{ projectList.length }} {{ __('of') }} {{ totalCount }} {{ __('Projects') }}
         </span>
         <Tooltip :text="__('Refresh list (Ctrl+R)')">
-          <Button variant="ghost" icon="refresh-cw" @click="projects.reload()" :class="{ 'animate-spin': projects.loading }" />
+          <Button variant="ghost" icon="refresh-cw" @click="reloadProjects()" :class="{ 'animate-spin': projectsLoading }" />
         </Tooltip>
       </div>
     </div>
@@ -96,7 +103,7 @@
     <!-- Main content area -->
     <div class="flex-1 overflow-y-auto">
       <!-- H1: Visibility — Loading state with skeleton -->
-      <div v-if="projects.loading && !projectList.length" class="p-5">
+      <div v-if="projectsLoading && !projectList.length" class="p-5">
         <div v-for="i in 6" :key="i" class="mb-3 flex animate-pulse items-center gap-4 rounded-lg border p-4">
           <div class="h-4 w-28 rounded bg-gray-200" />
           <div class="h-4 w-40 rounded bg-gray-200" />
@@ -107,13 +114,13 @@
       </div>
 
       <!-- H9: Help recognize errors — Error state with recovery -->
-      <div v-else-if="projects.error" class="flex flex-col items-center justify-center p-16">
+      <div v-else-if="projectsError && !projectList.length" class="flex flex-col items-center justify-center p-16">
         <div class="rounded-full bg-red-50 p-4">
           <FeatherIcon name="alert-circle" class="h-8 w-8 text-red-400" />
         </div>
         <h3 class="mt-4 text-sm font-medium text-gray-900">{{ __('Failed to load projects') }}</h3>
-        <p class="mt-1 text-sm text-gray-500">{{ projects.error }}</p>
-        <Button class="mt-4" variant="outline" @click="projects.reload()" :label="__('Try again')" iconLeft="refresh-cw" />
+        <p class="mt-1 text-sm text-gray-500">{{ projectsError }}</p>
+        <Button class="mt-4" variant="outline" @click="reloadProjects()" :label="__('Try again')" iconLeft="refresh-cw" />
       </div>
 
       <!-- H10: Help — Empty state with guidance -->
@@ -345,10 +352,11 @@
 
 <script setup>
 import { ref, computed, reactive, watch, onMounted, onUnmounted } from 'vue'
-import { createListResource, createResource, Breadcrumbs, Button, FormControl, Dialog, Tooltip, FeatherIcon, toast } from 'frappe-ui'
+import { createResource, Breadcrumbs, Button, FormControl, Dialog, Tooltip, FeatherIcon, toast } from 'frappe-ui'
 import { useRouter } from 'vue-router'
 import { useStorage } from '@vueuse/core'
 import { sessionStore } from '@/stores/session'
+import { useOfflineList } from '@/composables/useOfflineList'
 import LayoutHeader from '@/components/LayoutHeader.vue'
 
 const session = sessionStore()
@@ -420,7 +428,14 @@ const activeFilters = computed(() => {
 
 const orderBy = computed(() => `${sortField.value} ${sortDirection.value}`)
 
-const projects = createListResource({
+const {
+  data: projectsData,
+  loading: projectsLoading,
+  error: projectsError,
+  fromCache: projectsFromCache,
+  lastCachedAt: projectsCachedAt,
+  reload: reloadProjects,
+} = useOfflineList({
   doctype: 'LCS Project',
   fields: [
     'name', 'project_name', 'project_number', 'project_type',
@@ -430,15 +445,19 @@ const projects = createListResource({
   filters: activeFilters,
   orderBy: orderBy,
   pageLength: 100,
-  auto: true,
 })
 
-// H1: Visibility — total count for status bar
-const totalCount = computed(() => projects.data?.length || 0)
+const totalCount = computed(() => projectsData.value?.length || 0)
+const projectList = computed(() => projectsData.value || [])
 
-watch(activeFilters, () => { projects.reload() }, { deep: true })
-
-const projectList = computed(() => projects.data || [])
+const cacheAgeLabel = computed(() => {
+  if (!projectsCachedAt.value) return ''
+  const s = Math.floor((Date.now() - projectsCachedAt.value) / 1000)
+  if (s < 60) return `${s}s`
+  if (s < 3600) return `${Math.floor(s / 60)}m`
+  if (s < 86400) return `${Math.floor(s / 3600)}h`
+  return `${Math.floor(s / 86400)}d`
+})
 
 // H5: Error prevention — validate before enabling submit
 const isNewProjectValid = computed(() => {
@@ -467,7 +486,7 @@ function handleKeyboard(e) {
   // Ctrl+R: Refresh
   if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
     e.preventDefault()
-    projects.reload()
+    reloadProjects()
   }
 }
 
@@ -487,7 +506,7 @@ function toggleSort(field) {
     sortField.value = field
     sortDirection.value = 'asc'
   }
-  projects.reload()
+  reloadProjects()
 }
 
 function navigateToProject(p) {
@@ -599,7 +618,7 @@ async function createProject() {
       budget_customer: null, richtpreis: null,
       project_description: '',
     })
-    projects.reload()
+    reloadProjects()
     // H4: Closure — success with navigation offer
     toast({
       title: __('Project created'),

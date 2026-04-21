@@ -926,6 +926,11 @@ const activities = createListResource({
 })
 
 async function updateField(fieldname, value) {
+  // Capture the value we *think* is currently on the server so the sync
+  // engine can detect conflicts when replaying this mutation.
+  const baseValues = project.doc ? { [fieldname]: project.doc[fieldname] } : {}
+  const baseModified = project.doc?.modified || null
+
   // Optimistic: cache the updated doc immediately so offline reads see it
   if (project.doc) {
     const updated = { ...project.doc, [fieldname]: value }
@@ -933,17 +938,17 @@ async function updateField(fieldname, value) {
   }
 
   if (navigator.onLine) {
-    // Online path: direct server call via existing Frappe resource
     try {
       await project.setValue.submit({ [fieldname]: value })
       toast({ title: __('Updated'), icon: 'check-circle', iconClasses: 'text-green-500' })
     } catch (err) {
-      // Fallback: queue so sync engine retries when connection recovers
       await queueMutation({
         doctype: 'LCS Project',
         name: projectId.value,
         method: 'update',
         params: { [fieldname]: value },
+        baseValues,
+        baseModified,
         description: `Update ${fieldname}`,
       })
       toast({
@@ -956,15 +961,15 @@ async function updateField(fieldname, value) {
     return
   }
 
-  // Offline path: queue, apply optimistic update to visible doc
   await queueMutation({
     doctype: 'LCS Project',
     name: projectId.value,
     method: 'update',
     params: { [fieldname]: value },
+    baseValues,
+    baseModified,
     description: `Update ${fieldname}`,
   })
-  // Refresh the Frappe resource's in-memory doc so the UI reflects the change
   if (project.doc) {
     project.doc[fieldname] = value
   }
