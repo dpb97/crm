@@ -8,9 +8,23 @@
         "enabled",
         "tenant",
         "default_workspace",
-        "section_auth",
+        "column_break_connection",
+        "api_base_url_override",
+        "section_oauth",
+        "client_id",
+        "client_secret",
+        "column_break_oauth",
+        "redirect_uri",
+        "scopes",
+        "section_tokens",
         "access_token",
-        "token_expires_at"
+        "token_expires_at",
+        "column_break_tokens",
+        "refresh_token",
+        "last_token_refresh",
+        "section_sync",
+        "last_sync_at",
+        "last_sync_error"
     ],
     "fields": [
         {
@@ -37,19 +51,96 @@
             "label": "Default Workspace ID"
         },
         {
-            "fieldname": "section_auth",
+            "fieldname": "column_break_connection",
+            "fieldtype": "Column Break"
+        },
+        {
+            "description": "Optional override for the Autodesk PLM base URL. Leave empty for the default https://{tenant}.autodeskplm360.net/api/rest/v3",
+            "fieldname": "api_base_url_override",
+            "fieldtype": "Data",
+            "label": "API Base URL (Override)"
+        },
+        {
+            "fieldname": "section_oauth",
             "fieldtype": "Section Break",
-            "label": "Authentication"
+            "label": "OAuth2 Credentials"
+        },
+        {
+            "description": "From Autodesk Developer Portal → your PLM app",
+            "fieldname": "client_id",
+            "fieldtype": "Data",
+            "label": "Client ID"
+        },
+        {
+            "fieldname": "client_secret",
+            "fieldtype": "Password",
+            "label": "Client Secret"
+        },
+        {
+            "fieldname": "column_break_oauth",
+            "fieldtype": "Column Break"
+        },
+        {
+            "default": "https://lcs.local/api/method/lcs_integrations.fusion_manage.auth.oauth_callback",
+            "fieldname": "redirect_uri",
+            "fieldtype": "Data",
+            "label": "Redirect URI (register with Autodesk)"
+        },
+        {
+            "default": "data:read data:write",
+            "fieldname": "scopes",
+            "fieldtype": "Data",
+            "label": "Scopes"
+        },
+        {
+            "fieldname": "section_tokens",
+            "fieldtype": "Section Break",
+            "label": "Tokens (auto-managed)"
         },
         {
             "fieldname": "access_token",
             "fieldtype": "Password",
-            "label": "Access Token"
+            "label": "Access Token",
+            "read_only": 1
         },
         {
             "fieldname": "token_expires_at",
             "fieldtype": "Datetime",
-            "label": "Token Expires At"
+            "label": "Token Expires At",
+            "read_only": 1
+        },
+        {
+            "fieldname": "column_break_tokens",
+            "fieldtype": "Column Break"
+        },
+        {
+            "fieldname": "refresh_token",
+            "fieldtype": "Password",
+            "label": "Refresh Token",
+            "read_only": 1
+        },
+        {
+            "fieldname": "last_token_refresh",
+            "fieldtype": "Datetime",
+            "label": "Last Refreshed",
+            "read_only": 1
+        },
+        {
+            "fieldname": "section_sync",
+            "fieldtype": "Section Break",
+            "label": "Sync Health"
+        },
+        {
+            "fieldname": "last_sync_at",
+            "fieldtype": "Datetime",
+            "label": "Last Successful Sync",
+            "read_only": 1
+        },
+        {
+            "fieldname": "last_sync_error",
+            "fieldtype": "Small Text",
+            "label": "Last Sync Error",
+            "read_only": 1
         }
     ],
     "index_web_pages_for_search": 0,

@@ -445,6 +445,32 @@
               </div>
             </div>
 
+            <!-- PLM / BOM Tab -->
+            <div v-if="activeTab === 'PLM'" class="space-y-4">
+              <FusionItemPicker
+                :project-name="projectId"
+                :fusion-workspace="doc.fusion_workspace"
+                :fusion-item-id="doc.fusion_item_id"
+                :fusion-number="doc.fusion_item_number"
+                :fusion-description="doc.fusion_item_description"
+                :fusion-state="doc.fusion_item_state"
+                @linked="onFusionLinked"
+                @unlinked="onFusionUnlinked"
+              />
+
+              <!-- BOM view — only when linked -->
+              <div v-if="doc.fusion_item_id">
+                <div v-if="bomLoading" class="flex items-center justify-center py-8">
+                  <div class="h-6 w-6 animate-spin rounded-full border-2 border-gray-200 border-t-lcs-secondary" />
+                </div>
+                <div v-else-if="bomError" class="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                  <FeatherIcon name="alert-circle" class="mr-1 inline h-3.5 w-3.5" />
+                  {{ bomError }}
+                </div>
+                <BomTree v-else :rows="bomRows" />
+              </div>
+            </div>
+
             <!-- Matrix Tab -->
             <div v-if="activeTab === 'Matrix'">
               <OpportunityMatrix
@@ -647,6 +673,8 @@ import SyncStatusBadge from '@/components/lcs/SyncStatusBadge.vue'
 import ErpNextDeepLink from '@/components/lcs/ErpNextDeepLink.vue'
 import FusionManageDeepLink from '@/components/lcs/FusionManageDeepLink.vue'
 import IntegrationStatusPanel from '@/components/lcs/IntegrationStatusPanel.vue'
+import FusionItemPicker from '@/components/lcs/FusionItemPicker.vue'
+import BomTree from '@/components/lcs/BomTree.vue'
 import OpportunityMatrix from '@/components/lcs/OpportunityMatrix.vue'
 import PriceStageCard from '@/components/lcs/PriceStageCard.vue'
 import VoiceInput from '@/components/lcs/VoiceInput.vue'
@@ -714,12 +742,69 @@ const tabs = computed(() => {
     { name: 'Overview', label: __('Overview'), show: true },
     { name: 'Offers', label: __('Offers') + (offers.value.length ? ` (${offers.value.length})` : ''), show: true },
     { name: 'Contacts', label: __('Contacts'), show: true },
+    { name: 'PLM', label: __('PLM / BOM'), show: canShow('show_fusion_section') },
     { name: 'Matrix', label: __('Opportunity Matrix'), show: canShow('show_opportunity_matrix') },
     { name: 'Activity', label: __('Activity'), show: true },
   ]
   return all.filter(t => t.show)
 })
 const activeTab = computed(() => tabs.value[tabIndex.value]?.name || 'Overview')
+
+// ---- Fusion BOM loading ----
+const bomRows = ref([])
+const bomLoading = ref(false)
+const bomError = ref('')
+
+async function loadBom() {
+  if (!doc.value.fusion_item_id) {
+    bomRows.value = []
+    return
+  }
+  bomLoading.value = true
+  bomError.value = ''
+  try {
+    const res = await createResource({
+      url: 'lcs_integrations.fusion_manage.service.get_bom_tree',
+      params: { project: projectId.value },
+    }).fetch()
+    const payload = res || {}
+    if (payload.error) bomError.value = payload.error
+    bomRows.value = payload.rows || []
+  } catch (err) {
+    bomError.value = err.message || String(err)
+  } finally {
+    bomLoading.value = false
+  }
+}
+
+// Reload BOM whenever the user enters the PLM tab or the link changes
+watch(activeTab, (t) => { if (t === 'PLM') loadBom() })
+watch(() => doc.value.fusion_item_id, () => loadBom())
+
+function onFusionLinked(info) {
+  // Optimistically update the cached doc so the BOM section renders immediately
+  if (project.doc) {
+    project.doc.fusion_workspace = info.workspace
+    project.doc.fusion_item_id = info.item_id
+    project.doc.fusion_item_number = info.item?.number || info.item?.itemNumber
+    project.doc.fusion_item_description = info.item?.description || info.item?.title
+    project.doc.fusion_item_state = info.item?.currentState || info.item?.state
+  }
+  project.reload?.()
+  loadBom()
+}
+
+function onFusionUnlinked() {
+  if (project.doc) {
+    project.doc.fusion_workspace = null
+    project.doc.fusion_item_id = null
+    project.doc.fusion_item_number = null
+    project.doc.fusion_item_description = null
+    project.doc.fusion_item_state = null
+  }
+  bomRows.value = []
+  project.reload?.()
+}
 
 // Phase change
 const phases = ['Inquiry', 'Offer', 'Negotiation', 'Order', 'Execution', 'Completed', 'Lost']
