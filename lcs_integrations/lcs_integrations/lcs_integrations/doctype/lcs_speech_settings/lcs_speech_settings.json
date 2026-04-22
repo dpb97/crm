@@ -1,0 +1,92 @@
+{
+    "actions": [],
+    "creation": "2026-04-21 00:00:00",
+    "doctype": "DocType",
+    "engine": "InnoDB",
+    "field_order": [
+        "section_backend",
+        "enabled",
+        "backend",
+        "section_azure",
+        "azure_region",
+        "azure_subscription_key",
+        "section_vocabulary",
+        "custom_phrases"
+    ],
+    "fields": [
+        {
+            "fieldname": "section_backend",
+            "fieldtype": "Section Break",
+            "label": "Speech Backend"
+        },
+        {
+            "default": "0",
+            "fieldname": "enabled",
+            "fieldtype": "Check",
+            "label": "Enabled"
+        },
+        {
+            "default": "Web Speech API",
+            "description": "Web Speech API uses the browser (free, Chrome/Edge only, sends audio to Google). Azure uses Cognitive Services Speech (paid, works everywhere, data stays in your Azure region, supports custom vocabulary).",
+            "fieldname": "backend",
+            "fieldtype": "Select",
+            "label": "Backend",
+            "options": "Web Speech API\nAzure Cognitive Services"
+        },
+        {
+            "depends_on": "eval:doc.backend=='Azure Cognitive Services'",
+            "fieldname": "section_azure",
+            "fieldtype": "Section Break",
+            "label": "Azure Cognitive Services"
+        },
+        {
+            "depends_on": "eval:doc.backend=='Azure Cognitive Services'",
+            "description": "E.g. westeurope, germanywestcentral, switzerlandnorth",
+            "fieldname": "azure_region",
+            "fieldtype": "Data",
+            "label": "Azure Region",
+            "mandatory_depends_on": "eval:doc.backend=='Azure Cognitive Services' && doc.enabled"
+        },
+        {
+            "depends_on": "eval:doc.backend=='Azure Cognitive Services'",
+            "fieldname": "azure_subscription_key",
+            "fieldtype": "Password",
+            "label": "Subscription Key",
+            "mandatory_depends_on": "eval:doc.backend=='Azure Cognitive Services' && doc.enabled"
+        },
+        {
+            "fieldname": "section_vocabulary",
+            "fieldtype": "Section Break",
+            "label": "Custom Vocabulary",
+            "description": "One phrase per line. Only used with the Azure backend. Helps recognition of brand names and industry terms."
+        },
+        {
+            "description": "Leave empty for the built-in LCS defaults (Seilbahn, Winde, Richtpreis, …)",
+            "fieldname": "custom_phrases",
+            "fieldtype": "Long Text",
+            "label": "Phrases"
+        }
+    ],
+    "index_web_pages_for_search": 0,
+    "issingle": 1,
+    "links": [],
+    "modified": "2026-04-21 00:00:00",
+    "modified_by": "Administrator",
+    "module": "LCS Integrations",
+    "name": "LCS Speech Settings",
+    "owner": "Administrator",
+    "permissions": [
+        {
+            "create": 1,
+            "delete": 1,
+            "export": 1,
+            "read": 1,
+            "report": 1,
+            "role": "System Manager",
+            "write": 1
+        }
+    ],
+    "sort_field": "modified",
+    "sort_order": "DESC",
+    "track_changes": 1
+}

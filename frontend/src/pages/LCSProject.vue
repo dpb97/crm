@@ -198,7 +198,7 @@
                       ref="notesInput"
                     />
                     <div class="absolute right-2 top-2">
-                      <VoiceInput lang="de-DE" @transcript="onVoiceNote" />
+                      <VoiceInput :hotkey="true" @transcript="onVoiceNote" />
                     </div>
                   </div>
                   <div class="flex items-center justify-between gap-2">
@@ -224,16 +224,24 @@
                   {{ __('Description') }}
                 </h3>
                 <div v-if="editingDescription" class="space-y-2">
-                  <textarea
-                    v-model="editDescriptionValue"
-                    class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:border-lcs-secondary focus:ring-1 focus:ring-lcs-secondary"
-                    rows="4"
-                    :placeholder="__('Add a project description...')"
-                    ref="descriptionInput"
-                  />
-                  <div class="flex gap-2">
-                    <Button variant="solid" size="sm" @click="saveDescription" :label="__('Save')" />
-                    <Button variant="ghost" size="sm" @click="cancelDescriptionEdit" :label="__('Cancel')" />
+                  <div class="relative">
+                    <textarea
+                      v-model="editDescriptionValue"
+                      class="w-full rounded-lg border border-gray-200 px-3 py-2 pr-10 text-sm text-gray-800 focus:border-lcs-secondary focus:ring-1 focus:ring-lcs-secondary"
+                      rows="4"
+                      :placeholder="__('Add a project description...')"
+                      ref="descriptionInput"
+                    />
+                    <div class="absolute right-2 top-2">
+                      <VoiceInput @transcript="onDescriptionVoice" />
+                    </div>
+                  </div>
+                  <div class="flex items-center justify-between gap-2">
+                    <div class="flex gap-2">
+                      <Button variant="solid" size="sm" @click="saveDescription" :label="__('Save')" />
+                      <Button variant="ghost" size="sm" @click="cancelDescriptionEdit" :label="__('Cancel')" />
+                    </div>
+                    <span class="text-[10px] text-gray-400">{{ __('Click mic or press Ctrl+Shift+V for voice input') }}</span>
                   </div>
                 </div>
                 <div v-else @click="startDescriptionEdit" class="group cursor-pointer">
@@ -647,7 +655,18 @@
           <FormControl :label="__('Valid Until')" v-model="newOffer.valid_until" type="date" />
         </div>
         <FormControl :label="__('Status')" v-model="newOffer.status" type="select" :options="['Draft', 'Sent', 'In Review', 'Accepted', 'Rejected', 'Expired', 'Revised']" />
-        <FormControl :label="__('Notes')" v-model="newOffer.notes" type="textarea" rows="3" />
+        <div class="relative">
+          <label class="mb-1 block text-xs text-gray-700">{{ __('Notes') }}</label>
+          <textarea
+            v-model="newOffer.notes"
+            class="w-full rounded-lg border border-gray-300 px-3 py-2 pr-10 text-sm focus:border-lcs-secondary focus:ring-1 focus:ring-lcs-secondary"
+            rows="3"
+            :placeholder="__('Offer notes, terms, reminders...')"
+          />
+          <div class="absolute right-2 top-7">
+            <VoiceInput @transcript="onOfferNotesVoice" />
+          </div>
+        </div>
       </div>
     </template>
     <template #actions>
@@ -848,12 +867,28 @@ function saveNotes() {
   editingNotes.value = false
 }
 
-// Voice input — append transcript to current notes
+// Voice input — project notes
 let voiceBaseline = ''
 function onVoiceNote({ final, interim }) {
   if (final && voiceBaseline === '') voiceBaseline = editNotesValue.value || ''
   const separator = voiceBaseline ? (voiceBaseline.endsWith('\n') ? '' : '\n') : ''
   editNotesValue.value = voiceBaseline + separator + (final || '') + (interim || '')
+}
+
+// Voice input — new offer dialog
+let offerNotesBaseline = ''
+function onOfferNotesVoice({ final, interim }) {
+  if (final && offerNotesBaseline === '') offerNotesBaseline = newOffer.value.notes || ''
+  const separator = offerNotesBaseline ? (offerNotesBaseline.endsWith('\n') ? '' : '\n') : ''
+  newOffer.value.notes = offerNotesBaseline + separator + (final || '') + (interim || '')
+}
+
+// Voice input — project description
+let descriptionBaseline = ''
+function onDescriptionVoice({ final, interim }) {
+  if (final && descriptionBaseline === '') descriptionBaseline = editDescriptionValue.value || ''
+  const separator = descriptionBaseline ? (descriptionBaseline.endsWith('\n') ? '' : '\n') : ''
+  editDescriptionValue.value = descriptionBaseline + separator + (final || '') + (interim || '')
 }
 
 // Description edit
