@@ -756,10 +756,15 @@ const budgetVsAngebot = computed(() => {
 
 // Tabs — Offers tab added prominently
 const tabIndex = ref(0)
+// Offer count stored in a dedicated ref so tabs computed doesn't touch
+// `offers` (which is declared further down in this file — referring to
+// it here causes a TDZ error when the minifier inlines the getter).
+const tabOfferCount = ref(0)
+
 const tabs = computed(() => {
   const all = [
     { name: 'Overview', label: __('Overview'), show: true },
-    { name: 'Offers', label: __('Offers') + (offers.value.length ? ` (${offers.value.length})` : ''), show: true },
+    { name: 'Offers', label: __('Offers') + (tabOfferCount.value ? ` (${tabOfferCount.value})` : ''), show: true },
     { name: 'Contacts', label: __('Contacts'), show: true },
     { name: 'PLM', label: __('PLM / BOM'), show: canShow('show_fusion_section') },
     { name: 'Matrix', label: __('Opportunity Matrix'), show: canShow('show_opportunity_matrix') },
@@ -922,6 +927,9 @@ const offersResource = createResource({
   auto: true,
 })
 const offers = computed(() => offersResource.data || [])
+// Keep the tabs count in sync — lives in a separate ref above because
+// `tabs` must not reference `offers` directly (TDZ in setup order).
+watch(offers, (v) => { tabOfferCount.value = (v || []).length }, { immediate: true })
 const latestOffer = computed(() => offers.value[0] || null)
 const activeOffersCount = computed(() => offers.value.filter(o => ['Draft', 'Sent', 'In Review'].includes(o.status)).length)
 const offerStatusCounts = computed(() => {

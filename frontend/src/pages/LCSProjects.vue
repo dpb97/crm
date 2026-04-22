@@ -5,6 +5,15 @@
     </template>
     <template #right-header>
       <div class="flex items-center gap-2">
+        <!-- Admin-only: import existing BSM construction sites -->
+        <Tooltip v-if="canManageImport" :text="__('Import running BSM construction sites as LCS Projects')">
+          <Button
+            variant="ghost"
+            icon="download-cloud"
+            @click="showImportDialog = true"
+            :aria-label="__('Import from BSM')"
+          />
+        </Tooltip>
         <Tooltip :text="__('Display preferences — choose what to show')">
           <Button
             variant="ghost"
@@ -273,6 +282,13 @@
     </div>
   </div>
 
+  <!-- Admin-only: import existing BSM construction sites -->
+  <BacklogImportDialog
+    v-if="canManageImport"
+    v-model:open="showImportDialog"
+    @imported="reloadProjects()"
+  />
+
   <!-- New Project Dialog — H4: Closure, H5: Error prevention (validation) -->
   <Dialog v-model="showNewDialog" :options="{ title: __('New Project'), size: 'lg' }">
     <template #body-content>
@@ -385,13 +401,24 @@ import { useRouter } from 'vue-router'
 import { useStorage } from '@vueuse/core'
 import { sessionStore } from '@/stores/session'
 import { useOfflineList } from '@/composables/useOfflineList'
+import { useUserPreferences } from '@/composables/useUserPreferences'
+import BacklogImportDialog from '@/components/lcs/BacklogImportDialog.vue'
 import LayoutHeader from '@/components/LayoutHeader.vue'
 
 const session = sessionStore()
+const userPrefs = useUserPreferences()
 
 function openPreferences() {
   window.dispatchEvent(new CustomEvent('lcs-open-preferences'))
 }
+
+// Admin-only: show the BSM-import button to sysadmin + sales managers
+const showImportDialog = ref(false)
+const canManageImport = computed(() => {
+  const roles = session.user_roles || session.roles || []
+  return userPrefs.state.isSystemManager
+    || (Array.isArray(roles) && (roles.includes('System Manager') || roles.includes('Sales Manager')))
+})
 
 // H7: Flexibility — inline sort indicator component
 const SortIcon = {

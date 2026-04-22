@@ -149,6 +149,9 @@ def _backfill_one(bsm: dict, dry_run: bool) -> dict:
     if bsm.project_code:
         # project_abbr is Data(5) — truncate safely
         doc.project_abbr = str(bsm.project_code)[:5]
+    # Keep a breadcrumb in notes that this project came from BSM so
+    # future back-fills and audits can trace the origin.
+    doc.notes = _origin_note(bsm)
     # Note: we link to BSM BEFORE insert to bypass the bsm_sync hook which
     # would otherwise try to create a new BSM Project for us.
     doc.bsm_project = bsm.name
@@ -160,9 +163,65 @@ def _backfill_one(bsm: dict, dry_run: bool) -> dict:
     if _has_cf:
         frappe.db.set_value("BSM Project", bsm.name, "lcs_project", doc.name, update_modified=False)
 
+    # Mirror the most recent files attached to the BSM Project onto the
+    # LCS Project so sales can see the contract, offer PDF, plans, etc.
+    # without jumping between apps.
+    files_copied = _copy_attachments(bsm.name, doc.name)
+    report["files_copied"] = files_copied
+
     report["action"] = "created"
     report["lcs_project"] = doc.name
     return report
+
+
+def _origin_note(bsm: dict) -> str:
+    """Seed the notes field with where the project came from."""
+    lines = [f"[Imported from BSM Project {bsm.name}]"]
+    if bsm.customer:
+        lines.append(f"Customer: {bsm.customer}")
+    if bsm.location_name:
+        lines.append(f"Location: {bsm.location_name}")
+    if bsm.start_date:
+        lines.append(f"Started: {bsm.start_date}")
+    if bsm.end_date:
+        lines.append(f"Planned end: {bsm.end_date}")
+    if bsm.project_code:
+        lines.append(f"BSM project code: {bsm.project_code}")
+    return "\n".join(lines)
+
+
+def _copy_attachments(bsm_name: str, lcs_name: str) -> int:
+    """Duplicate the File rows attached to the BSM Project onto the LCS Project.
+
+    We copy the metadata (same file_url, is_private, folder) — not the
+    bytes — so attachments show up on both records without doubling
+    storage. Limited to the 20 most recent files.
+    """
+    files = frappe.get_all(
+        "File",
+        filters={"attached_to_doctype": "BSM Project", "attached_to_name": bsm_name},
+        fields=["name", "file_url", "file_name", "is_private", "folder"],
+        order_by="creation desc",
+        limit=20,
+    )
+    count = 0
+    for f in files:
+        try:
+            new_file = frappe.new_doc("File")
+            new_file.file_url = f.file_url
+            new_file.file_name = f.file_name
+            new_file.is_private = f.is_private
+            new_file.folder = f.folder
+            new_file.attached_to_doctype = "LCS Project"
+            new_file.attached_to_name = lcs_name
+            new_file.insert(ignore_permissions=True)
+            count += 1
+        except Exception as e:
+            frappe.log_error(
+                f"Could not mirror file {f.name} to {lcs_name}: {e}",
+                "backfill_projects.attach",
+            )
+    return count
 
 
 def _infer_type(project_name: str) -> str:
