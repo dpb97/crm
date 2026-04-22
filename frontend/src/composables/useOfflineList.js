@@ -7,14 +7,32 @@
  * - On success: cache the response under a key derived from doctype + params
  * - On error OR when offline: serve the last cached data (if any)
  * - Exposes `fromCache` so the UI can show a "stale data" indicator
- *
- * Conflict-free: cache is read-only for reads, all writes go through the
- * existing mutation queue and update single-doc caches separately.
  */
 
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, unref, toRaw } from 'vue'
 import { createListResource } from 'frappe-ui'
 import { cacheListGet, cacheListPut } from '@/utils/offlineDB'
+
+/**
+ * Deeply unref + toRaw a value so JSON.stringify doesn't walk into
+ * Vue's reactive proxy internals (which contain circular references
+ * like `computed.dep.computed`).
+ *
+ * Handles: computed refs, reactive objects, nested refs in plain
+ * objects/arrays, Date, plain values.
+ */
+function toSerializable(v) {
+  v = unref(v)
+  if (v == null) return v
+  if (typeof v !== 'object') return v
+  v = toRaw(v)
+  if (Array.isArray(v)) return v.map(toSerializable)
+  const out = {}
+  for (const k of Object.keys(v)) {
+    out[k] = toSerializable(v[k])
+  }
+  return out
+}
 
 export function useOfflineList(config) {
   const data = ref([])
@@ -23,16 +41,18 @@ export function useOfflineList(config) {
   const fromCache = ref(false)
   const lastCachedAt = ref(null)
 
-  // Stable cache key from doctype + serialized filters/fields
+  // Stable cache key from doctype + fully-unwrapped params.
+  // Every input could be a ref / computed / reactive — unref all the way down
+  // before JSON.stringify to avoid "Converting circular structure" crashes.
   const cacheKey = computed(() => {
     const filtersSnapshot = typeof config.filters === 'function'
       ? config.filters()
-      : (config.filters?.value ?? config.filters ?? {})
+      : toSerializable(config.filters)
     return `list:${config.doctype}:${JSON.stringify({
       filters: filtersSnapshot,
-      fields: config.fields,
-      orderBy: config.orderBy,
-      pageLength: config.pageLength,
+      fields: toSerializable(config.fields),
+      orderBy: toSerializable(config.orderBy),
+      pageLength: toSerializable(config.pageLength),
     })}`
   })
 
@@ -43,7 +63,12 @@ export function useOfflineList(config) {
       data.value = fresh
       fromCache.value = false
       lastCachedAt.value = Date.now()
-      await cacheListPut(cacheKey.value, { data: fresh, cached_at: Date.now() })
+      try {
+        await cacheListPut(cacheKey.value, { data: toSerializable(fresh), cached_at: Date.now() })
+      } catch (e) {
+        // Cache write failing is non-fatal — UI already rendered fresh
+        console.warn('useOfflineList: cache write failed', e)
+      }
       if (config.onSuccess) config.onSuccess(fresh)
     },
     onError: async (err) => {
@@ -54,12 +79,16 @@ export function useOfflineList(config) {
   })
 
   async function loadFromCache() {
-    const cached = await cacheListGet(cacheKey.value)
-    if (cached) {
-      data.value = cached.data
-      fromCache.value = true
-      lastCachedAt.value = cached.cached_at
-      error.value = null
+    try {
+      const cached = await cacheListGet(cacheKey.value)
+      if (cached) {
+        data.value = cached.data
+        fromCache.value = true
+        lastCachedAt.value = cached.cached_at
+        error.value = null
+      }
+    } catch (e) {
+      console.warn('useOfflineList: cache read failed', e)
     }
   }
 
@@ -73,6 +102,8 @@ export function useOfflineList(config) {
     }
     try {
       await resource.reload()
+    } catch (e) {
+      // Fallback handled in onError above
     } finally {
       loading.value = false
     }
