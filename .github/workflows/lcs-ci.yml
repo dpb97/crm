@@ -97,6 +97,96 @@ jobs:
         working-directory: frontend
         run: yarn build
 
+  validate-structure:
+    name: DocType + hooks + manifest validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Validate all DocType JSONs parse
+        run: |
+          python - <<'PY'
+          import json, pathlib, sys
+          errors = []
+          for p in pathlib.Path("lcs_integrations").rglob("doctype/*/*.json"):
+              try:
+                  data = json.loads(p.read_text())
+                  # Required fields on a DocType JSON
+                  for key in ("doctype", "name", "module", "fields"):
+                      if key not in data and "istable" not in data and key != "fields":
+                          errors.append(f"{p}: missing '{key}'")
+              except json.JSONDecodeError as e:
+                  errors.append(f"{p}: invalid JSON — {e}")
+          if errors:
+              print("\n".join(errors)); sys.exit(1)
+          print("All DocType JSONs valid")
+          PY
+
+      - name: Validate hook function paths resolve
+        run: |
+          python - <<'PY'
+          import importlib, pathlib, re, sys, ast
+          hooks_file = pathlib.Path("lcs_integrations/lcs_integrations/hooks.py")
+          src = hooks_file.read_text()
+          # Collect every "dotted.path.to.function" string literal in hooks.py
+          paths = set(re.findall(r'"(lcs_integrations\.[a-zA-Z_.0-9]+)"', src))
+          missing = []
+          sys.path.insert(0, "lcs_integrations")
+          for p in paths:
+              module, _, func = p.rpartition(".")
+              try:
+                  m = importlib.import_module(module)
+                  if not hasattr(m, func):
+                      missing.append(f"{p}: function not defined")
+              except ImportError as e:
+                  missing.append(f"{p}: {e}")
+          if missing:
+              print("Broken hook references in hooks.py:")
+              print("\n".join(missing)); sys.exit(1)
+          print(f"All {len(paths)} hook references resolve")
+          PY
+
+      - name: Validate Outlook Add-in manifest XML
+        run: |
+          python - <<'PY'
+          import xml.etree.ElementTree as ET
+          import sys
+          try:
+              tree = ET.parse("lcs_integrations/lcs_integrations/www/outlook-addin/manifest.xml")
+              root = tree.getroot()
+              # Must be an OfficeApp MailApp
+              assert "OfficeApp" in root.tag, f"Unexpected root tag: {root.tag}"
+              xsi_type = root.attrib.get("{http://www.w3.org/2001/XMLSchema-instance}type", "")
+              assert xsi_type == "MailApp", f"Unexpected type: {xsi_type}"
+              print("Outlook manifest.xml valid + MailApp")
+          except Exception as e:
+              print(f"Manifest invalid: {e}"); sys.exit(1)
+          PY
+
+      - name: Check patches.txt entries resolve
+        run: |
+          python - <<'PY'
+          import importlib, pathlib, sys
+          sys.path.insert(0, "lcs_integrations")
+          patches = pathlib.Path("lcs_integrations/lcs_integrations/patches.txt").read_text().splitlines()
+          missing = []
+          for line in patches:
+              line = line.strip()
+              if not line or line.startswith("#") or line.startswith("["):
+                  continue
+              try:
+                  importlib.import_module(line)
+              except ImportError as e:
+                  missing.append(f"{line}: {e}")
+          if missing:
+              print("Broken patch references:")
+              print("\n".join(missing)); sys.exit(1)
+          print(f"All {len([l for l in patches if l.strip() and not l.startswith('#')])} patches importable")
+          PY
+
   commitlint:
     name: Conventional commits
     runs-on: ubuntu-latest
