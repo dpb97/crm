@@ -71,17 +71,35 @@ def _refresh_tokens(settings) -> None:
     _store_tokens(settings, payload)
 
 
+STATE_TTL_SEC = 600  # 10 minutes — long enough for a slow OAuth round-trip
+
+
 def build_authorize_url(state: str = "") -> str:
-    """Return the URL a user should visit to authorize this integration."""
+    """Return the URL a user should visit to authorize this integration.
+
+    Generates a fresh CSRF state token, caches it in Redis for 10 minutes,
+    and embeds it in the authorize URL so `oauth_callback` can verify that
+    the returned code was issued for a request originating from us.
+    """
     settings = frappe.get_single("LCS Fusion Manage Settings")
     if not settings.client_id:
         raise FusionAuthError("client_id not configured in settings")
+
+    state = state or frappe.generate_hash(length=32)
+    # Bind state to the user so the same session that started the flow must
+    # finish it — prevents a compromised proxy from completing someone else's auth.
+    frappe.cache().set_value(
+        f"lcs_integrations:fusion_oauth_state:{state}",
+        frappe.session.user,
+        expires_in_sec=STATE_TTL_SEC,
+    )
+
     params = {
         "response_type": "code",
         "client_id": settings.client_id,
         "redirect_uri": settings.redirect_uri,
         "scope": settings.scopes or "data:read",
-        "state": state or frappe.generate_hash(length=16),
+        "state": state,
     }
     return f"{AUTODESK_AUTH_URL}?{urlencode(params)}"
 
@@ -123,6 +141,26 @@ def oauth_callback(code: str = None, state: str = None, error: str = None):
             indicator_color="red",
         )
         return
+
+    # CSRF: verify the state token was issued by us and bound to this user.
+    if not state:
+        frappe.respond_as_web_page(
+            "Fusion Manage Authorization Failed",
+            "Missing state parameter — possible CSRF attempt. Please retry from the settings page.",
+            indicator_color="red",
+        )
+        return
+    state_key = f"lcs_integrations:fusion_oauth_state:{state}"
+    state_owner = frappe.cache().get_value(state_key)
+    if state_owner != frappe.session.user:
+        frappe.respond_as_web_page(
+            "Fusion Manage Authorization Failed",
+            "State mismatch — the authorization request did not originate in this session.",
+            indicator_color="red",
+        )
+        return
+    # State is single-use
+    frappe.cache().delete_value(state_key)
 
     settings = frappe.get_single("LCS Fusion Manage Settings")
     data = {

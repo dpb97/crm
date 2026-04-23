@@ -39,7 +39,12 @@ def migrate_lost_reason():
     """Old schema had a single `won_lost_reason` Small Text field. Copy its
     value into the new `lost_reason` Link field when status='Rejected',
     creating the CRM Lost Reason record if it's missing."""
-    # Only run if old column still exists — Frappe migrate drops it otherwise
+    # Only run if old column still exists — Frappe migrate drops it otherwise.
+    # Check via the ORM-safe meta lookup rather than swallowing SQL errors
+    # (previously this hid every DB-layer failure, not just "column gone").
+    if not _has_column("tabLCS Offer", "won_lost_reason"):
+        return
+
     try:
         offers = frappe.db.sql(
             """SELECT name, status, won_lost_reason
@@ -47,8 +52,14 @@ def migrate_lost_reason():
                WHERE won_lost_reason IS NOT NULL AND won_lost_reason != ''""",
             as_dict=True,
         )
-    except Exception:
-        return  # Column already gone — nothing to migrate
+    except Exception as e:
+        # Column existed per the meta check but query still failed — this is
+        # a real error the operator needs to see.
+        frappe.log_error(
+            f"Unexpected error reading legacy won_lost_reason column: {e}",
+            "migrate_legacy_source_reason",
+        )
+        return
 
     for o in offers:
         if o.status != "Rejected":
@@ -62,7 +73,24 @@ def migrate_lost_reason():
                 doc = frappe.new_doc("CRM Lost Reason")
                 doc.lost_reason = reason_text
                 doc.insert(ignore_permissions=True, ignore_if_duplicate=True)
-            except Exception:
+            except Exception as e:
+                # Surface the per-row failure so partial migration is visible
+                frappe.log_error(
+                    f"Could not create CRM Lost Reason '{reason_text}' for offer {o.name}: {e}",
+                    "migrate_legacy_source_reason",
+                )
                 continue
         frappe.db.set_value("LCS Offer", o.name, "lost_reason", reason_text)
     frappe.db.commit()
+
+
+def _has_column(table: str, column: str) -> bool:
+    """True if the given column currently exists on the given table.
+    Uses information_schema so we don't rely on catching SQL errors."""
+    rows = frappe.db.sql(
+        """SELECT 1 FROM information_schema.columns
+           WHERE table_schema = DATABASE()
+             AND table_name = %s AND column_name = %s LIMIT 1""",
+        (table, column),
+    )
+    return bool(rows)

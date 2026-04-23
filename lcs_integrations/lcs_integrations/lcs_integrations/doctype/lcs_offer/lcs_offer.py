@@ -1,5 +1,6 @@
 import frappe
 from frappe.model.document import Document
+from pypika import functions as fn
 
 
 class LCSOffer(Document):
@@ -7,23 +8,34 @@ class LCSOffer(Document):
         """Clear back-links on ERPNext Quotation + Sales Order when this
         offer is deleted — leaves the commercial artefacts intact but
         removes the stale pointer back to a non-existent offer."""
-        import frappe as _frappe
-        if self.erpnext_quotation and _frappe.db.exists("Quotation", self.erpnext_quotation):
-            _frappe.db.set_value("Quotation", self.erpnext_quotation, "lcs_offer", None)
-        if self.erpnext_sales_order and _frappe.db.exists("Sales Order", self.erpnext_sales_order):
-            _frappe.db.set_value("Sales Order", self.erpnext_sales_order, "lcs_project", None)
+        if self.erpnext_quotation and frappe.db.exists("Quotation", self.erpnext_quotation):
+            frappe.db.set_value("Quotation", self.erpnext_quotation, "lcs_offer", None)
+        if self.erpnext_sales_order and frappe.db.exists("Sales Order", self.erpnext_sales_order):
+            frappe.db.set_value("Sales Order", self.erpnext_sales_order, "lcs_project", None)
+
     def validate(self):
         self.validate_version()
         self.sync_project_phase()
 
     def validate_version(self):
-        """Ensure version increments per project."""
-        if not self.version:
-            max_version = frappe.db.sql(
-                "SELECT MAX(version) FROM `tabLCS Offer` WHERE project = %s AND name != %s",
-                (self.project, self.name or ""),
-            )[0][0]
-            self.version = (max_version or 0) + 1
+        """Ensure version increments per project.
+
+        Uses frappe.qb instead of raw SQL so schema renames on tabLCS Offer
+        don't silently break this path.
+        """
+        if self.version:
+            return
+        Offer = frappe.qb.DocType("LCS Offer")
+        query = (
+            frappe.qb.from_(Offer)
+            .select(fn.Max(Offer.version).as_("max_version"))
+            .where(Offer.project == self.project)
+        )
+        if self.name:
+            query = query.where(Offer.name != self.name)
+        result = query.run(as_dict=True)
+        max_version = (result[0].get("max_version") if result else None) or 0
+        self.version = max_version + 1
 
     def sync_project_phase(self):
         """Keep project phase in sync with offer status for clarity."""

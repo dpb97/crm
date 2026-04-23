@@ -97,30 +97,92 @@ def get_permission_query_conditions(user: str = None) -> str:
 
 
 def has_permission(doc, ptype: str = None, user: str = None) -> bool:
-    """Document-level permission check. Called for single-record reads."""
+    """Document-level permission check for LCS Project.
+
+    Covers every CRUD ptype Frappe can pass: read, write, create, delete,
+    submit, amend, cancel, print, email, export, share. Defaults to
+    allowing unknown ptypes so future Frappe additions don't break
+    existing access — the base role check still applies on top.
+    """
     user = user or frappe.session.user
     profile = _profile_for(user)
     if not profile:
         return True
 
-    # Countries
+    # Row-scope first — if the project is outside the user's scope they
+    # can't do anything with it regardless of ptype.
     if profile["countries"] and doc.get("country") not in profile["countries"]:
         return False
-
-    # Project types
     if profile["project_types"] and doc.get("project_type") not in profile["project_types"]:
         return False
-
-    # Own-only
     if profile["own_only"]:
         allowed_users = [user] + (profile["team_members"] or [])
         if doc.get("salesperson") not in allowed_users:
             return False
 
-    # Action-level
+    # Action-level gates. 'read' and 'print'/'email'/'export'/'share' pass
+    # through once the row scope allows the doc — those are handled by
+    # access profile's can_export for bulk export instead.
     if ptype == "delete" and not profile["can_delete_projects"]:
         return False
     if ptype == "create" and not profile["can_create_projects"]:
+        return False
+    # 'write' / 'submit' / 'amend' / 'cancel': use phase-edit gate as a
+    # reasonable default — if a user can't change phase they're effectively
+    # read-only on the project.
+    if ptype in ("write", "submit", "amend", "cancel") and not profile["can_edit_phase"]:
+        return False
+    if ptype == "export" and not profile["can_export"]:
+        return False
+
+    return True
+
+
+def get_offer_query_conditions(user: str = None) -> str:
+    """Filter LCS Offer lists to offers of projects the user can see."""
+    user = user or frappe.session.user
+    profile = _profile_for(user)
+    if not profile:
+        return ""
+
+    project_conditions = get_permission_query_conditions(user)
+    if not project_conditions:
+        return ""
+
+    # Translate the project-side conditions onto tabLCS Offer.project via
+    # a subquery. Using a subquery keeps the hook signature (returns a
+    # single SQL fragment) while still leveraging the existing logic.
+    project_conditions_for_subquery = project_conditions.replace(
+        "`tabLCS Project`.", "p."
+    )
+    return (
+        f"`tabLCS Offer`.project IN ("
+        f"SELECT p.name FROM `tabLCS Project` p "
+        f"WHERE {project_conditions_for_subquery}"
+        f")"
+    )
+
+
+def has_offer_permission(doc, ptype: str = None, user: str = None) -> bool:
+    """Offer visibility + mutation follows its parent project's rules."""
+    user = user or frappe.session.user
+    profile = _profile_for(user)
+    if not profile:
+        return True
+    if not doc.get("project"):
+        # Orphan offer — defer to base role perms
+        return True
+    try:
+        project = frappe.get_cached_doc("LCS Project", doc.get("project"))
+    except frappe.DoesNotExistError:
+        return False
+
+    if not has_permission(project, "read", user=user):
+        return False
+
+    # Status transitions that actually change commercial state — gate via
+    # can_accept_offers so junior sales can't self-confirm deals.
+    if ptype == "write" and doc.get("status") == "Accepted" and not profile.get("can_accept_offers"):
         return False
 
     return True

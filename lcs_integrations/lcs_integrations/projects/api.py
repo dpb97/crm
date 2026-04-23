@@ -270,7 +270,18 @@ def get_forecast(period="month", months_ahead=12):
 
 @frappe.whitelist()
 def create_project_from_deal(deal_name):
-    """Create an LCS Project from a CRM Deal."""
+    """Create an LCS Project from a CRM Deal.
+
+    Permission: user must be allowed to read the source deal AND create
+    LCS Project records. The underlying `.insert(ignore_permissions=True)`
+    below is for bypassing the validate-hook's idempotency check, not for
+    bypassing auth.
+    """
+    if not frappe.has_permission("CRM Deal", ptype="read", doc=deal_name):
+        frappe.throw("Not permitted to read this deal", frappe.PermissionError)
+    if not frappe.has_permission("LCS Project", ptype="create"):
+        frappe.throw("Not permitted to create projects", frappe.PermissionError)
+
     deal = frappe.get_doc("CRM Deal", deal_name)
     project = frappe.new_doc("LCS Project")
     project.project_name = deal.deal_name or deal.lead_name or deal.name

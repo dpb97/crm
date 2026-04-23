@@ -24,7 +24,10 @@ from lcs_integrations.fusion_manage.auth import get_access_token
 
 DEFAULT_BASE_URL_TEMPLATE = "https://{tenant}.autodeskplm360.net/api/rest/v3"
 
-REDIS_CACHE_NAMESPACE = "fusion_manage"
+# App-prefixed namespace so no other Frappe app can collide with our cache.
+# Per Frappe docs: hset/hget group related keys; expire applies to the hash
+# as a whole — we set TTLs explicitly after each hset call below.
+REDIS_CACHE_NAMESPACE = "lcs_integrations:fusion_manage"
 ITEM_CACHE_TTL_SEC = 60
 WORKSPACE_CACHE_TTL_SEC = 300
 

@@ -94,9 +94,15 @@ def log_email_to_project(project: str, subject: str, body: str, sender: str, rec
     """
     Attach an email as a Comment on the LCS Project's activity feed.
     Used by the "Log to CRM" ribbon action.
+
+    Any role that can edit CRM Deals should be able to log mail — we
+    check write permission on the target project rather than a specific
+    role so Access Profile restrictions flow through here too.
     """
     if not frappe.db.exists("LCS Project", project):
         frappe.throw(f"LCS Project {project} not found")
+    if not frappe.has_permission("LCS Project", ptype="write", doc=project):
+        frappe.throw("Not permitted to log email on this project", frappe.PermissionError)
 
     comment = frappe.new_doc("Comment")
     comment.comment_type = "Comment"
@@ -119,6 +125,8 @@ def create_lead_from_email(sender: str, sender_name: str = "", subject: str = ""
     Create a new CRM Lead from an email. Used when the sender domain
     doesn't match any existing organization.
     """
+    if not frappe.has_permission("CRM Lead", ptype="create"):
+        frappe.throw("Not permitted to create leads", frappe.PermissionError)
     if frappe.db.exists("CRM Lead", {"email": sender}):
         lead_name = frappe.db.get_value("CRM Lead", {"email": sender}, "name")
         return {"ok": True, "lead": lead_name, "created": False}
