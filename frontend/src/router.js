@@ -59,6 +59,11 @@ const routes = [
     component: () => import('@/pages/LCSForecasting.vue'),
   },
   {
+    path: '/quick-note',
+    name: 'LCS Quick Note',
+    component: () => import('@/pages/LCSQuickNote.vue'),
+  },
+  {
     alias: '/notes',
     path: '/notes/view/:viewType?',
     name: 'Notes',
