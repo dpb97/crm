@@ -429,26 +429,14 @@ function onManualSearch() {
   manualSearching.value = true
   manualTimer = setTimeout(async () => {
     try {
-      const res = await call('lcs_integrations.projects.api.get_project_list', {
-        filters: {
-          project_name: ['like', `%${manualQuery.value}%`],
-        },
+      // Dedicated search — hits name, number, abbr AND organization in one shot.
+      // Works past the filters-object serialization issue that broke
+      // the previous get_project_list-based implementation.
+      const res = await call('lcs_integrations.notes.api.search_projects', {
+        query: manualQuery.value,
         limit: 20,
       })
-      const rows = res.message || res || []
-      // Also search by number — second query, merged
-      const res2 = await call('lcs_integrations.projects.api.get_project_list', {
-        filters: {
-          project_number: ['like', `%${manualQuery.value}%`],
-        },
-        limit: 20,
-      })
-      const byNumber = res2.message || res2 || []
-      const merged = [...rows]
-      for (const p of byNumber) {
-        if (!merged.find(m => m.name === p.name)) merged.push(p)
-      }
-      manualResults.value = merged.slice(0, 20)
+      manualResults.value = res.message || res || []
     } catch (err) {
       console.warn('manual search failed:', err)
       manualResults.value = []

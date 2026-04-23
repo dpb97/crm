@@ -48,6 +48,36 @@ TYPE_KEYWORDS = [
 
 
 @frappe.whitelist()
+def search_projects(query: str, limit: int = 20):
+    """
+    Simple OR search across project_name + project_number for the manual
+    picker on the Quick Note page. Respects the current user's access
+    profile because frappe.get_all honours permission_query_conditions.
+    """
+    query = (query or "").strip()
+    if len(query) < 2:
+        return []
+    try:
+        limit = max(1, min(int(limit), 50))
+    except (TypeError, ValueError):
+        limit = 20
+    like = f"%{query}%"
+    return frappe.get_all(
+        "LCS Project",
+        or_filters={
+            "project_name": ["like", like],
+            "project_number": ["like", like],
+            "project_abbr": ["like", like],
+            "organization": ["like", like],
+        },
+        fields=["name", "project_name", "project_number", "project_type",
+                "organization", "phase", "country"],
+        order_by="modified desc",
+        limit_page_length=limit,
+    )
+
+
+@frappe.whitelist()
 def dispatch_note(text: str, project: str = None, dry_run: bool = False, audio_file_url: str = None):
     """
     Rank visible LCS Projects against the note text and optionally log it.
@@ -146,6 +176,14 @@ def _score_project(p: dict, text_lower: str, text_tokens: set, hinted_type: str 
     if number and number in text_lower:
         score += WEIGHT_PROJECT_NUMBER
         reasons.append(f"number:{number}")
+
+    # Full project_name substring — catches cases like "QX-CM" where the
+    # name breaks down into tokens too short for the token-based path
+    # (tokens <3 chars are stripped as noise).
+    full_name = (p.get("project_name") or "").lower()
+    if full_name and len(full_name) >= 3 and full_name in text_lower:
+        score += WEIGHT_PROJECT_NAME  # same weight as exact token match
+        reasons.append(f"name_full:{full_name}")
 
     abbr = (p.get("project_abbr") or "").lower()
     # Abbreviations <3 chars are too noisy — they'd match random words
@@ -270,7 +308,8 @@ def _log_as_comment(project: str, text: str, audio_file_url: str | None = None) 
     comment.insert(ignore_permissions=False)
 
     # Reparent the uploaded audio to the project and link it from
-    # the comment for later retrieval.
+    # the comment for later retrieval. Then queue a Hermes job so the
+    # agent can re-transcribe with better quality / custom vocabulary.
     if audio_file_url:
         try:
             file_name = frappe.db.get_value("File", {"file_url": audio_file_url}, "name")
@@ -284,21 +323,34 @@ def _log_as_comment(project: str, text: str, audio_file_url: str | None = None) 
                 f"Could not reparent audio file {audio_file_url}: {e}",
                 "notes.dispatch",
             )
+        # Queue the job. Imported lazily so notes/api.py stays callable
+        # on sites that haven't migrated the Job DocType yet.
+        try:
+            from lcs_integrations.notes.transcription import create_job_for_audio
+            create_job_for_audio(
+                file_url=audio_file_url,
+                project=project,
+                comment=comment.name,
+                original_transcript=text,
+            )
+        except Exception as e:
+            frappe.log_error(
+                f"Could not queue transcription job for {audio_file_url}: {e}",
+                "notes.dispatch",
+            )
 
     frappe.db.commit()
     return comment.name
 
 
 @frappe.whitelist()
-def retranscribe_audio(file_url: str, language: str = "de-DE"):
+def retranscribe_audio(file_url: str, language: str = "de-DE", priority: int = 5):
     """
-    Re-transcribe a saved audio attachment using the configured speech backend.
+    Re-queue a saved audio attachment for transcription by the Hermes agent.
 
-    Requires the file to belong to an LCS Project the user can write to.
-    The actual SDK call is left as a TODO until the team installs the
-    azure-cognitiveservices-speech Python package — at that point,
-    wire it up here so existing audio attachments can be re-parsed
-    with better vocabulary support.
+    Does not perform the STT itself — just drops a job into the
+    LCS Audio Transcription Job queue where Hermes will pick it up via
+    `lcs_integrations.notes.transcription.claim_jobs`.
     """
     frappe.only_for(["System Manager", "Sales Manager", "Sales User"])
     file_row = frappe.db.get_value(
@@ -310,25 +362,17 @@ def retranscribe_audio(file_url: str, language: str = "de-DE"):
     if not file_row:
         frappe.throw(f"File {file_url} not found")
 
+    project = None
     if file_row.attached_to_doctype == "LCS Project":
         if not frappe.has_permission("LCS Project", ptype="write", doc=file_row.attached_to_name):
             frappe.throw("Not permitted", frappe.PermissionError)
+        project = file_row.attached_to_name
 
-    if frappe.db.exists("DocType", "LCS Speech Settings"):
-        settings = frappe.get_single("LCS Speech Settings")
-        if settings.enabled and settings.backend == "Azure Cognitive Services":
-            # Stub: fully implementing this requires the Azure SDK on the bench.
-            # https://learn.microsoft.com/en-us/azure/ai-services/speech-service/batch-transcription
-            frappe.log_error(
-                "retranscribe_audio called but Azure SDK not wired up yet",
-                "notes.retranscribe",
-            )
-            frappe.throw(
-                "Azure Speech re-transcription is not wired up on this bench yet. "
-                "Install azure-cognitiveservices-speech and implement the service-side call."
-            )
-
-    frappe.throw(
-        "No re-transcription backend configured. Enable Azure Cognitive Services in "
-        "LCS Speech Settings and wire the SDK call."
+    from lcs_integrations.notes.transcription import create_job_for_audio
+    job_name = create_job_for_audio(
+        file_url=file_url,
+        project=project,
+        language=language,
+        priority=int(priority) if priority else 5,
     )
+    return {"ok": True, "job": job_name}
