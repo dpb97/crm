@@ -64,6 +64,12 @@ const routes = [
     component: () => import('@/pages/LCSQuickNote.vue'),
   },
   {
+    path: '/offers/:id',
+    name: 'LCS Offer',
+    component: () => import('@/pages/LCSOfferDetail.vue'),
+    props: true,
+  },
+  {
     alias: '/notes',
     path: '/notes/view/:viewType?',
     name: 'Notes',

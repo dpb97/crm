@@ -373,8 +373,9 @@
                 <div
                   v-for="offer in offers"
                   :key="offer.name"
-                  class="rounded-xl border bg-white p-4 transition hover:shadow-sm"
+                  class="rounded-xl border bg-white p-4 transition hover:shadow-sm cursor-pointer hover:border-lcs-secondary"
                   :class="{ 'ring-2 ring-green-200': offer.status === 'Accepted', 'opacity-60': offer.status === 'Expired' }"
+                  @click="$router.push({ name: 'LCS Offer', params: { id: offer.name } })"
                 >
                   <div class="flex items-start justify-between gap-4">
                     <div class="min-w-0 flex-1">
@@ -383,6 +384,7 @@
                         <span class="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-mono font-semibold text-gray-600">
                           v{{ offer.version }}
                         </span>
+                        <FeatherIcon name="external-link" class="ml-auto h-3 w-3 text-gray-300" />
                       </div>
                       <div class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500">
                         <span v-if="offer.offer_date">📅 {{ formatDate(offer.offer_date) }}</span>
@@ -412,7 +414,7 @@
                     </div>
                   </div>
                   <!-- Status change dropdown -->
-                  <div class="mt-3 flex items-center justify-between border-t pt-3">
+                  <div class="mt-3 flex items-center justify-between border-t pt-3" @click.stop>
                     <Dropdown
                       :options="offerStatusOptions(offer)"
                       placement="bottom-start"

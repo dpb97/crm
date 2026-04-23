@@ -37,6 +37,147 @@ def api_link(dry_run: bool = False, create_missing: bool = True) -> dict:
     return run(dry_run=dry_run, create_missing=create_missing)
 
 
+@frappe.whitelist()
+def api_backfill_leads(dry_run: bool = False) -> dict:
+    """Create retrospective CRM Leads for every Deal that doesn't have one
+    yet, back-linking deal.lead so the Lead → Deal → Project chain has
+    records at every step."""
+    frappe.only_for(["System Manager", "Sales Manager"])
+    if isinstance(dry_run, str):
+        dry_run = dry_run.lower() in ("1", "true", "yes")
+    return backfill_leads(dry_run=dry_run)
+
+
+def backfill_leads(dry_run: bool = False) -> dict:
+    if not frappe.db.exists("DocType", "CRM Lead") or not frappe.db.exists("DocType", "CRM Deal"):
+        return {"error": "CRM Lead or CRM Deal not installed"}
+
+    deal_meta = frappe.get_meta("CRM Deal")
+    available = {f.fieldname for f in deal_meta.fields}
+    has_lead_field = "lead" in available
+
+    # Build the field list dynamically so we don't request columns that don't
+    # exist in this Frappe/CRM version (e.g. deal_name is absent in some schemas).
+    wanted = ["name", "organization", "status"]
+    if "deal_name" in available:
+        wanted.append("deal_name")
+
+    deals = frappe.get_all(
+        "CRM Deal",
+        filters={"organization": ["is", "set"]},
+        fields=wanted,
+    )
+
+    summary = {
+        "deals_checked": len(deals),
+        "leads_created": 0,
+        "already_had_lead": 0,
+        "reused_existing_lead": 0,
+        "dry_run": bool(dry_run),
+        "changes": [],
+    }
+
+    for d in deals:
+        # Skip deals that already have a lead linked
+        if has_lead_field:
+            existing_link = frappe.db.get_value("CRM Deal", d["name"], "lead")
+            if existing_link:
+                summary["already_had_lead"] += 1
+                continue
+
+        # Is there already a Lead for this organization we can reuse?
+        existing_lead = frappe.db.get_value(
+            "CRM Lead",
+            {"organization": d["organization"]},
+            "name",
+        )
+
+        if existing_lead:
+            action = "reused"
+            lead_name = existing_lead
+            summary["reused_existing_lead"] += 1
+        else:
+            action = "would-create" if dry_run else "created"
+            lead_name = None
+            if not dry_run:
+                lead_name = _create_retro_lead(d)
+                if lead_name:
+                    summary["leads_created"] += 1
+
+        summary["changes"].append({
+            "deal": d["name"],
+            "deal_name": d.get("deal_name") or d["name"],
+            "organization": d["organization"],
+            "lead": lead_name,
+            "action": action,
+        })
+
+        # Back-link the lead onto the deal so the pipeline shows Lead → Deal
+        if lead_name and has_lead_field and not dry_run:
+            frappe.db.set_value("CRM Deal", d["name"], "lead", lead_name, update_modified=False)
+
+    if not dry_run:
+        frappe.db.commit()
+
+    prefix = "[DRY-RUN] " if dry_run else ""
+    print(f"\n{prefix}=== Lead back-fill summary ===")
+    print(f"  Deals checked:         {summary['deals_checked']}")
+    print(f"  Leads created:         {summary['leads_created']}")
+    print(f"  Reused existing lead:  {summary['reused_existing_lead']}")
+    print(f"  Already had lead:      {summary['already_had_lead']}")
+    for c in summary["changes"][:40]:
+        a = c["action"]
+        marker = {"created": "+", "would-create": "?", "reused": "="}.get(a, "?")
+        lname = (c.get("lead") or "(none)")[:30]
+        dname = (c.get("deal_name") or c["deal"])[:32]
+        print(f"  [{marker}] {dname:<34}  ← {lname}")
+    return summary
+
+
+def _create_retro_lead(deal: dict) -> str | None:
+    """Create a minimal CRM Lead for the given deal's organization."""
+    try:
+        lead = frappe.new_doc("CRM Lead")
+        meta = frappe.get_meta("CRM Lead")
+        fields = {f.fieldname for f in meta.fields}
+
+        org_name = deal["organization"]
+        lead_name_text = deal.get("deal_name") or org_name
+
+        if "lead_name" in fields:
+            lead.lead_name = lead_name_text
+        if "first_name" in fields:
+            # frappe/crm requires first_name — fall back to org name
+            lead.first_name = (org_name or "Unknown").split(" ")[0]
+        if "organization" in fields:
+            lead.organization = org_name
+        if "no_of_employees" in fields:
+            # Some CRM installs require this — give a harmless default
+            lead.no_of_employees = "1-10"
+
+        # Seed a Retro-Import source if the app supports it
+        retro_source = "Retro-Import"
+        if frappe.db.exists("DocType", "CRM Lead Source"):
+            if not frappe.db.exists("CRM Lead Source", retro_source):
+                try:
+                    src = frappe.new_doc("CRM Lead Source")
+                    src.source_name = retro_source
+                    src.insert(ignore_permissions=True, ignore_if_duplicate=True)
+                except Exception:
+                    pass
+            if "source" in fields and frappe.db.exists("CRM Lead Source", retro_source):
+                lead.source = retro_source
+
+        lead.insert(ignore_permissions=True)
+        return lead.name
+    except Exception as e:
+        frappe.log_error(
+            f"Could not create retro lead for deal {deal['name']}: {e}",
+            "link_deals.retro_lead",
+        )
+        return None
+
+
 def run(dry_run: bool = False, create_missing: bool = True) -> dict:
     if not frappe.db.exists("DocType", "CRM Deal"):
         return {"error": "CRM Deal not installed"}

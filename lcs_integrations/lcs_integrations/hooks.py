@@ -51,6 +51,11 @@ doc_events = {
         "after_insert": "lcs_integrations.erpnext_sync.customer_sync.on_organization_created",
         "on_update": "lcs_integrations.erpnext_sync.customer_sync.on_organization_updated",
     },
+    "CRM Deal": {
+        # Close the Lead → Deal → LCS Project loop: when a deal is won,
+        # auto-create the project so Ops doesn't have to click anything.
+        "on_update": "lcs_integrations.cross_module.deal_to_project.on_deal_update",
+    },
     "Communication": {
         "after_insert": "lcs_integrations.email_domain_autolink.hooks.auto_link",
     },
