@@ -79,9 +79,15 @@ const props = defineProps({
   lang: { type: String, default: '' },
   /** Enable the global Ctrl+Shift+V hotkey for this instance (only one should set this per page) */
   hotkey: { type: Boolean, default: false },
+  /** Record the raw audio in parallel — emitted as `audio-blob` on stop */
+  recordAudio: { type: Boolean, default: false },
 })
 
-const emit = defineEmits(['transcript', 'start', 'end', 'done'])
+const emit = defineEmits(['transcript', 'start', 'end', 'done', 'audio-blob'])
+
+// MediaRecorder state
+let mediaRecorder = null
+let audioChunks = []
 
 const userPrefs = useUserPreferences()
 
@@ -133,7 +139,7 @@ async function start() {
     return
   }
 
-  // --- Audio meter setup ---
+  // --- Audio meter + optional recording setup ---
   try {
     mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true })
     audioContext = new (window.AudioContext || window.webkitAudioContext)()
@@ -142,11 +148,31 @@ async function start() {
     analyser.fftSize = 256
     source.connect(analyser)
     startMeterLoop()
+
+    // Optional: record the raw audio in parallel so it can be sent to
+    // Whisper / Azure later for higher-quality re-transcription.
+    // MediaRecorder format depends on the browser — typically
+    // audio/webm;codecs=opus on Chrome/Edge/Firefox, audio/mp4 on Safari.
+    if (props.recordAudio && window.MediaRecorder) {
+      audioChunks = []
+      const mimeCandidates = [
+        'audio/webm;codecs=opus',
+        'audio/webm',
+        'audio/mp4',
+        'audio/ogg;codecs=opus',
+      ]
+      const mimeType = mimeCandidates.find(m => MediaRecorder.isTypeSupported(m)) || ''
+      mediaRecorder = new MediaRecorder(mediaStream, mimeType ? { mimeType } : undefined)
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) audioChunks.push(e.data)
+      }
+      mediaRecorder.start(1000)  // collect in 1-second chunks so stop() finalises fast
+    }
   } catch (err) {
     // Getting the audio stream failed — recognition will still work in
     // some browsers because Web Speech API opens its own stream. We
     // just won't have the level meter. Not fatal.
-    console.warn('Audio meter unavailable:', err)
+    console.warn('Audio meter/recording unavailable:', err)
   }
 
   // --- Recognition setup ---
@@ -222,6 +248,23 @@ function cleanup() {
     cancelAnimationFrame(rafHandle)
     rafHandle = null
   }
+
+  // Finalise the recording before we close the stream. MediaRecorder's
+  // onstop handler fires asynchronously, so we emit the blob from there.
+  if (mediaRecorder) {
+    const mr = mediaRecorder
+    const chunks = audioChunks
+    mr.onstop = () => {
+      if (chunks.length) {
+        const blob = new Blob(chunks, { type: mr.mimeType || 'audio/webm' })
+        emit('audio-blob', { blob, mimeType: mr.mimeType, duration: null })
+      }
+    }
+    try { mr.state !== 'inactive' && mr.stop() } catch {}
+    mediaRecorder = null
+    audioChunks = []
+  }
+
   if (mediaStream) {
     mediaStream.getTracks().forEach(t => t.stop())
     mediaStream = null

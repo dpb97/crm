@@ -56,7 +56,23 @@
           @input="onInput"
         />
         <div class="absolute right-3 top-3">
-          <VoiceInput :hotkey="true" @transcript="onVoiceTranscript" @done="onVoiceDone" />
+          <VoiceInput
+            :hotkey="true"
+            :record-audio="true"
+            @transcript="onVoiceTranscript"
+            @done="onVoiceDone"
+            @audio-blob="onAudioBlob"
+          />
+        </div>
+        <!-- Audio captured indicator -->
+        <div
+          v-if="capturedAudio"
+          class="absolute bottom-2 right-3 flex items-center gap-1.5 rounded-full bg-purple-50 border border-purple-200 px-2 py-0.5 text-[10px] font-medium text-purple-700"
+          :title="__('Audio saved — can be re-transcribed later with better AI')"
+        >
+          <FeatherIcon name="headphones" class="h-2.5 w-2.5" />
+          {{ capturedAudio.sizeKb }} KB {{ capturedAudio.mime.split('/')[1] }}
+          <button class="ml-1 text-purple-500 hover:text-red-500" @click="capturedAudio = null" :title="__('Discard audio')">×</button>
         </div>
         <!-- Character counter -->
         <div class="mt-1 flex items-center justify-between text-[11px] text-gray-400">
@@ -220,6 +236,8 @@ const result = ref(null)
 const analyzing = ref(false)
 const dispatching = ref(false)
 const lastDispatched = ref('')
+const capturedAudio = ref(null)  // { blob, mime, sizeKb }
+const uploadingAudio = ref(false)
 
 // --- Voice input — append streamed transcript to noteText ---
 let voiceBaseline = ''
@@ -235,21 +253,83 @@ function onInput() {
   voiceBaseline = ''  // manual edit also resets the baseline
 }
 
+// Audio captured in parallel with the recognition. Kept in memory
+// until dispatch; then uploaded as a File and attached to the Comment.
+function onAudioBlob({ blob, mimeType }) {
+  if (!blob) return
+  capturedAudio.value = {
+    blob,
+    mime: mimeType || blob.type || 'audio/webm',
+    sizeKb: Math.round(blob.size / 1024),
+  }
+}
+
+async function uploadAudioIfPresent() {
+  if (!capturedAudio.value) return null
+  uploadingAudio.value = true
+  try {
+    const ext = _extensionFor(capturedAudio.value.mime)
+    const filename = `quicknote-${new Date().toISOString().replace(/[:.]/g, '-')}.${ext}`
+    const form = new FormData()
+    form.append('file', capturedAudio.value.blob, filename)
+    form.append('is_private', '1')
+    form.append('folder', 'Home/Attachments')
+    const csrf = window.csrf_token || ''
+    const res = await window.fetch('/api/method/upload_file', {
+      method: 'POST',
+      credentials: 'include',
+      headers: csrf ? { 'X-Frappe-CSRF-Token': csrf } : {},
+      body: form,
+    })
+    if (!res.ok) throw new Error(`Upload failed: ${res.status}`)
+    const payload = await res.json()
+    return payload?.message?.file_url || null
+  } catch (err) {
+    toast({
+      title: __('Audio upload failed'),
+      text: err.message || String(err),
+      icon: 'alert-circle',
+      iconClasses: 'text-amber-500',
+    })
+    return null
+  } finally {
+    uploadingAudio.value = false
+  }
+}
+
+function _extensionFor(mime) {
+  if (!mime) return 'webm'
+  if (mime.includes('webm')) return 'webm'
+  if (mime.includes('ogg')) return 'ogg'
+  if (mime.includes('mp4') || mime.includes('m4a')) return 'm4a'
+  if (mime.includes('wav')) return 'wav'
+  return 'bin'
+}
+
 // --- Analyze + dispatch ---
 async function analyze() {
   if (!noteText.value.trim() || analyzing.value) return
   analyzing.value = true
   try {
+    // Upload the captured audio first so its file_url can travel with
+    // the dispatch call — keeps the Comment + File tied to the right
+    // project in a single transaction server-side.
+    const audioUrl = await uploadAudioIfPresent()
+
     const res = await call('lcs_integrations.notes.api.dispatch_note', {
       text: noteText.value,
       dry_run: 0,
+      audio_file_url: audioUrl || '',
     })
     result.value = res.message || res
     if (result.value.auto_dispatched) {
       lastDispatched.value = result.value.target_project
+      // Audio has been re-parented to the target project — clear the local
+      // blob so it doesn't get re-uploaded if the user dispatches another note
+      capturedAudio.value = null
       toast({
         title: __('Saved'),
-        text: `${__('Note matched to')} ${result.value.target_project}`,
+        text: `${__('Note matched to')} ${result.value.target_project}${audioUrl ? ' (+ audio)' : ''}`,
         icon: 'check-circle',
         iconClasses: 'text-green-500',
       })
@@ -277,15 +357,20 @@ async function dispatchToProject(projectName) {
   if (dispatching.value || !noteText.value.trim()) return
   dispatching.value = true
   try {
+    // If audio is still sitting in memory (user picked manually before analyze),
+    // upload it now so it gets attached to the chosen project too.
+    const audioUrl = await uploadAudioIfPresent()
+
     const res = await call('lcs_integrations.notes.api.dispatch_note', {
       text: noteText.value,
       project: projectName,
+      audio_file_url: audioUrl || '',
     })
     const payload = res.message || res
     lastDispatched.value = payload.target_project || projectName
     toast({
       title: __('Saved'),
-      text: `${__('Note attached to')} ${lastDispatched.value}`,
+      text: `${__('Note attached to')} ${lastDispatched.value}${audioUrl ? ' (+ audio)' : ''}`,
       icon: 'check-circle',
       iconClasses: 'text-green-500',
     })
@@ -293,6 +378,7 @@ async function dispatchToProject(projectName) {
     noteText.value = ''
     voiceBaseline = ''
     result.value = null
+    capturedAudio.value = null
     manualQuery.value = ''
     manualResults.value = []
     noteInput.value?.focus()
@@ -312,6 +398,7 @@ function reset() {
   noteText.value = ''
   result.value = null
   voiceBaseline = ''
+  capturedAudio.value = null
   manualQuery.value = ''
   manualResults.value = []
   lastDispatched.value = ''

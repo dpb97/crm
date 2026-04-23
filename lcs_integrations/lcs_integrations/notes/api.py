@@ -12,6 +12,7 @@ feedback_frappe_doc_compliance.md in agent memory):
 """
 
 import re
+import difflib
 import frappe
 
 
@@ -47,7 +48,7 @@ TYPE_KEYWORDS = [
 
 
 @frappe.whitelist()
-def dispatch_note(text: str, project: str = None, dry_run: bool = False):
+def dispatch_note(text: str, project: str = None, dry_run: bool = False, audio_file_url: str = None):
     """
     Rank visible LCS Projects against the note text and optionally log it.
 
@@ -77,7 +78,7 @@ def dispatch_note(text: str, project: str = None, dry_run: bool = False):
     if project:
         if not frappe.has_permission("LCS Project", ptype="write", doc=project):
             frappe.throw("Not permitted to write to this project", frappe.PermissionError)
-        comment_name = _log_as_comment(project, text) if not dry_run else None
+        comment_name = _log_as_comment(project, text, audio_file_url) if not dry_run else None
         return {
             "candidates": [],
             "auto_dispatched": not dry_run,
@@ -123,7 +124,7 @@ def dispatch_note(text: str, project: str = None, dry_run: bool = False):
 
     if auto_target and not dry_run:
         if frappe.has_permission("LCS Project", ptype="write", doc=auto_target):
-            comment_name = _log_as_comment(auto_target, text)
+            comment_name = _log_as_comment(auto_target, text, audio_file_url)
         else:
             # Silent downgrade: still suggest but don't dispatch
             auto_target = None
@@ -152,19 +153,26 @@ def _score_project(p: dict, text_lower: str, text_tokens: set, hinted_type: str 
         score += WEIGHT_PROJECT_ABBR
         reasons.append(f"abbr:{abbr}")
 
-    # Project-name token overlap. Name is often just "SB-SADDN" which maps to
-    # tokens {sb, saddn} — if "saddn" appears in the note, score.
+    # Project-name matching — exact first, then fuzzy fallback so Web
+    # Speech transcription errors ("SB-Saddan" vs "SB-SADDN") still hit.
     name = (p.get("project_name") or "").lower()
     name_tokens = _tokenize(name)
     name_hits = name_tokens & text_tokens
     if name_tokens and name_hits:
         ratio = len(name_hits) / len(name_tokens)
-        # For 1-token names the ratio is 1.0 but we only count it if the
-        # token is at least 4 chars — otherwise "mtm" matches too aggressively
         interesting = {t for t in name_hits if len(t) >= 4}
         if interesting or ratio == 1.0:
             score += WEIGHT_PROJECT_NAME * ratio
             reasons.append(f"name:{sorted(name_hits)}")
+    else:
+        # Fuzzy fallback — for each ≥4-char name token, find the closest
+        # text token above the similarity threshold. Catches mis-heard
+        # project-name tokens that the exact match misses.
+        fuzzy_hits = _fuzzy_token_hits(name_tokens, text_tokens)
+        if fuzzy_hits:
+            ratio = len(fuzzy_hits) / max(len(name_tokens), 1)
+            score += WEIGHT_PROJECT_NAME * ratio * 0.8  # penalty for fuzzy match
+            reasons.append(f"name_fuzzy:{fuzzy_hits}")
 
     org = (p.get("organization") or "").lower()
     org_tokens = _tokenize(org)
@@ -173,6 +181,12 @@ def _score_project(p: dict, text_lower: str, text_tokens: set, hinted_type: str 
         ratio = len(org_hits) / len(org_tokens)
         score += WEIGHT_ORGANIZATION * ratio
         reasons.append(f"org:{sorted(org_hits)}")
+    else:
+        fuzzy_hits = _fuzzy_token_hits(org_tokens, text_tokens)
+        if fuzzy_hits:
+            ratio = len(fuzzy_hits) / max(len(org_tokens), 1)
+            score += WEIGHT_ORGANIZATION * ratio * 0.8
+            reasons.append(f"org_fuzzy:{fuzzy_hits}")
 
     country = (p.get("country") or "").lower()
     if country and country in text_lower:
@@ -199,6 +213,22 @@ def _word_in_text(needle: str, haystack: str) -> bool:
     return re.search(rf"\b{re.escape(needle)}\b", haystack) is not None
 
 
+def _fuzzy_token_hits(expected: set, heard: set, threshold: float = 0.78) -> list:
+    """For each expected token ≥4 chars, find the closest heard token above
+    the similarity threshold. Web Speech API mis-hears project names often
+    (SADDN → Saddan, JINNO → Ginno) and exact-match misses them — fuzzy
+    matching with a conservative threshold recovers most of those."""
+    hits = []
+    short_heard = [h for h in heard if len(h) >= 3]
+    for needle in expected:
+        if len(needle) < 4:
+            continue
+        best = difflib.get_close_matches(needle, short_heard, n=1, cutoff=threshold)
+        if best:
+            hits.append(f"{best[0]}~{needle}")
+    return hits
+
+
 def _detect_type_hint(text: str) -> str | None:
     """Return SB / WI / LL if the text mentions a product category."""
     for pattern, t in TYPE_KEYWORDS:
@@ -217,18 +247,88 @@ def _confidence_label(score: float) -> str:
     return "very-low"
 
 
-def _log_as_comment(project: str, text: str) -> str:
+def _log_as_comment(project: str, text: str, audio_file_url: str | None = None) -> str:
     """Attach the note as a Frappe Comment on the project's activity feed.
 
     Uses the documented Comment DocType — same thing Frappe's own
     '+ Comment' button produces, so notes show up in the Activity tab
     without extra UI work on our side.
+
+    When an audio file URL is supplied, the uploaded File record is
+    re-parented to the LCS Project so the recording appears in the
+    project's attachments and can be re-transcribed later.
     """
+    header = "📝 **Quick Note**"
+    if audio_file_url:
+        header += "  🎤 audio attached"
+
     comment = frappe.new_doc("Comment")
     comment.comment_type = "Comment"
     comment.reference_doctype = "LCS Project"
     comment.reference_name = project
-    comment.content = f"📝 **Quick Note**\n\n{text.strip()}"
+    comment.content = f"{header}\n\n{text.strip()}"
     comment.insert(ignore_permissions=False)
+
+    # Reparent the uploaded audio to the project and link it from
+    # the comment for later retrieval.
+    if audio_file_url:
+        try:
+            file_name = frappe.db.get_value("File", {"file_url": audio_file_url}, "name")
+            if file_name:
+                frappe.db.set_value("File", file_name, {
+                    "attached_to_doctype": "LCS Project",
+                    "attached_to_name": project,
+                })
+        except Exception as e:
+            frappe.log_error(
+                f"Could not reparent audio file {audio_file_url}: {e}",
+                "notes.dispatch",
+            )
+
     frappe.db.commit()
     return comment.name
+
+
+@frappe.whitelist()
+def retranscribe_audio(file_url: str, language: str = "de-DE"):
+    """
+    Re-transcribe a saved audio attachment using the configured speech backend.
+
+    Requires the file to belong to an LCS Project the user can write to.
+    The actual SDK call is left as a TODO until the team installs the
+    azure-cognitiveservices-speech Python package — at that point,
+    wire it up here so existing audio attachments can be re-parsed
+    with better vocabulary support.
+    """
+    frappe.only_for(["System Manager", "Sales Manager", "Sales User"])
+    file_row = frappe.db.get_value(
+        "File",
+        {"file_url": file_url},
+        ["name", "attached_to_doctype", "attached_to_name"],
+        as_dict=True,
+    )
+    if not file_row:
+        frappe.throw(f"File {file_url} not found")
+
+    if file_row.attached_to_doctype == "LCS Project":
+        if not frappe.has_permission("LCS Project", ptype="write", doc=file_row.attached_to_name):
+            frappe.throw("Not permitted", frappe.PermissionError)
+
+    if frappe.db.exists("DocType", "LCS Speech Settings"):
+        settings = frappe.get_single("LCS Speech Settings")
+        if settings.enabled and settings.backend == "Azure Cognitive Services":
+            # Stub: fully implementing this requires the Azure SDK on the bench.
+            # https://learn.microsoft.com/en-us/azure/ai-services/speech-service/batch-transcription
+            frappe.log_error(
+                "retranscribe_audio called but Azure SDK not wired up yet",
+                "notes.retranscribe",
+            )
+            frappe.throw(
+                "Azure Speech re-transcription is not wired up on this bench yet. "
+                "Install azure-cognitiveservices-speech and implement the service-side call."
+            )
+
+    frappe.throw(
+        "No re-transcription backend configured. Enable Azure Cognitive Services in "
+        "LCS Speech Settings and wire the SDK call."
+    )
