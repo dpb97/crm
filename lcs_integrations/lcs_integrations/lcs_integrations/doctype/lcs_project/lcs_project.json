@@ -16,6 +16,7 @@
         "country",
         "is_gu",
         "salesperson",
+        "sales_manager",
         "phase",
         "status",
         "section_customer_contacts",
@@ -115,6 +116,13 @@
             "fieldname": "salesperson",
             "fieldtype": "Link",
             "label": "Salesperson",
+            "options": "User"
+        },
+        {
+            "description": "Responsible sales manager — propagates onto the linked Deal + Lead so the whole pipeline carries the same owner.",
+            "fieldname": "sales_manager",
+            "fieldtype": "Link",
+            "label": "Sales Manager",
             "options": "User"
         },
         {

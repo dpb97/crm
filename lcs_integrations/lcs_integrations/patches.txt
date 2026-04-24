@@ -4,3 +4,4 @@ lcs_integrations.patches.migrate_legacy_source_reason
 lcs_integrations.patches.remove_abas_legacy
 lcs_integrations.patches.reinstall_bsm_fields
 lcs_integrations.patches.fusion_upgrade_oauth
+lcs_integrations.patches.install_sales_manager_fields

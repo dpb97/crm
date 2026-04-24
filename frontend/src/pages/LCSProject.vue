@@ -547,7 +547,18 @@
             <div class="space-y-3 px-5 py-4">
               <h4 class="text-[10px] font-bold uppercase tracking-wider text-gray-400">{{ __('People') }}</h4>
               <SideField :label="__('Salesperson')">
-                <span class="text-sm text-gray-800">{{ doc.salesperson || '—' }}</span>
+                <UserPicker
+                  :value="doc.salesperson"
+                  :placeholder="__('Assign…')"
+                  @save="v => updateField('salesperson', v)"
+                />
+              </SideField>
+              <SideField :label="__('Sales Manager')">
+                <UserPicker
+                  :value="doc.sales_manager"
+                  :placeholder="__('Assign…')"
+                  @save="v => updateField('sales_manager', v)"
+                />
               </SideField>
               <SideField :label="__('Organization')">
                 <span class="text-sm text-gray-800">{{ doc.organization || '—' }}</span>
@@ -696,6 +707,7 @@ import FusionManageDeepLink from '@/components/lcs/FusionManageDeepLink.vue'
 import IntegrationStatusPanel from '@/components/lcs/IntegrationStatusPanel.vue'
 import FusionItemPicker from '@/components/lcs/FusionItemPicker.vue'
 import BomTree from '@/components/lcs/BomTree.vue'
+import UserPicker from '@/components/lcs/UserPicker.vue'
 import OpportunityMatrix from '@/components/lcs/OpportunityMatrix.vue'
 import PriceStageCard from '@/components/lcs/PriceStageCard.vue'
 import VoiceInput from '@/components/lcs/VoiceInput.vue'

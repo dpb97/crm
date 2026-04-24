@@ -41,6 +41,14 @@ CUSTOM_FIELDS: dict[str, list[dict]] = {
             "read_only": 1,
             "insert_after": "organization",
         },
+        {
+            "fieldname": "sales_manager",
+            "label": "Sales Manager",
+            "fieldtype": "Link",
+            "options": "User",
+            "description": "Propagated from the linked LCS Project (single source of truth).",
+            "insert_after": "deal_owner",
+        },
     ],
     "CRM Lead": [
         {
@@ -50,6 +58,14 @@ CUSTOM_FIELDS: dict[str, list[dict]] = {
             "options": "Customer",
             "read_only": 1,
             "insert_after": "organization",
+        },
+        {
+            "fieldname": "sales_manager",
+            "label": "Sales Manager",
+            "fieldtype": "Link",
+            "options": "User",
+            "description": "Propagated from the linked LCS Project (single source of truth).",
+            "insert_after": "lead_owner",
         },
     ],
     "Sales Order": [

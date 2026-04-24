@@ -63,6 +63,9 @@ doc_events = {
         "validate": [
             "lcs_integrations.projects.notifications.on_project_phase_change",
             "lcs_integrations.cross_module.training_check.on_project_validate",
+            # LCS Project is the single source of truth for sales_manager —
+            # every change propagates down to the linked Deal + Lead.
+            "lcs_integrations.cross_module.sales_manager_sync.on_project_validate",
         ],
     },
     "LCS Opportunity Matrix": {
