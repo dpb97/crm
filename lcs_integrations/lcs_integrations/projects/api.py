@@ -99,6 +99,41 @@ def get_opportunity_matrix(project):
 
 
 @frappe.whitelist()
+def find_project_for(doctype: str, name: str):
+    """
+    Resolve the LCS Project linked to a CRM Deal or CRM Lead so the
+    upstream detail pages can render a "Go to Project" chip.
+
+    Uses the existing deal/lead link graph:
+      - For CRM Deal: LCS Project where deal = <name>
+      - For CRM Lead: LCS Project where deal.lead = <name> (via any deal)
+    """
+    if not frappe.has_permission(doctype, ptype="read", doc=name):
+        return None
+
+    if doctype == "CRM Deal":
+        return frappe.db.get_value(
+            "LCS Project",
+            {"deal": name},
+            ["name", "project_name", "project_number", "project_type", "phase", "status"],
+            as_dict=True,
+        )
+
+    if doctype == "CRM Lead":
+        deals = frappe.get_all("CRM Deal", filters={"lead": name}, pluck="name")
+        if not deals:
+            return None
+        return frappe.db.get_value(
+            "LCS Project",
+            {"deal": ["in", deals]},
+            ["name", "project_name", "project_number", "project_type", "phase", "status"],
+            as_dict=True,
+        )
+
+    return None
+
+
+@frappe.whitelist()
 def get_project_offers(project):
     """Get all offers for a project, ordered by version descending."""
     return frappe.get_all(

@@ -195,6 +195,7 @@
           system="erpnext"
           :detail="doc.erpnext_customer ? `ERPNext: ${doc.erpnext_customer}` : __('Lead — not yet linked to ERPNext')"
         />
+        <LinkedProjectChip v-if="doc.name" doctype="CRM Lead" :name="doc.name" />
       </div>
       <SLASection
         v-if="doc.sla_status"
@@ -279,6 +280,7 @@ import SidePanelLayout from '@/components/SidePanelLayout.vue'
 import SLASection from '@/components/SLASection.vue'
 import CustomActions from '@/components/CustomActions.vue'
 import SyncStatusBadge from '@/components/lcs/SyncStatusBadge.vue'
+import LinkedProjectChip from '@/components/lcs/LinkedProjectChip.vue'
 import ConvertToDealModal from '@/components/Modals/ConvertToDealModal.vue'
 import {
   openWebsite,

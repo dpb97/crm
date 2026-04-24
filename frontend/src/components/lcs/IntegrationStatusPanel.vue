@@ -36,7 +36,19 @@
         :tone="status.crm?.linked ? 'green' : 'gray'"
         :primary="status.crm?.organization || __('Not linked')"
         :secondary="status.crm?.deal ? 'Deal: ' + status.crm.deal : ''"
-      />
+      >
+        <template #actions>
+          <router-link
+            v-if="status.crm?.deal"
+            :to="{ name: 'Deal', params: { dealId: status.crm.deal } }"
+            class="inline-flex items-center gap-1 rounded-md border border-gray-200 bg-white px-2 py-1 text-xs font-medium text-gray-700 hover:border-lcs-secondary hover:text-lcs-primary"
+            :title="__('Open Deal')"
+          >
+            <FeatherIcon name="arrow-right" class="h-3 w-3" />
+            {{ __('Deal') }}
+          </router-link>
+        </template>
+      </SystemCard>
 
       <SystemCard
         label="ERPNext"

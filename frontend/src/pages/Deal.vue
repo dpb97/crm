@@ -127,11 +127,12 @@
           </div>
         </div>
       </div>
-      <!-- LCS: ERPNext Customer Sync Status + Deep Link -->
+      <!-- LCS: Linked Project + ERPNext Customer Sync Status + Deep Links -->
       <div
         v-if="doc.name"
         class="flex flex-wrap items-center gap-2 border-b px-5 py-3"
       >
+        <LinkedProjectChip doctype="CRM Deal" :name="doc.name" />
         <SyncStatusBadge
           :status="doc.erpnext_customer ? 'synced' : 'disabled'"
           system="erpnext"
@@ -386,6 +387,7 @@ import SLASection from '@/components/SLASection.vue'
 import CustomActions from '@/components/CustomActions.vue'
 import SyncStatusBadge from '@/components/lcs/SyncStatusBadge.vue'
 import ErpNextDeepLink from '@/components/lcs/ErpNextDeepLink.vue'
+import LinkedProjectChip from '@/components/lcs/LinkedProjectChip.vue'
 import {
   openWebsite,
   setupCustomizations,
