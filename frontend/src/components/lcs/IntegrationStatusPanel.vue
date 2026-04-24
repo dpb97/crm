@@ -81,7 +81,7 @@
 
       <SystemCard
         label="BSM"
-        icon="hard-hat"
+        icon="tool"
         :tone="status.bsm?.project ? 'green' : 'gray'"
         :primary="status.bsm?.project || __('Not started')"
         :secondary="bsmSecondary"

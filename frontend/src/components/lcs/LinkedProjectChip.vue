@@ -20,7 +20,7 @@
     class="group inline-flex items-center gap-1.5 rounded-full border border-lcs-primary/20 bg-lcs-primary/5 px-2.5 py-1 text-xs font-medium text-lcs-primary transition hover:bg-lcs-primary/10 hover:border-lcs-primary/40"
     :title="__('Open linked LCS Project')"
   >
-    <FeatherIcon name="folder-kanban" class="h-3 w-3" />
+    <FeatherIcon name="briefcase" class="h-3 w-3" />
     <span class="font-semibold">{{ project.project_name }}</span>
     <span class="font-mono text-[10px] text-lcs-primary/60">{{ project.project_number }}</span>
     <span
@@ -34,7 +34,7 @@
   </router-link>
 
   <span v-else class="inline-flex items-center gap-1 rounded-full bg-gray-50 px-2 py-1 text-xs text-gray-400">
-    <FeatherIcon name="folder" class="h-3 w-3" />
+    <FeatherIcon name="briefcase" class="h-3 w-3" />
     {{ __('No project linked') }}
   </span>
 </template>
