@@ -40,6 +40,7 @@
         "team_members",
         "section_external_systems",
         "erpnext_customer",
+        "erpnext_project",
         "bsm_project",
         "fusion_workspace",
         "fusion_item_id",
@@ -267,6 +268,14 @@
             "fieldtype": "Link",
             "label": "ERPNext Customer",
             "options": "Customer",
+            "read_only": 1
+        },
+        {
+            "description": "ERPNext Project — auto-created when phase reaches Order/Execution; carries tasks, time logs, costing, gantt for resource planning",
+            "fieldname": "erpnext_project",
+            "fieldtype": "Link",
+            "label": "ERPNext Project",
+            "options": "Project",
             "read_only": 1
         },
         {

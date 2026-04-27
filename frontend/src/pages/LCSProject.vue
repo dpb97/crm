@@ -455,6 +455,11 @@
               </div>
             </div>
 
+            <!-- Execution Tab — Tasks + Time Logs + Costing aus ERPNext Project -->
+            <div v-if="activeTab === 'Execution'">
+              <ExecutionPanel :project="projectId" />
+            </div>
+
             <!-- PLM / BOM Tab -->
             <div v-if="activeTab === 'PLM'" class="space-y-4">
               <FusionItemPicker
@@ -707,6 +712,7 @@ import FusionManageDeepLink from '@/components/lcs/FusionManageDeepLink.vue'
 import IntegrationStatusPanel from '@/components/lcs/IntegrationStatusPanel.vue'
 import FusionItemPicker from '@/components/lcs/FusionItemPicker.vue'
 import BomTree from '@/components/lcs/BomTree.vue'
+import ExecutionPanel from '@/components/lcs/ExecutionPanel.vue'
 import UserPicker from '@/components/lcs/UserPicker.vue'
 import OpportunityMatrix from '@/components/lcs/OpportunityMatrix.vue'
 import PriceStageCard from '@/components/lcs/PriceStageCard.vue'
@@ -779,6 +785,7 @@ const tabs = computed(() => {
   const all = [
     { name: 'Overview', label: __('Overview'), show: true },
     { name: 'Offers', label: __('Offers') + (tabOfferCount.value ? ` (${tabOfferCount.value})` : ''), show: true },
+    { name: 'Execution', label: __('Tasks & Time'), show: true },
     { name: 'Contacts', label: __('Contacts'), show: true },
     { name: 'PLM', label: __('PLM / BOM'), show: canShow('show_fusion_section') },
     { name: 'Matrix', label: __('Opportunity Matrix'), show: canShow('show_opportunity_matrix') },

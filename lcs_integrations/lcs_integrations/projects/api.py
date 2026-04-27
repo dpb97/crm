@@ -99,6 +99,82 @@ def get_opportunity_matrix(project):
 
 
 @frappe.whitelist()
+def get_execution_summary(project: str) -> dict:
+    """Pull Tasks + Time Logs + Costing from the linked ERPNext Project
+    so the LCS Project detail page can show execution data without the
+    user navigating away.
+    """
+    if not frappe.has_permission("LCS Project", ptype="read", doc=project):
+        frappe.throw("Not permitted", frappe.PermissionError)
+
+    lcs = frappe.db.get_value(
+        "LCS Project", project, ["erpnext_project"], as_dict=True
+    ) or {}
+    erp_name = lcs.get("erpnext_project")
+    if not erp_name or not frappe.db.exists("Project", erp_name):
+        return {"linked": False, "erpnext_project": None, "tasks": [], "time_logs": [], "totals": {}}
+
+    # Schema-tolerant: only request fields that actually exist on the
+    # local Project DocType (ERPNext drops/renames between versions).
+    project_meta = frappe.get_meta("Project")
+    available = {f.fieldname for f in project_meta.fields}
+    wanted = [
+        "name", "status", "expected_start_date", "expected_end_date",
+        "actual_start_date", "actual_end_date", "percent_complete",
+        "estimated_costing", "total_billed_amount", "total_consumed_material_cost",
+        "project_manager",
+    ]
+    safe_fields = ["name"] + [f for f in wanted if f != "name" and f in available]
+    erp = frappe.db.get_value("Project", erp_name, safe_fields, as_dict=True) or {}
+
+    tasks = []
+    if frappe.db.exists("DocType", "Task"):
+        tasks = frappe.get_all(
+            "Task",
+            filters={"project": erp_name},
+            fields=[
+                "name", "subject", "status", "priority", "exp_start_date",
+                "exp_end_date", "progress", "_assign",
+            ],
+            order_by="exp_start_date asc, creation asc",
+            limit_page_length=200,
+        )
+
+    time_logs = []
+    if frappe.db.exists("DocType", "Timesheet Detail"):
+        time_logs = frappe.db.sql(
+            """SELECT td.name, td.activity_type, td.from_time, td.to_time,
+                      td.hours, td.billing_hours, td.billing_amount, td.costing_amount,
+                      td.parent AS timesheet, ts.employee, ts.employee_name
+               FROM `tabTimesheet Detail` td
+               JOIN `tabTimesheet` ts ON ts.name = td.parent
+               WHERE td.project = %s
+               ORDER BY td.from_time DESC
+               LIMIT 100""",
+            (erp_name,),
+            as_dict=True,
+        )
+
+    totals = {
+        "estimated": erp.get("estimated_costing") or 0,
+        "billed": erp.get("total_billed_amount") or 0,
+        "costing": erp.get("total_consumed_material_cost") or 0,
+        "percent_complete": erp.get("percent_complete") or 0,
+    }
+
+    return {
+        "linked": True,
+        "erpnext_project": erp_name,
+        "erpnext_status": erp.get("status"),
+        "expected_start_date": str(erp.get("expected_start_date") or ""),
+        "expected_end_date": str(erp.get("expected_end_date") or ""),
+        "tasks": tasks,
+        "time_logs": time_logs,
+        "totals": totals,
+    }
+
+
+@frappe.whitelist()
 def find_project_for(doctype: str, name: str):
     """
     Resolve the LCS Project linked to a CRM Deal or CRM Lead so the

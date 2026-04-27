@@ -104,6 +104,20 @@ CUSTOM_FIELDS: dict[str, list[dict]] = {
             "insert_after": "lcs_project",
         },
     ],
+    # Reverse link from ERPNext Project back to LCS Project — execution
+    # data (tasks, time logs, costing) lives in ERPNext while sales
+    # data (phase, pricing, matrix) lives in LCS Project. The link
+    # makes both sides navigable.
+    "Project": [
+        {
+            "fieldname": "lcs_project",
+            "label": "LCS Project",
+            "fieldtype": "Link",
+            "options": "LCS Project",
+            "insert_after": "project_name",
+            "description": "Sales-side project record carrying phase, pricing, opportunity matrix.",
+        },
+    ],
 }
 
 

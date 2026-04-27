@@ -67,6 +67,10 @@ doc_events = {
             # every change propagates down to the linked Deal + Lead.
             "lcs_integrations.cross_module.sales_manager_sync.on_project_validate",
         ],
+        # Spawn an ERPNext Project as soon as the project enters Order/
+        # Execution so resource planning has somewhere to live during the
+        # active phase, not just after closure.
+        "on_update": "lcs_integrations.cross_module.erpnext_project_sync.on_lcs_project_update",
     },
     "LCS Opportunity Matrix": {
         "validate": "lcs_integrations.projects.notifications.on_high_probability",
