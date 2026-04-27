@@ -108,6 +108,35 @@ CUSTOM_FIELDS: dict[str, list[dict]] = {
 
 
 def execute() -> None:
-    # `update=True` makes the call idempotent on existing sites.
+    """Idempotent.
+
+    Stamps every field with `module = "LCS Integrations"` so the
+    Frappe fixtures export hook (filters by module) finds them, and
+    so uninstalling the app cleanly removes them. Without this stamp
+    the fields exist orphaned with module=NULL — a real cleanup
+    smell that hides them from the fixtures pipeline.
+    """
+    for field_list in CUSTOM_FIELDS.values():
+        for field_def in field_list:
+            field_def.setdefault("module", "LCS Integrations")
     create_custom_fields(CUSTOM_FIELDS, update=True)
+
+    # Heal pre-existing rows that were inserted with module=NULL by
+    # earlier runs of this patch. Same set of fieldnames; we just stamp
+    # the module on existing rows.
+    healed = 0
+    for dt, fields in CUSTOM_FIELDS.items():
+        for f in fields:
+            row = frappe.db.get_value(
+                "Custom Field",
+                {"dt": dt, "fieldname": f["fieldname"]},
+                ["name", "module"],
+                as_dict=True,
+            )
+            if row and not row.module:
+                frappe.db.set_value("Custom Field", row.name, "module", "LCS Integrations")
+                healed += 1
+    if healed:
+        print(f"install_custom_fields: stamped module on {healed} legacy field row(s)")
+
     frappe.db.commit()
