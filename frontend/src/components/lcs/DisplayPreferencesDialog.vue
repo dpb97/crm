@@ -145,6 +145,16 @@
         <!-- Behavior -->
         <section>
           <h3 class="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
+            {{ __('Theme') }}
+          </h3>
+          <div class="flex items-center gap-3">
+            <LCSThemeToggle />
+            <span class="text-xs text-gray-500">{{ __('Switches CSS variables + Tailwind dark variants in lockstep.') }}</span>
+          </div>
+        </section>
+
+        <section>
+          <h3 class="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
             {{ __('Behavior') }}
           </h3>
           <div class="space-y-2">
@@ -180,6 +190,7 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 import { Dialog, Button, FormControl, FeatherIcon, call, toast } from 'frappe-ui'
+import LCSThemeToggle from '@/components/lcs/LCSThemeToggle.vue'
 
 // Inline toggle with description and lock indicator
 const PrefToggle = {

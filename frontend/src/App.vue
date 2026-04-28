@@ -1,7 +1,7 @@
 <template>
   <FrappeUIProvider>
     <NotPermitted v-if="$route.name === 'Not Permitted'" />
-    <Layout v-else-if="session.isLoggedIn" class="isolate">
+    <Layout v-else-if="session.isLoggedIn" class="isolate" :class="{ 'lcs-compact': isCompact }">
       <router-view :key="$route.fullPath" />
     </Layout>
     <OfflineIndicator />
@@ -32,8 +32,13 @@ import { useUserPreferences } from '@/composables/useUserPreferences'
 const showPreferences = ref(false)
 function openPrefs() { showPreferences.value = true }
 
-const { reload: reloadPrefs } = useUserPreferences()
+const userPrefs = useUserPreferences()
+const { reload: reloadPrefs } = userPrefs
 function onPrefsSaved() { reloadPrefs() }
+
+// Drives the global `.lcs-compact` body class consumed by the
+// reusable component classes in index.css (.lcs-card, .lcs-kpi).
+const isCompact = computed(() => !!userPrefs.state.prefs.compact_mode)
 
 const session = sessionStore()
 provide('session', session)
