@@ -25,8 +25,6 @@ def recompute_score(doc: Any, method: str | None = None) -> None:
         return
     frappe.flags[_FLAG] = True
     try:
-        # Target ERPNext's `Lead` DocType (frappe/crm's `CRM Lead` is not
-        # installed on this bench).
-        frappe.db.set_value("Lead", doc.name, "lcs_score", new_score, update_modified=False)
+        frappe.db.set_value("CRM Lead", doc.name, "lcs_score", new_score, update_modified=False)
     finally:
         frappe.flags[_FLAG] = False

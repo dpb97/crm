@@ -5,12 +5,12 @@ import frappe
 
 
 TARGETS = [
-    ("Lead", "lcs_score"),
     ("CRM Organization", "erpnext_customer"),
     ("CRM Deal", "erpnext_customer"),
     ("CRM Deal", "sales_manager"),
     ("CRM Lead", "erpnext_customer"),
     ("CRM Lead", "sales_manager"),
+    ("CRM Lead", "lcs_score"),
     ("Sales Order", "lcs_project"),
     ("Quotation", "lcs_offer"),
     ("BSM Project", "lcs_project"),

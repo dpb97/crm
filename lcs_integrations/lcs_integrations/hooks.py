@@ -44,7 +44,7 @@ has_permission = {
 }
 
 doc_events = {
-    "Lead": {
+    "CRM Lead": {
         "on_update": "lcs_integrations.lead_scoring.hooks.recompute_score",
     },
     "CRM Organization": {

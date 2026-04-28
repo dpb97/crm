@@ -1,9 +1,9 @@
 """Install Custom Fields used by the LCS adaptations.
 
 Idempotent — Frappe's `create_custom_fields` upserts when called with
-`update=True`. Targets ERPNext DocTypes (Lead / Customer / Quotation /
-Sales Order / Contact) and CRM Organization to wire the cross-module
-links used by LCS Integrations.
+`update=True`. Targets ERPNext DocTypes (Customer / Quotation / Sales
+Order / Contact) and FrappeCRM DocTypes (CRM Lead / CRM Deal / CRM
+Organization) to wire the cross-module links used by LCS Integrations.
 """
 
 from __future__ import annotations
@@ -13,15 +13,6 @@ from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
 
 
 CUSTOM_FIELDS: dict[str, list[dict]] = {
-    "Lead": [
-        {
-            "fieldname": "lcs_score",
-            "label": "Lead Score",
-            "fieldtype": "Int",
-            "read_only": 1,
-            "insert_after": "source",
-        },
-    ],
     "CRM Organization": [
         {
             "fieldname": "erpnext_customer",
@@ -66,6 +57,13 @@ CUSTOM_FIELDS: dict[str, list[dict]] = {
             "options": "User",
             "description": "Propagated from the linked LCS Project (single source of truth).",
             "insert_after": "lead_owner",
+        },
+        {
+            "fieldname": "lcs_score",
+            "label": "Lead Score",
+            "fieldtype": "Int",
+            "read_only": 1,
+            "insert_after": "sales_manager",
         },
     ],
     "Sales Order": [

@@ -6,3 +6,4 @@ lcs_integrations.patches.reinstall_bsm_fields
 lcs_integrations.patches.fusion_upgrade_oauth
 lcs_integrations.patches.install_sales_manager_fields
 lcs_integrations.patches.reinstall_erpnext_project_field
+lcs_integrations.patches.migrate_lead_score_to_crm_lead
