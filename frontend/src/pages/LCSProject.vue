@@ -430,24 +430,11 @@
 
             <!-- Contacts Tab -->
             <div v-if="activeTab === 'Contacts'" class="space-y-3">
-              <div v-if="contactsList.loading" class="flex items-center justify-center py-12">
+              <div v-if="project.loading && !doc.contacts" class="flex items-center justify-center py-12">
                 <div class="h-6 w-6 animate-spin rounded-full border-2 border-gray-200 border-t-lcs-secondary" />
               </div>
-              <div v-else-if="contactsData.length">
-                <table class="w-full text-sm">
-                  <thead>
-                    <tr class="border-b text-left text-xs font-medium uppercase tracking-wide text-gray-500">
-                      <th class="px-3 py-2">{{ __('Name') }}</th>
-                      <th class="px-3 py-2">{{ __('Role') }}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="c in contactsData" :key="c.name" class="border-b hover:bg-gray-50">
-                      <td class="px-3 py-2.5 font-medium text-gray-900">{{ c.full_name || c.name }}</td>
-                      <td class="px-3 py-2.5 text-gray-600">{{ c.designation || '—' }}</td>
-                    </tr>
-                  </tbody>
-                </table>
+              <div v-else-if="contactsData.length" class="rounded-lg border px-3">
+                <ContactRow v-for="c in contactsData" :key="c.name" :contact="c.name" />
               </div>
               <div v-else class="flex flex-col items-center py-12">
                 <FeatherIcon name="users" class="h-8 w-8 text-gray-300" />
@@ -500,6 +487,8 @@
 
             <!-- Activity Tab -->
             <div v-if="activeTab === 'Activity'" class="space-y-3">
+              <!-- Customer emails auto-linked by domain or logged from Outlook -->
+              <MailActivityWidget :project="projectId" />
               <div v-if="activities.loading" class="flex items-center justify-center py-12">
                 <div class="h-6 w-6 animate-spin rounded-full border-2 border-gray-200 border-t-lcs-secondary" />
               </div>
@@ -715,6 +704,8 @@ import BomTree from '@/components/lcs/BomTree.vue'
 import ExecutionPanel from '@/components/lcs/ExecutionPanel.vue'
 import UserPicker from '@/components/lcs/UserPicker.vue'
 import OpportunityMatrix from '@/components/lcs/OpportunityMatrix.vue'
+import MailActivityWidget from '@/components/lcs/MailActivityWidget.vue'
+import ContactRow from '@/components/lcs/ContactRow.vue'
 import PriceStageCard from '@/components/lcs/PriceStageCard.vue'
 import VoiceInput from '@/components/lcs/VoiceInput.vue'
 import { queueMutation, cachePut, listMutations, onQueueChange } from '@/utils/offlineDB'
@@ -1055,16 +1046,11 @@ async function changeOfferStatus(offer, newStatus) {
 }
 
 // Contacts, Matrix, Activities
-const contactsList = createListResource({
-  doctype: 'Dynamic Link',
-  fields: ['parent'],
-  filters: { parenttype: 'Contact', link_doctype: 'LCS Project', link_name: projectId.value },
-  auto: true,
-})
-const contactsData = computed(() => {
-  if (!contactsList.data) return []
-  return contactsList.data.map((d) => ({ name: d.parent, full_name: d.parent }))
-})
+// Authoritative source = the project's own contact table (LCS Project
+// Contact), where both manual adds and domain-binding write their rows.
+const contactsData = computed(() =>
+  (doc.value.contacts || []).map((r) => ({ name: r.contact, role: r.role })),
+)
 
 const matrixValues = ref({ technical_fit: 0, commercial_fit: 0, relationship_strength: 0, competition_level: 0, strategic_importance: 0 })
 createResource({

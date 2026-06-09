@@ -55,8 +55,12 @@ function readCurrentMail() {
       if (!item) return reject(new Error("Keine Nachricht ausgewählt"));
       const sender = (item.from && item.from.emailAddress) || "";
       const subject = item.subject || "";
+      const recipients = (item.to || []).map(r => r.emailAddress).filter(Boolean).join(", ");
+      const me = (Office.context.mailbox.userProfile.emailAddress || "").toLowerCase();
+      const direction = sender.toLowerCase() === me ? "Sent" : "Received";
+      const messageId = item.internetMessageId || "";
       // Grab body only if we'll need it (defer for performance)
-      resolve({ sender, subject, body: "" });
+      resolve({ sender, subject, recipients, direction, messageId, body: "" });
     } catch (e) { reject(e); }
   });
 }
@@ -266,6 +270,9 @@ async function logEmailToProject(projectName, displayName) {
       subject: currentMail.subject,
       body: currentMail.body,
       sender: currentMail.sender,
+      recipients: currentMail.recipients || "",
+      direction: currentMail.direction || "Received",
+      message_id: currentMail.messageId || "",
     });
     toast(`Gespeichert unter ${displayName}`, "success");
     closePicker();

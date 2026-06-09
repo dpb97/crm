@@ -90,33 +90,57 @@ def lookup_email_context(sender_email: str, subject: str = ""):
 
 
 @frappe.whitelist()
-def log_email_to_project(project: str, subject: str, body: str, sender: str, received_at: str = None):
+def log_email_to_project(
+    project: str,
+    subject: str,
+    body: str,
+    sender: str,
+    recipients: str = "",
+    direction: str = "Received",
+    received_at: str = None,
+    message_id: str = None,
+):
     """
-    Attach an email as a Comment on the LCS Project's activity feed.
-    Used by the "Log to CRM" ribbon action.
+    Attach an email as a Communication on the LCS Project, so it shows up in
+    the project's email feed exactly like auto-linked mail. Used by the
+    "Log to Project" ribbon action.
 
-    Any role that can edit CRM Deals should be able to log mail — we
-    check write permission on the target project rather than a specific
-    role so Access Profile restrictions flow through here too.
+    Idempotent on `message_id` (Graph internetMessageId) so a double-click in
+    the taskpane cannot create duplicates. Permission is checked as write on
+    the target project, so Access Profile restrictions flow through here too.
     """
     if not frappe.db.exists("LCS Project", project):
         frappe.throw(f"LCS Project {project} not found")
     if not frappe.has_permission("LCS Project", ptype="write", doc=project):
         frappe.throw("Not permitted to log email on this project", frappe.PermissionError)
 
-    comment = frappe.new_doc("Comment")
-    comment.comment_type = "Comment"
-    comment.reference_doctype = "LCS Project"
-    comment.reference_name = project
-    comment.subject = subject or "Email"
-    # Strip HTML for storage; keep plain text for searchability
-    import re
-    plain = re.sub(r"<[^>]+>", "", body or "").strip()
-    comment.content = f"📧 **Email from {sender}**\n\n{plain[:2000]}"
-    comment.insert(ignore_permissions=True)
+    if message_id:
+        existing = frappe.db.get_value(
+            "Communication",
+            {"message_id": message_id, "reference_doctype": "LCS Project", "reference_name": project},
+            "name",
+        )
+        if existing:
+            return {"ok": True, "communication": existing, "project": project, "created": False}
+
+    comm = frappe.new_doc("Communication")
+    comm.communication_type = "Communication"
+    comm.communication_medium = "Email"
+    comm.sent_or_received = "Sent" if direction == "Sent" else "Received"
+    comm.subject = subject or "(no subject)"
+    comm.content = body or ""
+    comm.sender = sender
+    comm.recipients = recipients
+    comm.reference_doctype = "LCS Project"
+    comm.reference_name = project
+    if message_id:
+        comm.message_id = message_id
+    if received_at:
+        comm.communication_date = received_at
+    comm.insert(ignore_permissions=True)
     frappe.db.commit()
 
-    return {"ok": True, "comment": comment.name, "project": project}
+    return {"ok": True, "communication": comm.name, "project": project, "created": True}
 
 
 @frappe.whitelist()

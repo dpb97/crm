@@ -1,10 +1,16 @@
-"""Auto-link incoming Communications to a Customer by sender domain.
+"""Auto-link Communications to the customer's project by mail domain.
 
 Rule (from the LCS minimum feature set):
-    If the sender domain matches the email domain of an existing Customer /
-    CRM Deal primary contact, attach the Communication to that record.
-    Otherwise leave it unattached — manual linking through a UI button is the
-    fallback.
+    Resolve the customer-side address of an email (sender for received mail,
+    recipients for sent mail) to a CRM Organization via its mail domain, then
+    attach the Communication to that organization's most recent active LCS
+    Project. Falls back to the organization itself when no active project
+    exists. Personal mail domains are ignored.
+
+Contact backfill ("Adressbuch + Mailverkehr"): when the domain matches a
+known customer but no Contact carries that address yet, a lightweight Contact
+is created. Its own after_insert hooks then push it to the shared mailbox and
+bind it to the organization.
 """
 
 from __future__ import annotations
@@ -13,42 +19,65 @@ from typing import Any
 
 import frappe
 
-_PERSONAL_DOMAINS = frozenset({
-    "gmail.com", "googlemail.com", "yahoo.com", "outlook.com", "hotmail.com",
-    "gmx.de", "gmx.at", "gmx.net", "web.de", "t-online.de", "icloud.com",
-})
+from lcs_integrations.contacts.domain_binding import (
+    domain_of,
+    is_bindable_domain,
+    org_for_domain,
+    resolve_project_for_domain,
+)
 
 
-def _domain(address: str) -> str | None:
-    if not address or "@" not in address:
-        return None
-    return address.rsplit("@", 1)[-1].lower().strip()
+def _counterparty_addresses(doc: Any) -> list[str]:
+    """The customer-side addresses for this Communication."""
+    if (doc.get("sent_or_received") or "Received") == "Sent":
+        raw = doc.recipients or ""
+        return [a.strip() for a in raw.replace(";", ",").split(",") if a.strip()]
+    return [doc.sender] if doc.sender else []
 
 
 def auto_link(doc: Any, method: str | None = None) -> None:
     if doc.get("communication_medium") != "Email" or doc.reference_doctype:
         return
-    domain = _domain(doc.sender or "")
-    if not domain or domain in _PERSONAL_DOMAINS:
-        return
-    # Find any Contact whose primary email shares this domain.
-    contact = frappe.db.sql(
-        """
-        SELECT parent FROM `tabContact Email`
-        WHERE email_id LIKE %(pattern)s AND is_primary = 1
-        LIMIT 1
-        """,
-        {"pattern": f"%@{domain}"},
-        as_dict=True,
-    )
-    if not contact:
-        return
-    contact_name = contact[0]["parent"]
-    link = frappe.db.get_value(
-        "Dynamic Link",
-        {"parenttype": "Contact", "parent": contact_name, "link_doctype": ("in", ["CRM Deal", "Contact"])},
-        ("link_doctype", "link_name"),
-    )
-    if link:
-        doc.reference_doctype, doc.reference_name = link
+
+    for address in _counterparty_addresses(doc):
+        domain = domain_of(address)
+        if not is_bindable_domain(domain):
+            continue
+        org = org_for_domain(domain)
+        if not org:
+            continue
+
+        project = resolve_project_for_domain(domain)["project"]
+        if project:
+            doc.reference_doctype, doc.reference_name = "LCS Project", project
+        else:
+            doc.reference_doctype, doc.reference_name = "CRM Organization", org
         doc.save(ignore_permissions=True)
+
+        _ensure_contact(address, org, full_name=_name_for(doc, address))
+        return
+
+
+def _name_for(doc: Any, address: str) -> str:
+    """Best available display name for the counterparty."""
+    if (doc.get("sent_or_received") or "Received") != "Sent" and doc.get("sender_full_name"):
+        return doc.sender_full_name
+    return address.split("@", 1)[0].replace(".", " ").title()
+
+
+def _ensure_contact(address: str, org: str, *, full_name: str) -> None:
+    """Create a Contact for an unseen customer address and link it.
+
+    No-op when a Contact already carries the address — binding of existing
+    contacts is handled by the domain-binding service / Contact hooks.
+    """
+    if frappe.db.exists("Contact Email", {"email_id": address}):
+        return
+
+    parts = full_name.split(" ", 1)
+    contact = frappe.new_doc("Contact")
+    contact.first_name = parts[0]
+    contact.last_name = parts[1] if len(parts) > 1 else ""
+    contact.append("email_ids", {"email_id": address, "is_primary": 1})
+    contact.append("links", {"link_doctype": "CRM Organization", "link_name": org})
+    contact.insert(ignore_permissions=True)
