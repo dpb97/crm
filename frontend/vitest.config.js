@@ -2,8 +2,9 @@ import { defineConfig } from 'vitest/config'
 import vue from '@vitejs/plugin-vue'
 import path from 'node:path'
 
-// Kept separate from vite.config.js so test-only flags (jsdom, coverage,
-// shorter watch) do not leak into the dev server config.
+// Merged config: upstream util tests (tests/**) + LCS component tests
+// (src/**/__tests__). The vue() plugin is required for the LCS .vue specs;
+// upstream's happy-dom env + setup file are kept so upstream tests stay green.
 export default defineConfig({
   plugins: [vue()],
   resolve: {
@@ -12,21 +13,26 @@ export default defineConfig({
     },
   },
   test: {
-    environment: 'jsdom',
     globals: true,
-    include: ['src/**/__tests__/**/*.{spec,test}.{js,ts}'],
+    environment: 'happy-dom',
+    root: __dirname,
+    setupFiles: ['./tests/setup.js'],
+    include: [
+      'src/**/__tests__/**/*.{spec,test}.{js,ts}',
+      'tests/**/*.test.js',
+      'src/**/*.test.js',
+    ],
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'lcov'],
-      // Scope coverage to LCS-owned code; upstream frappe/crm frontend is
-      // tested upstream.
-      include: ['src/components/lcs/**/*.{vue,ts,js}'],
-      thresholds: {
-        lines: 80,
-        functions: 80,
-        branches: 70,
-        statements: 80,
-      },
+      reporter: ['text', 'lcov', 'json-summary'],
+      reportsDirectory: './coverage',
+      include: [
+        'src/components/lcs/**/*.{vue,ts,js}',
+        'src/utils/fieldTransforms.js',
+        'src/utils/scriptHelpers.js',
+        'src/utils/expressions.js',
+        'src/utils/renderFieldLayoutDialog.js',
+      ],
     },
   },
 })

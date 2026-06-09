@@ -3,9 +3,10 @@ import { globalStore } from '@/stores/global'
 import { getMeta } from '@/stores/meta'
 import { useAttachments } from '@/composables/useAttachments'
 import { showSettings, activeSettingsPage } from '@/composables/settings'
-import { runSequentially, parseAssignees, evaluateExpression } from '@/utils'
+import { runSequentially, parseAssignees, sanitizeText } from '@/utils'
+import { findMissingMandatory } from '@/utils/fieldTransforms'
 import { createDocumentResource, createResource, toast } from 'frappe-ui'
-import { ref, reactive } from 'vue'
+import { ref, reactive, getCurrentInstance } from 'vue'
 
 const documentsCache = {}
 const controllersCache = {}
@@ -13,6 +14,7 @@ const assigneesCache = {}
 const permissionsCache = {}
 
 export function useDocument(doctype, docname, resourceOverrides = {}) {
+  if (typeof docname === 'number') docname = String(docname)
   const { setupScript, scripts } = getScript(doctype)
   const meta = getMeta(doctype)
   const { trackOldFile, processPendingDeletions } = useAttachments(
@@ -20,65 +22,73 @@ export function useDocument(doctype, docname, resourceOverrides = {}) {
     docname,
   )
 
+  const vm = getCurrentInstance()?.proxy
   documentsCache[doctype] = documentsCache[doctype] || {}
 
   const error = ref('')
 
   if (!documentsCache[doctype][docname || '']) {
     if (docname) {
-      documentsCache[doctype][docname] = createDocumentResource({
-        doctype: doctype,
-        name: docname,
-        onSuccess: async () => await setupFormScript(),
-        onError: (err) => {
-          error.value = err
-          if (err.exc_type === 'DoesNotExistError') {
-            toast.error(__(err.messages[0] || 'Document does not exist'))
-          }
-          if (err.exc_type === 'PermissionError') {
-            toast.error(
-              __(
-                err.messages[0] ||
-                  'You do not have permission to access this document',
-              ),
-            )
-          }
-        },
-        setValue: {
-          onSuccess: () => {
-            triggerOnSave()
-            toast.success(__('Document updated successfully'))
-            processPendingDeletions()
-          },
+      documentsCache[doctype][docname] = createDocumentResource(
+        {
+          realtime: Boolean(vm?.$socket),
+          doctype: doctype,
+          name: docname,
+          onSuccess: async () => await setupFormScript(),
           onError: (err) => {
-            triggerOnError(err)
-
-            if (err.exc_type == 'MandatoryError') {
-              const fieldName = err.messages
-                .map((msg) => {
-                  let arr = msg.split(': ')
-                  return arr[arr.length - 1].trim()
-                })
-                .join(', ')
-              toast.error(__('Mandatory field error: {0}', [fieldName]))
-              return
+            error.value = err
+            if (err.exc_type === 'DoesNotExistError') {
+              toast.error(__(err.messages[0] || 'Document does not exist'))
             }
-
-            err.messages?.forEach((msg) => {
-              toast.error(msg)
-            })
-
-            if (err.messages?.length === 0) {
-              toast.error(__('An error occurred while updating the document'))
+            if (err.exc_type === 'PermissionError') {
+              toast.error(
+                __(
+                  err.messages[0] ||
+                    'You do not have permission to access this document',
+                ),
+              )
             }
-
-            console.error(err)
           },
+          setValue: {
+            onSuccess: () => {
+              triggerOnSave()
+              toast.success(__('Document updated successfully'))
+              processPendingDeletions()
+            },
+            onError: (err) => {
+              triggerOnError(err)
+
+              if (err.exc_type == 'MandatoryError') {
+                const fieldName = err.messages
+                  .map((msg) => {
+                    let arr = msg.split(': ')
+                    return arr[arr.length - 1].trim()
+                  })
+                  .join(', ')
+                toast.error(__('Mandatory field error: {0}', [fieldName]))
+                return
+              }
+
+              err.messages?.forEach((msg) => {
+                toast.error(msg)
+              })
+
+              if (err.messages?.length === 0) {
+                toast.error(__('An error occurred while updating the document'))
+              }
+
+              console.error(err)
+            },
+          },
+          ...resourceOverrides,
         },
-        ...resourceOverrides,
-      })
+        vm,
+      )
       if (!documentsCache[doctype][docname].fieldHtmlMap) {
         documentsCache[doctype][docname].fieldHtmlMap = {}
+      }
+      if (!documentsCache[doctype][docname].fieldPropertyOverrides) {
+        documentsCache[doctype][docname].fieldPropertyOverrides = {}
       }
 
       // Override the submit function to trigger validation before submitting
@@ -99,6 +109,7 @@ export function useDocument(doctype, docname, resourceOverrides = {}) {
     } else {
       documentsCache[doctype][''] = reactive({
         doc: { __newDocument: true, doctype },
+        fieldPropertyOverrides: {},
       })
       setupFormScript()
     }
@@ -169,7 +180,7 @@ export function useDocument(doctype, docname, resourceOverrides = {}) {
 
     const organizedControllers = {}
     for (const controller of controllersArray) {
-      const controllerKey = controller.constructor.name // e.g., "CRMLead", "CRMProducts"
+      const controllerKey = controller._className || controller.constructor.name
       if (!organizedControllers[controllerKey]) {
         organizedControllers[controllerKey] = []
       }
@@ -198,25 +209,16 @@ export function useDocument(doctype, docname, resourceOverrides = {}) {
   }
 
   function checkMandatory(doc) {
-    let fields = meta?.getFields() || []
+    let fields = meta?.doctypesMeta?.[doctype]?.fields || []
 
     if (!fields || fields.length === 0) return
 
-    let missingFields = []
+    const overrides =
+      documentsCache[doctype][docname || '']?.fieldPropertyOverrides || {}
 
-    fields.forEach((df) => {
-      let parent = meta?.doctypesMeta?.[df.parent] || null
-      if (evaluateExpression(df.mandatory_depends_on, doc, parent)) {
-        const value = doc[df.fieldname]
-        if (
-          value === undefined ||
-          value === null ||
-          (typeof value === 'string' && value.trim() === '') ||
-          (Array.isArray(value) && value.length === 0)
-        ) {
-          missingFields.push(df.label || df.fieldname)
-        }
-      }
+    const missingFields = findMissingMandatory(fields, doc, {
+      propertyOverrides: overrides,
+      doctypesMeta: meta?.doctypesMeta || {},
     })
 
     if (missingFields.length > 0) {
@@ -270,7 +272,8 @@ export function useDocument(doctype, docname, resourceOverrides = {}) {
     await trigger(handler)
   }
 
-  async function triggerOnChange(fieldname, value, row) {
+  async function triggerOnChange(fieldname, _value, row) {
+    const value = sanitizeText(_value)
     let oldValue = null
     if (row) {
       oldValue = row[fieldname]
