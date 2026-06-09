@@ -1,61 +1,100 @@
-"""Seed LCS Cable Cranes demo data. Run via bench console.
-Flat-style — no top-level functions, so IPython's REPL doesn't
-lose closures over module-level constants.
+"""Seed LCS Cable Cranes demo data using raw SQL INSERTs so
+installed apps' doc_events (next_pms, fusion_manage, bsm) that
+reference now-removed custom_* fields don't crash the run.
 
-Run:
+Run via bench console:
     bench --site lcs.local console < /tmp/_seed.py
 """
 import frappe
 from datetime import datetime, timedelta
 
-# ----------------------------------------------------------------
-# Pre-seed lookups
-# ----------------------------------------------------------------
-COMPANY = frappe.db.get_value("Company", {"is_group": 0}, "name") or frappe.db.get_value("Company", {}, "name")
-DEFAULT_ITEM_GROUP = frappe.db.get_value("Item Group", {"is_group": 0}, "name") or "Products"
-PARENT_TERR = frappe.db.get_value("Territory", {"is_group": 1}, "name") or "All Territories"
+NOW = frappe.utils.now()
+ADMIN = "Administrator"
+
+# ---------------------------------------------------------------
+# SQL insert helper — adds the standard Frappe meta columns.
+# ---------------------------------------------------------------
+def sql_insert(doctype, name, **vals):
+    full = {
+        "name":        name,
+        "owner":       ADMIN,
+        "creation":    NOW,
+        "modified":    NOW,
+        "modified_by": ADMIN,
+        "docstatus":   0,
+        "idx":         0,
+        **vals,
+    }
+    cols = ", ".join("`%s`" % k for k in full.keys())
+    placeholders = ", ".join(["%s"] * len(full))
+    table = "tab" + doctype
+    frappe.db.sql(
+        "INSERT IGNORE INTO `%s` (%s) VALUES (%s)" % (table, cols, placeholders),
+        list(full.values()),
+    )
+    return name
+
+# ---------------------------------------------------------------
+# Lookups
+# ---------------------------------------------------------------
+COMPANY        = frappe.db.get_value("Company", {}, "name")
+ITEM_GROUP     = frappe.db.get_value("Item Group", {"is_group": 0}, "name") or "Products"
+PARENT_TERR    = frappe.db.get_value("Territory", {"is_group": 1}, "name") or "All Territories"
 CUSTOMER_GROUP = frappe.db.get_value("Customer Group", {"is_group": 0}, "name") or "All Customer Groups"
 SUPPLIER_GROUP = frappe.db.get_value("Supplier Group", {"is_group": 0}, "name") or "All Supplier Groups"
 print("Using company: %s" % COMPANY)
 
-# ----------------------------------------------------------------
-# Customers (inline)
-# ----------------------------------------------------------------
-print("Seeding customers ...")
-customers = []
-for name, territory in [
+# ---------------------------------------------------------------
+# Territories
+# ---------------------------------------------------------------
+for terr in ["Frankreich", "Deutschland", "Oesterreich", "Schweiz", "Skandinavien"]:
+    if not frappe.db.exists("Territory", terr):
+        sql_insert("Territory", terr,
+            territory_name=terr, parent_territory=PARENT_TERR, is_group=0, lft=0, rgt=0)
+
+# ---------------------------------------------------------------
+# Customers
+# ---------------------------------------------------------------
+CUSTOMERS = [
     ("Vinci Construction Grands Projets", "Frankreich"),
     ("Hochtief AG",                       "Deutschland"),
     ("STRABAG SE",                        "Oesterreich"),
     ("Implenia Schweiz AG",               "Schweiz"),
     ("Skanska AB",                        "Skandinavien"),
-]:
-    if not frappe.db.exists("Territory", territory):
-        frappe.get_doc({"doctype": "Territory", "territory_name": territory, "parent_territory": PARENT_TERR, "is_group": 0}).insert(ignore_permissions=True)
-    if frappe.db.exists("Customer", name):
-        customers.append(name); continue
-    d = frappe.get_doc({"doctype": "Customer", "customer_name": name, "customer_type": "Company", "customer_group": CUSTOMER_GROUP, "territory": territory}).insert(ignore_permissions=True)
-    customers.append(d.name)
-print("  -> %d customers" % len(customers))
+]
+for cname, terr in CUSTOMERS:
+    if frappe.db.exists("Customer", cname):
+        continue
+    sql_insert("Customer", cname,
+        customer_name=cname, customer_type="Company",
+        customer_group=CUSTOMER_GROUP, territory=terr,
+        is_internal_customer=0, disabled=0, is_frozen=0,
+        language="en")
+print("Customers   : %d" % frappe.db.count("Customer"))
 
-# ----------------------------------------------------------------
+# ---------------------------------------------------------------
 # Suppliers
-# ----------------------------------------------------------------
-print("Seeding suppliers ...")
-suppliers = []
-for name in ["Pfeifer Drako GmbH", "Brugg Lifting AG", "Siemens AG", "WTW Antriebstechnik GmbH"]:
-    if frappe.db.exists("Supplier", name):
-        suppliers.append(name); continue
-    d = frappe.get_doc({"doctype": "Supplier", "supplier_name": name, "supplier_type": "Company", "supplier_group": SUPPLIER_GROUP}).insert(ignore_permissions=True)
-    suppliers.append(d.name)
-print("  -> %d suppliers" % len(suppliers))
+# ---------------------------------------------------------------
+SUPPLIERS = ["Pfeifer Drako GmbH", "Brugg Lifting AG", "Siemens AG", "WTW Antriebstechnik GmbH"]
+for sname in SUPPLIERS:
+    if frappe.db.exists("Supplier", sname):
+        continue
+    sql_insert("Supplier", sname,
+        supplier_name=sname, supplier_type="Company",
+        supplier_group=SUPPLIER_GROUP, disabled=0, language="en")
+print("Suppliers   : %d" % frappe.db.count("Supplier"))
 
-# ----------------------------------------------------------------
+# ---------------------------------------------------------------
+# UOM
+# ---------------------------------------------------------------
+for u in ["Meter", "Nos"]:
+    if not frappe.db.exists("UOM", u):
+        sql_insert("UOM", u, uom_name=u, enabled=1)
+
+# ---------------------------------------------------------------
 # Items
-# ----------------------------------------------------------------
-print("Seeding items ...")
-items = []
-for code, desc, uom in [
+# ---------------------------------------------------------------
+ITEMS = [
     ("SEIL-32",   "Stahlseil 32 mm",      "Meter"),
     ("SEIL-40",   "Stahlseil 40 mm",      "Meter"),
     ("SEIL-48",   "Stahlseil 48 mm",      "Meter"),
@@ -68,105 +107,103 @@ for code, desc, uom in [
     ("PYL-STD",   "Pylon Standard Modul", "Nos"),
     ("WAGEN-A",   "Laufwagen Typ A",      "Nos"),
     ("FB-STD",    "Fangbremse Standard",  "Nos"),
-]:
-    if not frappe.db.exists("UOM", uom):
-        frappe.get_doc({"doctype": "UOM", "uom_name": uom}).insert(ignore_permissions=True)
+]
+for code, desc, uom in ITEMS:
     if frappe.db.exists("Item", code):
-        items.append(code); continue
-    d = frappe.get_doc({"doctype": "Item", "item_code": code, "item_name": desc, "description": desc, "item_group": DEFAULT_ITEM_GROUP, "stock_uom": uom, "is_stock_item": 1}).insert(ignore_permissions=True)
-    items.append(d.name)
-print("  -> %d items" % len(items))
+        continue
+    sql_insert("Item", code,
+        item_code=code, item_name=desc, description=desc,
+        item_group=ITEM_GROUP, stock_uom=uom, is_stock_item=1,
+        disabled=0, has_variants=0, is_sales_item=1, is_purchase_item=1,
+        include_item_in_manufacturing=0, allow_alternative_item=0,
+        valuation_method="", standard_rate=0)
+print("Items       : %d" % frappe.db.count("Item"))
 
-# ----------------------------------------------------------------
+# ---------------------------------------------------------------
 # Project Type
-# ----------------------------------------------------------------
+# ---------------------------------------------------------------
 if not frappe.db.exists("Project Type", "External"):
-    frappe.get_doc({"doctype": "Project Type", "project_type_name": "External"}).insert(ignore_permissions=True)
+    sql_insert("Project Type", "External", project_type_name="External")
 
-# ----------------------------------------------------------------
+# ---------------------------------------------------------------
 # Projects + Tasks
-# ----------------------------------------------------------------
-print("Seeding projects + tasks ...")
+# ---------------------------------------------------------------
 today = datetime.utcnow().date()
 TASKS = [
     "Konstruktion", "Fertigung Mechanik", "Fertigung Elektrik",
     "Lieferung Baustelle", "Vor-Montage", "Endmontage",
     "Inbetriebnahme", "Werksabnahme", "Bauabnahme",
 ]
-projects = []
-for pn, cust, off, dur, kind in [
+PROJECTS = [
     ("Staudamm Engadin Materialseilbahn",       "Implenia Schweiz AG",              -60, 180, "Materialseilbahn"),
     ("Pylon-Montage Stelvio",                   "STRABAG SE",                       -30,  90, "Pylon-Montage"),
     ("Brueckenbau Loetschberg Sued",            "Vinci Construction Grands Projets", 10, 220, "Brueckenbau"),
     ("Talsperre Norge - Materialseilbahn",      "Skanska AB",                        20, 240, "Materialseilbahn"),
     ("Tunnel Gotthard Versorgung",              "Hochtief AG",                       45, 150, "Versorgung"),
     ("Wasserkraftwerk Wallis Hauptkran",        "Implenia Schweiz AG",               80, 270, "Krananlage"),
-]:
+]
+proj_count = 0
+task_count = 0
+for idx, (pn, cust, off, dur, kind) in enumerate(PROJECTS, 1):
     if frappe.db.exists("Project", {"project_name": pn}):
-        projects.append(pn); continue
+        continue
     s = today + timedelta(days=off)
     e = s + timedelta(days=dur)
-    doc = frappe.get_doc({
-        "doctype":           "Project",
-        "project_name":      pn,
-        "project_type":      "External",
-        "customer":          cust,
-        "expected_start_date": s.isoformat(),
-        "expected_end_date":   e.isoformat(),
-        "status":            "Open",
-        "company":           COMPANY,
-    }).insert(ignore_permissions=True)
+    pname = "PROJ-%05d" % idx
+    sql_insert("Project", pname,
+        project_name=pn, project_type="External", customer=cust,
+        expected_start_date=s.isoformat(), expected_end_date=e.isoformat(),
+        status="Open", company=COMPANY, percent_complete=0,
+        is_active="Yes", priority="Medium")
+    proj_count += 1
     slice_d = max(1, dur // len(TASKS))
-    for idx, t in enumerate(TASKS):
-        ts = s + timedelta(days=idx * slice_d)
+    for tidx, tname in enumerate(TASKS):
+        ts = s + timedelta(days=tidx * slice_d)
         te = ts + timedelta(days=slice_d - 1)
-        frappe.get_doc({
-            "doctype":  "Task",
-            "subject":  "%s - %s" % (t, kind),
-            "project":  doc.name,
-            "exp_start_date": ts.isoformat(),
-            "exp_end_date":   te.isoformat(),
-            "status":   "Open",
-        }).insert(ignore_permissions=True)
-    projects.append(doc.name)
-print("  -> %d projects, %d tasks" % (len(projects), frappe.db.count("Task")))
+        tn = "TASK-%05d-%02d" % (idx, tidx + 1)
+        sql_insert("Task", tn,
+            subject="%s - %s" % (tname, kind),
+            project=pname,
+            exp_start_date=ts.isoformat(),
+            exp_end_date=te.isoformat(),
+            status="Open", priority="Medium",
+            progress=0, is_group=0, is_template=0,
+            is_milestone=0)
+        task_count += 1
+print("Projects    : %d (+%d)" % (frappe.db.count("Project"), proj_count))
+print("Tasks       : %d (+%d)" % (frappe.db.count("Task"), task_count))
 
-# ----------------------------------------------------------------
+# ---------------------------------------------------------------
 # Pilanda News
-# ----------------------------------------------------------------
-print("Seeding news ...")
-news = []
+# ---------------------------------------------------------------
+news_count = 0
 if frappe.db.table_exists("Pilanda News"):
-    for title, cat, pinned, summary, body in [
-        ("Pilanda v1.0 ausgerollt", "Release", 1,
+    NEWS = [
+        ("PN-0001", "Pilanda v1.0 ausgerollt",       "Release",      1,
          "Die einheitliche Navigation fuer den LCS-ERP-Stack ist freigegeben.",
-         "<p>Mit v1.0 laeuft die Pilanda-Navigation als eigene Vue-3-App ueber Frappe Desk, Frappe CRM, Helpdesk, LMS und Builder mit derselben Brand und Sub-Modulen, einem 'Zur Uebersicht'-Link unten links.</p>"),
-        ("Fruehwarnungs-Modul live", "Produkt", 0,
+         "<p>Mit v1.0 laeuft die Pilanda-Navigation als eigene Vue-3-App ueber Frappe Desk, Frappe CRM, Helpdesk, LMS und Builder.</p>"),
+        ("PN-0002", "Fruehwarnungs-Modul live",      "Produkt",      0,
          "PLS unterstuetzt Eskalationspfade mit Schwellwerten je Projekt-Typ.",
-         "<p>Die LCS-Fruehwarnung erfasst Termin-, Budget- und Qualitaetskonflikte direkt am Projekt - mit Verantwortlichem und Verlauf.</p>"),
-        ("Onboarding-Workshop am 12.06.", "Veranstaltung", 0,
+         "<p>Die LCS-Fruehwarnung erfasst Termin-, Budget- und Qualitaetskonflikte direkt am Projekt.</p>"),
+        ("PN-0003", "Onboarding-Workshop am 12.06.", "Veranstaltung", 0,
          "Vertrieb + Projektmanagement lernen die neue Pilanda-Navigation kennen.",
          "<p>Anmeldung beim Pilanda-Projektteam. Dauer ca. 90 min, online via Teams.</p>"),
-        ("Demo-Daten neu eingespielt", "Unternehmen", 0,
+        ("PN-0004", "Demo-Daten neu eingespielt",    "Unternehmen",   0,
          "Sechs typische LCS-Projekte vom Staudamm bis zum Tunnel als Sandbox-Daten.",
          "<p>Reset der Sandbox: 5 Kunden, 4 Lieferanten, 12 Artikel, 6 Cable-Crane-Installationen mit jeweils 9 Tasks.</p>"),
-        ("Vertrieb laeuft im CRM (Frappe)", "Release", 0,
+        ("PN-0005", "Vertrieb laeuft im CRM (Frappe)", "Release",     0,
          "Der Pilanda-Eintrag 'Vertrieb' fuehrt direkt in /crm.",
-         "<p>Brand-Logo und Titel der Frappe-CRM-SPA sind auf 'Vertrieb' + Pilanda-Mark gesetzt - visuell ein Pilanda-Modul, technisch die volle Frappe-CRM-Funktionalitaet.</p>"),
-    ]:
-        if frappe.db.exists("Pilanda News", {"title": title}):
-            news.append(title); continue
-        d = frappe.get_doc({
-            "doctype":      "Pilanda News",
-            "title":        title,
-            "category":     cat,
-            "is_pinned":    pinned,
-            "is_published": 1,
-            "summary":      summary,
-            "body":         body,
-        }).insert(ignore_permissions=True)
-        news.append(d.name)
-print("  -> %d news" % len(news))
+         "<p>Brand-Logo und Titel der Frappe-CRM-SPA sind auf 'Vertrieb' + Pilanda-Mark gesetzt.</p>"),
+    ]
+    for n, title, cat, pinned, summary, body in NEWS:
+        if frappe.db.exists("Pilanda News", n):
+            continue
+        sql_insert("Pilanda News", n,
+            title=title, category=cat, is_pinned=pinned,
+            is_published=1, summary=summary, body=body,
+            author=ADMIN, published_on=NOW)
+        news_count += 1
+print("Pilanda News: %d (+%d)" % (frappe.db.count("Pilanda News"), news_count))
 
 frappe.db.commit()
 print("\nDone.")

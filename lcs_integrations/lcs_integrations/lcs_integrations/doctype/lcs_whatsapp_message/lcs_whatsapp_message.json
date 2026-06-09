@@ -1,0 +1,166 @@
+{
+    "actions": [],
+    "allow_rename": 0,
+    "autoname": "LCS-WA-.YYYY.-.######",
+    "creation": "2026-05-04 00:00:00",
+    "doctype": "DocType",
+    "engine": "InnoDB",
+    "field_order": [
+        "section_envelope",
+        "direction",
+        "phone_number",
+        "contact",
+        "column_break_envelope",
+        "wa_message_id",
+        "status",
+        "received_at",
+        "section_body",
+        "message_type",
+        "body",
+        "media_url",
+        "section_links",
+        "communication",
+        "lead",
+        "deal"
+    ],
+    "fields": [
+        {
+            "fieldname": "section_envelope",
+            "fieldtype": "Section Break",
+            "label": "Envelope"
+        },
+        {
+            "fieldname": "direction",
+            "fieldtype": "Select",
+            "in_list_view": 1,
+            "in_standard_filter": 1,
+            "label": "Direction",
+            "options": "Outbound\nInbound",
+            "reqd": 1
+        },
+        {
+            "fieldname": "phone_number",
+            "fieldtype": "Data",
+            "in_list_view": 1,
+            "label": "Phone Number",
+            "reqd": 1
+        },
+        {
+            "fieldname": "contact",
+            "fieldtype": "Link",
+            "in_list_view": 1,
+            "label": "Contact",
+            "options": "Contact"
+        },
+        {
+            "fieldname": "column_break_envelope",
+            "fieldtype": "Column Break"
+        },
+        {
+            "description": "WhatsApp message ID returned by the provider (used for deduplication)",
+            "fieldname": "wa_message_id",
+            "fieldtype": "Data",
+            "label": "WhatsApp Message ID",
+            "unique": 1
+        },
+        {
+            "default": "queued",
+            "fieldname": "status",
+            "fieldtype": "Select",
+            "in_list_view": 1,
+            "in_standard_filter": 1,
+            "label": "Status",
+            "options": "queued\nsent\ndelivered\nread\nfailed\nreceived"
+        },
+        {
+            "fieldname": "received_at",
+            "fieldtype": "Datetime",
+            "label": "Received At"
+        },
+        {
+            "fieldname": "section_body",
+            "fieldtype": "Section Break",
+            "label": "Body"
+        },
+        {
+            "default": "text",
+            "fieldname": "message_type",
+            "fieldtype": "Select",
+            "label": "Type",
+            "options": "text\ntemplate\nimage\ndocument\nlocation\ncontacts\naudio\nvideo"
+        },
+        {
+            "fieldname": "body",
+            "fieldtype": "Text",
+            "label": "Body"
+        },
+        {
+            "fieldname": "media_url",
+            "fieldtype": "Data",
+            "label": "Media URL"
+        },
+        {
+            "fieldname": "section_links",
+            "fieldtype": "Section Break",
+            "label": "CRM Links"
+        },
+        {
+            "description": "Mirrored Frappe Communication record (so the message shows up in CRM timelines)",
+            "fieldname": "communication",
+            "fieldtype": "Link",
+            "label": "Communication",
+            "options": "Communication",
+            "read_only": 1
+        },
+        {
+            "fieldname": "lead",
+            "fieldtype": "Link",
+            "label": "Lead",
+            "options": "CRM Lead"
+        },
+        {
+            "fieldname": "deal",
+            "fieldtype": "Link",
+            "label": "Deal",
+            "options": "CRM Deal"
+        }
+    ],
+    "index_web_pages_for_search": 0,
+    "links": [],
+    "modified": "2026-05-04 00:00:00",
+    "modified_by": "Administrator",
+    "module": "LCS Integrations",
+    "name": "LCS WhatsApp Message",
+    "owner": "Administrator",
+    "permissions": [
+        {
+            "role": "System Manager",
+            "read": 1,
+            "write": 1,
+            "create": 1,
+            "delete": 1,
+            "export": 1,
+            "report": 1
+        },
+        {
+            "role": "Sales User",
+            "read": 1,
+            "create": 1,
+            "export": 1,
+            "report": 1,
+            "write": 1
+        },
+        {
+            "role": "Sales Manager",
+            "read": 1,
+            "write": 1,
+            "create": 1,
+            "delete": 1,
+            "export": 1,
+            "report": 1
+        }
+    ],
+    "sort_field": "modified",
+    "sort_order": "DESC",
+    "track_changes": 1
+}

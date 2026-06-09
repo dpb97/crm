@@ -1,0 +1,159 @@
+/* LCS Bizcard scanner — self-contained styling so the page works
+   identically when served standalone or embedded in an iframe.
+   Brand colours mirror tailwind.config.js `lcs.*` from the CRM. */
+
+:root {
+  --lcs-primary: #0B3A6F;
+  --lcs-secondary: #1E78C2;
+  --lcs-accent: #F5A524;
+  --lcs-success: #16A34A;
+  --lcs-danger: #DC2626;
+  --lcs-muted: #6B7280;
+  --lcs-surface: #F8FAFC;
+  --lcs-border: #E5E7EB;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; font-family: Inter, system-ui, sans-serif; background: var(--lcs-surface); color: #111; }
+
+/* When embedded, hide Frappe's website navbar/footer that Jinja still injects. */
+body[data-embed="1"] header, body[data-embed="1"] footer { display: none !important; }
+
+#bizcard-app {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 16px;
+  min-height: 100vh;
+}
+
+.bz-step { display: none; }
+.bz-step.active { display: block; }
+
+.bz-card {
+  background: white;
+  border: 1px solid var(--lcs-border);
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+}
+
+.bz-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--lcs-primary);
+  margin: 0 0 4px;
+}
+
+.bz-subtitle {
+  font-size: 13px;
+  color: var(--lcs-muted);
+  margin: 0 0 16px;
+}
+
+.bz-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+.bz-btn {
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--lcs-border);
+  background: white;
+  color: #111;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all .15s;
+}
+.bz-btn:hover { border-color: var(--lcs-secondary); color: var(--lcs-secondary); }
+.bz-btn--primary { background: var(--lcs-primary); border-color: var(--lcs-primary); color: white; }
+.bz-btn--primary:hover { background: var(--lcs-secondary); border-color: var(--lcs-secondary); color: white; }
+.bz-btn--success { background: var(--lcs-success); border-color: var(--lcs-success); color: white; }
+.bz-btn--success:hover { filter: brightness(1.05); color: white; }
+.bz-btn--ghost { background: transparent; border-color: transparent; color: var(--lcs-muted); }
+.bz-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+.bz-video, .bz-preview {
+  width: 100%;
+  border-radius: 10px;
+  background: #000;
+  display: block;
+}
+
+.bz-preview { object-fit: contain; max-height: 60vh; }
+
+.bz-status {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--lcs-muted);
+  min-height: 16px;
+}
+.bz-status[data-state="error"] { color: var(--lcs-danger); }
+.bz-status[data-state="ok"] { color: var(--lcs-success); }
+
+.bz-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 12px;
+}
+.bz-form .bz-field--full { grid-column: 1 / -1; }
+.bz-field { display: flex; flex-direction: column; }
+.bz-field label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--lcs-muted);
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.bz-field input, .bz-field textarea {
+  padding: 8px 10px;
+  font-size: 14px;
+  border: 1px solid var(--lcs-border);
+  border-radius: 6px;
+  background: white;
+  font-family: inherit;
+}
+.bz-field input:focus, .bz-field textarea:focus {
+  outline: none;
+  border-color: var(--lcs-secondary);
+  box-shadow: 0 0 0 2px rgba(30, 120, 194, 0.15);
+}
+.bz-field--filled label::after {
+  content: " ●";
+  color: var(--lcs-success);
+}
+
+.bz-raw {
+  margin-top: 12px;
+  font-size: 11px;
+  color: var(--lcs-muted);
+  max-height: 100px;
+  overflow: auto;
+  background: var(--lcs-surface);
+  padding: 8px 10px;
+  border-radius: 6px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.bz-banner {
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  display: none;
+}
+.bz-banner[data-kind="warn"] { display: block; background: #FEF3C7; color: #92400E; border: 1px solid #FBBF24; }
+.bz-banner[data-kind="error"] { display: block; background: #FEE2E2; color: #991B1B; border: 1px solid #FCA5A5; }
+
+@media (max-width: 600px) {
+  .bz-form { grid-template-columns: 1fr; }
+}

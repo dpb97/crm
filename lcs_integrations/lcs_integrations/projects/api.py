@@ -333,7 +333,7 @@ def get_forecast(period="month", months_ahead=12):
         },
         fields=[
             "name", "project_name", "project_number", "project_type",
-            "phase", "estimated_value", "probability",
+            "phase", "estimated_value", "probability", "salesperson",
             "expected_close_date", "modified",
         ],
     )
@@ -371,6 +371,7 @@ def get_forecast(period="month", months_ahead=12):
             "project_number": p.project_number,
             "project_type": p.project_type,
             "phase": p.phase,
+            "salesperson": p.salesperson,
             "value": p.estimated_value,
             "probability": p.probability,
             "weighted": weighted,

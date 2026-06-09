@@ -92,6 +92,75 @@
         <InlineField :label="__('Valid Until')" :value="doc.valid_until" type="date" @save="save('valid_until', $event)" :format="formatDate" :warning="isExpired(doc.valid_until)" />
       </div>
 
+      <!-- FX Snapshot — frozen-at-save vs. live (Frankfurter.dev, ECB) -->
+      <div
+        v-if="doc.value && doc.currency && doc.currency !== 'EUR'"
+        class="rounded-xl border bg-white p-4"
+      >
+        <div class="mb-3 flex items-center justify-between">
+          <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+            <FeatherIcon name="repeat" class="h-3 w-3" />
+            {{ __('Currency Conversion') }}
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            :loading="liveRate.loading"
+            @click="liveRate.reload()"
+            :label="__('Refresh live rate')"
+            iconLeft="refresh-cw"
+          />
+        </div>
+
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <!-- Frozen card -->
+          <div class="rounded-lg border border-gray-200 bg-gray-50 p-3">
+            <div class="text-[10px] font-bold uppercase tracking-wider text-gray-400">
+              {{ __('Frozen at save') }}
+            </div>
+            <div class="mt-1 text-lg font-semibold tabular-nums text-gray-900">
+              {{ doc.value_eur ? formatCurrency(doc.value_eur) : '—' }}
+              <span class="ml-1 text-xs font-normal text-gray-500">EUR</span>
+            </div>
+            <div class="mt-1 text-xs text-gray-500">
+              {{ doc.exchange_rate_to_eur
+                  ? `1 ${doc.currency} = ${Number(doc.exchange_rate_to_eur).toFixed(4)} EUR`
+                  : __('Not yet frozen — save the offer to capture a rate.') }}
+            </div>
+            <div v-if="doc.rate_frozen_at" class="mt-0.5 text-[10px] text-gray-400">
+              {{ __('Captured') }} {{ formatDateTime(doc.rate_frozen_at) }}
+            </div>
+          </div>
+
+          <!-- Live card -->
+          <div class="rounded-lg border border-lcs-secondary/30 bg-lcs-secondary/5 p-3">
+            <div class="flex items-center justify-between">
+              <div class="text-[10px] font-bold uppercase tracking-wider text-lcs-secondary">
+                {{ __('Live (Frankfurter.dev · ECB)') }}
+              </div>
+              <span
+                v-if="fxDeltaPct != null"
+                class="rounded-full px-2 py-0.5 text-[10px] font-semibold tabular-nums"
+                :class="fxDeltaPct >= 0
+                  ? 'bg-green-100 text-green-700'
+                  : 'bg-red-100 text-red-700'"
+              >
+                {{ fxDeltaPct >= 0 ? '+' : '' }}{{ fxDeltaPct.toFixed(2) }}%
+              </span>
+            </div>
+            <div class="mt-1 text-lg font-semibold tabular-nums text-gray-900">
+              {{ liveValueEur != null ? formatCurrency(liveValueEur) : '—' }}
+              <span class="ml-1 text-xs font-normal text-gray-500">EUR</span>
+            </div>
+            <div class="mt-1 text-xs text-gray-500">
+              {{ liveRateValue != null
+                  ? `1 ${doc.currency} = ${Number(liveRateValue).toFixed(4)} EUR`
+                  : (liveRate.loading ? __('Fetching…') : __('Live rate unavailable.')) }}
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Status timeline -->
       <div class="rounded-xl border bg-white p-4">
         <div class="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
@@ -193,7 +262,7 @@
 </template>
 
 <script setup>
-import { ref, computed, nextTick } from 'vue'
+import { ref, computed, nextTick, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   createDocumentResource, createListResource, createResource,
@@ -264,6 +333,32 @@ const offer = createDocumentResource({
 })
 if (!offer.doc) offer.get.fetch()
 const doc = computed(() => offer.doc || {})
+
+// Live FX rate via Frankfurter.dev (cached server-side, 6h TTL).
+// Re-fetches whenever the document's currency changes.
+const liveRate = createResource({
+  url: 'lcs_integrations.currency.api.get_live_rate',
+  makeParams: () => ({ from_ccy: doc.value.currency || 'EUR', to_ccy: 'EUR' }),
+  auto: false,
+})
+watch(
+  () => doc.value.currency,
+  (ccy) => {
+    if (ccy && ccy !== 'EUR') liveRate.reload()
+  },
+  { immediate: true },
+)
+const liveRateValue = computed(() => liveRate.data?.rate ?? null)
+const liveValueEur = computed(() => {
+  if (liveRateValue.value == null || doc.value.value == null) return null
+  return Math.round(Number(doc.value.value) * liveRateValue.value * 100) / 100
+})
+const fxDeltaPct = computed(() => {
+  const frozen = doc.value.value_eur
+  const live = liveValueEur.value
+  if (!frozen || live == null) return null
+  return ((live - frozen) / frozen) * 100
+})
 
 const breadcrumbs = computed(() => {
   const crumbs = [{ label: __('Projects'), route: { name: 'LCS Projects' } }]
@@ -371,6 +466,13 @@ function formatCurrency(v) {
 function formatDate(d) {
   if (!d) return ''
   return new Intl.DateTimeFormat('de-DE', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(d))
+}
+function formatDateTime(d) {
+  if (!d) return ''
+  return new Intl.DateTimeFormat('de-DE', {
+    day: '2-digit', month: 'short', year: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+  }).format(new Date(d))
 }
 function isExpired(d) {
   if (!d) return false

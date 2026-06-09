@@ -1,0 +1,107 @@
+{
+    // VS Code task palette ⇒ Run Task ⇒ pick one.
+    // All bench tasks run inside WSL via the `wsl-bench` shell wrapper
+    // (Ctrl+Shift+P → "Terminal: Configure Default Profile" → pick
+    // "Ubuntu (WSL)" if you don't have WSL as the default).
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Bench: Start (foreground)",
+            "type": "shell",
+            "command": "wsl.exe -d Ubuntu -- bash -lc 'cd /home/dboeckle/frappe-bench && bench start'",
+            "problemMatcher": [],
+            "presentation": { "panel": "dedicated", "reveal": "always" }
+        },
+        {
+            "label": "Bench: Migrate (lcs.local)",
+            "type": "shell",
+            "command": "wsl.exe -d Ubuntu -- bash -lc 'cd /home/dboeckle/frappe-bench && bench --site lcs.local migrate'",
+            "problemMatcher": []
+        },
+        {
+            "label": "Bench: Clear Cache (lcs.local)",
+            "type": "shell",
+            "command": "wsl.exe -d Ubuntu -- bash -lc 'cd /home/dboeckle/frappe-bench && bench --site lcs.local clear-cache && bench --site lcs.local clear-website-cache'",
+            "problemMatcher": []
+        },
+        {
+            "label": "Bench: Build (crm only)",
+            "type": "shell",
+            "command": "wsl.exe -d Ubuntu -- bash -lc 'cd /home/dboeckle/frappe-bench/apps/crm/frontend && yarn build'",
+            "problemMatcher": [],
+            "group": "build"
+        },
+        {
+            "label": "Bench: Build (lcs_bizcard)",
+            "type": "shell",
+            "command": "wsl.exe -d Ubuntu -- bash -lc 'cd /home/dboeckle/frappe-bench && bench build --app lcs_bizcard'",
+            "problemMatcher": [],
+            "group": "build"
+        },
+        {
+            "label": "Bench: Backup (with files)",
+            "type": "shell",
+            "command": "wsl.exe -d Ubuntu -- bash -lc 'cd /home/dboeckle/frappe-bench && bench --site lcs.local backup --with-files'",
+            "problemMatcher": []
+        },
+        {
+            "label": "Bench: Console (lcs.local)",
+            "type": "shell",
+            "command": "wsl.exe -d Ubuntu -- bash -lc 'cd /home/dboeckle/frappe-bench && bench --site lcs.local console'",
+            "problemMatcher": [],
+            "presentation": { "panel": "dedicated", "reveal": "always" }
+        },
+        {
+            "label": "Bench: Tail logs",
+            "type": "shell",
+            "command": "wsl.exe -d Ubuntu -- bash -lc 'cd /home/dboeckle/frappe-bench && tail -f logs/web.log logs/web.error.log'",
+            "problemMatcher": [],
+            "presentation": { "panel": "dedicated", "reveal": "always" }
+        },
+
+        // Sync — Windows workspace → WSL bench
+        {
+            "label": "LCS: Sync workspace → bench",
+            "type": "shell",
+            "command": "wsl.exe -d Ubuntu -- bash /mnt/c/Users/d.boeckle/Dev/FrappeCRM/repo/scripts/sync_lcs_to_bench.sh",
+            "problemMatcher": []
+        },
+
+        // Bizcard OCR microservice
+        {
+            "label": "Bizcard: docker compose up",
+            "type": "shell",
+            "command": "wsl.exe -d Ubuntu -- bash -lc 'cd /mnt/c/Users/d.boeckle/Dev/FrappeCRM/repo/docker/lcs-bizcard-scanner && docker compose up -d --build'",
+            "problemMatcher": []
+        },
+        {
+            "label": "Bizcard: docker compose logs",
+            "type": "shell",
+            "command": "wsl.exe -d Ubuntu -- bash -lc 'cd /mnt/c/Users/d.boeckle/Dev/FrappeCRM/repo/docker/lcs-bizcard-scanner && docker compose logs -f'",
+            "problemMatcher": [],
+            "presentation": { "panel": "dedicated", "reveal": "always" }
+        },
+        {
+            "label": "Bizcard: healthz",
+            "type": "shell",
+            "command": "wsl.exe -d Ubuntu -- bash -lc 'curl -sS http://localhost:8089/healthz'",
+            "problemMatcher": []
+        },
+
+        // Linting / tests
+        {
+            "label": "Ruff: check lcs apps",
+            "type": "shell",
+            "command": "wsl.exe -d Ubuntu -- bash -lc 'cd /home/dboeckle/frappe-bench && env/bin/ruff check apps/lcs_integrations apps/lcs_bizcard'",
+            "problemMatcher": [],
+            "group": "test"
+        },
+        {
+            "label": "Pytest: lcs_integrations",
+            "type": "shell",
+            "command": "wsl.exe -d Ubuntu -- bash -lc 'cd /home/dboeckle/frappe-bench/apps/lcs_integrations && ../../env/bin/pytest -x'",
+            "problemMatcher": [],
+            "group": "test"
+        }
+    ]
+}

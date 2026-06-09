@@ -12,38 +12,65 @@ export default defineConfig(async ({ mode }) => {
       vue(),
       vueJsx(),
       VitePWA({
+        // injectManifest: we ship our own service worker so we can
+        // mirror successful `/api/method/frappe.client.get_list|get`
+        // responses into IndexedDB. Workbox's generateSW only writes
+        // the Cache API, which is opaque blobs — useless for the
+        // "give me all my open deals" offline lookup the SPA needs on
+        // a construction site.
+        strategies: 'injectManifest',
+        srcDir: 'src',
+        filename: 'sw.js',
         registerType: 'autoUpdate',
         devOptions: {
           enabled: true,
+          type: 'module',
         },
+        injectManifest: {
+          // 5 MB cap is plenty for the app shell; bigger chunks are
+          // legitimate and will load from network on first visit.
+          maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
+        },
+        // LCS branding override of the upstream Frappe CRM manifest.
+        // Unique `id` keeps an installed LCS instance separate from a
+        // co-installed vanilla Frappe CRM. Icons live under
+        // `lcs_integrations/public/manifest/` so the LCS app owns its
+        // own assets and no upstream icon files are touched.
         manifest: {
+          id: '/crm?app=lcs',
           display: 'standalone',
-          name: 'Frappe CRM',
-          short_name: 'Frappe CRM',
+          name: 'LCS CRM',
+          short_name: 'LCS CRM',
           start_url: '/crm',
+          scope: '/crm',
           description:
-            'Modern & 100% Open-source CRM tool to supercharge your sales operations',
+            'LCS Cable Cranes Sales CRM — leads, deals, projects, market-split territories.',
+          background_color: '#FFFFFF',
+          theme_color: '#0B3A6F',
+          lang: 'de',
+          orientation: 'portrait',
+          categories: ['business', 'productivity'],
           icons: [
             {
-              src: '/assets/crm/manifest/manifest-icon-192.maskable.png',
+              src: '/assets/lcs_integrations/manifest/lcs-icon-192.maskable.png',
               sizes: '192x192',
               type: 'image/png',
               purpose: 'any',
             },
             {
-              src: '/assets/crm/manifest/manifest-icon-192.maskable.png',
+              src: '/assets/lcs_integrations/manifest/lcs-icon-192.maskable.png',
               sizes: '192x192',
               type: 'image/png',
               purpose: 'maskable',
             },
             {
-              src: '/assets/crm/manifest/manifest-icon-512.maskable.png',
+              src: '/assets/lcs_integrations/manifest/lcs-icon-512.maskable.png',
               sizes: '512x512',
               type: 'image/png',
               purpose: 'any',
             },
             {
-              src: '/assets/crm/manifest/manifest-icon-512.maskable.png',
+              src: '/assets/lcs_integrations/manifest/lcs-icon-512.maskable.png',
               sizes: '512x512',
               type: 'image/png',
               purpose: 'maskable',

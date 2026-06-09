@@ -10,7 +10,14 @@ crm/public/frontend
 crm/www/crm.html
 build
 
-.vscode
+# VS Code — track team-shared configs, ignore per-user state.
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/tasks.json
+!.vscode/*.code-snippets
+
 .github/instructions
 .github/skills
 .github/copilot-instructions.md

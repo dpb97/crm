@@ -53,6 +53,8 @@
         "required_trainings",
         "section_links",
         "team_link",
+        "teams_team_id",
+        "teams_notifications_channel_id",
         "sharepoint_link",
         "document_link",
         "section_notes",
@@ -127,13 +129,14 @@
             "options": "User"
         },
         {
-            "default": "Inquiry",
+            "default": "Qualified",
+            "description": "LCS sales-pipeline stage per CRM requirements 12.05.2026: Lead lives on CRM Lead; project pipeline starts at Qualified and runs through Lost / Completed.",
             "fieldname": "phase",
             "fieldtype": "Select",
             "in_list_view": 1,
             "in_standard_filter": 1,
             "label": "Phase",
-            "options": "Inquiry\nOffer\nNegotiation\nOrder\nExecution\nCompleted\nLost"
+            "options": "Qualified\nBudget\nRichtpreis\nOffer\nNegotiation\nWon\nExecution\nCompleted\nLost"
         },
         {
             "default": "Open",
@@ -347,6 +350,20 @@
             "fieldname": "team_link",
             "fieldtype": "Data",
             "label": "MS Teams Link"
+        },
+        {
+            "description": "Microsoft Graph team ID — written by teams.provision; required for Teams notifications",
+            "fieldname": "teams_team_id",
+            "fieldtype": "Data",
+            "label": "Teams Team ID",
+            "read_only": 1
+        },
+        {
+            "description": "Channel ID for Teams notifications (defaults to the channel named in LCS Outlook Sync Settings)",
+            "fieldname": "teams_notifications_channel_id",
+            "fieldtype": "Data",
+            "label": "Teams Notifications Channel ID",
+            "read_only": 1
         },
         {
             "fieldname": "sharepoint_link",

@@ -48,6 +48,11 @@ const routes = [
     component: () => import('@/pages/LCSProjects.vue'),
   },
   {
+    path: '/projects-map',
+    name: 'LCS Projects Map',
+    component: () => import('@/pages/LCSProjectsMap.vue'),
+  },
+  {
     path: '/projects/:id',
     name: 'LCS Project',
     component: () => import('@/pages/LCSProject.vue'),
@@ -110,11 +115,6 @@ const routes = [
     path: '/call-logs/view/:viewType?',
     name: 'Call Logs',
     component: () => import('@/pages/CallLogs.vue'),
-  },
-  {
-    path: '/calendar',
-    name: 'Calendar',
-    component: () => import('@/pages/Calendar.vue'),
   },
   {
     path: '/data-import',
