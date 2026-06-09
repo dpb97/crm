@@ -1,0 +1,62 @@
+{
+    "actions": [],
+    "creation": "2026-04-16 00:00:00",
+    "doctype": "DocType",
+    "engine": "InnoDB",
+    "field_order": [
+        "reference_doctype",
+        "reference_name",
+        "column_break_1",
+        "proxess_id",
+        "title",
+        "section_meta",
+        "content_type",
+        "uploaded_by",
+        "uploaded_on"
+    ],
+    "fields": [
+        {
+            "fieldname": "reference_doctype",
+            "fieldtype": "Link",
+            "in_list_view": 1,
+            "label": "Reference DocType",
+            "options": "DocType",
+            "reqd": 1
+        },
+        {
+            "fieldname": "reference_name",
+            "fieldtype": "Dynamic Link",
+            "in_list_view": 1,
+            "label": "Reference Name",
+            "options": "reference_doctype",
+            "reqd": 1
+        },
+        { "fieldname": "column_break_1", "fieldtype": "Column Break" },
+        { "fieldname": "proxess_id", "fieldtype": "Data", "in_list_view": 1, "label": "Proxess ID", "reqd": 1, "unique": 1 },
+        { "fieldname": "title", "fieldtype": "Data", "in_list_view": 1, "label": "Title" },
+        { "fieldname": "section_meta", "fieldtype": "Section Break", "label": "Meta" },
+        { "fieldname": "content_type", "fieldtype": "Data", "label": "Content Type" },
+        { "fieldname": "uploaded_by", "fieldtype": "Link", "label": "Uploaded By", "options": "User" },
+        { "fieldname": "uploaded_on", "fieldtype": "Datetime", "label": "Uploaded On" }
+    ],
+    "index_web_pages_for_search": 0,
+    "links": [],
+    "modified": "2026-04-16 00:00:00",
+    "modified_by": "Administrator",
+    "module": "LCS Integrations",
+    "name": "Proxess Document Link",
+    "owner": "Administrator",
+    "permissions": [
+        {
+            "role": "System Manager",
+            "read": 1, "write": 1, "create": 1, "delete": 1, "export": 1, "report": 1
+        },
+        {
+            "role": "Sales User",
+            "read": 1, "write": 0, "create": 0, "delete": 0, "export": 0, "report": 1
+        }
+    ],
+    "sort_field": "uploaded_on",
+    "sort_order": "DESC",
+    "track_changes": 1
+}

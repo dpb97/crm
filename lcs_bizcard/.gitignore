@@ -1,0 +1,44 @@
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+*.egg
+build/
+dist/
+.eggs/
+
+# ---- Editor / OS ----
+.DS_Store
+Thumbs.db
+*.swp
+*.iml
+.idea/
+
+# VS Code — track team-shared configs only.
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/tasks.json
+!.vscode/*.code-snippets
+
+# ---- Test / lint caches ----
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+
+# ---- Frappe runtime artefacts ----
+node_modules/
+public/dist/
+
+# ---- Bizcard scanner local state ----
+# Only the workspace's docker/lcs-bizcard-scanner directory is committed;
+# any local image data dumps live outside the app tree.
+*.local
+.env
+.env.*

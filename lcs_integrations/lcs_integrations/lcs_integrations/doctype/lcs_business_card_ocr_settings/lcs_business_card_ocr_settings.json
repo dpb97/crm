@@ -1,0 +1,79 @@
+{
+    "actions": [],
+    "creation": "2026-05-14 00:00:00",
+    "doctype": "DocType",
+    "engine": "InnoDB",
+    "issingle": 1,
+    "field_order": [
+        "section_provider",
+        "provider",
+        "is_enabled",
+        "section_azure",
+        "azure_endpoint",
+        "azure_region",
+        "azure_api_key"
+    ],
+    "fields": [
+        {
+            "fieldname": "section_provider",
+            "fieldtype": "Section Break",
+            "label": "Provider"
+        },
+        {
+            "default": "Azure AI Vision",
+            "fieldname": "provider",
+            "fieldtype": "Select",
+            "label": "Provider",
+            "options": "Azure AI Vision\nMS Graph (OCR)\nDisabled"
+        },
+        {
+            "default": "0",
+            "fieldname": "is_enabled",
+            "fieldtype": "Check",
+            "label": "Enabled"
+        },
+        {
+            "fieldname": "section_azure",
+            "fieldtype": "Section Break",
+            "label": "Azure AI Vision"
+        },
+        {
+            "description": "Endpoint of the Azure AI Vision resource, e.g. https://lcs-vision.cognitiveservices.azure.com",
+            "fieldname": "azure_endpoint",
+            "fieldtype": "Data",
+            "label": "Azure Endpoint"
+        },
+        {
+            "fieldname": "azure_region",
+            "fieldtype": "Data",
+            "label": "Azure Region"
+        },
+        {
+            "fieldname": "azure_api_key",
+            "fieldtype": "Password",
+            "label": "Azure API Key"
+        }
+    ],
+    "index_web_pages_for_search": 0,
+    "links": [],
+    "modified": "2026-05-14 00:00:00",
+    "modified_by": "Administrator",
+    "module": "LCS Integrations",
+    "name": "LCS Business Card OCR Settings",
+    "owner": "Administrator",
+    "permissions": [
+        {
+            "create": 1,
+            "delete": 1,
+            "export": 1,
+            "print": 1,
+            "read": 1,
+            "report": 1,
+            "role": "System Manager",
+            "share": 1,
+            "write": 1
+        }
+    ],
+    "sort_field": "modified",
+    "sort_order": "DESC"
+}

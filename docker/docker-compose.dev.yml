@@ -1,0 +1,52 @@
+version: "3.9"
+name: lcs-crm-dev
+
+# Development stack for the LCS CRM adaptation.
+# Uses PostgreSQL 16 (per ADR 0002) instead of upstream MariaDB.
+# Intended for WSL2 — bind-mount path must live under the Linux home directory.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: frappe
+      POSTGRES_PASSWORD: frappe
+      POSTGRES_DB: frappe
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U frappe"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis-queue:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-queue-data:/data
+
+  redis-cache:
+    image: redis:7-alpine
+    restart: unless-stopped
+
+  redis-socketio:
+    image: redis:7-alpine
+    restart: unless-stopped
+
+  # Mailhog lets the Outlook / email hooks be exercised locally without
+  # touching a real Microsoft tenant.
+  mailhog:
+    image: mailhog/mailhog:latest
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:1025:1025"
+      - "127.0.0.1:8025:8025"
+
+volumes:
+  postgres-data:
+  redis-queue-data:

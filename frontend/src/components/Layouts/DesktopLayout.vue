@@ -4,6 +4,11 @@
       <AppSidebar />
     </div>
     <div class="flex-1 flex flex-col h-full overflow-auto bg-surface-white">
+      <LCSBrandHeader
+        title="LCS Cable Cranes"
+        subtitle="CRM"
+        href="/crm"
+      />
       <AppHeader />
       <slot />
     </div>
@@ -14,4 +19,5 @@
 import AppSidebar from '@/components/Layouts/AppSidebar.vue'
 import AppHeader from '@/components/Layouts/AppHeader.vue'
 import GlobalModals from '@/components/Modals/GlobalModals.vue'
+import LCSBrandHeader from '@/components/lcs/LCSBrandHeader.vue'
 </script>

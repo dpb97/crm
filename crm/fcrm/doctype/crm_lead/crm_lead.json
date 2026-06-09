@@ -22,6 +22,10 @@
   "organization",
   "website",
   "territory",
+  "country",
+  "budget_range",
+  "decision_level",
+  "expected_timeline",
   "industry",
   "job_title",
   "source",
@@ -297,6 +301,31 @@
    "fieldtype": "Link",
    "label": "Territory",
    "options": "CRM Territory"
+  },
+  {
+   "description": "Drives LCS territory-based auto-assignment of sales_manager.",
+   "fieldname": "country",
+   "fieldtype": "Link",
+   "label": "Country",
+   "options": "Country"
+  },
+  {
+   "fieldname": "budget_range",
+   "fieldtype": "Select",
+   "label": "Budget Range",
+   "options": "\n< 100k\n100k - 500k\n500k - 1M\n1M - 5M\n> 5M"
+  },
+  {
+   "fieldname": "decision_level",
+   "fieldtype": "Select",
+   "label": "Decision Level",
+   "options": "\nOperational\nMiddle Management\nC-Level\nOwner"
+  },
+  {
+   "fieldname": "expected_timeline",
+   "fieldtype": "Select",
+   "label": "Expected Timeline",
+   "options": "\n< 3 months\n3 - 6 months\n6 - 12 months\n> 12 months\nUnknown"
   },
   {
    "fieldname": "log_tab",

@@ -43,6 +43,38 @@ const routes = [
     props: true,
   },
   {
+    path: '/projects',
+    name: 'LCS Projects',
+    component: () => import('@/pages/LCSProjects.vue'),
+  },
+  {
+    path: '/projects-map',
+    name: 'LCS Projects Map',
+    component: () => import('@/pages/LCSProjectsMap.vue'),
+  },
+  {
+    path: '/projects/:id',
+    name: 'LCS Project',
+    component: () => import('@/pages/LCSProject.vue'),
+    props: true,
+  },
+  {
+    path: '/forecasting',
+    name: 'LCS Forecasting',
+    component: () => import('@/pages/LCSForecasting.vue'),
+  },
+  {
+    path: '/quick-note',
+    name: 'LCS Quick Note',
+    component: () => import('@/pages/LCSQuickNote.vue'),
+  },
+  {
+    path: '/offers/:id',
+    name: 'LCS Offer',
+    component: () => import('@/pages/LCSOfferDetail.vue'),
+    props: true,
+  },
+  {
     alias: '/notes',
     path: '/notes/view/:viewType?',
     name: 'Notes',

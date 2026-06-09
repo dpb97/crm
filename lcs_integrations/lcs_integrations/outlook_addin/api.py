@@ -1,0 +1,180 @@
+"""
+Outlook Add-in backend — endpoints called by the taskpane running inside
+Outlook's iframe. Every entry point is idempotent and read-only OR uses
+an explicit create intent, so an accidental double-click from the pane
+cannot corrupt CRM state.
+
+CORS: these endpoints are whitelisted and served over https so the
+Office.js sandbox can call them cross-origin.
+"""
+
+import frappe
+
+
+@frappe.whitelist()
+def lookup_email_context(sender_email: str, subject: str = ""):
+    """
+    Entry point for the taskpane when an email is opened.
+
+    Returns contact / organization / open project matches for the sender's
+    email address so the taskpane can show "You are corresponding with X
+    about project Y" before the user does anything.
+    """
+    if not sender_email:
+        return {"matched": False, "contacts": [], "organizations": [], "projects": [], "offers": []}
+
+    domain = sender_email.split("@")[-1].lower() if "@" in sender_email else None
+
+    # Contacts matching by email
+    contacts = frappe.db.sql(
+        """SELECT DISTINCT c.name, c.full_name, c.designation, c.company_name
+           FROM `tabContact` c
+           JOIN `tabContact Email` e ON e.parent = c.name
+           WHERE LOWER(e.email_id) = LOWER(%s)
+           LIMIT 5""",
+        (sender_email,),
+        as_dict=True,
+    )
+
+    # Organizations matching by domain (if we have web_url or email_domain)
+    organizations = []
+    if domain:
+        organizations = frappe.db.sql(
+            """SELECT DISTINCT name, organization_name, industry
+               FROM `tabCRM Organization`
+               WHERE website LIKE %s OR website LIKE %s
+               LIMIT 5""",
+            (f"%{domain}%", f"%//{domain}%"),
+            as_dict=True,
+        )
+
+    # LCS Projects via matching organizations
+    org_names = [o["name"] for o in organizations]
+    projects = []
+    if org_names:
+        projects = frappe.get_all(
+            "LCS Project",
+            filters={
+                "organization": ["in", org_names],
+                "status": ["not in", ["Completed", "Cancelled"]],
+            },
+            fields=["name", "project_name", "project_number", "phase", "estimated_value", "probability"],
+            order_by="modified desc",
+            limit=10,
+        )
+
+    # Recent offers for those projects
+    offers = []
+    if projects:
+        project_names = [p["name"] for p in projects]
+        offers = frappe.get_all(
+            "LCS Offer",
+            filters={
+                "project": ["in", project_names],
+                "status": ["in", ["Draft", "Sent", "In Review"]],
+            },
+            fields=["name", "project", "offer_title", "version", "status", "value", "valid_until"],
+            order_by="modified desc",
+            limit=10,
+        )
+
+    return {
+        "matched": bool(contacts or organizations or projects),
+        "sender": sender_email,
+        "domain": domain,
+        "contacts": contacts,
+        "organizations": organizations,
+        "projects": projects,
+        "offers": offers,
+    }
+
+
+@frappe.whitelist()
+def log_email_to_project(
+    project: str,
+    subject: str,
+    body: str,
+    sender: str,
+    recipients: str = "",
+    direction: str = "Received",
+    received_at: str = None,
+    message_id: str = None,
+):
+    """
+    Attach an email as a Communication on the LCS Project, so it shows up in
+    the project's email feed exactly like auto-linked mail. Used by the
+    "Log to Project" ribbon action.
+
+    Idempotent on `message_id` (Graph internetMessageId) so a double-click in
+    the taskpane cannot create duplicates. Permission is checked as write on
+    the target project, so Access Profile restrictions flow through here too.
+    """
+    if not frappe.db.exists("LCS Project", project):
+        frappe.throw(f"LCS Project {project} not found")
+    if not frappe.has_permission("LCS Project", ptype="write", doc=project):
+        frappe.throw("Not permitted to log email on this project", frappe.PermissionError)
+
+    if message_id:
+        existing = frappe.db.get_value(
+            "Communication",
+            {"message_id": message_id, "reference_doctype": "LCS Project", "reference_name": project},
+            "name",
+        )
+        if existing:
+            return {"ok": True, "communication": existing, "project": project, "created": False}
+
+    comm = frappe.new_doc("Communication")
+    comm.communication_type = "Communication"
+    comm.communication_medium = "Email"
+    comm.sent_or_received = "Sent" if direction == "Sent" else "Received"
+    comm.subject = subject or "(no subject)"
+    comm.content = body or ""
+    comm.sender = sender
+    comm.recipients = recipients
+    comm.reference_doctype = "LCS Project"
+    comm.reference_name = project
+    if message_id:
+        comm.message_id = message_id
+    if received_at:
+        comm.communication_date = received_at
+    comm.insert(ignore_permissions=True)
+    frappe.db.commit()
+
+    return {"ok": True, "communication": comm.name, "project": project, "created": True}
+
+
+@frappe.whitelist()
+def create_lead_from_email(sender: str, sender_name: str = "", subject: str = "", body: str = ""):
+    """
+    Create a new CRM Lead from an email. Used when the sender domain
+    doesn't match any existing organization.
+    """
+    if not frappe.has_permission("CRM Lead", ptype="create"):
+        frappe.throw("Not permitted to create leads", frappe.PermissionError)
+    if frappe.db.exists("CRM Lead", {"email": sender}):
+        lead_name = frappe.db.get_value("CRM Lead", {"email": sender}, "name")
+        return {"ok": True, "lead": lead_name, "created": False}
+
+    lead = frappe.new_doc("CRM Lead")
+    lead.lead_name = sender_name or sender.split("@")[0]
+    lead.email = sender
+    if hasattr(lead, "status"):
+        lead.status = "New"
+    lead.insert(ignore_permissions=True)
+    frappe.db.commit()
+    return {"ok": True, "lead": lead.name, "created": True}
+
+
+@frappe.whitelist()
+def search_projects(query: str, limit: int = 20):
+    """Autocomplete endpoint for the 'Link to Project' picker."""
+    return frappe.get_all(
+        "LCS Project",
+        or_filters={
+            "project_name": ["like", f"%{query}%"],
+            "project_number": ["like", f"%{query}%"],
+        },
+        fields=["name", "project_name", "project_number", "phase", "organization"],
+        order_by="modified desc",
+        limit=int(limit),
+    )

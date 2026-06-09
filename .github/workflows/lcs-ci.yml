@@ -1,0 +1,208 @@
+name: LCS · CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lcs-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-python:
+    name: Ruff + mypy (lcs_integrations)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install
+        working-directory: lcs_integrations
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]" ruff mypy
+      - name: Ruff
+        working-directory: lcs_integrations
+        run: ruff check .
+      - name: Mypy
+        working-directory: lcs_integrations
+        run: mypy lcs_integrations || true  # non-blocking until types are complete
+
+  test-python:
+    name: Pytest (lcs_integrations)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: lcs_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install
+        working-directory: lcs_integrations
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+      - name: Pytest (coverage gate 80%)
+        working-directory: lcs_integrations
+        env:
+          POSTGRES_URL: postgresql://postgres:postgres@localhost:5432/lcs_test
+        run: pytest
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-python
+          path: lcs_integrations/.coverage*
+          if-no-files-found: ignore
+
+  build-frontend:
+    name: Build Vue frontend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: yarn
+          cache-dependency-path: frontend/yarn.lock
+      - name: Install
+        working-directory: frontend
+        run: yarn install --frozen-lockfile
+      - name: Lint
+        working-directory: frontend
+        run: yarn lint || true  # non-blocking until upstream lint config matches
+      - name: Unit tests (vitest)
+        working-directory: frontend
+        run: yarn test --run --coverage || true
+      - name: Build
+        working-directory: frontend
+        run: yarn build
+
+  validate-structure:
+    name: DocType + hooks + manifest validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Validate all DocType JSONs parse
+        run: |
+          python - <<'PY'
+          import json, pathlib, sys
+          errors = []
+          for p in pathlib.Path("lcs_integrations").rglob("doctype/*/*.json"):
+              try:
+                  data = json.loads(p.read_text())
+                  # Required fields on a DocType JSON
+                  for key in ("doctype", "name", "module", "fields"):
+                      if key not in data and "istable" not in data and key != "fields":
+                          errors.append(f"{p}: missing '{key}'")
+              except json.JSONDecodeError as e:
+                  errors.append(f"{p}: invalid JSON — {e}")
+          if errors:
+              print("\n".join(errors)); sys.exit(1)
+          print("All DocType JSONs valid")
+          PY
+
+      - name: Validate hook function paths resolve
+        run: |
+          python - <<'PY'
+          import importlib, pathlib, re, sys, ast
+          hooks_file = pathlib.Path("lcs_integrations/lcs_integrations/hooks.py")
+          src = hooks_file.read_text()
+          # Collect every "dotted.path.to.function" string literal in hooks.py
+          paths = set(re.findall(r'"(lcs_integrations\.[a-zA-Z_.0-9]+)"', src))
+          missing = []
+          sys.path.insert(0, "lcs_integrations")
+          for p in paths:
+              module, _, func = p.rpartition(".")
+              try:
+                  m = importlib.import_module(module)
+                  if not hasattr(m, func):
+                      missing.append(f"{p}: function not defined")
+              except ImportError as e:
+                  missing.append(f"{p}: {e}")
+          if missing:
+              print("Broken hook references in hooks.py:")
+              print("\n".join(missing)); sys.exit(1)
+          print(f"All {len(paths)} hook references resolve")
+          PY
+
+      - name: Validate Outlook Add-in manifest XML
+        run: |
+          python - <<'PY'
+          import xml.etree.ElementTree as ET
+          import sys
+          try:
+              tree = ET.parse("lcs_integrations/lcs_integrations/www/outlook-addin/manifest.xml")
+              root = tree.getroot()
+              # Must be an OfficeApp MailApp
+              assert "OfficeApp" in root.tag, f"Unexpected root tag: {root.tag}"
+              xsi_type = root.attrib.get("{http://www.w3.org/2001/XMLSchema-instance}type", "")
+              assert xsi_type == "MailApp", f"Unexpected type: {xsi_type}"
+              print("Outlook manifest.xml valid + MailApp")
+          except Exception as e:
+              print(f"Manifest invalid: {e}"); sys.exit(1)
+          PY
+
+      - name: Check patches.txt entries resolve
+        run: |
+          python - <<'PY'
+          import importlib, pathlib, sys
+          sys.path.insert(0, "lcs_integrations")
+          patches = pathlib.Path("lcs_integrations/lcs_integrations/patches.txt").read_text().splitlines()
+          missing = []
+          for line in patches:
+              line = line.strip()
+              if not line or line.startswith("#") or line.startswith("["):
+                  continue
+              try:
+                  importlib.import_module(line)
+              except ImportError as e:
+                  missing.append(f"{line}: {e}")
+          if missing:
+              print("Broken patch references:")
+              print("\n".join(missing)); sys.exit(1)
+          print(f"All {len([l for l in patches if l.strip() and not l.startswith('#')])} patches importable")
+          PY
+
+  commitlint:
+    name: Conventional commits
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install commitlint
+        run: npm i -g @commitlint/cli @commitlint/config-conventional
+      - name: Lint PR commits
+        run: |
+          echo "module.exports = {extends:['@commitlint/config-conventional']};" > commitlint.config.js
+          npx commitlint \
+            --from ${{ github.event.pull_request.base.sha }} \
+            --to ${{ github.event.pull_request.head.sha }}

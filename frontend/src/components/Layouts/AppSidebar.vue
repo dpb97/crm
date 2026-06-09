@@ -101,6 +101,13 @@
           <BrushCleaningIcon class="h-4 w-4" />
         </template>
       </SidebarLink>
+      <!-- LCS: back link to the Pilanda intranet overview. -->
+      <SidebarLink
+        :label="__('Zur Übersicht')"
+        :icon="LucideArrowLeft"
+        :isCollapsed="isSidebarCollapsed"
+        @click="() => (window.location.href = '/pilanda')"
+      />
       <SidebarLink
         v-if="isOnboardingStepsCompleted"
         :label="__('Help')"
@@ -155,6 +162,7 @@
 <script setup>
 import BrushCleaningIcon from '~icons/lucide/brush-cleaning'
 import LucideLayoutDashboard from '~icons/lucide/layout-dashboard'
+import LucideArrowLeft from '~icons/lucide/arrow-left'
 import CRMLogo from '@/components/Icons/CRMLogo.vue'
 import InviteIcon from '@/components/Icons/InviteIcon.vue'
 import ConvertIcon from '@/components/Icons/ConvertIcon.vue'
@@ -172,6 +180,10 @@ import OrganizationsIcon from '@/components/Icons/OrganizationsIcon.vue'
 import NoteIcon from '@/components/Icons/NoteIcon.vue'
 import TaskIcon from '@/components/Icons/TaskIcon.vue'
 import PhoneIcon from '@/components/Icons/PhoneIcon.vue'
+import LucideFolderKanban from '~icons/lucide/folder-kanban'
+import LucideMap from '~icons/lucide/map'
+import LucideTrendingUp from '~icons/lucide/trending-up'
+import LucideMic from '~icons/lucide/mic'
 import CollapseSidebar from '@/components/Icons/CollapseSidebar.vue'
 import NotificationsIcon from '@/components/Icons/NotificationsIcon.vue'
 import HelpIcon from '@/components/Icons/HelpIcon.vue'
@@ -233,6 +245,26 @@ const links = [
     label: 'Deals',
     icon: DealsIcon,
     to: 'Deals',
+  },
+  {
+    label: 'Projects',
+    icon: LucideFolderKanban,
+    to: 'LCS Projects',
+  },
+  {
+    label: 'Projects Map',
+    icon: LucideMap,
+    to: 'LCS Projects Map',
+  },
+  {
+    label: 'Forecasting',
+    icon: LucideTrendingUp,
+    to: 'LCS Forecasting',
+  },
+  {
+    label: 'Quick Note',
+    icon: LucideMic,
+    to: 'LCS Quick Note',
   },
   {
     label: 'Contacts',

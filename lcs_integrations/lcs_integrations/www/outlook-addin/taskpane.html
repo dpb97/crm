@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>LCS CRM</title>
+<link rel="stylesheet" href="taskpane.css" />
+<script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="brand">
+    <div class="logo-dot" style="background:#0B3A6F"></div>
+    <span>LCS <strong>CRM</strong></span>
+  </div>
+  <button id="refresh-btn" class="icon-btn" title="Neu laden" aria-label="Refresh">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10"/><path d="M3.51 15a9 9 0 0 0 14.85 3.36L23 14"/></svg>
+  </button>
+</header>
+
+<main id="content">
+
+  <!-- Loading state -->
+  <section id="state-loading" class="state hidden">
+    <div class="spinner"></div>
+    <p class="state-text">Suche Daten zum Absender&hellip;</p>
+  </section>
+
+  <!-- Error state -->
+  <section id="state-error" class="state hidden">
+    <div class="state-icon">&#9888;</div>
+    <p class="state-text">Fehler beim Laden</p>
+    <small id="error-detail"></small>
+    <button class="btn-primary" onclick="loadContext()">Erneut versuchen</button>
+  </section>
+
+  <!-- Matched state -->
+  <section id="state-matched" class="hidden">
+
+    <div class="sender-card">
+      <div class="sender-label">Absender</div>
+      <div class="sender-email" id="sender-email"></div>
+    </div>
+
+    <!-- Projects list -->
+    <div class="block" id="block-projects">
+      <h3>Offene Projekte <span class="count-pill" id="count-projects">0</span></h3>
+      <div id="projects-list"></div>
+    </div>
+
+    <!-- Offers list -->
+    <div class="block" id="block-offers">
+      <h3>Aktive Angebote <span class="count-pill" id="count-offers">0</span></h3>
+      <div id="offers-list"></div>
+    </div>
+
+    <!-- Organizations -->
+    <div class="block" id="block-organizations">
+      <h3>Organisation</h3>
+      <div id="organizations-list"></div>
+    </div>
+
+    <!-- Contacts -->
+    <div class="block" id="block-contacts">
+      <h3>Kontakte</h3>
+      <div id="contacts-list"></div>
+    </div>
+
+    <!-- Actions -->
+    <div class="actions" id="quick-actions">
+      <button class="btn-primary" id="btn-log" type="button">
+        <span>&#9993;</span> Zu Projekt loggen
+      </button>
+      <button class="btn-secondary" id="btn-new-project" type="button">
+        Neues Projekt
+      </button>
+    </div>
+
+  </section>
+
+  <!-- No match state -->
+  <section id="state-no-match" class="state hidden">
+    <div class="state-icon">&#128269;</div>
+    <p class="state-text">Kein passender CRM-Eintrag gefunden</p>
+    <small class="muted">Weder Kontakt, Organisation noch Projekt zu dieser E-Mail.</small>
+    <div class="actions">
+      <button class="btn-primary" id="btn-create-lead" type="button">Lead anlegen</button>
+    </div>
+  </section>
+
+  <!-- Project picker (modal) -->
+  <div id="picker" class="picker hidden">
+    <div class="picker-backdrop" onclick="closePicker()"></div>
+    <div class="picker-panel">
+      <header class="picker-header">
+        <h4>Projekt wählen</h4>
+        <button class="icon-btn" onclick="closePicker()" aria-label="Schließen">&times;</button>
+      </header>
+      <input type="search" id="picker-search" placeholder="Suchen nach Nummer oder Name&hellip;" autocomplete="off"/>
+      <div id="picker-results" class="picker-results"></div>
+    </div>
+  </div>
+
+  <!-- Success toast -->
+  <div id="toast" class="toast hidden"></div>
+
+</main>
+
+<footer class="app-footer">
+  <span id="status-line"></span>
+</footer>
+
+<script src="taskpane.js"></script>
+</body>
+</html>

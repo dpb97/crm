@@ -1,28 +1,32 @@
 import { defineConfig } from 'vitest/config'
-import path from 'path'
+import vue from '@vitejs/plugin-vue'
+import path from 'node:path'
 
+// Kept separate from vite.config.js so test-only flags (jsdom, coverage,
+// shorter watch) do not leak into the dev server config.
 export default defineConfig({
-  test: {
-    globals: true,
-    environment: 'happy-dom',
-    root: __dirname,
-    setupFiles: ['./tests/setup.js'],
-    include: ['tests/**/*.test.js', 'src/**/*.test.js'],
-    coverage: {
-      provider: 'v8',
-      reporter: ['text', 'lcov', 'json-summary'],
-      reportsDirectory: './coverage',
-      include: [
-        'src/utils/fieldTransforms.js',
-        'src/utils/scriptHelpers.js',
-        'src/utils/expressions.js',
-        'src/utils/renderFieldLayoutDialog.js',
-      ],
-    },
-  },
+  plugins: [vue()],
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, 'src'),
+      '@': path.resolve(__dirname, './src'),
+    },
+  },
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    include: ['src/**/__tests__/**/*.{spec,test}.{js,ts}'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'lcov'],
+      // Scope coverage to LCS-owned code; upstream frappe/crm frontend is
+      // tested upstream.
+      include: ['src/components/lcs/**/*.{vue,ts,js}'],
+      thresholds: {
+        lines: 80,
+        functions: 80,
+        branches: 70,
+        statements: 80,
+      },
     },
   },
 })

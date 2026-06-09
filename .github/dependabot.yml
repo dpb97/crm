@@ -1,0 +1,53 @@
+version: 2
+# LCS standard: weekly updates for every package ecosystem + GitHub Actions + docker base images.
+updates:
+  - package-ecosystem: pip
+    directory: /lcs_integrations
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Vienna
+    open-pull-requests-limit: 5
+    labels: [dependencies, python]
+    commit-message:
+      prefix: "chore(deps)"
+
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Vienna
+    open-pull-requests-limit: 5
+    labels: [dependencies, frontend]
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      vue:
+        patterns: ["vue*", "@vue/*", "@vitejs/*"]
+      tailwind:
+        patterns: ["tailwindcss*", "@tailwindcss/*", "postcss*", "autoprefixer*"]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Vienna
+    labels: [dependencies, ci]
+    commit-message:
+      prefix: "ci(deps)"
+
+  - package-ecosystem: docker
+    directory: /docker
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Vienna
+    labels: [dependencies, docker]
+    commit-message:
+      prefix: "chore(deps)"

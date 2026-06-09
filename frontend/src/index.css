@@ -1,24 +1,150 @@
 @import 'frappe-ui/style.css';
 
+/* ============================================================
+   LCS Theme Tokens — single source of truth for design tokens.
+   Tailwind theme.extend.colors registers the SAME values; CSS
+   variables exist additionally so dynamic themes (dark mode,
+   future tenants) can override them at runtime without rebuild.
+   ============================================================ */
+
+:root {
+  /* Brand */
+  --lcs-primary:    #0B3A6F;   /* LCS navy */
+  --lcs-secondary:  #1E78C2;   /* LCS link blue */
+  --lcs-accent:     #F5A524;   /* LCS signal yellow */
+
+  /* Semantic */
+  --lcs-success:    #16A34A;
+  --lcs-warning:    #D97706;
+  --lcs-danger:     #DC2626;
+  --lcs-muted:      #6B7280;
+
+  /* Surfaces */
+  --lcs-surface:    #F8FAFC;
+  --lcs-card-bg:    #FFFFFF;
+  --lcs-card-border:#E5E7EB;
+
+  /* Phase colours — used by .lcs-pill-phase-* */
+  --lcs-phase-inquiry:     #0EA5E9;
+  --lcs-phase-offer:       #F59E0B;
+  --lcs-phase-negotiation: #F97316;
+  --lcs-phase-order:       #22C55E;
+  --lcs-phase-execution:   var(--lcs-primary);
+  --lcs-phase-completed:   #6B7280;
+  --lcs-phase-lost:        #EF4444;
+
+  /* Project type colours */
+  --lcs-type-sb: #3B82F6;
+  --lcs-type-wi: #A855F7;
+  --lcs-type-ll: #10B981;
+  --lcs-type-sk: #F59E0B;
+}
+
+/* Dark mode — opt-in via [data-theme="dark"] on html, matches the
+   frappe-ui useTheme() composable LCS already imports in App.vue. */
+html[data-theme="dark"] {
+  --lcs-surface:    #0B1220;
+  --lcs-card-bg:    #111827;
+  --lcs-card-border:#1F2937;
+  --lcs-muted:      #9CA3AF;
+}
+
+/* ============================================================
+   Reusable component classes — consolidate patterns we use
+   30+ times across LCS Vue components into single names.
+   Usage: <div class="lcs-card"> ... </div>
+   ============================================================ */
+
 @layer components {
+  /* The standard rounded-xl bordered white card we use as the base
+     surface in nearly every LCS feature page. */
+  .lcs-card {
+    @apply rounded-xl border border-gray-200 bg-white p-4 transition;
+  }
+  .lcs-card-hover {
+    @apply rounded-xl border border-gray-200 bg-white p-4 transition hover:shadow-sm hover:border-gray-300;
+  }
+
+  /* Hero KPI tile — used by ProjectDashboard, ExecutionPanel, Forecasting. */
+  .lcs-kpi {
+    @apply rounded-xl border border-gray-200 bg-white p-4;
+  }
+  .lcs-kpi-label {
+    @apply flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-gray-400;
+  }
+  .lcs-kpi-value {
+    @apply mt-2 text-xl font-bold tabular-nums text-gray-900;
+  }
+
+  /* Pill — universal badge with dot. Compose with `.lcs-pill-phase-*`
+     or any bg-x text-y utility pair. */
+  .lcs-pill {
+    @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold;
+  }
+  .lcs-pill-dot {
+    @apply h-1.5 w-1.5 rounded-full;
+  }
+
+  /* Phase variants — single source of truth for "what does Inquiry
+     look like" so we never get colour drift between list / detail /
+     chart views. */
+  .lcs-pill-phase-inquiry     { @apply bg-sky-50 text-sky-700; }
+  .lcs-pill-phase-offer       { @apply bg-amber-50 text-amber-700; }
+  .lcs-pill-phase-negotiation { @apply bg-orange-50 text-orange-700; }
+  .lcs-pill-phase-order       { @apply bg-green-50 text-green-700; }
+  .lcs-pill-phase-execution   { @apply bg-blue-50 text-blue-700; }
+  .lcs-pill-phase-completed   { @apply bg-gray-50 text-gray-600; }
+  .lcs-pill-phase-lost        { @apply bg-red-50 text-red-700; }
+
+  /* Status variants */
+  .lcs-pill-status-open       { @apply bg-blue-50 text-blue-700; }
+  .lcs-pill-status-active     { @apply bg-green-50 text-green-700; }
+  .lcs-pill-status-on-hold    { @apply bg-amber-50 text-amber-700; }
+  .lcs-pill-status-completed  { @apply bg-gray-50 text-gray-600; }
+  .lcs-pill-status-cancelled  { @apply bg-red-50 text-red-700; }
+
+  /* Project type variants */
+  .lcs-badge-type-sb { @apply rounded-full px-2 py-0.5 text-xs font-bold bg-blue-100 text-blue-800; }
+  .lcs-badge-type-wi { @apply rounded-full px-2 py-0.5 text-xs font-bold bg-purple-100 text-purple-800; }
+  .lcs-badge-type-ll { @apply rounded-full px-2 py-0.5 text-xs font-bold bg-emerald-100 text-emerald-800; }
+  .lcs-badge-type-sk { @apply rounded-full px-2 py-0.5 text-xs font-bold bg-amber-100 text-amber-800; }
+  .lcs-badge-type-other { @apply rounded-full px-2 py-0.5 text-xs font-bold bg-gray-100 text-gray-700; }
+
+  /* Section header — small uppercase label used above every settings/form group */
+  .lcs-section-header {
+    @apply mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-400;
+  }
+
+  /* Compact mode — a global compact-density override toggled by user
+     preference (LCS User Preferences.compact_mode). When .lcs-compact
+     is set on the layout root, padding shrinks across cards. */
+  .lcs-compact .lcs-card,
+  .lcs-compact .lcs-kpi {
+    @apply p-2.5;
+  }
+  .lcs-compact .lcs-kpi-value {
+    @apply text-base;
+  }
+
+  /* prose variant — kept from the original index.css */
   .prose-f {
     @apply break-all
-			max-w-none
-			prose
-			prose-code:break-all
-			prose-code:whitespace-pre-wrap
-			prose-img:border
-			prose-img:rounded-lg
-			prose-sm
-			prose-table:table-fixed
-			prose-td:border
-			prose-td:border-outline-gray-2
-			prose-td:p-2
-			prose-td:relative
-			prose-th:bg-surface-gray-2
-			prose-th:border
-			prose-th:border-outline-gray-2
-			prose-th:p-2
-			prose-th:relative;
+				max-w-none
+				prose
+				prose-code:break-all
+				prose-code:whitespace-pre-wrap
+				prose-img:border
+				prose-img:rounded-lg
+				prose-sm
+				prose-table:table-fixed
+				prose-td:border
+				prose-td:border-outline-gray-2
+				prose-td:p-2
+				prose-td:relative
+				prose-th:bg-surface-gray-2
+				prose-th:border
+				prose-th:border-outline-gray-2
+				prose-th:p-2
+				prose-th:relative;
   }
 }

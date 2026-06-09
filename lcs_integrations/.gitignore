@@ -1,0 +1,46 @@
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+*.egg
+build/
+dist/
+.eggs/
+
+# ---- Editor / OS ----
+.DS_Store
+Thumbs.db
+*.swp
+*.iml
+.idea/
+
+# VS Code — track team-shared configs only.
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/tasks.json
+!.vscode/*.code-snippets
+
+# ---- Test / lint caches ----
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+
+# ---- Frappe runtime artefacts that the bench writes back into the app dir ----
+node_modules/
+public/dist/
+public/js/*.bundle.*
+public/css/*.bundle.*
+
+# ---- Ad-hoc / scratch ----
+_tmp_*
+*.bak
+*.local
+.env
+.env.*

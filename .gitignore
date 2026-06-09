@@ -11,7 +11,14 @@ crm/www/crm.html
 build
 frontend/coverage
 
-.vscode
+# VS Code — track team-shared configs, ignore per-user state.
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/tasks.json
+!.vscode/*.code-snippets
+
 .github/instructions
 .github/skills
 .github/copilot-instructions.md
@@ -20,3 +27,37 @@ CLAUDE.md
 AGENTS.md
 .claude
 .pi
+
+# ---------------- LCS-specific ----------------
+# Secrets — never commit, .env.example is the committed template.
+.env
+.env.local
+.env.*.local
+
+# Test / coverage artefacts
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+lcs_integrations/.coverage*
+
+# Vitest
+frontend/coverage/
+
+# Playwright
+e2e/node_modules/
+e2e/playwright-report/
+e2e/test-results/
+e2e/.playwright/
+
+# Editor / OS
+*.iml
+.idea/
+Thumbs.db
+
+# Azure / Docker local overrides
+docker-compose.override.yml
+docker/.env

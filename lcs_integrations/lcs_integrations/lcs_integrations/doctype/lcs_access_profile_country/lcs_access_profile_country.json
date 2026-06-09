@@ -1,0 +1,28 @@
+{
+    "actions": [],
+    "creation": "2026-04-21 00:00:00",
+    "doctype": "DocType",
+    "engine": "InnoDB",
+    "istable": 1,
+    "field_order": ["country"],
+    "fields": [
+        {
+            "fieldname": "country",
+            "fieldtype": "Link",
+            "in_list_view": 1,
+            "label": "Country",
+            "options": "Country",
+            "reqd": 1
+        }
+    ],
+    "index_web_pages_for_search": 0,
+    "links": [],
+    "modified": "2026-04-21 00:00:00",
+    "modified_by": "Administrator",
+    "module": "LCS Integrations",
+    "name": "LCS Access Profile Country",
+    "owner": "Administrator",
+    "permissions": [],
+    "sort_field": "modified",
+    "sort_order": "DESC"
+}
