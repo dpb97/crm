@@ -80,4 +80,7 @@ def _ensure_contact(address: str, org: str, *, full_name: str) -> None:
     contact.last_name = parts[1] if len(parts) > 1 else ""
     contact.append("email_ids", {"email_id": address, "is_primary": 1})
     contact.append("links", {"link_doctype": "CRM Organization", "link_name": org})
+    # Customer contacts derived from mail traffic belong to the shared record,
+    # not privately to whoever's mail triggered the creation.
+    contact.lcs_released = 1
     contact.insert(ignore_permissions=True)

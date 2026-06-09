@@ -38,6 +38,18 @@
       <p class="truncate text-xs text-gray-500">{{ doc.designation || '—' }}</p>
     </div>
 
+    <!-- Release (visible only while the contact is still private) -->
+    <button
+      v-if="!doc.lcs_released"
+      type="button"
+      class="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-amber-600 transition hover:bg-amber-50"
+      :title="__('Only you can see this contact until you release it')"
+      @click="release"
+    >
+      <FeatherIcon name="lock" class="h-3.5 w-3.5" />
+      {{ __('Release') }}
+    </button>
+
     <!-- Share -->
     <button
       type="button"
@@ -62,7 +74,7 @@ const props = defineProps({
   contact: { type: String, required: true },
 })
 
-const doc = ref({ full_name: '', designation: '', image: '' })
+const doc = ref({ full_name: '', designation: '', image: '', lcs_released: 1 })
 const shareOpen = ref(false)
 
 async function load() {
@@ -71,11 +83,23 @@ async function load() {
     const res = await call('frappe.client.get_value', {
       doctype: 'Contact',
       filters: { name: props.contact },
-      fieldname: ['full_name', 'designation', 'image'],
+      fieldname: ['full_name', 'designation', 'image', 'lcs_released'],
     })
     if (res) doc.value = res
   } catch {
     // Leave the fallback (contact id) in place on failure.
+  }
+}
+
+async function release() {
+  try {
+    await call('lcs_integrations.visibility.contact_visibility.release_contact', {
+      contact: props.contact,
+    })
+    doc.value.lcs_released = 1
+    toast.success(__('Contact released'))
+  } catch (err) {
+    toast.error(err.message || __('Could not release contact'))
   }
 }
 

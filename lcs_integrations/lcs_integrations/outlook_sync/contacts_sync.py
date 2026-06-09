@@ -129,6 +129,9 @@ def _persist_contact(entry: dict[str, Any], client: GraphClient, mailbox: str) -
     contact.full_name = full_name or f"{given} {family}".strip()
     contact.company_name = company
     contact.designation = title
+    # Shared-mailbox contacts are the public address book — released by default,
+    # not private to the sync user.
+    contact.lcs_released = 1
 
     # Email + phone children: replace wholesale to keep parity with Graph.
     contact.set("email_ids", [])
