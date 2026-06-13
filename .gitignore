@@ -1,0 +1,19 @@
+# Python
+*.pyc
+__pycache__/
+*.egg-info/
+.eggs/
+build/
+develop-eggs/
+
+# Frontend / Frappe assets (gebaut, nicht versioniert — wie im ganzen Stack)
+node_modules/
+dist/
+
+# Lokales / Editor
+.DS_Store
+*.swp
+*.swo
+.env
+.idea/
+.vscode/
