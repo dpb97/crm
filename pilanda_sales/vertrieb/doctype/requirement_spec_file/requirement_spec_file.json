@@ -1,0 +1,47 @@
+{
+    "actions": [],
+    "creation": "2026-06-14 00:00:00",
+    "doctype": "DocType",
+    "editable_grid": 1,
+    "engine": "InnoDB",
+    "istable": 1,
+    "field_order": [
+        "kind",
+        "file",
+        "caption"
+    ],
+    "fields": [
+        {
+            "fieldname": "kind",
+            "fieldtype": "Select",
+            "label": "Art",
+            "options": "project\ngeometry",
+            "in_list_view": 1,
+            "columns": 2
+        },
+        {
+            "fieldname": "file",
+            "fieldtype": "Attach",
+            "label": "Datei",
+            "in_list_view": 1,
+            "columns": 4
+        },
+        {
+            "fieldname": "caption",
+            "fieldtype": "Data",
+            "label": "Caption",
+            "in_list_view": 1,
+            "columns": 3
+        }
+    ],
+    "index_web_pages_for_search": 1,
+    "links": [],
+    "modified": "2026-06-14 00:00:00",
+    "modified_by": "Administrator",
+    "module": "Vertrieb",
+    "name": "Requirement Spec File",
+    "owner": "Administrator",
+    "permissions": [],
+    "sort_field": "modified",
+    "sort_order": "DESC"
+}
