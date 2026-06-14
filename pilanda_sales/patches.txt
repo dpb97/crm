@@ -1,0 +1,2 @@
+# Migrations-Patches dieser App (eine Zeile je Patch, in Ausführungsreihenfolge).
+# Beispiel: pilanda_sales.patches.v0_1.seed_field_catalog

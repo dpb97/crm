@@ -1,0 +1,15 @@
+[project]
+name = "pilanda_sales"
+version = "0.0.1"
+description = "Pilanda Vertrieb — Questionnaire/Lastenheft, Kalkulation, Angebot (LCS) auf ERPNext."
+requires-python = ">=3.10"
+readme = "README.md"
+authors = [{ name = "LCS Group IT" }]
+dependencies = []
+
+[build-system]
+requires = ["flit_core>=3.4,<4"]
+build-backend = "flit_core.buildapi"
+
+[tool.flit.module]
+name = "pilanda_sales"
