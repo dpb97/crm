@@ -12,7 +12,6 @@ app_license = "proprietary"
 # Pilanda-Apps nur über geteilte ERPNext-Daten (siehe ARCHITEKTUR-PILANDA.md §4).
 required_apps = ["erpnext", "pilanda_theme"]
 
-# Custom-Field-Namensraum dieser App = custom_sales_* — wird über
-# pilanda_sales.custom_fields.ensure_custom_fields versioniert angelegt
-# (Project-Objekt-SSOT), sobald die ersten Felder definiert sind (Phase 1.1):
-# after_migrate = ["pilanda_sales.custom_fields.ensure_custom_fields"]
+# Custom-Field-Namensraum dieser App = custom_sales_* — versioniert via
+# pilanda_sales.custom_fields.ensure_custom_fields (Project-Objekt-SSOT), idempotent.
+after_migrate = ["pilanda_sales.custom_fields.ensure_custom_fields"]
