@@ -1,0 +1,73 @@
+{
+    "actions": [],
+    "allow_rename": 0,
+    "autoname": "format:FieldCatalog-{catalog_version}",
+    "creation": "2026-06-14 00:00:00",
+    "doctype": "DocType",
+    "engine": "InnoDB",
+    "field_order": [
+        "catalog_version",
+        "title",
+        "column_break_head",
+        "language",
+        "is_active"
+    ],
+    "fields": [
+        {
+            "fieldname": "catalog_version",
+            "fieldtype": "Data",
+            "label": "Katalog-Version",
+            "reqd": 1,
+            "unique": 1,
+            "in_list_view": 1,
+            "description": "z. B. \"1\" (Lastenheft speichert, mit welcher Version es erzeugt wurde)."
+        },
+        {
+            "fieldname": "title",
+            "fieldtype": "Data",
+            "label": "Titel",
+            "in_list_view": 1
+        },
+        {
+            "fieldname": "column_break_head",
+            "fieldtype": "Column Break"
+        },
+        {
+            "fieldname": "language",
+            "fieldtype": "Data",
+            "label": "Sprache",
+            "default": "en",
+            "read_only": 1,
+            "description": "Kundenseitig immer Englisch (E-12)."
+        },
+        {
+            "fieldname": "is_active",
+            "fieldtype": "Check",
+            "label": "Aktiv"
+        }
+    ],
+    "index_web_pages_for_search": 1,
+    "links": [],
+    "modified": "2026-06-14 00:00:00",
+    "modified_by": "Administrator",
+    "module": "Vertrieb",
+    "name": "Field Catalog",
+    "owner": "Administrator",
+    "permissions": [
+        {
+            "create": 1, "delete": 1, "email": 1, "export": 1, "print": 1,
+            "read": 1, "report": 1, "role": "System Manager", "share": 1, "write": 1
+        },
+        {
+            "create": 1, "delete": 1, "email": 1, "export": 1, "print": 1,
+            "read": 1, "report": 1, "role": "Projects Manager", "share": 1, "write": 1
+        },
+        {
+            "read": 1, "report": 1, "role": "Projects User"
+        }
+    ],
+    "sort_field": "modified",
+    "sort_order": "DESC",
+    "title_field": "title",
+    "track_changes": 1
+}

@@ -1,0 +1,146 @@
+{
+    "actions": [],
+    "allow_rename": 0,
+    "autoname": "format:{catalog}::{field_id}",
+    "creation": "2026-06-14 00:00:00",
+    "doctype": "DocType",
+    "engine": "InnoDB",
+    "field_order": [
+        "catalog",
+        "section",
+        "field_id",
+        "label_en",
+        "column_break_head",
+        "field_type",
+        "layout_weight",
+        "internal_only",
+        "section_companion",
+        "companion_mode",
+        "companion_id",
+        "column_break_companion",
+        "companion_trigger",
+        "section_options",
+        "options"
+    ],
+    "fields": [
+        {
+            "fieldname": "catalog",
+            "fieldtype": "Link",
+            "label": "Feldkatalog",
+            "options": "Field Catalog",
+            "reqd": 1,
+            "in_standard_filter": 1
+        },
+        {
+            "fieldname": "section",
+            "fieldtype": "Link",
+            "label": "Sektion",
+            "options": "Field Catalog Section",
+            "in_list_view": 1,
+            "in_standard_filter": 1
+        },
+        {
+            "fieldname": "field_id",
+            "fieldtype": "Data",
+            "label": "Feld-ID",
+            "reqd": 1,
+            "in_list_view": 1,
+            "description": "z. B. company, payload, horizontal_length (= Katalog-/PDF-/Portal-ID)."
+        },
+        {
+            "fieldname": "label_en",
+            "fieldtype": "Data",
+            "label": "Label (EN)",
+            "in_list_view": 1
+        },
+        {
+            "fieldname": "column_break_head",
+            "fieldtype": "Column Break"
+        },
+        {
+            "fieldname": "field_type",
+            "fieldtype": "Select",
+            "label": "Typ",
+            "reqd": 1,
+            "options": "text\nemail\ntel\nnumber\nmonth\ntextarea\nselect\nselect_master\nradio\nmulti\nbool\nfile\nunit_picker\nspacer",
+            "in_list_view": 1
+        },
+        {
+            "fieldname": "layout_weight",
+            "fieldtype": "Int",
+            "label": "Layout-Gewicht (1–3)",
+            "default": 1
+        },
+        {
+            "fieldname": "internal_only",
+            "fieldtype": "Check",
+            "label": "Nur intern (LCS)",
+            "description": "LCS_FIELDS_IN_QUESTIONNAIRE — nur im Editor, nicht im Kunden-Formular."
+        },
+        {
+            "fieldname": "section_companion",
+            "fieldtype": "Section Break",
+            "label": "Companion",
+            "collapsible": 1
+        },
+        {
+            "fieldname": "companion_mode",
+            "fieldtype": "Select",
+            "label": "Companion-Modus",
+            "options": "\nother\nspecify",
+            "description": "other = Zusatz-Option 'Other:' + Freitext; specify = Freitext aktiv bei Trigger."
+        },
+        {
+            "fieldname": "companion_id",
+            "fieldtype": "Data",
+            "label": "Companion-Feld-ID"
+        },
+        {
+            "fieldname": "column_break_companion",
+            "fieldtype": "Column Break"
+        },
+        {
+            "fieldname": "companion_trigger",
+            "fieldtype": "Data",
+            "label": "Companion-Trigger",
+            "default": "Yes",
+            "description": "Bei 'specify': Freitext aktiv, wenn Feldwert == Trigger (Default 'Yes')."
+        },
+        {
+            "fieldname": "section_options",
+            "fieldtype": "Section Break",
+            "label": "Optionen"
+        },
+        {
+            "fieldname": "options",
+            "fieldtype": "Table",
+            "label": "Optionen",
+            "options": "Field Catalog Option",
+            "description": "Fuer select/select_master/radio/multi."
+        }
+    ],
+    "index_web_pages_for_search": 1,
+    "links": [],
+    "modified": "2026-06-14 00:00:00",
+    "modified_by": "Administrator",
+    "module": "Vertrieb",
+    "name": "Field Catalog Field",
+    "owner": "Administrator",
+    "permissions": [
+        {
+            "create": 1, "delete": 1, "email": 1, "export": 1, "print": 1,
+            "read": 1, "report": 1, "role": "System Manager", "share": 1, "write": 1
+        },
+        {
+            "create": 1, "delete": 1, "email": 1, "export": 1, "print": 1,
+            "read": 1, "report": 1, "role": "Projects Manager", "share": 1, "write": 1
+        },
+        {
+            "read": 1, "report": 1, "role": "Projects User"
+        }
+    ],
+    "sort_field": "modified",
+    "sort_order": "DESC",
+    "title_field": "label_en",
+    "track_changes": 1
+}
