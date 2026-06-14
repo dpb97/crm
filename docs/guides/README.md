@@ -12,74 +12,46 @@ Onboarding documentation, how-to guides, and development workflows.
 | `doctype-guide.md`          | How to create and customize DocTypes       |
 | `testing-guide.md`          | Testing strategy, running tests, coverage  |
 | `deployment-guide.md`       | How to deploy to each environment          |
-| `react-frontend-guide.md`   | Setting up and developing React pages      |
+| `vue-frontend-guide.md`     | Setting up and developing Vue 3 pages      |
 | `troubleshooting.md`        | Common issues and solutions                |
+
+> Pilanda-Hinweis: Die geteilte Dev-/Docker-Umgebung liegt zentral in
+> `pilanda_pm/_devenv`; Setup/Install via `pilanda_pm/install.sh` (Root-Layout,
+> siehe Repo-`README.md` + `pilanda/docs/ARCHITEKTUR-PILANDA.md`). Die
+> Vertriebs-UI ist primär die eingebettete Frappe-CRM-SPA.
 
 ## Getting Started (Quick Reference)
 
 ### Prerequisites
 
 - Python 3.11+
-- Node.js 18+ (for frontend build tools)
+- Node.js 18+ (für Vite/Vue-Frontend-Build, falls eigene Desk-Page)
 - MariaDB 10.6+
 - Redis 7+
-- IDE: VS Code with Python + Pylance extensions
-- Docker (optional, for containerized development)
-
-### First-Time Setup
-
-```bash
-# 1. Install bench CLI
-pip install frappe-bench
-
-# 2. Initialize bench
-bench init my-bench --frappe-branch version-16
-cd my-bench
-
-# 3. Create a new site
-bench new-site my-site.localhost --mariadb-root-password <password>
-
-# 4. Clone/create the app
-bench get-app <repo-url>
-# OR: bench new-app my_app
-
-# 5. Install app on site
-bench --site my-site.localhost install-app my_app
-
-# 6. Enable developer mode
-bench --site my-site.localhost set-config developer_mode 1
-
-# 7. Start development server
-bench start
-
-# 8. Run tests
-bench --site my-site.localhost run-tests --app my_app
-```
+- IDE: VS Code mit Python + Pylance
+- Docker (Pilanda-Dev läuft containerisiert, Container `pilanda-frappe`)
 
 ### Daily Workflow
 
 ```bash
-# Start bench (web server + workers + redis + socketio)
-bench start
+# Bench läuft im Container pilanda-frappe
+docker exec pilanda-frappe bash -lc "cd /workspace/frappe-bench && bench start"
 
-# After pulling changes
-bench --site my-site.localhost migrate
-bench build --app my_app
+# Nach dem Pullen
+bench --site lcs.local migrate
+bench build --app <app>
 
-# Create a new DocType
-# Use the Frappe UI at /app/doctype/new
+# Neue DocType: Frappe-UI unter /app/doctype/new
 
-# Run tests
-bench --site my-site.localhost run-tests --app my_app
-
-# Build frontend
-cd apps/my_app/frontend
-npm run build
+# Tests
+bench --site lcs.local run-tests --app <app>
 ```
 
-1. Pull latest `develop`
-2. Create feature branch: `feature/<ticket>-<description>`
-3. Write tests first (TDD)
-4. Implement feature
-5. Run all tests: `dotnet test`
-6. Push and create PR to `develop`
+### Feature-Ablauf
+
+1. Aktuellen `develop` pullen
+2. Feature-Branch: `feature/<ticket>-<description>`
+3. Tests zuerst (TDD)
+4. Feature umsetzen
+5. Alle Tests: `bench --site lcs.local run-tests --app <app>`
+6. Push + PR auf `develop` (Review Dominik)

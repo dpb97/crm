@@ -2,6 +2,9 @@
 
 Architecture decisions, system diagrams, and technical design documents.
 
+> Übergeordnete Stack-Architektur (SSOT): `pilanda/docs/ARCHITEKTUR-PILANDA.md`.
+> Hier nur app-spezifische Entscheidungen/Diagramme.
+
 ## What Belongs Here
 
 | File / Folder               | Purpose                                    |
@@ -9,7 +12,7 @@ Architecture decisions, system diagrams, and technical design documents.
 | `adr/`                      | Architecture Decision Records              |
 | `diagrams/`                 | System/component/sequence diagrams         |
 | `data-model.md`             | DocType relationships and entity model     |
-| `tech-stack.md`             | Technology choices and rationale            |
+| `tech-stack.md`             | Technology choices and rationale           |
 | `deployment.md`             | Deployment architecture and environments   |
 
 ## Architecture Decision Records (ADRs)
@@ -44,7 +47,7 @@ What other options were evaluated?
 ## System Overview
 
 ```
-[Browser / React App]
+[Browser / Frappe CRM SPA + Vue 3]
         |
         v
 [Nginx Reverse Proxy]
@@ -67,8 +70,4 @@ Parent DocType
   |-- Child Table (table field)
   |-- Link Field --> Other DocType
   |-- Dynamic Link --> Any DocType
-```
-    [SQL Server]  [External Services]
-           ↓
-    [Cache (Redis)]  ← optional
 ```

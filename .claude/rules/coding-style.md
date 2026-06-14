@@ -18,14 +18,15 @@
 - Docstrings on all public functions (Google style)
 - Use `dataclasses` or `TypedDict` for structured data
 
-## TypeScript / React Conventions
+## Vue / JS Conventions (Pilanda-Frontend)
 
-- Use `PascalCase` for components and interfaces
-- Use `camelCase` for variables, functions, props
-- Use `UPPER_SNAKE_CASE` for constants
-- Strict TypeScript (`strict: true` in tsconfig)
-- Functional components with hooks only
-- Bootstrap Icons (`react-bootstrap-icons`) as icon set
+- Frontend ist **Vue 3 + Vite** (Pilanda-Stack-Standard) — **kein React**.
+  Beachte: die Vertriebs-UI ist primär die eingebettete Frappe-CRM-SPA.
+- Single-File-Components mit `<script setup>`; `PascalCase` für Komponenten-Dateien
+- `camelCase` für Variablen/Funktionen/Props, `UPPER_SNAKE_CASE` für Konstanten
+- Optik **ausschließlich** über `pilanda_theme`-CSS-Tokens (`--pp-*`) — keine
+  nackten Hex/Radien, **kein Tailwind**
+- Gebaut nach `<app>/public/dist`, gemountet über eine Desk-Page
 
 ## Code Quality
 
@@ -36,4 +37,4 @@
 - Keep functions under 30 lines — extract helpers
 - Maximum 3 parameters per function — use dicts/dataclasses for more
 - Use Ruff for linting and formatting (Python)
-- Use ESLint + Prettier for TypeScript/React
+- Use ESLint + Prettier for the Vue/JS frontend

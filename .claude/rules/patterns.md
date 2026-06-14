@@ -3,10 +3,10 @@
 ## Frappe App Architecture
 
 ```
-DocType (core)      →  Schema + Controller (business logic)
-API (endpoints)     →  Whitelisted functions, permission-checked
-Hooks (lifecycle)   →  App events, scheduler, overrides
-Frontend (UI)       →  React pages + Frappe client scripts
+DocType (core)      ->  Schema + Controller (business logic)
+API (endpoints)     ->  Whitelisted functions, permission-checked
+Hooks (lifecycle)   ->  App events, scheduler, overrides
+Frontend (UI)       ->  Vue 3 pages (Vite) + Frappe client scripts
 ```
 
 ## Key Patterns
@@ -45,6 +45,15 @@ Frontend (UI)       →  React pages + Frappe client scripts
 - Use Frappe hooks (`doc_events`) to react to DocType lifecycle
 - Use `frappe.enqueue()` for background jobs (Redis Queue)
 - Use Frappe Scheduler for recurring tasks (defined in `hooks.py`)
+
+## Frontend Patterns (Pilanda)
+
+- Frontend ist **Vue 3 + Vite** (Pilanda-Stack-Standard) — **kein React**.
+  Beachte: die Vertriebs-UI ist primär die eingebettete Frappe-CRM-SPA.
+- Single-File-Components (`<script setup>`), gebaut nach `<app>/public/dist`,
+  gemountet über eine Desk-Page.
+- Optik **ausschließlich** über `pilanda_theme`-CSS-Tokens (`--pp-*`) — keine
+  nackten Hex/Radien, kein Tailwind.
 
 ## Database Patterns
 

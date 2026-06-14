@@ -16,15 +16,26 @@
 - Hinweis: Die Vertriebs-Oberfläche IST die Frappe-CRM-SPA (3rd-party, via `chrome_injection` eingebettet); `pilanda_sales` ergänzt LCS-Logik/Felder/Reports — kein CRM-Nachbau.
 - **Bench:** `docker exec pilanda-frappe bash -lc "cd /workspace/frappe-bench && bench --site lcs.local <cmd>"`.
 
-> Die folgenden Abschnitte sind das Org-Standard-Template — gelten zusätzlich.
+> Die folgenden Abschnitte sind das generische Org-Standard-Template. Sie gelten
+> nur, **soweit sie dem Pilanda-Kontext oben nicht widersprechen**. Verbindliche
+> Pilanda-Overrides:
+> - **Repo-Layout = Root-Layout:** App-Paket + `pyproject.toml` im **Repo-Root**
+>   (wie `bench new-app` / `bench get-app` es verlangen), **nicht** unter `src/<app>/`.
+>   Das generische „File Structure"-Diagramm unten ist nur Orientierung — maßgeblich
+>   ist das Root-Layout der bestehenden Apps (`pilanda_pm` etc.). Begründung +
+>   Standard: `README.md` (dieses Repo) und `pilanda/docs/ARCHITEKTUR-PILANDA.md`.
+> - **Frontend = Vue 3 + Vite** (Optik via `pilanda_theme`-Tokens), **nicht** React.
+>   Beachte zusätzlich: Vertriebs-UI ist primär die eingebettete Frappe-CRM-SPA.
+> - **Geteilte Bench:** Docker/Setup/Deploy zentral in `pilanda_pm/_devenv` +
+>   `pilanda_pm/install.sh` — **kein** eigener `infrastructure/`-Ordner je App.
 
 ## Project Overview
 
 **Stack:** Python 3.11+ / Frappe Framework (v16) for ERP projects
-**Frontend:** React + TypeScript for custom pages, Frappe UI for standard views
+**Frontend:** Vue 3 + Vite for custom pages, Frappe UI for standard views (kein React; Vertriebs-UI primär die eingebettete Frappe-CRM-SPA)
 **Database:** MariaDB 10.6+ (Frappe default — deviation from org PostgreSQL standard, justified by framework requirement)
-**Architecture:** Frappe MVC with modular app structure
-**Primary Language:** Python (backend), TypeScript (frontend)
+**Architecture:** Frappe MVC, modular app structure (Root-Layout: Repo-Wurzel = installierbare App)
+**Primary Language:** Python (backend), JavaScript/Vue (frontend)
 **Auth:** MSAL (Microsoft Identity) for release/production builds; Frappe built-in auth for development
 
 ## Critical Rules
@@ -36,7 +47,7 @@
 - Organize by Frappe module, not by type
 - One DocType per directory with its controller, tests, and fixtures
 - Keep custom API endpoints in dedicated `api/` modules
-- Separate React frontend code in `frontend/` directory
+- Separate Vue frontend code in `frontend/` directory
 
 ### 2. Code Style
 
@@ -77,67 +88,43 @@
 
 ### 6. Frontend
 
-- New custom pages: React + TypeScript
-- Icon set: Bootstrap Icons (`react-bootstrap-icons` / `bootstrap-icons`)
+- New custom pages: **Vue 3 + Vite** (kein React). Vertriebs-UI primär die eingebettete Frappe-CRM-SPA
 - Standard Frappe views: use Frappe UI patterns
-- Tailwind CSS for React page styling
-- No plain CSS files — Tailwind utility classes only in React pages
+- Styling **ausschließlich** über `pilanda_theme`-CSS-Tokens (`--pp-*`) — **kein Tailwind**, keine nackten Hex/Radien
+- Gebaut nach `<app>/public/dist`, gemountet über eine Desk-Page
 
-## File Structure
+## File Structure (Root-Layout — Repo-Wurzel = installierbare App)
 
 ```
 /
-|-- apps/                             # Frappe apps (created by bench)
-|   |-- my_app/                       # Custom Frappe app
-|       |-- my_app/
-|       |   |-- __init__.py
-|       |   |-- hooks.py              # App hooks (scheduler, fixtures, etc.)
-|       |   |-- patches.txt           # Migration patches list
-|       |   |-- modules.json          # Module definitions
-|       |   |-- api/                   # Custom whitelisted API endpoints
-|       |   |-- utils/                 # Shared utility functions
-|       |   |-- overrides/             # DocType controller overrides
-|       |   |-- templates/             # Jinja2 templates, web views
-|       |   |-- www/                   # Web pages (Frappe www)
-|       |   |-- public/                # Static assets (JS, CSS, images)
-|       |   |-- <module_name>/         # Frappe modules
-|       |       |-- doctype/
-|       |       |   |-- <doctype_name>/
-|       |       |       |-- <doctype_name>.py        # Controller
-|       |       |       |-- <doctype_name>.json       # Schema
-|       |       |       |-- <doctype_name>.js         # Client script
-|       |       |       |-- test_<doctype_name>.py    # Tests
-|       |       |-- report/
-|       |       |-- page/
-|       |       |-- workspace/
-|       |-- frontend/                  # React + TypeScript frontend
-|       |   |-- src/
-|       |   |-- package.json
-|       |   |-- tsconfig.json
-|       |   |-- tailwind.config.js
-|       |-- setup.py
-|       |-- pyproject.toml
-|
-|-- frontend/                          # Standalone React app (if not embedded)
-|   |-- src/
-|   |-- package.json
-|   |-- tsconfig.json
-|   |-- vite.config.ts
-|   |-- tailwind.config.js
-|
-|-- tests/                             # Additional test suites
-|   |-- unit/                          # Unit tests
-|   |-- integration/                   # Integration tests
-|   |-- e2e/                           # End-to-end tests (Playwright/Cypress)
-|
-|-- docs/                              # Documentation
-|   |-- api/                           # API documentation
-|   |-- architecture/                  # ADRs, diagrams
-|   |-- guides/                        # Developer guides
-|
-|-- infrastructure/                    # Docker, bench setup, deployment
-|-- scripts/                           # Automation scripts
+|-- <app>/                            # App-Paket (Python-Modul)
+|   |-- __init__.py
+|   |-- hooks.py                      # App hooks (scheduler, fixtures, doc_events)
+|   |-- modules.txt
+|   |-- patches.txt                   # Migration patches list
+|   |-- custom_fields.py              # custom_* via after_migrate
+|   |-- api/                          # Whitelisted API endpoints
+|   |-- utils/                        # Shared utility functions
+|   |-- overrides/                    # DocType controller overrides
+|   |-- templates/                    # Jinja2 templates, web views
+|   |-- www/                          # Web pages (Frappe www)
+|   |-- public/                       # Static assets (built dist lands here)
+|   |-- frontend/                     # Vue 3 + Vite (falls eigene Desk-Page)
+|   |   |-- src/  package.json  vite.config.js
+|   |-- <module_name>/                # Frappe modules
+|       |-- doctype/<name>/
+|       |   |-- <name>.py  <name>.json  <name>.js  test_<name>.py
+|       |-- report/  page/  workspace/
+|-- pyproject.toml                    # im ROOT -> pip install -e .
+|-- license.txt
+|-- docs/                             # ADRs, guides (kein per-App infrastructure/)
+|-- scripts/                          # app-spezifische Helfer
+|-- tests/                            # Unit/Integration/E2E
+|-- .claude/  .github/  CLAUDE.md  README.md
 ```
+
+> Setup/Docker/Deploy zentral in `pilanda_pm/_devenv` + `pilanda_pm/install.sh`
+> (geteilte Bench) — kein eigener `infrastructure/`-Ordner je App.
 
 ## Key Patterns
 
@@ -198,38 +185,31 @@ class SalesOrder(Document):
         pass
 ```
 
-### React Frontend Page (TypeScript)
+### Vue Frontend Page (Vue 3 SFC)
 
-```tsx
-import React, { useEffect, useState } from "react";
-import { BootstrapIcon } from "react-bootstrap-icons";
+```vue
+<script setup>
+import { ref, onMounted } from "vue";
 
-interface ItemDetails {
-  item_code: string;
-  item_name: string;
-  stock_uom: string;
-}
+const props = defineProps({ itemCode: String });
+const item = ref(null);
 
-export const ItemView: React.FC<{ itemCode: string }> = ({ itemCode }) => {
-  const [item, setItem] = useState<ItemDetails | null>(null);
+onMounted(() => {
+  frappe.call({
+    method: "<app>.api.get_item_details",
+    args: { item_code: props.itemCode },
+    callback: (r) => (item.value = r.message),
+  });
+});
+</script>
 
-  useEffect(() => {
-    frappe.call({
-      method: "my_app.api.get_item_details",
-      args: { item_code: itemCode },
-      callback: (r: { message: ItemDetails }) => setItem(r.message),
-    });
-  }, [itemCode]);
-
-  if (!item) return <div>Loading...</div>;
-
-  return (
-    <div className="p-4">
-      <h1 className="text-2xl font-bold">{item.item_name}</h1>
-      <p className="text-gray-600">{item.item_code}</p>
-    </div>
-  );
-};
+<template>
+  <div v-if="!item">Loading…</div>
+  <div v-else>
+    <h1>{{ item.item_name }}</h1>
+    <p>{{ item.item_code }}</p>
+  </div>
+</template>
 ```
 
 ### Error Handling

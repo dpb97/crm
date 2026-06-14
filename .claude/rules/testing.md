@@ -33,17 +33,21 @@ def test_get_item_details_with_valid_code_returns_item():
     assert result["item_name"] == "Test Item"
 ```
 
-## Test Structure (React — Vitest)
+## Test Structure (Vue — Vitest)
 
-```typescript
-import { render, screen } from "@testing-library/react";
-import { describe, it, expect } from "vitest";
-import { ItemView } from "./ItemView";
+```js
+import { mount } from "@vue/test-utils";
+import { describe, it, expect, vi } from "vitest";
+import ItemView from "./ItemView.vue";
 
 describe("ItemView", () => {
   it("renders item name when data is loaded", async () => {
-    render(<ItemView itemCode="TEST-001" />);
-    expect(await screen.findByText("Test Item")).toBeInTheDocument();
+    vi.stubGlobal("frappe", {
+      call: ({ callback }) => callback({ message: { item_name: "Test Item" } }),
+    });
+    const wrapper = mount(ItemView, { props: { itemCode: "TEST-001" } });
+    await new Promise((r) => setTimeout(r));
+    expect(wrapper.text()).toContain("Test Item");
   });
 });
 ```
@@ -54,7 +58,7 @@ describe("ItemView", () => {
 |-------------|-----------------------|-------------------------------------------|
 | Unit        | `tests/unit/`         | Utils, services, business logic           |
 | Integration | `tests/integration/`  | API endpoints, DocType workflows, DB      |
-| E2E         | `tests/e2e/`          | Critical user flows (Playwright/Cypress)  |
+| E2E         | `tests/e2e/`          | Critical user flows (Playwright)          |
 | DocType     | `<doctype>/test_*.py` | DocType controller logic (Frappe runner)  |
 
 ## Libraries
@@ -63,8 +67,7 @@ describe("ItemView", () => {
 - **frappe.tests** — Frappe test runner and utilities
 - **unittest.mock** / **pytest-mock** — Mocking
 - **Factory Boy** — Test data generation
-- **Vitest** — TypeScript/React test framework
-- **Testing Library** — React component testing
+- **Vitest** + **@vue/test-utils** — Vue component testing
 - **Playwright** — E2E browser testing
 
 ## Rules

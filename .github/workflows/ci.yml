@@ -48,7 +48,7 @@ jobs:
       #
       # - name: Run ESLint
       #   working-directory: ./frontend
-      #   run: npx eslint src/ --ext .ts,.tsx
+      #   run: npx eslint src/ --ext .js,.vue
 
   test:
     name: Test (Python + Frappe)
