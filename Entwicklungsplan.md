@@ -55,6 +55,19 @@ Vue zeigt nur an. Beweis der Formeln per **Golden-Master** gegen Referenzquote
 | 1.5 | **kaufm. Item-Custom-Fields** (`custom_sales_…`: cn_nummer (passiv, B-4), board-Kategorie, N/E/A/S-Preise, Tagessätze, Flags, AfA, Invest-Klasse) (02 §2.3a) | Felder am Item; Validierung |
 | 1.6 | Rollen-Grundgerüst (Verkäufer/Projektant/PM/VL/Stammdatenpflege) | Rechte-Matrix |
 
+**Rechte-Matrix (1.6, Grundgerüst — Domänen-Rollen via `pilanda_sales.seed.roles.seed_roles`):**
+
+| Rolle | Schwerpunkt | Schreibhoheit (Objekte) |
+|---|---|---|
+| **Verkäufer** | Anfrage → Angebot | Project/Variante, Lastenheft, Kalkulation, Angebot, K-Artikel; Anlagenkonfiguration *befüllen* (NICHT freigeben) |
+| **Projektant** | Technik-Freigabe | Anlagenkonfiguration (Freigabe = Submit), technische Item-Felder |
+| **Vertriebsleitung** (VL) | Angebots-Freigabe | verbindliche Angebote ab Schwelle (E-19) |
+| **Projects Manager** (PM, ERPNext-Standard) | Plan/Phasen | `pilanda_pm` |
+| **Technik-Stammdaten** | Stammdatenpflege | Item, Seil-Matrix, Machine Configuration, Field Catalog |
+
+Detail-Rechte je DocType werden mit dem jeweiligen Objekt/Workflow gesetzt (Phasen 3–6);
+die bestehenden DocTypes tragen vorerst die Standard-Perms (System Manager / Projects Manager / Projects User).
+
 ### Phase 2 — Datenimport (Stammdaten)  ·  M  ·  parallel zu 3
 Quellen + Reihenfolge: Paket `20_DATENIMPORT.md`. Item-DB (222, CN passiv), Board-/
 Markup-Defaults, kleine Kataloge, Textbaustein-Bibliothek. **Wahrheits-Gate:**
