@@ -45,7 +45,9 @@ Vue zeigt nur an. Beweis der Formeln per **Golden-Master** gegen Referenzquote
 
 ## 3. Phasen (repo-scoped; Nummern = Master-Plan 03)
 
-### Phase 1 — Datenmodell-Fundament  ·  Aufwand M  ·  **AKTIV**
+### Phase 1 — Datenmodell-Fundament  ·  Aufwand M  ·  ✅ **ERLEDIGT 14.06.2026**
+> 1.1–1.6 live auf lcs.local + DB-verifiziert (DocTypes Project Variant, K Item,
+> Field Catalog* inkl. 106-Felder-Seed; custom_sales_-Felder an Project+Item; Rollen).
 | AP | Inhalt | Akzeptanz |
 |---|---|---|
 | 1.1 | **Project-Custom-Fields** (`custom_sales_…`) via `custom_fields.py` + `after_migrate`; ERPNext-Standardfelder zuerst nutzen (02 §2.1) | Felder idempotent angelegt; `migrate` grün; Liste abgenommen |
@@ -95,6 +97,28 @@ später). Dossier 13.
 
 ### Phase 7 — PM-Anbindung / Ausbau
 Phasen/Dauern aus `pilanda_pm`; Payment-Terms/Cashflow (B-3, nach Oswald-Workshop).
+
+## 3a. Bau-Reihenfolge & Gates (Abhängigkeiten)
+
+Abgeleitet aus dem Abhängigkeitsgraph (Paket 03 §Abhängigkeiten). Marker:
+🟢 ohne Prototyp-Daten baubar · 🔒 braucht Prototyp-Lesezugriff
+(`C:\CoWork\Pilanda\Questionaire`) · 🎨 braucht Vue/Querschnitt Q.
+
+1. ✅ **Phase 1 Datenmodell** — komplett (1.1–1.6).
+2. 🟢 **Phase 3 Lastenheft** — DocType + Ableitungsregeln (Feldkatalog ist geseedet); Portal-Wizard/PDF 🎨.
+3. 🟢 **Phase 5 Kalkulations-Rechenkern** — Formeln aus Dossier 11 **codierbar ohne Prototyp**; der **Golden-Master gegen `03c6eb4dfc` ist 🔒**.
+4. 🔒 **Phase 2 Datenimport** — echte Stammdaten (Item-DB, Board-/Markup-Defaults, Textbausteine); liefert auch die Golden-Master-Quote.
+5. **Phase 6 Angebot** — braucht Phase 5 + freigegebene Konfiguration (← projeng) + Templates (← Phase 2).
+6. **Phase 7** — Payment/Cashflow nach Oswald-Workshop (B-2/B-3).
+
+**Cross-Repo (nur LESEND):** Die Kalkulation **liest** die *freigegebene* Anlagenkonfiguration
+aus `pilanda_projectengineering` (dessen Phase 4) und Phasen/Dauern aus `pilanda_pm`.
+`pilanda_sales` **definiert** diese Objekte NICHT (Leserichtung, SSOT §3.4). Vue-Tabellen-
+Komponenten kommen aus `pilanda_theme` (Querschnitt Q).
+
+**Strategisch:** Backend (DocTypes/Lastenheft/Rechenkern-**Code**) ist aus den vollständigen
+Specs ohne Prototyp baubar — der Prototyp-Lesezugriff wird erst für Phase 2, den
+Golden-Master und die [OFFEN]-Semantik nötig.
 
 ## 4. Genuin offene Punkte (NICHT bauen; nicht Marcos Tagesgeschäft)
 - **F-3** `cont` (Contingency-Semantik), **F-4** `parts_condition` → Oswald, betrifft erst Phase 5.
