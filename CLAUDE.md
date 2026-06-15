@@ -16,6 +16,16 @@
 - Hinweis: Die Vertriebs-Oberfläche IST die Frappe-CRM-SPA (3rd-party, via `chrome_injection` eingebettet); `pilanda_sales` ergänzt LCS-Logik/Felder/Reports — kein CRM-Nachbau.
 - **Bench:** `docker exec pilanda-frappe bash -lc "cd /workspace/frappe-bench && bench --site lcs.local <cmd>"`.
 
+## Verweise (SSOT)
+
+Stack-weite Konventionen liegen kanonisch in den Heimat-Repos — `pilanda_sales`
+*wendet* sie nur an, **verweist** und dupliziert nicht:
+
+- **Design-System / CSS** (`--pp-*`-Tokens, `--pp-radius-ui`, Palette, Fonts,
+  Hell/Dunkel) → `pilanda_theme/CLAUDE.md`. Keine nackten Hex/Radien.
+- **Navigation / Shell + Git/Workflow** → `pilanda/CLAUDE.md`.
+- **Project-Objekt-SSOT** → `pilanda/docs/conventions/project-object-ssot.md`.
+
 > Die folgenden Abschnitte sind das generische Org-Standard-Template. Sie gelten
 > nur, **soweit sie dem Pilanda-Kontext oben nicht widersprechen**. Verbindliche
 > Pilanda-Overrides:
