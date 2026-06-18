@@ -280,3 +280,11 @@ MSAL_CLIENT_SECRET=
 - `/tdd` - Test-driven development workflow
 - `/code-review` - Review code quality
 - `/bench-fix` - Fix bench/build errors
+
+## Claude-Memory (zentral, stack-weit)
+
+Claudes persistentes Gedächtnis liegt **zentral** in `pilanda_pm/.claude/memory/`
+(in Git, SSOT) — auch wenn Claude aus *diesem* Repo gestartet wird, wird dort per
+Junction gelesen/geschrieben. Dort pflegen, **nicht** lokal duplizieren. Setup an
+einem neuen Gerät (einmalig): `pilanda_pm/.claude/memory/setup-memory-junction.ps1 -All`.
+Details/Ablauf: `pilanda_pm/.claude/memory/JUNCTION-SETUP.md`.
