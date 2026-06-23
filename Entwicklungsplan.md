@@ -131,3 +131,21 @@ Golden-Master und die [OFFEN]-Semantik nötig.
 Pro Phase: Akzeptanz nachgewiesen (Test/Protokoll, nicht behauptet); `migrate`/CI grün;
 für Phase 5 zusätzlich Golden-Master. Feature-Branch → PR → develop (Review Dominik).
 Nichts aus dem Prototyp portieren. Nichts [OFFEN] bauen.
+
+## 6. UI-Vorschläge (A-Liga-Showcases im Theme, ab 23.06.2026)
+
+> Querverweis, nicht duplizieren: `pilanda_theme/Entwicklungsplan.md §14 / §14.1`.
+
+Solange die Codes/Datenmodelle hier noch nicht final sind, entstehen die
+Oberflächen-Vorschläge als **A-Liga-Showcases in `pilanda_theme`** (Theme = reine
+CSS-/Design-Schicht). Verdrahtung in dieses Repo erst, wenn die Codes final sind
+**und** das CRM (Dominik, eigenes Repo) steht.
+
+- **„Vertrieb"** = CRM (Dominik) + **Lastenheft** + **Kalkulation (inkl. Varianten)**
+  + **Angebot**. CRM ist nicht Scope dieses Repos.
+- **Bau-Reihenfolge der Showcases** (bestätigt 23.06.): Lastenheft → Varianten →
+  Kalkulation → Angebot.
+- **Datengrundlage Lastenheft** verifiziert: `seed/field_catalog_v1.py` (9 Kunden-
+  Sektionen + LCS-intern, 106 Felder, Companion-Logik „other"/„specify", SI-Einheiten).
+- **Status:** Lastenheft-Showcase in Arbeit (Schritt 1). Kein Eingriff ins
+  Datenmodell/keine [OFFEN]-Punkte — reiner UI-Entwurf.
