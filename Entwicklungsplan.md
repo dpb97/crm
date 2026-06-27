@@ -1,6 +1,16 @@
 # Entwicklungsplan — pilanda_sales (Vertrieb)
 
 > Stand: 14.06.2026 · v0.1 · verbindliche Arbeitsgrundlage für dieses Repo.
+
+## Logos (app-weit · SSOT in pilanda_theme)
+
+Alle Pilanda-Logos liegen **zentral** in `pilanda_theme/public/logo/` (ausgeliefert als
+`/assets/pilanda_theme/logo/…`) und werden **per URL referenziert** — **keine lokalen
+Logo-Kopien** in diesem Repo. Finales Set (LCS-light-blue, transparent):
+`pilanda-mark.svg` (Bildmarke), `pilanda-wordmark.svg`, `pilanda-wordmark-claim.svg`
+(+ `pilanda-wordmark.png` Raster-Fallback). **Logo-Wechsel ausschließlich in
+`pilanda_theme`** → alle Apps erben automatisch. Ausnahme: der Frappe-Favicon liegt in
+`pilanda` (`/assets/pilanda/images/favicon.ico`) und ist dort separat zu pflegen.
 > **Übergeordnet (nicht duplizieren, referenzieren):**
 > - Spezifikationspaket: `C:\CoWork\Pilanda\ImportzuPILANDA\` — Architektur (01),
 >   Objektmodell (02), Master-Entwicklungsplan (03), Dossiers 10–15, Datenimport (20),
