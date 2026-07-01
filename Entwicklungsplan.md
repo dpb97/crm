@@ -2,7 +2,7 @@
 
 > **App-Fachplan (pilanda_sales).** Teil des zentralen Master-Plans `pilanda/ENTWICKLUNGSPLAN.md`. Stack-weite Regeln (Branch-Policy, Design/Tokens/Logos, Project-Objekt-SSOT, Dev-Env/Install) stehen dort bzw. in den referenzierten SSOTs und werden hier nicht dupliziert. CRM-SPA `/crm` = Dominiks Repo (nicht hier).
 
-> Stand: 14.06.2026 · v0.1 · verbindliche Arbeitsgrundlage für dieses Repo.
+> Stand: 01.07.2026 · v0.2 · verbindliche Arbeitsgrundlage für dieses Repo.
 
 **Logos/Marken:** SSOT `pilanda_theme` §15.
 **Git/Branch:** nur `develop`; SSOT `pilanda/CLAUDE.md`.
