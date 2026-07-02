@@ -1,8 +1,8 @@
 # Entwicklungsplan — pilanda_sales (Vertrieb)
 
-> **App-Fachplan (pilanda_sales).** Teil des zentralen Master-Plans `pilanda/ENTWICKLUNGSPLAN.md`. Stack-weite Regeln (Branch-Policy, Design/Tokens/Logos, Project-Objekt-SSOT, Dev-Env/Install) stehen dort bzw. in den referenzierten SSOTs und werden hier nicht dupliziert. CRM-SPA `/crm` = Dominiks Repo (nicht hier).
+> **App-Fachplan (pilanda_sales).** Teil des zentralen Master-Plans `pilanda/ENTWICKLUNGSPLAN.md`. Stack-weite Regeln (Branch-Policy, Design/Tokens/Logos, Project-Objekt-SSOT, Dev-Env/Install) stehen dort bzw. in den referenzierten SSOTs und werden hier nicht dupliziert. CRM-SPA `/crm` = Dominiks Repo (nicht hier). Design-SSOT: `pilanda_theme`.
 
-> Stand: 01.07.2026 · v0.2 · verbindliche Arbeitsgrundlage für dieses Repo.
+> **Stand:** 02.07.2026 · **Version:** v0.2 · **Reifegrad:** Aufbau · verbindliche Arbeitsgrundlage für dieses Repo.
 
 **Logos/Marken:** SSOT `pilanda_theme` §15.
 **Git/Branch:** nur `develop`; SSOT `pilanda/CLAUDE.md`.
@@ -155,3 +155,12 @@ CSS-/Design-Schicht). Verdrahtung in dieses Repo erst, wenn die Codes final sind
   Sektionen + LCS-intern, 106 Felder, Companion-Logik „other"/„specify", SI-Einheiten).
 - **Status:** Lastenheft-Showcase in Arbeit (Schritt 1). Kein Eingriff ins
   Datenmodell/keine [OFFEN]-Punkte — reiner UI-Entwurf.
+
+## 7. Schnittstellen zu Nachbar-Apps
+
+- **→ `pilanda_projectengineering`** (`../pilanda_projectengineering/Entwicklungsplan.md`): liest
+  freigegebene Anlagenkonfiguration/Projektierung als Grundlage für Kalkulation/Angebot.
+- **→ `pilanda_pm`** (`../pilanda_pm/Entwicklungsplan.md`): Übergabe gewonnener Angebote in die
+  Projekt-/Terminierung (Angebot → Auftrag → Projekt).
+- **CRM-SPA `/crm`** = **Dominiks** Repo (nicht Scope dieses Repos).
+- **Design:** `pilanda_theme` (Tokens/CSS/PpBausteine). Stack-weit: Master `pilanda/ENTWICKLUNGSPLAN.md`.
