@@ -26,6 +26,21 @@ export default {
     { pattern: /!(text|bg)-/, variants: ['hover', 'active'] },
   ],
   theme: {
+    // Radius-Skala auf die Pilanda-Theme-Tokens gemappt (SSOT: pilanda_theme,
+    // injiziert als --pp-radius-ui via after_request). Alle rounded-*-Klassen
+    // folgen damit Live-AEnderungen in den Theme-Settings ohne Rebuild.
+    // rounded-full bleibt echt rund (Avatare, Pills, Status-Dots).
+    borderRadius: {
+      none: "0",
+      sm: "var(--pp-radius-xs, 2px)",
+      DEFAULT: "var(--pp-radius-ui, 2px)",
+      md: "var(--pp-radius-ui, 2px)",
+      lg: "var(--pp-radius-ui, 2px)",
+      xl: "var(--pp-radius-ui, 2px)",
+      "2xl": "var(--pp-radius-ui, 2px)",
+      "3xl": "var(--pp-radius-ui, 2px)",
+      full: "9999px",
+    },
     extend: {
       colors: {
         // LCS corporate identity. Bare-hex literals are required so
