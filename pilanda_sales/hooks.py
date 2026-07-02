@@ -14,4 +14,9 @@ required_apps = ["erpnext", "pilanda_theme"]
 
 # Custom-Field-Namensraum dieser App = custom_sales_* — versioniert via
 # pilanda_sales.custom_fields.ensure_custom_fields (Project-Objekt-SSOT), idempotent.
-after_migrate = ["pilanda_sales.custom_fields.ensure_custom_fields"]
+# Die CRM-Domaene (crm_deal-Link am Project) haengt separat dran — eigener
+# Bereich, eigener Eigentuemer (siehe pilanda_sales/crm/custom_fields.py).
+after_migrate = [
+    "pilanda_sales.custom_fields.ensure_custom_fields",
+    "pilanda_sales.crm.custom_fields.ensure_crm_custom_fields",
+]
