@@ -36,11 +36,26 @@ CUSTOM_FIELDS = {
             "insert_after": "custom_sales_short_name",
         },
         {
+            # Vertriebsphase = Übergabe-Mechanik Vertrieb/Innendienst ↔ Projektierung
+            # (Entscheid Marco 03.07.2026, mit Vertrieb abgestimmt; Ablauf-SSOT:
+            # pilanda_projectengineering/Entwicklungsplan.md §Ablauf). Schleifen
+            # sind erlaubt (Budget-/Richtpreis-/Final-Angebotsrunden) — deshalb
+            # bewusst Select statt starrem Einbahn-Workflow. Review: Dominik.
+            "fieldname": "custom_sales_phase",
+            "label": "Vertriebsphase",
+            "fieldtype": "Select",
+            "options": "\nLead\nProjektierung\nKalkulation\nAngebot\nVerhandlung\nEntscheidung Kunde",
+            "insert_after": "status",
+            "in_list_view": 1,
+            "in_standard_filter": 1,
+            "description": "Übergabe an die Projektierung = Phase „Projektierung“; Rückgabe = „Kalkulation“. Mehrere Runden möglich.",
+        },
+        {
             "fieldname": "custom_sales_project_class",
             "label": "Project Class",
             "fieldtype": "Select",
             "options": "\nstandard\nbigproject",
-            "insert_after": "status",
+            "insert_after": "custom_sales_phase",
             "description": "standard | bigproject (bigproject vorerst deferred).",
         },
         {
