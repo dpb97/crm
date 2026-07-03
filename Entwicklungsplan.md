@@ -32,6 +32,11 @@ Vue zeigt nur an. Beweis der Formeln per **Golden-Master** gegen Referenzquote
 - **Custom-Field-Namespace:** `custom_sales_` (kaufmännische Project-/Item-Felder).
 - **Liest, definiert NICHT:** freigegebene Anlagenkonfiguration aus
   `pilanda_projectengineering`; Phasen/Dauern aus `pilanda_pm`.
+- **Ablauf-SSOT:** Der Gesamtablauf Vertrieb ↔ Vertriebsinnendienst ↔
+  Projektierung (1 Projekt / n Varianten, Rollen, Freigabe, manuelle
+  Ausführungs-Überführung) steht kanonisch in
+  `pilanda_projectengineering/Entwicklungsplan.md` §„Ablauf … (SSOT)" —
+  hier nur verweisen, nicht duplizieren.
 
 ## 2. Verbindliche Entscheidungen (für dieses Repo relevant)
 
