@@ -2,7 +2,26 @@
 
 > **App-Fachplan (pilanda_sales).** Teil des zentralen Master-Plans `pilanda/ENTWICKLUNGSPLAN.md`. Stack-weite Regeln (Branch-Policy, Design/Tokens/Logos, Project-Objekt-SSOT, Dev-Env/Install) stehen dort bzw. in den referenzierten SSOTs und werden hier nicht dupliziert. CRM-SPA `/crm` = Dominiks Repo (nicht hier). Design-SSOT: `pilanda_theme`.
 
-> **Stand:** 02.07.2026 · **Version:** v0.2 · **Reifegrad:** Aufbau · verbindliche Arbeitsgrundlage für dieses Repo.
+> **Stand:** 03.07.2026 · **Version:** v0.3 · **Reifegrad:** Aufbau · verbindliche Arbeitsgrundlage für dieses Repo.
+>
+> **Umgesetzt (Code auf `develop`, gegen Realität geprüft 03.07.2026):**
+> - **Übergabe-Mechanik (Entscheid Marco 03.07.2026, Commit `43c6ddb`):** Feld
+>   `Project.custom_sales_phase` (Select: Lead → Projektierung → Kalkulation →
+>   Angebot → Verhandlung → Entscheidung Kunde) in `custom_fields.py`. Übergabe
+>   an die Projektierung = **Statusänderung am Projekt**, kein Einbahn-Workflow
+>   (Schleifen je Angebotsrunde: Budget → Richtpreis → Finales Angebot). Eigentum
+>   `pilanda_sales`; Ablauf-SSOT in `pilanda_projectengineering` (§Ablauf).
+>   Programmier-Review Dominik.
+> - **CRM-Rücklink (Dominik, Commit `54077b7` 02.07.2026):** `Project.custom_sales_crm_deal`
+>   (Link → `CRM Deal`) in der CRM-Domäne `pilanda_sales/crm/custom_fields.py` —
+>   nur angelegt, wenn Frappe CRM installiert ist (`required_apps` = erpnext +
+>   pilanda_theme, crm optional). CRM-**SPA** `/crm` bleibt Dominiks eigenes Repo.
+> - **Phase 3.1 (Commit `576b84b`, 14.06.2026):** DocType `Requirement Spec`
+>   (Lastenheft) + `Requirement Spec Answer`/`… File` + Ableitung. Offen bleiben
+>   Portal-Wizard, PDF-Generator und Rück-Import.
+> - **Phase 5 Start (Commit `ef2c9ab`, 14.06.2026):** Rechenkern-Kern-Primitive
+>   (`calculation/engine.py` + `test_engine.py`). Golden-Master gegen `03c6eb4dfc`
+>   und die vollständige VK-Cascade weiter offen.
 
 **Logos/Marken:** SSOT `pilanda_theme` §15.
 **Git/Branch:** nur `develop`; SSOT `pilanda/CLAUDE.md`.
@@ -53,6 +72,7 @@ Vue zeigt nur an. Beweis der Formeln per **Golden-Master** gegen Referenzquote
 | 9 | K-Artikel = eigener, nicht-dispofähiger DocType (K-Präfix) | E-22/E-17 |
 | 10 | PILANDA startet leer; Referenzquote nur Test-Fixture | E-18 |
 | 11 | Project = ERPNext-SSOT, nur per `custom_sales_`-Custom-Field erweitern | E-21/E-28 |
+| 12 | Übergabe Vertrieb↔Innendienst↔Projektierung = **Statusänderung** am Projekt (`Project.custom_sales_phase`, Eigentum `pilanda_sales`); frei setzbares Select (Schleifen erlaubt), kein Einbahn-Workflow | Marco 03.07.2026 · Commit `43c6ddb` · Ablauf-SSOT = projeng |
 
 ## 3. Phasen (repo-scoped; Nummern = Master-Plan 03)
 
@@ -87,12 +107,21 @@ Markup-Defaults, kleine Kataloge, Textbaustein-Bibliothek. **Wahrheits-Gate:**
 jeder Import erzeugt Abgleichsprotokoll (Quelle vs. importiert). **Braucht** lesenden
 Zugriff auf den Prototyp-Ordner (`C:\CoWork\Pilanda\Questionaire`) — erst hier nötig.
 
-### Phase 3 — Questionnaire/Lastenheft  ·  L
+### Phase 3 — Questionnaire/Lastenheft  ·  L  ·  🔧 **3.1 ERLEDIGT (14.06.2026, `576b84b`)** · Rest offen
+> 3.1 live: DocType `Requirement Spec` + `Requirement Spec Answer`/`… File` +
+> Ableitung. **Offen:** Portal-Wizard (Vue/Token/Companion), PDF-Generator +
+> Rück-Import, Datei-Anhänge, International-Felder (E-16).
+
 Lastenheft-DocType + Ableitungsregeln (leer überschreibt nie), Portal-Wizard (Vue,
 Token, Companion-Logik), PDF-Generator + Rück-Import aus **einem** Feldkatalog,
 Datei-Anhänge (echte Files), International-Felder nachziehen (E-16). Dossier 10.
 
-### Phase 5 — Kalkulation: der Rechenkern  ·  XL  ·  Herzstück
+### Phase 5 — Kalkulation: der Rechenkern  ·  XL  ·  Herzstück  ·  🔧 **Start (14.06.2026, `ef2c9ab`)**
+> Angelegt: `calculation/engine.py` (Kern-Primitive) + `test_engine.py`.
+> **Offen (Gros der Phase):** vollständige VK-Cascade (8 Stufen), N/E/A/S,
+> Phasen/Manpower, Commission/WHT/Duties/Financing/Buyback, Kalkulations-DocType +
+> Kostenübersicht, und der **Golden-Master gegen `03c6eb4dfc`** (🔒 Prototyp/Phase 2).
+
 Python-Rechenkern (UI-frei), **alle** Formeln aus Dossier 11: Equipment HK/VK +
 Overrides, Seil-HK, VK-Cascade (8 Stufen, 3 Gross-ups), N/E/A/S, Phasen (Manpower +
 `_sideBreak`), Commission, WHT, Import Duties, Financing (Auto-Basen, azyklisch),
@@ -116,8 +145,8 @@ Abgeleitet aus dem Abhängigkeitsgraph (Paket 03 §Abhängigkeiten). Marker:
 (`C:\CoWork\Pilanda\Questionaire`) · 🎨 braucht Vue/Querschnitt Q.
 
 1. ✅ **Phase 1 Datenmodell** — komplett (1.1–1.6).
-2. 🟢 **Phase 3 Lastenheft** — DocType + Ableitungsregeln (Feldkatalog ist geseedet); Portal-Wizard/PDF 🎨.
-3. 🟢 **Phase 5 Kalkulations-Rechenkern** — Formeln aus Dossier 11 **codierbar ohne Prototyp**; der **Golden-Master gegen `03c6eb4dfc` ist 🔒**.
+2. 🔧 **Phase 3 Lastenheft** — DocType + Ableitung **erledigt** (`576b84b`); offen: Portal-Wizard/PDF/Rück-Import 🎨.
+3. 🔧 **Phase 5 Kalkulations-Rechenkern** — Kern-Primitive **begonnen** (`ef2c9ab`); Formeln aus Dossier 11 **codierbar ohne Prototyp**, der **Golden-Master gegen `03c6eb4dfc` ist 🔒**.
 4. 🔒 **Phase 2 Datenimport** — echte Stammdaten (Item-DB, Board-/Markup-Defaults, Textbausteine); liefert auch die Golden-Master-Quote.
 5. **Phase 6 Angebot** — braucht Phase 5 + freigegebene Konfiguration (← projeng) + Templates (← Phase 2).
 6. **Phase 7** — Payment/Cashflow nach Oswald-Workshop (B-2/B-3).
@@ -137,6 +166,11 @@ Golden-Master und die [OFFEN]-Semantik nötig.
 - **B-3** Payment-Terms/Cashflow-Inhalte → Oswald, Phase 7.
 - **F-15** Pflichtenheft-Inhalt → später, Phase 6.7.
 - **B-4 CN: erledigt** — CN nur passives Attribut, keine Automatik; nicht erneut aufmachen.
+- **[OFFEN] Innendienst-Benachrichtigungsmechanik** — *wie* der Vertriebsinnendienst
+  über eine anstehende Übergabe informiert wird (Notification/Assignment/ToDo an
+  die Projektierung), ist noch nicht entschieden. Das Übergabe-**Feld**
+  (`custom_sales_phase`) steht; die Benachrichtigung darum herum bleibt offen —
+  nicht bauen, bis Marco den Mechanismus definiert.
 
 ## 5. Arbeitsweise
 Pro Phase: Akzeptanz nachgewiesen (Test/Protokoll, nicht behauptet); `migrate`/CI grün;
@@ -167,5 +201,9 @@ CSS-/Design-Schicht). Verdrahtung in dieses Repo erst, wenn die Codes final sind
   freigegebene Anlagenkonfiguration/Projektierung als Grundlage für Kalkulation/Angebot.
 - **→ `pilanda_pm`** (`../pilanda_pm/Entwicklungsplan.md`): Übergabe gewonnener Angebote in die
   Projekt-/Terminierung (Angebot → Auftrag → Projekt).
-- **CRM-SPA `/crm`** = **Dominiks** Repo (nicht Scope dieses Repos).
+- **CRM-SPA `/crm`** = **Dominiks** Repo (nicht Scope dieses Repos). Die **CRM-Domäne
+  `pilanda_sales/crm/`** (Owner Dominik) hält als einziges den ERPNext-seitigen
+  Rücklink `Project.custom_sales_crm_deal` (Link → `CRM Deal`, `54077b7`); Frappe
+  CRM ist optional (Feld wird ohne CRM übersprungen). Ein Eigentümer je Feld —
+  dieser Rücklink gehört bewusst NICHT in `pilanda_sales/custom_fields.py`.
 - **Design:** `pilanda_theme` (Tokens/CSS/PpBausteine). Stack-weit: Master `pilanda/ENTWICKLUNGSPLAN.md`.
