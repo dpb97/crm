@@ -17,6 +17,22 @@ export default defineConfig(async ({ mode }) => {
         devOptions: {
           enabled: true,
         },
+        // Explizite Precache-Konfiguration — die Defaults verloren in
+        // Kombination mit dem frappeui-Buildplugin das komplette Manifest
+        // (leeres self.__WB_MANIFEST -> createHandlerBoundToURL wirft,
+        // SW-Routing tot, offline nichts). Deterministisch:
+        workbox: {
+          // Der frappeui-Buildplugin verlegt das outDir nach
+          // ../crm/public/frontend — vite-plugin-pwa globt sonst im
+          // Default-dist und precached nur die selbst emittierte
+          // index.html (1 Eintrag statt ~120 -> offline tot).
+          globDirectory: '../crm/public/frontend',
+          globPatterns: ['**/*.{js,css,html,ico,png,svg,webmanifest,woff2}'],
+          globIgnores: ['**/*.map', '**/apple-splash-*.jpg'],
+          navigateFallback: 'index.html',
+          navigateFallbackAllowlist: [new RegExp('^/crm')],
+          maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
+        },
         manifest: {
           display: 'standalone',
           scope: '/crm',
