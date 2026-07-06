@@ -33,12 +33,12 @@ export default {
     borderRadius: {
       none: "0",
       sm: "var(--pp-radius-xs, 2px)",
-      DEFAULT: "var(--pp-radius-ui, 2px)",
-      md: "var(--pp-radius-ui, 2px)",
-      lg: "var(--pp-radius-ui, 2px)",
-      xl: "var(--pp-radius-ui, 2px)",
-      "2xl": "var(--pp-radius-ui, 2px)",
-      "3xl": "var(--pp-radius-ui, 2px)",
+      DEFAULT: "var(--pp-radius-ui, 3px)",
+      md: "var(--pp-radius-ui, 3px)",
+      lg: "var(--pp-radius-ui, 3px)",
+      xl: "var(--pp-radius-ui, 3px)",
+      "2xl": "var(--pp-radius-ui, 3px)",
+      "3xl": "var(--pp-radius-ui, 3px)",
       full: "9999px",
     },
     extend: {
@@ -51,7 +51,11 @@ export default {
         // index.css inside the `@layer components` block (.lcs-card,
         // .lcs-kpi, …) — those don't go through Tailwind opacity logic.
         lcs: {
-          primary:   '#0B3A6F',
+          // Live-Theming: pilanda_theme liefert --pp-brand-primary-rgb als
+          // space-separiertes Triple genau fuer dieses Tailwind-Muster —
+          // Opacity-Modifier (bg-lcs-primary/10) funktionieren damit UND die
+          // Farbe folgt dem Theme ohne Rebuild. Fallback = LCS-Logo-Blau.
+          primary:   'rgb(var(--pp-brand-primary-rgb, 11 58 111) / <alpha-value>)',
           secondary: '#1E78C2',
           accent:    '#F5A524',
           success:   '#16A34A',
