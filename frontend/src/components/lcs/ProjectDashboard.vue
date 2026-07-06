@@ -186,13 +186,13 @@ const metrics = computed(() => {
     : 0
   // H6: Recognition — weighted value helps understanding
   const weightedValue = list.reduce((sum, p) => sum + (p.estimated_value || 0) * (p.probability || 0) / 100, 0)
-  const activePhases = ['Inquiry', 'Offer', 'Negotiation', 'Order', 'Execution']
+  const activePhases = ['Qualified', 'Budget', 'Richtpreis', 'Offer', 'Negotiation', 'Won', 'Execution']
   const activeCount = list.filter((p) => activePhases.includes(p.phase)).length
   const countryCount = new Set(list.map((p) => p.country).filter(Boolean)).size
   return { totalProjects, totalValue, weightedValue, avgProbability, activeCount, countryCount }
 })
 
-const phaseOrder = ['Inquiry', 'Offer', 'Negotiation', 'Order', 'Execution', 'Completed', 'Lost']
+const phaseOrder = ['Qualified', 'Budget', 'Richtpreis', 'Offer', 'Negotiation', 'Won', 'Execution', 'Completed', 'Lost']
 
 const phasePipeline = computed(() => {
   const maxValue = Math.max(
@@ -214,10 +214,12 @@ const phasePipeline = computed(() => {
 })
 
 const phaseColorMap = {
-  Inquiry: '#0ea5e9',
+  Qualified: '#0ea5e9',
+  Budget: '#14b8a6',
+  Richtpreis: '#8b5cf6',
   Offer: '#f59e0b',
   Negotiation: '#f97316',
-  Order: '#22c55e',
+  Won: '#22c55e',
   Execution: '#0B3A6F',
   Completed: '#6b7280',
   Lost: '#ef4444',

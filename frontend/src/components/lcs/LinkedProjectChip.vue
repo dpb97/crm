@@ -73,10 +73,12 @@ watch(() => props.name, load)
 
 function phaseClass(phase) {
   const m = {
-    Inquiry: 'bg-sky-100 text-sky-800',
+    Qualified: 'bg-sky-100 text-sky-800',
+    Budget: 'bg-teal-100 text-teal-800',
+    Richtpreis: 'bg-violet-100 text-violet-800',
     Offer: 'bg-amber-100 text-amber-800',
     Negotiation: 'bg-orange-100 text-orange-800',
-    Order: 'bg-green-100 text-green-800',
+    Won: 'bg-green-100 text-green-800',
     Execution: 'bg-emerald-100 text-emerald-800',
     Completed: 'bg-gray-100 text-gray-600',
     Lost: 'bg-red-100 text-red-700',

@@ -843,7 +843,7 @@ function onFusionUnlinked() {
 }
 
 // Phase change
-const phases = ['Inquiry', 'Offer', 'Negotiation', 'Order', 'Execution', 'Completed', 'Lost']
+const phases = ['Qualified', 'Budget', 'Richtpreis', 'Offer', 'Negotiation', 'Won', 'Execution', 'Completed', 'Lost']
 const showPhaseConfirm = ref(false)
 const pendingPhase = ref('')
 const isBackwardPhaseMove = computed(() => {
@@ -1147,11 +1147,11 @@ function typeFullName(type) {
   return map[type] || type
 }
 function phaseClass(phase) {
-  const map = { Inquiry: 'bg-sky-50 text-sky-700 border border-sky-200', Offer: 'bg-amber-50 text-amber-700 border border-amber-200', Negotiation: 'bg-orange-50 text-orange-700 border border-orange-200', Order: 'bg-green-50 text-green-700 border border-green-200', Execution: 'bg-lcs-primary/5 text-lcs-primary border border-lcs-primary/20', Completed: 'bg-gray-50 text-gray-600 border border-gray-200', Lost: 'bg-red-50 text-red-700 border border-red-200' }
+  const map = { Qualified: 'bg-sky-50 text-sky-700 border border-sky-200', Budget: 'bg-teal-50 text-teal-700 border border-teal-200', Richtpreis: 'bg-violet-50 text-violet-700 border border-violet-200', Offer: 'bg-amber-50 text-amber-700 border border-amber-200', Negotiation: 'bg-orange-50 text-orange-700 border border-orange-200', Won: 'bg-green-50 text-green-700 border border-green-200', Execution: 'bg-lcs-primary/5 text-lcs-primary border border-lcs-primary/20', Completed: 'bg-gray-50 text-gray-600 border border-gray-200', Lost: 'bg-red-50 text-red-700 border border-red-200' }
   return map[phase] || 'bg-gray-50 text-gray-600 border border-gray-200'
 }
 function phaseDotClass(phase) {
-  const map = { Inquiry: 'bg-sky-500', Offer: 'bg-amber-500', Negotiation: 'bg-orange-500', Order: 'bg-green-500', Execution: 'bg-lcs-primary', Completed: 'bg-gray-400', Lost: 'bg-red-500' }
+  const map = { Qualified: 'bg-sky-500', Budget: 'bg-teal-500', Richtpreis: 'bg-violet-500', Offer: 'bg-amber-500', Negotiation: 'bg-orange-500', Won: 'bg-green-500', Execution: 'bg-lcs-primary', Completed: 'bg-gray-400', Lost: 'bg-red-500' }
   return map[phase] || 'bg-gray-400'
 }
 function statusClass(status) {

@@ -146,6 +146,8 @@ website_route_rules: list[dict[str, str]] = []
 # bei jedem migrate neu — der Guard raeumt das direkt danach wieder ab.
 after_migrate = [
     "lcs_integrations.erpnext_sync.compat.remove_conflicting_property_setters",
+    # BSM Project link only exists where the bsm app is installed.
+    "lcs_integrations.cross_module.bsm_field.ensure_bsm_field",
 ]
 
 # Teams Outgoing Webhook: HMAC-signierte POSTs authentifizieren, bevor

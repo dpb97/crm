@@ -1,429 +1,420 @@
 {
-    "actions": [],
-    "allow_rename": 1,
-    "autoname": "LCS-PROJ-.YYYY.-.####",
-    "creation": "2026-04-20 00:00:00",
-    "doctype": "DocType",
-    "engine": "InnoDB",
-    "field_order": [
-        "section_project_details",
-        "project_name",
-        "project_number",
-        "project_abbr",
-        "project_type",
-        "project_description",
-        "column_break_details",
-        "country",
-        "is_gu",
-        "salesperson",
-        "sales_manager",
-        "phase",
-        "status",
-        "section_customer_contacts",
-        "organization",
-        "industry",
-        "primary_contact",
-        "contacts",
-        "section_opportunity",
-        "deal",
-        "source",
-        "expected_close_date",
-        "probability",
-        "section_pricing",
-        "budget_customer",
-        "richtpreis",
-        "column_break_pricing",
-        "angebot_total",
-        "estimated_value",
-        "section_team",
-        "project_manager",
-        "team_members",
-        "section_external_systems",
-        "erpnext_customer",
-        "erpnext_project",
-        "bsm_project",
-        "fusion_workspace",
-        "fusion_item_id",
-        "column_break_external",
-        "fusion_item_number",
-        "fusion_item_state",
-        "fusion_item_description",
-        "fusion_last_sync",
-        "section_training",
-        "required_trainings",
-        "section_links",
-        "team_link",
-        "teams_team_id",
-        "teams_notifications_channel_id",
-        "sharepoint_link",
-        "document_link",
-        "section_notes",
-        "notes"
-    ],
-    "fields": [
-        {
-            "fieldname": "section_project_details",
-            "fieldtype": "Section Break",
-            "label": "Project Details"
-        },
-        {
-            "fieldname": "project_name",
-            "fieldtype": "Data",
-            "in_list_view": 1,
-            "label": "Project Name",
-            "reqd": 1
-        },
-        {
-            "fieldname": "project_number",
-            "fieldtype": "Data",
-            "in_list_view": 1,
-            "label": "Project Number",
-            "read_only": 1,
-            "unique": 1
-        },
-        {
-            "fieldname": "project_abbr",
-            "fieldtype": "Data",
-            "label": "Project Abbreviation"
-        },
-        {
-            "fieldname": "project_type",
-            "fieldtype": "Select",
-            "in_list_view": 1,
-            "in_standard_filter": 1,
-            "label": "Project Type",
-            "options": "SB\nWI\nLL\nSK\nOther"
-        },
-        {
-            "fieldname": "project_description",
-            "fieldtype": "Small Text",
-            "label": "Description"
-        },
-        {
-            "fieldname": "column_break_details",
-            "fieldtype": "Column Break"
-        },
-        {
-            "fieldname": "country",
-            "fieldtype": "Link",
-            "label": "Country",
-            "options": "Country"
-        },
-        {
-            "default": "0",
-            "fieldname": "is_gu",
-            "fieldtype": "Check",
-            "label": "General Contractor (GU)"
-        },
-        {
-            "fieldname": "salesperson",
-            "fieldtype": "Link",
-            "label": "Salesperson",
-            "options": "User"
-        },
-        {
-            "description": "Responsible sales manager — propagates onto the linked Deal + Lead so the whole pipeline carries the same owner.",
-            "fieldname": "sales_manager",
-            "fieldtype": "Link",
-            "label": "Sales Manager",
-            "options": "User"
-        },
-        {
-            "default": "Qualified",
-            "description": "LCS sales-pipeline stage per CRM requirements 12.05.2026: Lead lives on CRM Lead; project pipeline starts at Qualified and runs through Lost / Completed.",
-            "fieldname": "phase",
-            "fieldtype": "Select",
-            "in_list_view": 1,
-            "in_standard_filter": 1,
-            "label": "Phase",
-            "options": "Qualified\nBudget\nRichtpreis\nOffer\nNegotiation\nWon\nExecution\nCompleted\nLost"
-        },
-        {
-            "default": "Open",
-            "fieldname": "status",
-            "fieldtype": "Select",
-            "in_list_view": 1,
-            "in_standard_filter": 1,
-            "label": "Status",
-            "options": "Open\nActive\nOn Hold\nCompleted\nCancelled"
-        },
-        {
-            "fieldname": "section_customer_contacts",
-            "fieldtype": "Section Break",
-            "label": "Customer & Contacts"
-        },
-        {
-            "fieldname": "organization",
-            "fieldtype": "Link",
-            "label": "Customer/Organization",
-            "options": "CRM Organization"
-        },
-        {
-            "description": "Auto-filled from the linked Organization — edit there for the master record",
-            "fetch_from": "organization.industry",
-            "fieldname": "industry",
-            "fieldtype": "Link",
-            "label": "Industry",
-            "options": "CRM Industry",
-            "read_only": 1
-        },
-        {
-            "fieldname": "primary_contact",
-            "fieldtype": "Link",
-            "label": "Primary Contact",
-            "options": "Contact"
-        },
-        {
-            "fieldname": "contacts",
-            "fieldtype": "Table",
-            "label": "Project Contacts",
-            "options": "LCS Project Contact"
-        },
-        {
-            "fieldname": "section_opportunity",
-            "fieldtype": "Section Break",
-            "label": "Opportunity"
-        },
-        {
-            "fieldname": "deal",
-            "fieldtype": "Link",
-            "label": "Linked Deal",
-            "options": "CRM Deal"
-        },
-        {
-            "description": "How this opportunity came to us — managed centrally in CRM Lead Source",
-            "fieldname": "source",
-            "fieldtype": "Link",
-            "in_standard_filter": 1,
-            "label": "Source / Channel",
-            "options": "CRM Lead Source"
-        },
-        {
-            "description": "Expected deal close / order date — used for forecasting",
-            "fieldname": "expected_close_date",
-            "fieldtype": "Date",
-            "label": "Expected Close Date"
-        },
-        {
-            "fieldname": "probability",
-            "fieldtype": "Percent",
-            "label": "Win Probability"
-        },
-        {
-            "fieldname": "section_pricing",
-            "fieldtype": "Section Break",
-            "label": "Pricing Stages"
-        },
-        {
-            "description": "What the customer indicates they are willing to spend",
-            "fieldname": "budget_customer",
-            "fieldtype": "Currency",
-            "label": "Budget (Customer)"
-        },
-        {
-            "description": "Internal rough estimate before formal quote",
-            "fieldname": "richtpreis",
-            "fieldtype": "Currency",
-            "label": "Richtpreis (Internal Estimate)"
-        },
-        {
-            "fieldname": "column_break_pricing",
-            "fieldtype": "Column Break"
-        },
-        {
-            "description": "Formal quoted total (from accepted or latest offer)",
-            "fieldname": "angebot_total",
-            "fieldtype": "Currency",
-            "label": "Angebot (Quoted Total)"
-        },
-        {
-            "description": "Working estimate used for pipeline value (falls back to Angebot → Richtpreis → Budget)",
-            "fieldname": "estimated_value",
-            "fieldtype": "Currency",
-            "label": "Estimated Value"
-        },
-        {
-            "fieldname": "section_team",
-            "fieldtype": "Section Break",
-            "label": "Project Team"
-        },
-        {
-            "description": "Head of project (HRMS Employee). Drives day-to-day execution.",
-            "fieldname": "project_manager",
-            "fieldtype": "Link",
-            "label": "Project Manager",
-            "options": "Employee"
-        },
-        {
-            "fieldname": "team_members",
-            "fieldtype": "Table",
-            "label": "Team Members",
-            "options": "LCS Project Team Member"
-        },
-        {
-            "fieldname": "section_external_systems",
-            "fieldtype": "Section Break",
-            "label": "External Systems"
-        },
-        {
-            "description": "ERPNext Customer record — created automatically when first offer is sent",
-            "fieldname": "erpnext_customer",
-            "fieldtype": "Link",
-            "label": "ERPNext Customer",
-            "options": "Customer",
-            "read_only": 1
-        },
-        {
-            "description": "ERPNext Project — auto-created when phase reaches Order/Execution; carries tasks, time logs, costing, gantt for resource planning",
-            "fieldname": "erpnext_project",
-            "fieldtype": "Link",
-            "label": "ERPNext Project",
-            "options": "Project",
-            "read_only": 1
-        },
-        {
-            "description": "BSM construction-site project — auto-created when Sales Order is placed",
-            "fieldname": "bsm_project",
-            "fieldtype": "Link",
-            "label": "BSM Project",
-            "options": "BSM Project",
-            "read_only": 1
-        },
-        {
-            "description": "Autodesk Fusion Manage workspace this project's item lives in",
-            "fieldname": "fusion_workspace",
-            "fieldtype": "Data",
-            "label": "Fusion Workspace ID"
-        },
-        {
-            "description": "Fusion Manage item ID for this project's product",
-            "fieldname": "fusion_item_id",
-            "fieldtype": "Data",
-            "label": "Fusion Item ID"
-        },
-        {
-            "fieldname": "column_break_external",
-            "fieldtype": "Column Break"
-        },
-        {
-            "fieldname": "fusion_item_number",
-            "fieldtype": "Data",
-            "label": "Fusion Item Number",
-            "read_only": 1
-        },
-        {
-            "fieldname": "fusion_item_state",
-            "fieldtype": "Data",
-            "label": "Fusion State",
-            "read_only": 1
-        },
-        {
-            "fieldname": "fusion_item_description",
-            "fieldtype": "Small Text",
-            "label": "Fusion Description",
-            "read_only": 1
-        },
-        {
-            "fieldname": "fusion_last_sync",
-            "fieldtype": "Datetime",
-            "label": "Fusion Last Sync",
-            "read_only": 1
-        },
-        {
-            "fieldname": "section_training",
-            "fieldtype": "Section Break",
-            "label": "Required Trainings (LMS)"
-        },
-        {
-            "description": "LMS certifications every team member must hold before working on-site",
-            "fieldname": "required_trainings",
-            "fieldtype": "Table",
-            "label": "Required Trainings",
-            "options": "LCS Project Required Training"
-        },
-        {
-            "fieldname": "section_links",
-            "fieldtype": "Section Break",
-            "label": "Links"
-        },
-        {
-            "fieldname": "team_link",
-            "fieldtype": "Data",
-            "label": "MS Teams Link"
-        },
-        {
-            "description": "Microsoft Graph team ID — written by teams.provision; required for Teams notifications",
-            "fieldname": "teams_team_id",
-            "fieldtype": "Data",
-            "label": "Teams Team ID",
-            "read_only": 1
-        },
-        {
-            "description": "Channel ID for Teams notifications (defaults to the channel named in LCS Outlook Sync Settings)",
-            "fieldname": "teams_notifications_channel_id",
-            "fieldtype": "Data",
-            "label": "Teams Notifications Channel ID",
-            "read_only": 1
-        },
-        {
-            "fieldname": "sharepoint_link",
-            "fieldtype": "Data",
-            "label": "SharePoint Link"
-        },
-        {
-            "fieldname": "document_link",
-            "fieldtype": "Attach",
-            "label": "Initial Document"
-        },
-        {
-            "fieldname": "section_notes",
-            "fieldtype": "Section Break",
-            "label": "Notes"
-        },
-        {
-            "fieldname": "notes",
-            "fieldtype": "Text Editor",
-            "label": "Notes"
-        }
-    ],
-    "index_web_pages_for_search": 0,
-    "is_submittable": 0,
-    "links": [],
-    "modified": "2026-04-20 00:00:00",
-    "modified_by": "Administrator",
-    "module": "LCS Integrations",
-    "name": "LCS Project",
-    "name_case": "",
-    "owner": "Administrator",
-    "permissions": [
-        {
-            "create": 1,
-            "delete": 1,
-            "export": 1,
-            "read": 1,
-            "report": 1,
-            "role": "System Manager",
-            "write": 1
-        },
-        {
-            "create": 1,
-            "export": 1,
-            "read": 1,
-            "report": 1,
-            "role": "Sales User",
-            "write": 1
-        },
-        {
-            "read": 1,
-            "role": "Sales Manager",
-            "write": 1,
-            "create": 1,
-            "delete": 1,
-            "export": 1,
-            "report": 1
-        }
-    ],
-    "sort_field": "modified",
-    "sort_order": "DESC",
-    "track_changes": 1
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "LCS-PROJ-.YYYY.-.####",
+ "creation": "2026-04-20 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_project_details",
+  "project_name",
+  "project_number",
+  "project_abbr",
+  "project_type",
+  "project_description",
+  "column_break_details",
+  "country",
+  "is_gu",
+  "salesperson",
+  "sales_manager",
+  "phase",
+  "status",
+  "section_customer_contacts",
+  "organization",
+  "industry",
+  "primary_contact",
+  "contacts",
+  "section_opportunity",
+  "deal",
+  "source",
+  "expected_close_date",
+  "probability",
+  "section_pricing",
+  "budget_customer",
+  "richtpreis",
+  "column_break_pricing",
+  "angebot_total",
+  "estimated_value",
+  "section_team",
+  "project_manager",
+  "team_members",
+  "section_external_systems",
+  "erpnext_customer",
+  "erpnext_project",
+  "fusion_workspace",
+  "fusion_item_id",
+  "column_break_external",
+  "fusion_item_number",
+  "fusion_item_state",
+  "fusion_item_description",
+  "fusion_last_sync",
+  "section_training",
+  "required_trainings",
+  "section_links",
+  "team_link",
+  "teams_team_id",
+  "teams_notifications_channel_id",
+  "sharepoint_link",
+  "document_link",
+  "section_notes",
+  "notes"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_project_details",
+   "fieldtype": "Section Break",
+   "label": "Project Details"
+  },
+  {
+   "fieldname": "project_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Project Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "project_number",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Project Number",
+   "read_only": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "project_abbr",
+   "fieldtype": "Data",
+   "label": "Project Abbreviation"
+  },
+  {
+   "fieldname": "project_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Project Type",
+   "options": "SB\nWI\nLL\nSK\nOther"
+  },
+  {
+   "fieldname": "project_description",
+   "fieldtype": "Small Text",
+   "label": "Description"
+  },
+  {
+   "fieldname": "column_break_details",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "country",
+   "fieldtype": "Link",
+   "label": "Country",
+   "options": "Country"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_gu",
+   "fieldtype": "Check",
+   "label": "General Contractor (GU)"
+  },
+  {
+   "fieldname": "salesperson",
+   "fieldtype": "Link",
+   "label": "Salesperson",
+   "options": "User"
+  },
+  {
+   "description": "Responsible sales manager — propagates onto the linked Deal + Lead so the whole pipeline carries the same owner.",
+   "fieldname": "sales_manager",
+   "fieldtype": "Link",
+   "label": "Sales Manager",
+   "options": "User"
+  },
+  {
+   "default": "Qualified",
+   "description": "LCS sales-pipeline stage per CRM requirements 12.05.2026: Lead lives on CRM Lead; project pipeline starts at Qualified and runs through Lost / Completed.",
+   "fieldname": "phase",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Phase",
+   "options": "Qualified\nBudget\nRichtpreis\nOffer\nNegotiation\nWon\nExecution\nCompleted\nLost"
+  },
+  {
+   "default": "Open",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Open\nActive\nOn Hold\nCompleted\nCancelled"
+  },
+  {
+   "fieldname": "section_customer_contacts",
+   "fieldtype": "Section Break",
+   "label": "Customer & Contacts"
+  },
+  {
+   "fieldname": "organization",
+   "fieldtype": "Link",
+   "label": "Customer/Organization",
+   "options": "CRM Organization"
+  },
+  {
+   "description": "Auto-filled from the linked Organization — edit there for the master record",
+   "fetch_from": "organization.industry",
+   "fieldname": "industry",
+   "fieldtype": "Link",
+   "label": "Industry",
+   "options": "CRM Industry",
+   "read_only": 1
+  },
+  {
+   "fieldname": "primary_contact",
+   "fieldtype": "Link",
+   "label": "Primary Contact",
+   "options": "Contact"
+  },
+  {
+   "fieldname": "contacts",
+   "fieldtype": "Table",
+   "label": "Project Contacts",
+   "options": "LCS Project Contact"
+  },
+  {
+   "fieldname": "section_opportunity",
+   "fieldtype": "Section Break",
+   "label": "Opportunity"
+  },
+  {
+   "fieldname": "deal",
+   "fieldtype": "Link",
+   "label": "Linked Deal",
+   "options": "CRM Deal"
+  },
+  {
+   "description": "How this opportunity came to us — managed centrally in CRM Lead Source",
+   "fieldname": "source",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Source / Channel",
+   "options": "CRM Lead Source"
+  },
+  {
+   "description": "Expected deal close / order date — used for forecasting",
+   "fieldname": "expected_close_date",
+   "fieldtype": "Date",
+   "label": "Expected Close Date"
+  },
+  {
+   "fieldname": "probability",
+   "fieldtype": "Percent",
+   "label": "Win Probability"
+  },
+  {
+   "fieldname": "section_pricing",
+   "fieldtype": "Section Break",
+   "label": "Pricing Stages"
+  },
+  {
+   "description": "What the customer indicates they are willing to spend",
+   "fieldname": "budget_customer",
+   "fieldtype": "Currency",
+   "label": "Budget (Customer)"
+  },
+  {
+   "description": "Internal rough estimate before formal quote",
+   "fieldname": "richtpreis",
+   "fieldtype": "Currency",
+   "label": "Richtpreis (Internal Estimate)"
+  },
+  {
+   "fieldname": "column_break_pricing",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Formal quoted total (from accepted or latest offer)",
+   "fieldname": "angebot_total",
+   "fieldtype": "Currency",
+   "label": "Angebot (Quoted Total)"
+  },
+  {
+   "description": "Working estimate used for pipeline value (falls back to Angebot → Richtpreis → Budget)",
+   "fieldname": "estimated_value",
+   "fieldtype": "Currency",
+   "label": "Estimated Value"
+  },
+  {
+   "fieldname": "section_team",
+   "fieldtype": "Section Break",
+   "label": "Project Team"
+  },
+  {
+   "description": "Head of project (HRMS Employee). Drives day-to-day execution.",
+   "fieldname": "project_manager",
+   "fieldtype": "Link",
+   "label": "Project Manager",
+   "options": "Employee"
+  },
+  {
+   "fieldname": "team_members",
+   "fieldtype": "Table",
+   "label": "Team Members",
+   "options": "LCS Project Team Member"
+  },
+  {
+   "fieldname": "section_external_systems",
+   "fieldtype": "Section Break",
+   "label": "External Systems"
+  },
+  {
+   "description": "ERPNext Customer record — created automatically when first offer is sent",
+   "fieldname": "erpnext_customer",
+   "fieldtype": "Link",
+   "label": "ERPNext Customer",
+   "options": "Customer",
+   "read_only": 1
+  },
+  {
+   "description": "ERPNext Project — auto-created when phase reaches Order/Execution; carries tasks, time logs, costing, gantt for resource planning",
+   "fieldname": "erpnext_project",
+   "fieldtype": "Link",
+   "label": "ERPNext Project",
+   "options": "Project",
+   "read_only": 1
+  },
+  {
+   "description": "Autodesk Fusion Manage workspace this project's item lives in",
+   "fieldname": "fusion_workspace",
+   "fieldtype": "Data",
+   "label": "Fusion Workspace ID"
+  },
+  {
+   "description": "Fusion Manage item ID for this project's product",
+   "fieldname": "fusion_item_id",
+   "fieldtype": "Data",
+   "label": "Fusion Item ID"
+  },
+  {
+   "fieldname": "column_break_external",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "fusion_item_number",
+   "fieldtype": "Data",
+   "label": "Fusion Item Number",
+   "read_only": 1
+  },
+  {
+   "fieldname": "fusion_item_state",
+   "fieldtype": "Data",
+   "label": "Fusion State",
+   "read_only": 1
+  },
+  {
+   "fieldname": "fusion_item_description",
+   "fieldtype": "Small Text",
+   "label": "Fusion Description",
+   "read_only": 1
+  },
+  {
+   "fieldname": "fusion_last_sync",
+   "fieldtype": "Datetime",
+   "label": "Fusion Last Sync",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_training",
+   "fieldtype": "Section Break",
+   "label": "Required Trainings (LMS)"
+  },
+  {
+   "description": "LMS certifications every team member must hold before working on-site",
+   "fieldname": "required_trainings",
+   "fieldtype": "Table",
+   "label": "Required Trainings",
+   "options": "LCS Project Required Training"
+  },
+  {
+   "fieldname": "section_links",
+   "fieldtype": "Section Break",
+   "label": "Links"
+  },
+  {
+   "fieldname": "team_link",
+   "fieldtype": "Data",
+   "label": "MS Teams Link"
+  },
+  {
+   "description": "Microsoft Graph team ID — written by teams.provision; required for Teams notifications",
+   "fieldname": "teams_team_id",
+   "fieldtype": "Data",
+   "label": "Teams Team ID",
+   "read_only": 1
+  },
+  {
+   "description": "Channel ID for Teams notifications (defaults to the channel named in LCS Outlook Sync Settings)",
+   "fieldname": "teams_notifications_channel_id",
+   "fieldtype": "Data",
+   "label": "Teams Notifications Channel ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sharepoint_link",
+   "fieldtype": "Data",
+   "label": "SharePoint Link"
+  },
+  {
+   "fieldname": "document_link",
+   "fieldtype": "Attach",
+   "label": "Initial Document"
+  },
+  {
+   "fieldname": "section_notes",
+   "fieldtype": "Section Break",
+   "label": "Notes"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Text Editor",
+   "label": "Notes"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "is_submittable": 0,
+ "links": [],
+ "modified": "2026-04-20 00:00:00",
+ "modified_by": "Administrator",
+ "module": "LCS Integrations",
+ "name": "LCS Project",
+ "name_case": "",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "export": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "write": 1
+  },
+  {
+   "create": 1,
+   "export": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Sales User",
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "Sales Manager",
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "export": 1,
+   "report": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
 }

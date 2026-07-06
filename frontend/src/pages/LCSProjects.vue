@@ -506,10 +506,12 @@ const typeOptionsRaw = [
 const typeOptions = [{ label: __('All Types'), value: '' }, ...typeOptionsRaw]
 const phaseOptions = [
   { label: __('All Phases'), value: '' },
-  { label: __('Inquiry'), value: 'Inquiry' },
+  { label: __('Qualified'), value: 'Qualified' },
+  { label: __('Budget'), value: 'Budget' },
+  { label: __('Richtpreis'), value: 'Richtpreis' },
   { label: __('Offer'), value: 'Offer' },
   { label: __('Negotiation'), value: 'Negotiation' },
-  { label: __('Order'), value: 'Order' },
+  { label: __('Won'), value: 'Won' },
   { label: __('Execution'), value: 'Execution' },
   { label: __('Completed'), value: 'Completed' },
   { label: __('Lost'), value: 'Lost' },
@@ -677,10 +679,12 @@ function typeClass(type) {
 
 function phaseClass(phase) {
   const map = {
-    Inquiry: 'bg-sky-50 text-sky-700',
+    Qualified: 'bg-sky-50 text-sky-700',
+    Budget: 'bg-teal-50 text-teal-700',
+    Richtpreis: 'bg-violet-50 text-violet-700',
     Offer: 'bg-amber-50 text-amber-700',
     Negotiation: 'bg-orange-50 text-orange-700',
-    Order: 'bg-green-50 text-green-700',
+    Won: 'bg-green-50 text-green-700',
     Execution: 'bg-lcs-primary/5 text-lcs-primary',
     Completed: 'bg-gray-50 text-gray-600',
     Lost: 'bg-red-50 text-red-700',
@@ -690,10 +694,12 @@ function phaseClass(phase) {
 
 function phaseDotClass(phase) {
   const map = {
-    Inquiry: 'bg-sky-500',
+    Qualified: 'bg-sky-500',
+    Budget: 'bg-teal-500',
+    Richtpreis: 'bg-violet-500',
     Offer: 'bg-amber-500',
     Negotiation: 'bg-orange-500',
-    Order: 'bg-green-500',
+    Won: 'bg-green-500',
     Execution: 'bg-lcs-primary',
     Completed: 'bg-gray-400',
     Lost: 'bg-red-500',

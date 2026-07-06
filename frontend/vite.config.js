@@ -29,19 +29,15 @@ export default defineConfig(async ({ mode }) => {
         },
         // Explizite Precache-Konfiguration — die Defaults verloren in
         // Kombination mit dem frappeui-Buildplugin das komplette Manifest
-        // (leeres self.__WB_MANIFEST -> createHandlerBoundToURL wirft,
-        // SW-Routing tot, offline nichts). Deterministisch:
-        workbox: {
-          // Der frappeui-Buildplugin verlegt das outDir nach
-          // ../crm/public/frontend — vite-plugin-pwa globt sonst im
-          // Default-dist und precached nur die selbst emittierte
-          // index.html (1 Eintrag statt ~120 -> offline tot).
+        // (leeres self.__WB_MANIFEST -> Precache leer, offline nichts).
+        // Der frappeui-Buildplugin verlegt das outDir nach
+        // ../crm/public/frontend — ohne explizites globDirectory globt
+        // vite-plugin-pwa im Default-dist (1 Eintrag statt ~140).
+        injectManifest: {
           globDirectory: '../crm/public/frontend',
           globPatterns: ['**/*.{js,css,html,ico,png,svg,webmanifest,woff2}'],
-          globIgnores: ['**/*.map', '**/apple-splash-*.jpg'],
-          navigateFallback: 'index.html',
-          navigateFallbackAllowlist: [new RegExp('^/crm')],
-          maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
+          globIgnores: ['**/*.map', '**/apple-splash-*.jpg', 'sw.js', 'sw.mjs', 'workbox-*.js'],
+          maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         },
         // LCS branding override of the upstream Frappe CRM manifest.
         // Unique `id` keeps an installed LCS instance separate from a

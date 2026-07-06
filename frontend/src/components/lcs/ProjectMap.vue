@@ -71,10 +71,12 @@ let map = null
 let markers = []
 
 const phaseColors = {
-  Inquiry: '#0ea5e9',
+  Qualified: '#0ea5e9',
+  Budget: '#14b8a6',
+  Richtpreis: '#8b5cf6',
   Offer: '#f59e0b',
   Negotiation: '#f97316',
-  Order: '#22c55e',
+  Won: '#22c55e',
   Execution: '#0B3A6F',
   Completed: '#6b7280',
   Lost: '#ef4444',

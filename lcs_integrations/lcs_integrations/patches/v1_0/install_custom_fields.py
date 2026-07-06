@@ -203,13 +203,25 @@ def execute() -> None:
     for field_list in CUSTOM_FIELDS.values():
         for field_def in field_list:
             field_def.setdefault("module", "LCS Integrations")
-    create_custom_fields(CUSTOM_FIELDS, update=True)
+
+    # Optional integrations: skip target doctypes whose app isn't
+    # installed on this bench (e.g. BSM Project without the bsm app) —
+    # a Custom Field row on a missing doctype fails link validation.
+    present = {
+        dt: fields
+        for dt, fields in CUSTOM_FIELDS.items()
+        if frappe.db.exists("DocType", dt)
+    }
+    skipped = set(CUSTOM_FIELDS) - set(present)
+    if skipped:
+        print(f"install_custom_fields: skipping absent doctypes {sorted(skipped)}")
+    create_custom_fields(present, update=True)
 
     # Heal pre-existing rows that were inserted with module=NULL by
     # earlier runs of this patch. Same set of fieldnames; we just stamp
     # the module on existing rows.
     healed = 0
-    for dt, fields in CUSTOM_FIELDS.items():
+    for dt, fields in present.items():
         for f in fields:
             row = frappe.db.get_value(
                 "Custom Field",

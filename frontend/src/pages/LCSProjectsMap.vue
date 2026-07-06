@@ -53,7 +53,7 @@
       <span class="font-medium">{{ __('Missing map coordinates:') }}</span>
       {{ unmappedCountries.join(', ') }}
       <span class="ml-1 text-amber-700">
-        ({{ __('add them in map_api.py') }})
+        ({{ __('add them in country_coords.py') }})
       </span>
     </div>
 
