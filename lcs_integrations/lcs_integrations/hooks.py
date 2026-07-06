@@ -109,3 +109,7 @@ website_route_rules: list[dict[str, str]] = []
 after_migrate = [
     "lcs_integrations.erpnext_sync.compat.remove_conflicting_property_setters",
 ]
+
+# Teams Outgoing Webhook: HMAC-signierte POSTs authentifizieren, bevor
+# Frappes validate_auth den 2-teiligen Authorization-Header ablehnt.
+auth_hooks = ["lcs_integrations.teams.quicknote_webhook.authenticate"]
