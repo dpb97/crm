@@ -103,3 +103,9 @@ override_whitelisted_methods: dict[str, str] = {}
 
 # Website routes — none for now.
 website_route_rules: list[dict[str, str]] = []
+
+# Fixtures fremder Apps (erpnext_enhancements) verbiegen Customer.customer_type
+# bei jedem migrate neu — der Guard raeumt das direkt danach wieder ab.
+after_migrate = [
+    "lcs_integrations.erpnext_sync.compat.remove_conflicting_property_setters",
+]
