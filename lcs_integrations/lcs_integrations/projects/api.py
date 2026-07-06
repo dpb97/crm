@@ -75,17 +75,16 @@ def get_project_map_data():
             "probability",
         ],
     )
-    # Enrich with country coordinates
+    # Enrich with country centroid coordinates (Frappe's Country DocType
+    # has no lat/long fields — resolved from a static table instead).
+    # Return ALL projects: the dashboard needs full totals, the map
+    # skips entries without coordinates itself.
+    from lcs_integrations.projects.country_coords import get_coords
+
     for p in projects:
-        if p.country:
-            coords = frappe.db.get_value(
-                "Country", p.country, ["latitude", "longitude"]
-            )
-            if coords:
-                p["latitude"], p["longitude"] = coords
-            else:
-                p["latitude"], p["longitude"] = None, None
-    return [p for p in projects if p.get("latitude")]
+        coords = get_coords(p.country)
+        p["latitude"], p["longitude"] = coords if coords else (None, None)
+    return projects
 
 
 @frappe.whitelist()

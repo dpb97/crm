@@ -108,9 +108,25 @@ function renderMarkers(L) {
   markers.forEach((m) => map.removeLayer(m))
   markers = []
 
+  // Coordinates are country centroids — spread markers sharing the exact
+  // same point in a small spiral so all of them stay visible/clickable
+  const coordSeen = {}
+
   props.projects.forEach((p) => {
     if (!p.latitude || !p.longitude) return
     const color = phaseColors[p.phase] || '#6b7280'
+
+    const coordKey = `${p.latitude},${p.longitude}`
+    const dupIndex = coordSeen[coordKey] || 0
+    coordSeen[coordKey] = dupIndex + 1
+    let lat = p.latitude
+    let lng = p.longitude
+    if (dupIndex > 0) {
+      const angle = dupIndex * 2.4 // golden-angle spiral
+      const radius = 0.25 * Math.sqrt(dupIndex)
+      lat += radius * Math.cos(angle)
+      lng += radius * Math.sin(angle)
+    }
 
     const icon = L.divIcon({
       className: 'lcs-map-marker',
@@ -118,7 +134,7 @@ function renderMarkers(L) {
       iconSize: [14, 14],
     })
 
-    const marker = L.marker([p.latitude, p.longitude], { icon })
+    const marker = L.marker([lat, lng], { icon })
 
     // H3: Feedback — rich popup with clear information hierarchy
     const valueStr = p.estimated_value

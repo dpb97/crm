@@ -108,14 +108,33 @@
             {{ __('cached') }}
           </span>
         </Tooltip>
-        <span v-if="!projectsLoading">
+        <span v-if="viewMode === 'list' && !projectsLoading">
           {{ projectList.length }} {{ __('of') }} {{ totalCount }} {{ __('Projects') }}
         </span>
+        <!-- View toggle: list | map | dashboard -->
+        <div class="flex items-center rounded-lg border bg-gray-50 p-0.5">
+          <Tooltip v-for="view in VIEW_MODES" :key="view.key" :text="view.label">
+            <button
+              class="flex items-center rounded-md px-2 py-1 transition"
+              :class="viewMode === view.key ? 'bg-white text-lcs-primary shadow-sm' : 'text-gray-400 hover:text-gray-600'"
+              :aria-pressed="viewMode === view.key"
+              @click="viewMode = view.key"
+            >
+              <FeatherIcon :name="view.icon" class="h-3.5 w-3.5" />
+            </button>
+          </Tooltip>
+        </div>
         <Tooltip :text="__('Refresh list (Ctrl+R)')">
-          <Button variant="ghost" icon="refresh-cw" @click="reloadProjects()" :class="{ 'animate-spin': projectsLoading }" />
+          <Button
+            variant="ghost"
+            icon="refresh-cw"
+            @click="viewMode === 'list' ? reloadProjects() : mapData.reload()"
+            :class="{ 'animate-spin': viewMode === 'list' ? projectsLoading : mapData.loading }"
+          />
         </Tooltip>
         <!-- Per-user column selection — persisted in LCS User Preferences -->
         <ColumnPicker
+          v-if="viewMode === 'list'"
           table-key="lcs_projects"
           :catalog="COLUMN_CATALOG"
           :defaults="DEFAULT_COLUMNS"
@@ -126,8 +145,17 @@
 
     <!-- Main content area -->
     <div class="flex-1 overflow-y-auto">
+      <!-- Map / Dashboard views (full portfolio, independent of list filters) -->
+      <div v-if="viewMode !== 'list'" class="p-5">
+        <div v-if="mapData.loading && !mapProjects.length" class="flex items-center justify-center py-16">
+          <div class="h-6 w-6 animate-spin rounded-full border-2 border-gray-200 border-t-lcs-primary" />
+        </div>
+        <ProjectMap v-else-if="viewMode === 'map'" :projects="mapProjects" />
+        <ProjectDashboard v-else :projects="mapProjects" :loading="mapData.loading" />
+      </div>
+
       <!-- H1: Visibility — Loading state with skeleton -->
-      <div v-if="projectsLoading && !projectList.length" class="p-5">
+      <div v-else-if="projectsLoading && !projectList.length" class="p-5">
         <div v-for="i in 6" :key="i" class="mb-3 flex animate-pulse items-center gap-4 rounded-lg border p-4">
           <div class="h-4 w-28 rounded bg-gray-200" />
           <div class="h-4 w-40 rounded bg-gray-200" />
@@ -395,6 +423,8 @@ import { useOfflineList } from '@/composables/useOfflineList'
 import { useUserPreferences } from '@/composables/useUserPreferences'
 import BacklogImportDialog from '@/components/lcs/BacklogImportDialog.vue'
 import ColumnPicker from '@/components/lcs/ColumnPicker.vue'
+import ProjectDashboard from '@/components/lcs/ProjectDashboard.vue'
+import ProjectMap from '@/components/lcs/ProjectMap.vue'
 import LayoutHeader from '@/components/LayoutHeader.vue'
 
 const session = sessionStore()
@@ -429,6 +459,27 @@ const creating = ref(false)
 const selectedIndex = ref(-1)
 const sortField = ref('modified')
 const sortDirection = ref('desc')
+
+// View mode: list | map | dashboard — persisted per browser
+const viewMode = useStorage('lcs-projects-view-mode', 'list')
+const VIEW_MODES = [
+  { key: 'list', icon: 'list', label: __('List') },
+  { key: 'map', icon: 'map', label: __('Map') },
+  { key: 'dashboard', icon: 'bar-chart-2', label: __('Dashboard') },
+]
+
+// Map/dashboard data: full portfolio with country centroid coordinates
+const mapData = createResource({
+  url: 'lcs_integrations.projects.api.get_project_map_data',
+})
+watch(
+  viewMode,
+  (mode) => {
+    if (mode !== 'list' && !mapData.data && !mapData.loading) mapData.fetch()
+  },
+  { immediate: true },
+)
+const mapProjects = computed(() => mapData.data || [])
 
 const newProject = reactive({
   project_name: '',
