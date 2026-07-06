@@ -25,13 +25,18 @@ def _domain(address: str) -> str | None:
     return address.rsplit("@", 1)[-1].lower().strip()
 
 
-def auto_link(doc: Any, method: str | None = None) -> None:
-    if doc.get("communication_medium") != "Email" or doc.reference_doctype:
-        return
-    domain = _domain(doc.sender or "")
+def match_reference_for_sender(sender: str | None) -> tuple[str, str] | None:
+    """Resolve a sender address to a linked CRM record via its mail domain.
+
+    Returns (reference_doctype, reference_name) when the domain belongs to a
+    Contact with a primary company e-mail that is linked to a CRM Deal —
+    otherwise None. Shared by the Communication after_insert hook (auto_link)
+    and by the Outlook delta sync as its import filter, so "known domain"
+    means the same thing everywhere.
+    """
+    domain = _domain(sender or "")
     if not domain or domain in _PERSONAL_DOMAINS:
-        return
-    # Find any Contact whose primary email shares this domain.
+        return None
     contact = frappe.db.sql(
         """
         SELECT parent FROM `tabContact Email`
@@ -42,13 +47,20 @@ def auto_link(doc: Any, method: str | None = None) -> None:
         as_dict=True,
     )
     if not contact:
-        return
-    contact_name = contact[0]["parent"]
+        return None
     link = frappe.db.get_value(
         "Dynamic Link",
-        {"parenttype": "Contact", "parent": contact_name, "link_doctype": ("in", ["CRM Deal", "Contact"])},
+        {"parenttype": "Contact", "parent": contact[0]["parent"],
+         "link_doctype": ("in", ["CRM Deal", "Contact"])},
         ("link_doctype", "link_name"),
     )
+    return link or None
+
+
+def auto_link(doc: Any, method: str | None = None) -> None:
+    if doc.get("communication_medium") != "Email" or doc.reference_doctype:
+        return
+    link = match_reference_for_sender(doc.sender)
     if link:
         doc.reference_doctype, doc.reference_name = link
         doc.save(ignore_permissions=True)

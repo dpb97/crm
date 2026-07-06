@@ -12,6 +12,8 @@ from typing import Any
 
 import frappe
 
+from lcs_integrations.email_domain_autolink.hooks import match_reference_for_sender
+
 from .graph_client import GraphClient, GraphClientError
 
 
@@ -40,7 +42,10 @@ def sync_one(binding_name: str) -> int:
 
     created = 0
     for message in page.get("value", []):
-        if _persist_message(binding.user, message):
+        if _persist_message(
+            binding.user, message,
+            only_known=bool(binding.get("import_only_known_domains")),
+        ):
             created += 1
 
     # Persist the new delta pointer so the next run is incremental.
@@ -52,12 +57,18 @@ def sync_one(binding_name: str) -> int:
     return created
 
 
-def _persist_message(user: str, message: dict[str, Any]) -> bool:
+def _persist_message(user: str, message: dict[str, Any], only_known: bool = True) -> bool:
     graph_id = message.get("id")
     if not graph_id:
         return False
     # Deduplicate by Graph message ID stored in `message_id`.
     if frappe.db.exists("Communication", {"message_id": graph_id}):
+        return False
+    sender = (message.get("from", {}).get("emailAddress", {}).get("address") or "").lower()
+    # Import filter: skip mail whose sender domain is not linked to any CRM
+    # contact/deal — keeps private and unrelated mail out of the CRM entirely
+    # (same matching rule the auto-link hook applies after insert).
+    if only_known and not match_reference_for_sender(sender):
         return False
     comm = frappe.get_doc({
         "doctype": "Communication",
