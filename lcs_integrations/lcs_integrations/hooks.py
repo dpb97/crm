@@ -39,6 +39,8 @@ permission_query_conditions = {
     # W-02: follow-ups (lcs_kind='Follow-up') visible only to owner +
     # owner's sales manager. Regular ToDos untouched.
     "ToDo": "lcs_integrations.followups.service.todo_query_conditions",
+    # Contacts stay private to their creator until released.
+    "Contact": "lcs_integrations.visibility.contact_visibility.get_permission_query_conditions",
 }
 
 has_permission = {

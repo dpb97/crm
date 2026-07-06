@@ -59,6 +59,26 @@ const routes = [
     props: true,
   },
   {
+    path: '/erp-projects',
+    name: 'LCS ERP Projects',
+    component: () => import('@/pages/LCSErpProjects.vue'),
+  },
+  {
+    path: '/network',
+    name: 'LCS Network',
+    component: () => import('@/pages/LCSNetwork.vue'),
+  },
+  {
+    path: '/market-assignment',
+    name: 'LCS Market Assignment',
+    component: () => import('@/pages/LCSMarketAssignment.vue'),
+  },
+  {
+    path: '/sales-meeting',
+    name: 'LCS Sales Meeting',
+    component: () => import('@/pages/LCSSalesMeeting.vue'),
+  },
+  {
     path: '/forecasting',
     name: 'LCS Forecasting',
     component: () => import('@/pages/LCSForecasting.vue'),

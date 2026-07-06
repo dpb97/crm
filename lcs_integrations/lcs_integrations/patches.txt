@@ -14,9 +14,18 @@ lcs_integrations.patches.migrate_lead_score_to_crm_lead
 lcs_integrations.patches.install_outlook_teams_fields
 lcs_integrations.patches.install_followup_fields
 lcs_integrations.patches.install_domain_binding_fields
+lcs_integrations.patches.install_contact_release_fields
 
 [post_model_sync]
 # Needs the LCS Segment / LCS Sales Territory DocTypes synced first.
 lcs_integrations.patches.seed_market_split
+# Resolves sales-manager codes (JFA/PKO/CLU/DRO) to User accounts on territories.
+lcs_integrations.patches.map_sales_manager_users
 # Touches LCS Project rows after the new phase options exist.
 lcs_integrations.patches.migrate_project_phase
+# Adds the 'Important' star flag to CRM Lead / CRM Deal.
+lcs_integrations.patches.install_important_flag
+# Adds 'Expected Start Date' to CRM Lead / CRM Deal.
+lcs_integrations.patches.install_estimated_start_date
+# Adds 'Previous Companies' to Contact (network graph / career history).
+lcs_integrations.patches.install_previous_companies
