@@ -73,6 +73,7 @@ import DashboardSettings from '@/components/Settings/DashboardSettings.vue'
 import EmailTemplatePage from '@/components/Settings/EmailTemplate/EmailTemplatePage.vue'
 import TelephonyPage from '@/components/Settings/Telephony/TelephonyPage.vue'
 import EmailConfig from '@/components/Settings/EmailConfig.vue'
+import OutlookGraphSettings from '@/components/lcs/OutlookGraphSettings.vue'
 import SidebarLink from '@/components/SidebarLink.vue'
 import { usersStore } from '@/stores/users'
 import {
@@ -175,6 +176,12 @@ const tabs = computed(() => {
           label: __('Accounts'),
           icon: Email2Icon,
           component: markRaw(EmailConfig),
+          condition: () => isManager(),
+        },
+        {
+          label: __('Outlook (Graph)'),
+          icon: Email2Icon,
+          component: markRaw(OutlookGraphSettings),
           condition: () => isManager(),
         },
         {

@@ -405,3 +405,108 @@ def create_project_from_deal(deal_name):
     project.insert(ignore_permissions=True)
     frappe.db.commit()
     return project.name
+
+
+@frappe.whitelist()
+def get_project_primary_contact(project):
+    """Primary contact of a project (perm-safe: reads the child table via
+    get_all so Sales Users don't hit 'LCS Project Contact' permission errors)."""
+    rows = frappe.get_all(
+        "LCS Project Contact",
+        filters={"parent": project, "parenttype": "LCS Project"},
+        fields=["contact", "is_primary"],
+        order_by="is_primary desc, idx asc",
+        limit=1,
+    )
+    if not rows:
+        return None
+    return frappe.db.get_value(
+        "Contact", rows[0].contact, ["full_name", "email_id", "mobile_no"], as_dict=True
+    )
+
+
+@frappe.whitelist()
+def get_contact_projects(contact):
+    """LCS Projects this contact is linked to (via the project contacts table)."""
+    cf = next(
+        (f.fieldname for f in frappe.get_meta("LCS Project Contact").fields
+         if f.fieldtype == "Link" and f.options == "Contact"),
+        "contact",
+    )
+    parents = frappe.get_all("LCS Project Contact", filters={cf: contact}, pluck="parent")
+    if not parents:
+        return []
+    return frappe.get_all(
+        "LCS Project",
+        filters={"name": ["in", list(set(parents))]},
+        fields=["name", "project_name", "project_number", "phase", "status", "country", "estimated_value"],
+        order_by="modified desc",
+    )
+
+
+@frappe.whitelist()
+def get_my_project_feed(limit=12):
+    """Dashboard top feed: recent mails + notes across the current user's
+    LCS Projects, plus the user's notifications."""
+    user = frappe.session.user
+    limit = int(limit or 12)
+
+    # "My projects" — salesperson, sales manager, or owner.
+    mine = set()
+    for field in ("salesperson", "sales_manager", "owner"):
+        mine.update(frappe.get_all("LCS Project", filters={field: user}, pluck="name"))
+    project_names = list(mine)
+
+    activity = []
+    if project_names:
+        # docname -> speaking project name, so the feed shows "Bridge Erection
+        # Crane" instead of "LCS-PROJ-2026-0033".
+        labels = {
+            n: (frappe.db.get_value("LCS Project", n, "project_name") or n)
+            for n in project_names
+        }
+        for c in frappe.get_all(
+            "Communication",
+            filters={
+                "reference_doctype": "LCS Project",
+                "reference_name": ["in", project_names],
+                "communication_type": "Communication",
+            },
+            fields=["name", "subject", "sender", "recipients", "content",
+                    "sent_or_received", "communication_medium", "reference_name", "creation"],
+            order_by="creation desc",
+            limit=limit,
+        ):
+            activity.append({
+                "kind": "mail",
+                "name": c.name,
+                "title": c.subject or _("(no subject)"),
+                "meta": c.sender,
+                "recipients": c.recipients,
+                "content": c.content,
+                "medium": c.communication_medium,
+                "direction": c.sent_or_received,
+                "project": c.reference_name,
+                "project_label": labels.get(c.reference_name, c.reference_name),
+                "time": str(c.creation),
+            })
+        # Notes are intentionally excluded from the dashboard feed — mails only.
+        activity.sort(key=lambda x: x["time"], reverse=True)
+        activity = activity[:limit]
+
+    notifications = frappe.get_all(
+        "Notification Log",
+        filters={"for_user": user},
+        fields=["subject", "type", "document_type", "document_name", "read", "creation"],
+        order_by="creation desc",
+        limit=10,
+    )
+    for note in notifications:
+        note["subject"] = frappe.utils.strip_html(note.get("subject") or "")[:160]
+        note["creation"] = str(note["creation"])
+
+    return {
+        "activity": activity,
+        "notifications": notifications,
+        "project_count": len(project_names),
+    }

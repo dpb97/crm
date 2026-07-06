@@ -41,6 +41,11 @@
       </template>
     </LayoutHeader>
 
+    <!-- LCS: newest mails/activity from my projects + notifications -->
+    <div class="px-5 pt-4">
+      <MyProjectFeed />
+    </div>
+
     <div class="p-5 pb-2 flex items-center gap-4">
       <Dropdown
         v-if="!showDatePicker"
@@ -142,6 +147,7 @@ import DashboardGrid from '@/components/Dashboard/DashboardGrid.vue'
 import UserAvatar from '@/components/UserAvatar.vue'
 import ViewBreadcrumbs from '@/components/ViewBreadcrumbs.vue'
 import LayoutHeader from '@/components/LayoutHeader.vue'
+import MyProjectFeed from '@/components/lcs/MyProjectFeed.vue'
 import Link from '@/components/Controls/Link.vue'
 import { usersStore } from '@/stores/users'
 import { copy } from '@/utils'

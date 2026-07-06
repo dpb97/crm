@@ -225,8 +225,9 @@
             v-for="(p, index) in projectList"
             :key="p.name"
             class="group cursor-pointer border-b transition-colors hover:bg-gray-50"
-            :class="{ 'bg-blue-50/50': selectedIndex === index }"
-            @click="navigateToProject(p)"
+            :class="{ 'bg-blue-50/50': selectedIndex === index || selectedProject?.name === p.name }"
+            @click="selectProject(p)"
+            @dblclick="navigateToProject(p)"
             @keydown.enter="navigateToProject(p)"
             tabindex="0"
             :aria-label="`${p.project_name} — ${p.phase}`"
@@ -299,6 +300,20 @@
         </tbody>
       </table>
     </div>
+  </div>
+
+  <!-- Inspector — right sidebar showing details of the selected project -->
+  <div
+    v-if="selectedProject"
+    class="fixed right-0 top-0 z-40 flex h-screen w-[22rem] flex-col border-l bg-white shadow-2xl"
+  >
+    <div class="flex items-center justify-between border-b px-3 py-2">
+      <span class="text-xs font-semibold uppercase tracking-wide text-gray-500">{{ __('Inspector') }}</span>
+      <button class="text-gray-400 hover:text-gray-700" @click="selectedProject = null">
+        <FeatherIcon name="x" class="h-4 w-4" />
+      </button>
+    </div>
+    <ProjectInspector :project="selectedProject" class="flex-1 overflow-hidden" @open="navigateToProject" />
   </div>
 
   <!-- Admin-only: import existing BSM construction sites -->
@@ -423,6 +438,7 @@ import { useOfflineList } from '@/composables/useOfflineList'
 import { useUserPreferences } from '@/composables/useUserPreferences'
 import BacklogImportDialog from '@/components/lcs/BacklogImportDialog.vue'
 import ColumnPicker from '@/components/lcs/ColumnPicker.vue'
+import ProjectInspector from '@/components/lcs/ProjectInspector.vue'
 import ProjectDashboard from '@/components/lcs/ProjectDashboard.vue'
 import ProjectMap from '@/components/lcs/ProjectMap.vue'
 import LayoutHeader from '@/components/LayoutHeader.vue'
@@ -457,6 +473,11 @@ const onlyMine = useStorage('lcs-projects-only-mine', false)
 const showNewDialog = ref(false)
 const creating = ref(false)
 const selectedIndex = ref(-1)
+// Inspector selection: single click selects, double click opens
+const selectedProject = ref(null)
+function selectProject(p) {
+  selectedProject.value = p
+}
 const sortField = ref('modified')
 const sortDirection = ref('desc')
 
@@ -589,7 +610,7 @@ const {
     'name', 'project_name', 'project_number', 'project_type',
     'country', 'phase', 'status', 'salesperson', 'organization',
     'probability', 'estimated_value', 'notes', 'modified',
-    'expected_close_date',
+    'expected_close_date', 'is_important',
   ],
   filters: activeFilters,
   orderBy: orderBy,

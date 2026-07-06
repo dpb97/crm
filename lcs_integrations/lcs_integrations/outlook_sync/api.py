@@ -137,3 +137,44 @@ def trigger_resync(binding: str | None = None) -> dict[str, Any]:
     delta_service.sync_all_bindings()
     calendar_sync.sync_all_calendars()
     return {"binding": None, "ran": "all"}
+
+
+@frappe.whitelist()
+def test_connection(mailbox: str | None = None) -> dict[str, Any]:
+    """Verify the Microsoft Graph connection from the settings UI.
+
+    Checks the Entra env vars are present, acquires an app-only token, and
+    (optionally) probes a mailbox's inbox. Read-only; returns a clear
+    ok/error so the connection can be validated before enabling the sync.
+    """
+    import os
+
+    frappe.only_for(["System Manager", "Sales Manager"])
+
+    required = ("ENTRA_TENANT_ID", "ENTRA_CLIENT_ID", "ENTRA_CLIENT_SECRET")
+    missing = [k for k in required if not os.environ.get(k)]
+    if missing:
+        return {"ok": False, "error": f"Missing environment variables: {', '.join(missing)}"}
+
+    from .graph_client import GraphClient, GraphClientError
+
+    client = GraphClient()
+    try:
+        client._bearer()  # raises GraphClientError if credentials/consent are wrong
+    except GraphClientError as exc:
+        client.close()
+        return {"ok": False, "error": f"Token acquisition failed: {exc}"}
+
+    result: dict[str, Any] = {"ok": True, "token": "acquired"}
+    probe = (mailbox or "").strip()
+    if probe:
+        try:
+            client.messages_delta(probe)
+            result["mailbox"] = f"{probe}: reachable"
+        except GraphClientError as exc:
+            result["mailbox"] = f"{probe}: {exc}"
+            result["mailbox_ok"] = False
+        else:
+            result["mailbox_ok"] = True
+    client.close()
+    return result

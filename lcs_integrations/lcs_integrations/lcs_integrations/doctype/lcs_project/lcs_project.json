@@ -19,6 +19,7 @@
   "sales_manager",
   "phase",
   "status",
+  "is_important",
   "section_customer_contacts",
   "organization",
   "industry",
@@ -145,6 +146,13 @@
    "in_standard_filter": 1,
    "label": "Status",
    "options": "Open\nActive\nOn Hold\nCompleted\nCancelled"
+  },
+  {
+   "fieldname": "is_important",
+   "fieldtype": "Check",
+   "label": "Important",
+   "default": "0",
+   "in_list_view": 1
   },
   {
    "fieldname": "section_customer_contacts",
