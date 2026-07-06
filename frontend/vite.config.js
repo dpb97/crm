@@ -13,11 +13,13 @@ export default defineConfig(async ({ mode }) => {
       vueJsx(),
       VitePWA({
         registerType: 'autoUpdate',
+        injectRegister: false,
         devOptions: {
           enabled: true,
         },
         manifest: {
           display: 'standalone',
+          scope: '/crm',
           name: 'Frappe CRM',
           short_name: 'Frappe CRM',
           start_url: '/crm',

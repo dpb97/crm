@@ -75,3 +75,24 @@ if (import.meta.env.DEV) {
 if (import.meta.env.DEV) {
   window.$dialog = createDialog
 }
+
+// PWA service worker — register with a /crm navigation scope so offline
+// deep links (e.g. /crm/contacts/view/list) are served from cache. The
+// broader scope needs  on the sw.js response
+// (set by nginx in production). Where that header is absent (dev/werkzeug),
+// the broad scope is rejected and we fall back to the default path scope,
+// so asset caching still works — only cold offline deep-nav degrades.
+if (!import.meta.env.DEV && "serviceWorker" in navigator) {
+  window.addEventListener("load", async () => {
+    const url = "/assets/crm/frontend/sw.js"
+    try {
+      await navigator.serviceWorker.register(url, { scope: "/crm" })
+    } catch (e) {
+      try {
+        await navigator.serviceWorker.register(url)
+      } catch (_) {
+        /* SW unavailable — app still works online */
+      }
+    }
+  })
+}
