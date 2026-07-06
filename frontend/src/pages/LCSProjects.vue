@@ -114,6 +114,13 @@
         <Tooltip :text="__('Refresh list (Ctrl+R)')">
           <Button variant="ghost" icon="refresh-cw" @click="reloadProjects()" :class="{ 'animate-spin': projectsLoading }" />
         </Tooltip>
+        <!-- Per-user column selection — persisted in LCS User Preferences -->
+        <ColumnPicker
+          table-key="lcs_projects"
+          :catalog="COLUMN_CATALOG"
+          :defaults="DEFAULT_COLUMNS"
+          v-model="selectedColumns"
+        />
       </div>
     </div>
 
@@ -168,45 +175,20 @@
         <thead class="sticky top-0 z-10 bg-gray-50">
           <tr class="border-b text-left text-xs font-medium uppercase tracking-wide text-gray-500">
             <th
-              class="px-5 py-3 cursor-pointer select-none transition hover:bg-gray-100 hover:text-gray-900"
-              @click="toggleSort('project_number')"
-              :title="__('Click to sort by project number')"
-              :aria-sort="sortField === 'project_number' ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'"
+              v-for="col in visibleColumns"
+              :key="col.key"
+              class="px-4 py-3 select-none"
+              :class="[
+                col.align === 'right' ? 'text-right' : '',
+                col.sortable ? 'cursor-pointer transition hover:bg-gray-100 hover:text-gray-900' : '',
+                col.key === 'project_number' ? 'px-5' : '',
+              ]"
+              :title="col.sortable ? __('Click to sort') : undefined"
+              :aria-sort="col.sortable && sortField === col.key ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'"
+              @click="col.sortable && toggleSort(col.key)"
             >
-              {{ __('Project #') }}
-              <SortIcon :active="sortField === 'project_number'" :direction="sortDirection" />
-            </th>
-            <th
-              class="px-4 py-3 cursor-pointer select-none transition hover:bg-gray-100 hover:text-gray-900"
-              @click="toggleSort('project_name')"
-              :title="__('Click to sort by name')"
-              :aria-sort="sortField === 'project_name' ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'"
-            >
-              {{ __('Name') }}
-              <SortIcon :active="sortField === 'project_name'" :direction="sortDirection" />
-            </th>
-            <th class="px-4 py-3">{{ __('Type') }}</th>
-            <th class="px-4 py-3">{{ __('Country') }}</th>
-            <th class="px-4 py-3">{{ __('Phase') }}</th>
-            <th class="px-4 py-3">{{ __('Status') }}</th>
-            <th class="px-4 py-3">{{ __('Salesperson') }}</th>
-            <th
-              class="px-4 py-3 text-right cursor-pointer select-none transition hover:bg-gray-100 hover:text-gray-900"
-              @click="toggleSort('probability')"
-              :title="__('Click to sort by probability')"
-              :aria-sort="sortField === 'probability' ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'"
-            >
-              {{ __('Prob.') }}
-              <SortIcon :active="sortField === 'probability'" :direction="sortDirection" />
-            </th>
-            <th
-              class="px-4 py-3 text-right cursor-pointer select-none transition hover:bg-gray-100 hover:text-gray-900"
-              @click="toggleSort('estimated_value')"
-              :title="__('Click to sort by value')"
-              :aria-sort="sortField === 'estimated_value' ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'"
-            >
-              {{ __('Value') }}
-              <SortIcon :active="sortField === 'estimated_value'" :direction="sortDirection" />
+              {{ col.label }}
+              <SortIcon v-if="col.sortable" :active="sortField === col.key" :direction="sortDirection" />
             </th>
           </tr>
         </thead>
@@ -221,61 +203,70 @@
             tabindex="0"
             :aria-label="`${p.project_name} — ${p.phase}`"
           >
-            <td class="px-5 py-3.5 font-mono text-xs text-gray-500">{{ p.project_number }}</td>
-            <td class="px-4 py-3.5">
-              <div class="flex items-center gap-2">
-                <span class="font-medium text-gray-900 group-hover:text-lcs-primary">{{ p.project_name }}</span>
-                <!-- Notes indicator — visible sign that project has notes -->
-                <Tooltip v-if="p.notes" :text="notesPreview(p.notes)">
-                  <span class="flex items-center rounded-full bg-amber-100 px-1 py-0.5 text-amber-700" @click.stop>
-                    <FeatherIcon name="edit-3" class="h-2.5 w-2.5" />
+            <template v-for="col in visibleColumns" :key="col.key">
+              <!-- Bespoke cells keep their original renderers -->
+              <td v-if="col.key === 'project_number'" class="px-5 py-3.5 font-mono text-xs text-gray-500">{{ p.project_number }}</td>
+
+              <td v-else-if="col.key === 'project_name'" class="px-4 py-3.5">
+                <div class="flex items-center gap-2">
+                  <span class="font-medium text-gray-900 group-hover:text-lcs-primary">{{ p.project_name }}</span>
+                  <Tooltip v-if="p.notes" :text="notesPreview(p.notes)">
+                    <span class="flex items-center rounded-full bg-amber-100 px-1 py-0.5 text-amber-700" @click.stop>
+                      <FeatherIcon name="edit-3" class="h-2.5 w-2.5" />
+                    </span>
+                  </Tooltip>
+                </div>
+                <div v-if="p.organization && !selectedColumns.includes('organization')" class="mt-0.5 text-xs text-gray-400">{{ p.organization }}</div>
+              </td>
+
+              <td v-else-if="col.key === 'project_type'" class="px-4 py-3.5">
+                <Tooltip :text="typeFullName(p.project_type)">
+                  <span
+                    :class="typeClass(p.project_type)"
+                    class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold"
+                  >
+                    {{ p.project_type }}
                   </span>
                 </Tooltip>
-              </div>
-              <div v-if="p.organization" class="mt-0.5 text-xs text-gray-400">{{ p.organization }}</div>
-            </td>
-            <td class="px-4 py-3.5">
-              <!-- H6: Recognition — type badge with tooltip showing full name -->
-              <Tooltip :text="typeFullName(p.project_type)">
+              </td>
+
+              <td v-else-if="col.key === 'phase'" class="px-4 py-3.5">
                 <span
-                  :class="typeClass(p.project_type)"
-                  class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold"
+                  :class="phaseClass(p.phase)"
+                  class="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold"
                 >
-                  {{ p.project_type }}
+                  <span class="h-1.5 w-1.5 rounded-full" :class="phaseDotClass(p.phase)" />
+                  {{ __(p.phase) }}
                 </span>
-              </Tooltip>
-            </td>
-            <td class="px-4 py-3.5 text-gray-600">{{ p.country || '—' }}</td>
-            <td class="px-4 py-3.5">
-              <span
-                :class="phaseClass(p.phase)"
-                class="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold"
-              >
-                <span class="h-1.5 w-1.5 rounded-full" :class="phaseDotClass(p.phase)" />
-                {{ __(p.phase) }}
-              </span>
-            </td>
-            <td class="px-4 py-3.5">
-              <span
-                :class="statusClass(p.status)"
-                class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium"
-              >
-                <span class="h-1.5 w-1.5 rounded-full" :class="statusDotClass(p.status)" />
-                {{ __(p.status || 'Open') }}
-              </span>
-            </td>
-            <td class="px-4 py-3.5 text-gray-600">{{ p.salesperson || '—' }}</td>
-            <td class="px-4 py-3.5 text-right">
-              <!-- H1: Visibility — color-coded probability -->
-              <span v-if="p.probability" :class="probabilityClass(p.probability)" class="text-sm font-medium tabular-nums">
-                {{ Math.round(p.probability) }}%
-              </span>
-              <span v-else class="text-gray-300">—</span>
-            </td>
-            <td class="px-4 py-3.5 text-right font-medium tabular-nums text-gray-900">
-              <span v-if="p.estimated_value">{{ formatCurrency(p.estimated_value) }}</span>
-              <span v-else class="text-gray-300">—</span>
-            </td>
+              </td>
+
+              <td v-else-if="col.key === 'status'" class="px-4 py-3.5">
+                <span
+                  :class="statusClass(p.status)"
+                  class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium"
+                >
+                  <span class="h-1.5 w-1.5 rounded-full" :class="statusDotClass(p.status)" />
+                  {{ __(p.status || 'Open') }}
+                </span>
+              </td>
+
+              <td v-else-if="col.key === 'probability'" class="px-4 py-3.5 text-right">
+                <span v-if="p.probability" :class="probabilityClass(p.probability)" class="text-sm font-medium tabular-nums">
+                  {{ Math.round(p.probability) }}%
+                </span>
+                <span v-else class="text-gray-300">—</span>
+              </td>
+
+              <td v-else-if="col.key === 'estimated_value'" class="px-4 py-3.5 text-right font-medium tabular-nums text-gray-900">
+                <span v-if="p.estimated_value">{{ formatCurrency(p.estimated_value) }}</span>
+                <span v-else class="text-gray-300">—</span>
+              </td>
+
+              <!-- Generic cell: dates formatted, everything else as text -->
+              <td v-else class="px-4 py-3.5 text-gray-600" :class="col.align === 'right' ? 'text-right' : ''">
+                {{ col.date ? formatDateCell(p[col.key]) : (p[col.key] || '—') }}
+              </td>
+            </template>
           </tr>
         </tbody>
       </table>
@@ -403,6 +394,7 @@ import { sessionStore } from '@/stores/session'
 import { useOfflineList } from '@/composables/useOfflineList'
 import { useUserPreferences } from '@/composables/useUserPreferences'
 import BacklogImportDialog from '@/components/lcs/BacklogImportDialog.vue'
+import ColumnPicker from '@/components/lcs/ColumnPicker.vue'
 import LayoutHeader from '@/components/LayoutHeader.vue'
 
 const session = sessionStore()
@@ -487,6 +479,50 @@ const activeFilters = computed(() => {
 
 const orderBy = computed(() => `${sortField.value} ${sortDirection.value}`)
 
+// ---- Per-user configurable columns ---------------------------------
+// Catalog = every field the list API provides. Cells with bespoke
+// renderers keep them (v-if by key in the template); anything else
+// falls back to the generic text/date cell.
+const COLUMN_CATALOG = [
+  { key: 'project_number', label: __('Project #'), sortable: true },
+  { key: 'project_name', label: __('Name'), sortable: true },
+  { key: 'project_type', label: __('Type') },
+  { key: 'country', label: __('Country') },
+  { key: 'phase', label: __('Phase') },
+  { key: 'status', label: __('Status') },
+  { key: 'salesperson', label: __('Salesperson') },
+  { key: 'organization', label: __('Organization') },
+  { key: 'expected_close_date', label: __('Expected Close'), date: true },
+  { key: 'modified', label: __('Last Modified'), date: true },
+  { key: 'probability', label: __('Prob.'), sortable: true, align: 'right' },
+  { key: 'estimated_value', label: __('Value'), sortable: true, align: 'right' },
+]
+const DEFAULT_COLUMNS = [
+  'project_number', 'project_name', 'project_type', 'country',
+  'phase', 'status', 'salesperson', 'probability', 'estimated_value',
+]
+const selectedColumns = ref([...DEFAULT_COLUMNS])
+// Hydrate from the user's saved preference once prefs are loaded
+watch(
+  () => userPrefs.state.prefs.list_columns,
+  () => {
+    const saved = userPrefs.getListColumns('lcs_projects')
+    if (saved && saved.length) {
+      const valid = COLUMN_CATALOG.map((c) => c.key)
+      selectedColumns.value = saved.filter((k) => valid.includes(k))
+    }
+  },
+  { immediate: true },
+)
+const visibleColumns = computed(() =>
+  COLUMN_CATALOG.filter((c) => selectedColumns.value.includes(c.key)),
+)
+function formatDateCell(v) {
+  if (!v) return ''
+  const d = new Date(v)
+  return isNaN(d) ? String(v) : d.toLocaleDateString('de-DE')
+}
+
 const {
   data: projectsData,
   loading: projectsLoading,
@@ -500,6 +536,7 @@ const {
     'name', 'project_name', 'project_number', 'project_type',
     'country', 'phase', 'status', 'salesperson', 'organization',
     'probability', 'estimated_value', 'notes', 'modified',
+    'expected_close_date',
   ],
   filters: activeFilters,
   orderBy: orderBy,

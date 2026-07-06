@@ -249,6 +249,7 @@ def save_user_preferences(preferences: dict) -> dict:
 def _default_prefs() -> dict:
     """Safe defaults for a user who hasn't set any preferences yet."""
     return {
+        "list_columns": "{}",
         "show_forecasting": 1,
         "show_integration_panel": 1,
         "show_team_section": 1,

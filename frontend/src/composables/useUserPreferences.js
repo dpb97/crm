@@ -58,6 +58,29 @@ export function useUserPreferences() {
   return {
     state: readonly(state),
     reload: () => load(true),
+    /** Per-user column selection for LCS list pages (see ColumnPicker). */
+    getListColumns(tableKey) {
+      try {
+        const all = JSON.parse(state.prefs.list_columns || '{}')
+        return Array.isArray(all[tableKey]) ? all[tableKey] : null
+      } catch (e) {
+        return null
+      }
+    },
+    async saveListColumns(tableKey, columns) {
+      let all = {}
+      try {
+        all = JSON.parse(state.prefs.list_columns || '{}')
+      } catch (e) {
+        all = {}
+      }
+      all[tableKey] = columns
+      const serialized = JSON.stringify(all)
+      state.prefs.list_columns = serialized
+      await call('lcs_integrations.visibility.service.save_user_preferences', {
+        preferences: { list_columns: serialized },
+      })
+    },
     /** Combined "should-show" helper: true unless admin profile blocks it. */
     canShow(key) {
       const hideKey = {
