@@ -25,6 +25,7 @@ import { sessionStore } from '@/stores/session'
 import { FrappeUIProvider, setConfig, useTheme } from 'frappe-ui'
 import { computed, defineAsyncComponent, provide, onMounted, onUnmounted, ref } from 'vue'
 import { startSyncEngine } from '@/utils/syncEngine'
+import { startOfflinePrefetch } from '@/utils/offlinePrefetch'
 import { useUserPreferences } from '@/composables/useUserPreferences'
 
 // Global preferences dialog — opened via window event dispatched from
@@ -69,6 +70,7 @@ setConfig('translatedMessages', window.translated_messages || {})
 // Start the offline sync engine — replays queued mutations when online
 onMounted(() => {
   startSyncEngine()
+  startOfflinePrefetch()
   window.addEventListener('lcs-open-preferences', openPrefs)
 })
 onUnmounted(() => window.removeEventListener('lcs-open-preferences', openPrefs))
