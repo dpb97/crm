@@ -51,6 +51,9 @@
   <!-- Main content -->
   <div v-else class="flex h-full flex-col overflow-hidden">
 
+    <!-- Unified funnel flow — at the very top, above the title -->
+    <FunnelFlowBar v-if="doc.name" entity="project" :status="doc.phase" :clickable="true" @change="initiatePhaseChange" />
+
     <!-- 🎯 STATUS HERO BAR — H1: Visibility (status always visible at top) -->
     <div class="border-b bg-gradient-to-r from-white via-white to-gray-50 px-5 py-4">
       <div class="flex flex-wrap items-center gap-6">
@@ -694,6 +697,7 @@ import {
   toast, usePageMeta,
 } from 'frappe-ui'
 import LayoutHeader from '@/components/LayoutHeader.vue'
+import FunnelFlowBar from '@/components/lcs/FunnelFlowBar.vue'
 import Resizer from '@/components/Resizer.vue'
 import SyncStatusBadge from '@/components/lcs/SyncStatusBadge.vue'
 import ErpNextDeepLink from '@/components/lcs/ErpNextDeepLink.vue'
