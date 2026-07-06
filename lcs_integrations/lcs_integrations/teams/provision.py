@@ -150,28 +150,43 @@ def provision_project_team(project_name):
         )
         frappe.throw(_("Team created but ID could not be determined. Check logs."))
 
-    # Step 2: Create channels
+    # Step 2: Create channels — capture the ID of the configured notifications channel
+    settings = frappe.get_cached_doc("LCS Outlook Sync Settings")
+    notif_channel_name = (settings.notifications_channel_name or "01-Sales").strip()
+    notif_channel_id: str | None = None
+
     for channel in PROJECT_CHANNELS:
         ch_payload = {
             "displayName": channel["name"],
             "description": channel["description"],
         }
-        requests.post(
+        ch_resp = requests.post(
             f"{base_url}/teams/{team_id}/channels",
             json=ch_payload,
             headers=headers,
         )
+        if ch_resp.status_code in (201, 200) and channel["name"] == notif_channel_name:
+            try:
+                notif_channel_id = ch_resp.json().get("id")
+            except ValueError:
+                notif_channel_id = None
 
-    # Step 3: Update project with links
+    # Step 3: Update project with links + Graph IDs (needed for notifications)
     team_link = f"https://teams.microsoft.com/l/team/{team_id}"
     frappe.db.set_value(
         "LCS Project",
         project_name,
         {
             "team_link": team_link,
+            "teams_team_id": team_id,
+            "teams_notifications_channel_id": notif_channel_id,
             "sharepoint_link": f"https://lcscablecranes.sharepoint.com/sites/{project.project_number}",
         },
     )
     frappe.db.commit()
 
-    return {"team_id": team_id, "team_link": team_link}
+    return {
+        "team_id": team_id,
+        "team_link": team_link,
+        "notifications_channel_id": notif_channel_id,
+    }

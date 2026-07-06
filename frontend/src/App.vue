@@ -11,6 +11,7 @@
       @saved="onPrefsSaved"
     />
     <Dialogs />
+    <DoctypeModals />
     <EventNotificationPopup />
   </FrappeUIProvider>
 </template>
@@ -20,6 +21,7 @@ import NotPermitted from '@/pages/NotPermitted.vue'
 import EventNotificationPopup from '@/components/EventNotificationPopup.vue'
 import OfflineIndicator from '@/components/lcs/OfflineIndicator.vue'
 import DisplayPreferencesDialog from '@/components/lcs/DisplayPreferencesDialog.vue'
+import DoctypeModals from '@/components/Modals/DoctypeModals.vue'
 import { Dialogs } from '@/utils/dialogs'
 import { sessionStore } from '@/stores/session'
 import { FrappeUIProvider, setConfig, useTheme } from 'frappe-ui'

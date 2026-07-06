@@ -1,0 +1,114 @@
+{
+    "actions": [],
+    "creation": "2026-05-04 00:00:00",
+    "doctype": "DocType",
+    "engine": "InnoDB",
+    "issingle": 1,
+    "field_order": [
+        "section_provider",
+        "enabled",
+        "provider",
+        "column_break_provider",
+        "phone_number_id",
+        "business_account_id",
+        "section_credentials",
+        "access_token",
+        "webhook_verify_token",
+        "section_inbound",
+        "auto_link_to_contact",
+        "default_lead_source"
+    ],
+    "fields": [
+        {
+            "fieldname": "section_provider",
+            "fieldtype": "Section Break",
+            "label": "Provider"
+        },
+        {
+            "default": "0",
+            "fieldname": "enabled",
+            "fieldtype": "Check",
+            "label": "Enabled"
+        },
+        {
+            "default": "Meta Cloud API",
+            "description": "Currently only Meta Cloud API is implemented.",
+            "fieldname": "provider",
+            "fieldtype": "Select",
+            "label": "Provider",
+            "options": "Meta Cloud API\n360dialog\nTwilio"
+        },
+        {
+            "fieldname": "column_break_provider",
+            "fieldtype": "Column Break"
+        },
+        {
+            "description": "WhatsApp Phone Number ID (Meta Business → WABA → Phone numbers)",
+            "fieldname": "phone_number_id",
+            "fieldtype": "Data",
+            "label": "Phone Number ID"
+        },
+        {
+            "fieldname": "business_account_id",
+            "fieldtype": "Data",
+            "label": "WhatsApp Business Account ID"
+        },
+        {
+            "fieldname": "section_credentials",
+            "fieldtype": "Section Break",
+            "label": "Credentials"
+        },
+        {
+            "description": "Permanent system-user access token (long-lived)",
+            "fieldname": "access_token",
+            "fieldtype": "Password",
+            "label": "Access Token"
+        },
+        {
+            "description": "Verification token used during webhook setup (Meta calls back with this)",
+            "fieldname": "webhook_verify_token",
+            "fieldtype": "Password",
+            "label": "Webhook Verify Token"
+        },
+        {
+            "fieldname": "section_inbound",
+            "fieldtype": "Section Break",
+            "label": "Inbound"
+        },
+        {
+            "default": "1",
+            "description": "Match incoming WhatsApp messages to existing Frappe Contacts by phone number",
+            "fieldname": "auto_link_to_contact",
+            "fieldtype": "Check",
+            "label": "Auto-link to Contact"
+        },
+        {
+            "description": "Source assigned to leads created from inbound WhatsApp messages",
+            "fieldname": "default_lead_source",
+            "fieldtype": "Link",
+            "label": "Default Lead Source",
+            "options": "CRM Lead Source"
+        }
+    ],
+    "index_web_pages_for_search": 0,
+    "links": [],
+    "modified": "2026-05-04 00:00:00",
+    "modified_by": "Administrator",
+    "module": "LCS Integrations",
+    "name": "LCS WhatsApp Settings",
+    "owner": "Administrator",
+    "permissions": [
+        {
+            "role": "System Manager",
+            "read": 1,
+            "write": 1,
+            "create": 1,
+            "delete": 0,
+            "export": 1,
+            "report": 1
+        }
+    ],
+    "sort_field": "modified",
+    "sort_order": "DESC",
+    "track_changes": 1
+}

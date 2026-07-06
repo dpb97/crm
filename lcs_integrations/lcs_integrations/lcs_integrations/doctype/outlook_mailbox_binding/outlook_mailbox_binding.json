@@ -11,7 +11,11 @@
   "import_only_known_domains",
   "section_sync",
   "delta_token",
+  "calendar_delta_token",
+  "contacts_delta_token",
   "last_sync",
+  "last_calendar_sync",
+  "last_contacts_sync",
   "section_error",
   "last_error"
  ],
@@ -43,6 +47,13 @@
    "label": "Active"
   },
   {
+   "default": "1",
+   "description": "Nur Mails importieren, deren Absender-Domain einer Firma zugeordnet ist (gleiche Domain-Binding-Regel wie die Auto-Verknüpfung). Aus = jede Mail des Postfachs landet als Communication im CRM.",
+   "fieldname": "import_only_known_domains",
+   "fieldtype": "Check",
+   "label": "Import Only Known Domains"
+  },
+  {
    "fieldname": "section_sync",
    "fieldtype": "Section Break",
    "label": "Sync State"
@@ -50,13 +61,37 @@
   {
    "fieldname": "delta_token",
    "fieldtype": "Long Text",
-   "label": "Delta Token",
+   "label": "Mail Delta Token",
+   "read_only": 1
+  },
+  {
+   "fieldname": "calendar_delta_token",
+   "fieldtype": "Long Text",
+   "label": "Calendar Delta Token",
+   "read_only": 1
+  },
+  {
+   "fieldname": "contacts_delta_token",
+   "fieldtype": "Long Text",
+   "label": "Contacts Delta Token",
    "read_only": 1
   },
   {
    "fieldname": "last_sync",
    "fieldtype": "Datetime",
-   "label": "Last Sync",
+   "label": "Last Mail Sync",
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_calendar_sync",
+   "fieldtype": "Datetime",
+   "label": "Last Calendar Sync",
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_contacts_sync",
+   "fieldtype": "Datetime",
+   "label": "Last Contacts Sync",
    "read_only": 1
   },
   {
@@ -70,18 +105,11 @@
    "fieldtype": "Long Text",
    "label": "Last Error",
    "read_only": 1
-  },
-  {
-   "default": "1",
-   "description": "Nur Mails importieren, deren Absender-Domain einem CRM-Kontakt mit primärer Firmen-E-Mail zugeordnet ist (gleiche Regel wie die Auto-Verknüpfung). Aus = jede Mail des Postfachs landet als Communication im CRM.",
-   "fieldname": "import_only_known_domains",
-   "fieldtype": "Check",
-   "label": "Import Only Known Domains"
   }
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-04-16 00:00:00",
+ "modified": "2026-06-16 00:00:00",
  "modified_by": "Administrator",
  "module": "LCS Integrations",
  "name": "Outlook Mailbox Binding",

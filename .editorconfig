@@ -1,0 +1,36 @@
+# EditorConfig — https://editorconfig.org
+# Picked up automatically by VS Code (with the EditorConfig extension),
+# JetBrains IDEs, and most other editors.
+
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+# Python / shell — 4-space indent
+[*.{py,sh}]
+indent_style = space
+indent_size = 4
+
+# Web stack — 2-space indent
+[*.{js,ts,vue,jsx,tsx,json,jsonc,css,scss,html,yml,yaml}]
+indent_style = space
+indent_size = 2
+
+# Makefile demands real tabs
+[Makefile]
+indent_style = tab
+
+# Frappe DocType JSON files are pretty-printed by bench with 1 space —
+# leave them alone so diffs against upstream stay clean.
+[**/doctype/**/*.json]
+indent_style = space
+indent_size = 1
+insert_final_newline = false
+
+# Markdown allows trailing whitespace for hard line breaks.
+[*.md]
+trim_trailing_whitespace = false

@@ -9,8 +9,16 @@ node_modules
 crm/public/frontend
 crm/www/crm.html
 build
+frontend/coverage
 
-.vscode
+# VS Code — track team-shared configs, ignore per-user state.
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/tasks.json
+!.vscode/*.code-snippets
+
 .github/instructions
 .github/skills
 .github/copilot-instructions.md
@@ -48,3 +56,9 @@ Thumbs.db
 # Azure / Docker local overrides
 docker-compose.override.yml
 docker/.env
+
+# Agent / AI tooling (from upstream)
+CLAUDE.md
+AGENTS.md
+.claude
+.pi

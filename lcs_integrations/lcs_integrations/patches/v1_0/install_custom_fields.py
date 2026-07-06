@@ -37,7 +37,7 @@ CUSTOM_FIELDS: dict[str, list[dict]] = {
             "label": "Sales Manager",
             "fieldtype": "Link",
             "options": "User",
-            "description": "Propagated from the linked LCS Project (single source of truth).",
+            "description": "Propagated from the linked LCS Project (single source of truth). Auto-filled from market-split territory on insert.",
             "insert_after": "deal_owner",
         },
     ],
@@ -55,7 +55,7 @@ CUSTOM_FIELDS: dict[str, list[dict]] = {
             "label": "Sales Manager",
             "fieldtype": "Link",
             "options": "User",
-            "description": "Propagated from the linked LCS Project (single source of truth).",
+            "description": "Propagated from the linked LCS Project (single source of truth). Auto-filled from market-split territory on insert.",
             "insert_after": "lead_owner",
         },
         {
@@ -114,6 +114,78 @@ CUSTOM_FIELDS: dict[str, list[dict]] = {
             "options": "LCS Project",
             "insert_after": "project_name",
             "description": "Sales-side project record carrying phase, pricing, opportunity matrix.",
+        },
+    ],
+    # W-01..W-06 Network follow-up ride on Frappe ToDo: we add the LCS
+    # taxonomy fields directly so the existing reminder / scheduler
+    # machinery stays as-is. lcs_kind discriminates a network follow-up
+    # from a regular task; lcs_reason carries the short context shown
+    # when the reminder fires.
+    # Sales hierarchy lives on the User itself so role-based scoping
+    # for follow-ups, dashboards and access profiles all share one
+    # source of truth. Manually maintained.
+    "User": [
+        {
+            "fieldname": "sales_manager",
+            "label": "Sales Manager",
+            "fieldtype": "Link",
+            "options": "User",
+            "description": "This user reports to that sales manager. Used for LCS follow-up visibility and team dashboards.",
+            "insert_after": "username",
+        },
+    ],
+    "ToDo": [
+        {
+            "fieldname": "lcs_kind",
+            "label": "LCS Kind",
+            "fieldtype": "Select",
+            "options": "\nFollow-up\nTask",
+            "default": "",
+            "insert_after": "status",
+        },
+        {
+            "fieldname": "lcs_reason",
+            "label": "LCS Reason",
+            "fieldtype": "Small Text",
+            "description": "Context shown when the reminder fires (e.g. 'Met at Bauma 2026', 'Project paused, recheck Q3').",
+            "insert_after": "lcs_kind",
+        },
+        {
+            "fieldname": "lcs_visible_to_manager",
+            "label": "Visible to Sales Manager",
+            "fieldtype": "Check",
+            "default": "1",
+            "description": "Sales manager of the assigned user sees this follow-up. Other sales reps do not.",
+            "insert_after": "lcs_reason",
+        },
+        {
+            "fieldname": "lcs_notify_email",
+            "label": "Notify by Email",
+            "fieldtype": "Check",
+            "default": "1",
+            "insert_after": "lcs_visible_to_manager",
+        },
+        {
+            "fieldname": "lcs_notify_teams",
+            "label": "Notify in Teams",
+            "fieldtype": "Check",
+            "default": "1",
+            "insert_after": "lcs_notify_email",
+        },
+        {
+            "fieldname": "lcs_notify_push",
+            "label": "Notify by Push (Mobile)",
+            "fieldtype": "Check",
+            "default": "1",
+            "insert_after": "lcs_notify_teams",
+        },
+        {
+            "fieldname": "lcs_fired_at",
+            "label": "LCS Reminder Fired At",
+            "fieldtype": "Datetime",
+            "read_only": 1,
+            "description": "Timestamp the scheduler dispatched the reminder. Empty means due / pending.",
+            "insert_after": "lcs_notify_push",
         },
     ],
 }

@@ -28,7 +28,7 @@
 
     <!-- Map container -->
     <div v-show="projects.length" class="relative">
-      <div ref="mapContainer" class="h-96 w-full rounded-lg border" />
+      <div ref="mapContainer" :class="['w-full rounded-lg border', heightClass]" />
 
       <!-- H6: Recognition — phase color legend overlay -->
       <div class="absolute bottom-3 left-3 z-10 rounded-lg border bg-white/95 px-3 py-2 shadow-sm backdrop-blur-sm">
@@ -59,6 +59,10 @@ import { FeatherIcon } from 'frappe-ui'
 
 const props = defineProps({
   projects: { type: Array, default: () => [] },
+  // Tailwind height class for the map container. Default keeps the
+  // embedded-widget size; pages can pass e.g. `h-[calc(100vh-12rem)]`
+  // for a full-bleed map.
+  heightClass: { type: String, default: 'h-96' },
 })
 
 const mapContainer = ref(null)

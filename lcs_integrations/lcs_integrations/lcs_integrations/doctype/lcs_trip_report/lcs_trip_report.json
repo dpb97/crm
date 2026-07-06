@@ -1,0 +1,181 @@
+{
+    "actions": [],
+    "autoname": "LCS-TRIP-.YYYY.-.####",
+    "creation": "2026-05-14 00:00:00",
+    "doctype": "DocType",
+    "engine": "InnoDB",
+    "field_order": [
+        "section_trip",
+        "title",
+        "trip_country",
+        "trip_from",
+        "trip_to",
+        "column_break_trip",
+        "salesperson",
+        "status",
+        "section_summary",
+        "summary",
+        "voice_source",
+        "section_visits",
+        "visits",
+        "section_outcome",
+        "key_findings",
+        "next_steps",
+        "section_attachments",
+        "attachments"
+    ],
+    "fields": [
+        {
+            "fieldname": "section_trip",
+            "fieldtype": "Section Break",
+            "label": "Trip"
+        },
+        {
+            "fieldname": "title",
+            "fieldtype": "Data",
+            "in_list_view": 1,
+            "label": "Title",
+            "reqd": 1
+        },
+        {
+            "fieldname": "trip_country",
+            "fieldtype": "Link",
+            "in_list_view": 1,
+            "in_standard_filter": 1,
+            "label": "Country",
+            "options": "Country"
+        },
+        {
+            "fieldname": "trip_from",
+            "fieldtype": "Date",
+            "in_list_view": 1,
+            "label": "From"
+        },
+        {
+            "fieldname": "trip_to",
+            "fieldtype": "Date",
+            "label": "To"
+        },
+        {
+            "fieldname": "column_break_trip",
+            "fieldtype": "Column Break"
+        },
+        {
+            "fieldname": "salesperson",
+            "fieldtype": "Link",
+            "in_standard_filter": 1,
+            "label": "Salesperson",
+            "options": "User"
+        },
+        {
+            "default": "Draft",
+            "fieldname": "status",
+            "fieldtype": "Select",
+            "in_list_view": 1,
+            "in_standard_filter": 1,
+            "label": "Status",
+            "options": "Draft\nSubmitted\nReviewed"
+        },
+        {
+            "fieldname": "section_summary",
+            "fieldtype": "Section Break",
+            "label": "Summary (PR-05)"
+        },
+        {
+            "description": "Voice-dictated trip summary. May be edited freely after transcription.",
+            "fieldname": "summary",
+            "fieldtype": "Text Editor",
+            "label": "Summary"
+        },
+        {
+            "default": "Manual",
+            "fieldname": "voice_source",
+            "fieldtype": "Select",
+            "label": "Voice Source",
+            "options": "Manual\nWeb Speech\nAzure Speech\nWhisper"
+        },
+        {
+            "fieldname": "section_visits",
+            "fieldtype": "Section Break",
+            "label": "Visits / Meetings"
+        },
+        {
+            "description": "Linked CRM Deals / LCS Projects / Contacts that were visited during the trip.",
+            "fieldname": "visits",
+            "fieldtype": "Long Text",
+            "label": "Visit Log"
+        },
+        {
+            "fieldname": "section_outcome",
+            "fieldtype": "Section Break",
+            "label": "Outcome"
+        },
+        {
+            "fieldname": "key_findings",
+            "fieldtype": "Text Editor",
+            "label": "Key Findings"
+        },
+        {
+            "fieldname": "next_steps",
+            "fieldtype": "Text Editor",
+            "label": "Next Steps"
+        },
+        {
+            "fieldname": "section_attachments",
+            "fieldtype": "Section Break",
+            "label": "Attachments"
+        },
+        {
+            "fieldname": "attachments",
+            "fieldtype": "Attach",
+            "label": "Trip Report (PDF)"
+        }
+    ],
+    "index_web_pages_for_search": 0,
+    "links": [],
+    "modified": "2026-05-14 00:00:00",
+    "modified_by": "Administrator",
+    "module": "LCS Integrations",
+    "name": "LCS Trip Report",
+    "owner": "Administrator",
+    "permissions": [
+        {
+            "create": 1,
+            "delete": 1,
+            "email": 1,
+            "export": 1,
+            "print": 1,
+            "read": 1,
+            "report": 1,
+            "role": "System Manager",
+            "share": 1,
+            "write": 1
+        },
+        {
+            "create": 1,
+            "email": 1,
+            "export": 1,
+            "print": 1,
+            "read": 1,
+            "report": 1,
+            "role": "Sales User",
+            "write": 1
+        },
+        {
+            "create": 1,
+            "delete": 1,
+            "email": 1,
+            "export": 1,
+            "print": 1,
+            "read": 1,
+            "report": 1,
+            "role": "Sales Manager",
+            "share": 1,
+            "write": 1
+        }
+    ],
+    "sort_field": "modified",
+    "sort_order": "DESC",
+    "title_field": "title",
+    "track_changes": 1
+}

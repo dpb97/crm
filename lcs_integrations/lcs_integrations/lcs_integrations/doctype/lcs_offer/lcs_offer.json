@@ -17,6 +17,9 @@
         "section_commercial",
         "value",
         "currency",
+        "exchange_rate_to_eur",
+        "value_eur",
+        "rate_frozen_at",
         "column_break_commercial",
         "probability",
         "lost_reason",
@@ -98,6 +101,28 @@
             "fieldtype": "Link",
             "label": "Currency",
             "options": "Currency"
+        },
+        {
+            "description": "FX rate snapshot (1 unit of currency -> EUR) frozen at save time. Edit value/currency and re-save to refresh.",
+            "fieldname": "exchange_rate_to_eur",
+            "fieldtype": "Float",
+            "label": "FX Rate (EUR)",
+            "precision": "6",
+            "read_only": 1
+        },
+        {
+            "description": "value * exchange_rate_to_eur. Used for reporting in the company base currency.",
+            "fieldname": "value_eur",
+            "fieldtype": "Currency",
+            "label": "Value (EUR, frozen)",
+            "options": "EUR",
+            "read_only": 1
+        },
+        {
+            "fieldname": "rate_frozen_at",
+            "fieldtype": "Datetime",
+            "label": "FX Frozen At",
+            "read_only": 1
         },
         {
             "fieldname": "column_break_commercial",

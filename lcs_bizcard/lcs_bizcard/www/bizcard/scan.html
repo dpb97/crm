@@ -1,0 +1,12 @@
+{% block title %}{{ _("LCS Bizcard Scanner") }}{% endblock %}
+
+{% block page_content %}
+<!-- Embedded scanner UI. Designed to render either standalone at
+     `/bizcard/scan` or inside an <iframe>. When loaded with
+     `?embed=1` we suppress the page chrome and emit `window.postMessage`
+     events so the parent SPA can react. -->
+
+<link rel="stylesheet" href="/assets/lcs_bizcard/css/scan.css">
+<div id="bizcard-app" data-embed="{{ frappe.form_dict.get('embed') or '' }}"></div>
+<script src="/assets/lcs_bizcard/js/scan.js" type="module"></script>
+{% endblock %}
