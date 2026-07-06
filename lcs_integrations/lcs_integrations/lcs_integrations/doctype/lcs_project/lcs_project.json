@@ -28,6 +28,7 @@
   "section_opportunity",
   "deal",
   "source",
+  "expected_start_date",
   "expected_close_date",
   "probability",
   "section_pricing",
@@ -204,6 +205,11 @@
    "in_standard_filter": 1,
    "label": "Source / Channel",
    "options": "CRM Lead Source"
+  },
+  {
+   "fieldname": "expected_start_date",
+   "fieldtype": "Date",
+   "label": "Expected Start Date"
   },
   {
    "description": "Expected deal close / order date — used for forecasting",

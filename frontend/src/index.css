@@ -148,3 +148,13 @@ html[data-theme="dark"] {
 				prose-th:relative;
   }
 }
+
+/* LCS design tokens — consistent section labels across all LCS views */
+.lcs-section-label {
+  font-size: 11px;
+  line-height: 1.1;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: rgb(107 114 128); /* gray-500 */
+}

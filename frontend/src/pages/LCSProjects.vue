@@ -154,8 +154,30 @@
         <ProjectDashboard v-else :projects="mapProjects" :loading="mapData.loading" />
       </div>
 
+      <!-- List view: KPI strip + states + table -->
+      <template v-else>
+      <!-- KPI overview strip -->
+      <div v-if="projectList.length" class="grid grid-cols-2 gap-3 px-5 pt-4 md:grid-cols-4">
+        <div class="rounded-xl border bg-white p-4">
+          <div class="lcs-section-label">{{ __('Execution') }}</div>
+          <div class="mt-1 text-xl font-bold tabular-nums text-indigo-600">{{ overview.execution }}</div>
+        </div>
+        <div class="rounded-xl border bg-white p-4">
+          <div class="lcs-section-label">{{ __('Won') }}</div>
+          <div class="mt-1 text-xl font-bold tabular-nums text-green-600">{{ overview.won }}</div>
+        </div>
+        <div class="rounded-xl border bg-white p-4">
+          <div class="lcs-section-label">{{ __('Completed') }}</div>
+          <div class="mt-1 text-xl font-bold tabular-nums text-gray-700">{{ overview.completed }}</div>
+        </div>
+        <div class="rounded-xl border bg-white p-4">
+          <div class="lcs-section-label">{{ __('Total value') }}</div>
+          <div class="mt-1 text-xl font-bold tabular-nums text-lcs-primary">{{ overviewMoney }}</div>
+        </div>
+      </div>
+
       <!-- H1: Visibility — Loading state with skeleton -->
-      <div v-else-if="projectsLoading && !projectList.length" class="p-5">
+      <div v-if="projectsLoading && !projectList.length" class="p-5">
         <div v-for="i in 6" :key="i" class="mb-3 flex animate-pulse items-center gap-4 rounded-lg border p-4">
           <div class="h-4 w-28 rounded bg-gray-200" />
           <div class="h-4 w-40 rounded bg-gray-200" />
@@ -299,6 +321,7 @@
           </tr>
         </tbody>
       </table>
+      </template>
     </div>
   </div>
 
@@ -478,6 +501,20 @@ const selectedProject = ref(null)
 function selectProject(p) {
   selectedProject.value = p
 }
+
+// KPI overview strip over the list
+const overview = computed(() => {
+  const list = projectList.value || []
+  const by = (ph) => list.filter((p) => p.phase === ph).length
+  const total = list.reduce((s, p) => s + (Number(p.estimated_value) || 0), 0)
+  return { execution: by('Execution'), won: by('Won'), completed: by('Completed'), total }
+})
+const overviewMoney = computed(() => {
+  const n = overview.value.total
+  if (n >= 1_000_000) return '€' + (n / 1_000_000).toFixed(1) + 'M'
+  if (n >= 1_000) return '€' + Math.round(n / 1_000) + 'k'
+  return '€' + n
+})
 const sortField = ref('modified')
 const sortDirection = ref('desc')
 
