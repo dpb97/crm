@@ -41,7 +41,7 @@
       />
     </template>
   </LayoutHeader>
-  <FunnelFlowBar v-if="doc.name" entity="lead" :status="doc.status" />
+  <FunnelFlowBar v-if="doc.name" entity="lead" :status="doc.status" doctype="CRM Lead" :record="doc" />
   <div v-if="doc.name" class="flex h-full overflow-hidden">
     <Tabs
       v-model="tabIndex"

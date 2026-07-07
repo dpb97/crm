@@ -52,7 +52,7 @@
   <div v-else class="flex h-full flex-col overflow-hidden">
 
     <!-- Unified funnel flow — at the very top, above the title -->
-    <FunnelFlowBar v-if="doc.name" entity="project" :status="doc.phase" :clickable="true" @change="initiatePhaseChange" />
+    <FunnelFlowBar v-if="doc.name" entity="project" :status="doc.phase" :clickable="true" doctype="LCS Project" :record="doc" @change="initiatePhaseChange" />
 
     <!-- 🎯 STATUS HERO BAR — H1: Visibility (status always visible at top) -->
     <div class="border-b bg-gradient-to-r from-white via-white to-gray-50 px-5 py-4">

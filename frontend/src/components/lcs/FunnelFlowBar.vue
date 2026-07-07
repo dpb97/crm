@@ -104,13 +104,68 @@
         <span class="rounded px-1.5 py-0.5 text-[10px] font-bold uppercase" :class="groupClass(infoStage.group)">{{ __(infoStage.group) }}</span>
         <h3 class="mt-2 text-lg font-semibold text-gray-900">{{ __(infoStage.label) }}</h3>
       </div>
-      <p class="text-sm leading-relaxed text-gray-600">{{ PHASE_INFO[infoStage.label]?.desc }}</p>
-      <div v-if="PHASE_INFO[infoStage.label]?.criteria">
+      <p class="text-sm leading-relaxed text-gray-600">{{ phaseInfo(infoStage.label).desc }}</p>
+      <div v-if="phaseInfo(infoStage.label).criteria?.length">
         <div class="lcs-section-label mb-1">{{ __('Criteria') }}</div>
         <ul class="space-y-1 text-sm text-gray-700">
-          <li v-for="c in PHASE_INFO[infoStage.label].criteria" :key="c" class="flex gap-2"><span class="text-lcs-secondary">•</span>{{ c }}</li>
+          <li v-for="c in phaseInfo(infoStage.label).criteria" :key="c" class="flex gap-2"><span class="text-lcs-secondary">•</span>{{ c }}</li>
         </ul>
       </div>
+
+      <!-- Inline filling of the phase's fields on the current record -->
+      <div v-if="record && fieldDefs.length" class="space-y-3 rounded-lg border p-3">
+        <div class="lcs-section-label">{{ __('Fill directly') }}</div>
+        <div v-for="df in fieldDefs" :key="df.fieldname">
+          <div class="mb-1 flex items-center gap-1 text-xs text-gray-400">
+            {{ __(df.label) }}
+            <FeatherIcon v-if="isFilled(df.fieldname)" name="check" class="h-3 w-3 text-green-500" />
+          </div>
+          <Link
+            v-if="df.fieldtype === 'Link'"
+            class="text-sm"
+            :doctype="df.options"
+            :modelValue="record[df.fieldname]"
+            @change="(v) => queueSave(df.fieldname, v, true)"
+          />
+          <FormControl
+            v-else-if="df.fieldtype === 'Select'"
+            type="select"
+            size="sm"
+            :options="selectOptions(df.options)"
+            :modelValue="record[df.fieldname]"
+            @update:modelValue="(v) => queueSave(df.fieldname, v, true)"
+          />
+          <FormControl
+            v-else-if="['Date', 'Datetime'].includes(df.fieldtype)"
+            type="date"
+            size="sm"
+            :modelValue="record[df.fieldname]"
+            @update:modelValue="(v) => queueSave(df.fieldname, v, true)"
+          />
+          <FormControl
+            v-else-if="df.fieldtype === 'Check'"
+            type="checkbox"
+            size="sm"
+            :modelValue="record[df.fieldname]"
+            @update:modelValue="(v) => queueSave(df.fieldname, v ? 1 : 0, true)"
+          />
+          <FormControl
+            v-else-if="['Int', 'Float', 'Currency', 'Percent'].includes(df.fieldtype)"
+            type="number"
+            size="sm"
+            :modelValue="record[df.fieldname]"
+            @update:modelValue="(v) => queueSave(df.fieldname, Number(v) || 0)"
+          />
+          <FormControl
+            v-else
+            type="text"
+            size="sm"
+            :modelValue="record[df.fieldname]"
+            @update:modelValue="(v) => queueSave(df.fieldname, v)"
+          />
+        </div>
+      </div>
+
       <Button
         v-if="clickable && projectPhaseFor(infoIdx) && infoIdx !== currentIdx && !isLost"
         variant="solid"
@@ -123,15 +178,80 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
-import { FeatherIcon, Button } from 'frappe-ui'
+import { ref, computed, watch } from 'vue'
+import { FeatherIcon, Button, FormControl, createResource, call, toast } from 'frappe-ui'
+import Link from '@/components/Controls/Link.vue'
 
 const props = defineProps({
   entity: { type: String, required: true }, // 'lead' | 'deal' | 'project'
   status: { type: String, default: '' },
   clickable: { type: Boolean, default: false },
+  // For inline filling in the phase panel: the page's doctype + its
+  // reactive doc object. Optional — without them the panel is read-only.
+  doctype: { type: String, default: '' },
+  record: { type: Object, default: null },
 })
 const emit = defineEmits(['change'])
+
+// Editable phase definitions (Settings -> Funnel Phases); falls back to
+// the built-in PHASE_INFO until loaded / when a stage has no record yet.
+const phasesConfig = createResource({
+  url: 'lcs_integrations.projects.api.get_funnel_phases',
+  cache: 'lcs-funnel-phases',
+  auto: true,
+})
+function phaseInfo(label) {
+  const cfg = phasesConfig.data?.[label]
+  if (cfg) return cfg
+  return { desc: PHASE_INFO[label]?.desc, criteria: PHASE_INFO[label]?.criteria || [], fields: [] }
+}
+
+// Field definitions of the open phase, resolved against the page doctype
+const fieldDefs = ref([])
+async function loadFieldDefs() {
+  fieldDefs.value = []
+  if (!props.doctype || !props.record || !infoStage.value) return
+  const fields = phaseInfo(infoStage.value.label).fields || []
+  if (!fields.length) return
+  try {
+    fieldDefs.value = await call('lcs_integrations.projects.api.get_phase_field_defs', {
+      doctype: props.doctype,
+      fieldnames: JSON.stringify(fields),
+    })
+  } catch (e) {
+    fieldDefs.value = []
+  }
+}
+
+function selectOptions(options) {
+  return (options || '').split('\n').filter(Boolean)
+}
+function isFilled(fieldname) {
+  const v = props.record?.[fieldname]
+  return v !== null && v !== undefined && v !== '' && v !== 0
+}
+
+// Save on change; text/number inputs debounce so we don't spam set_value.
+const saveTimers = {}
+function queueSave(fieldname, value, immediate = false) {
+  clearTimeout(saveTimers[fieldname])
+  if (immediate) return saveField(fieldname, value)
+  saveTimers[fieldname] = setTimeout(() => saveField(fieldname, value), 700)
+}
+async function saveField(fieldname, value) {
+  if (!props.record?.name || props.record[fieldname] === value) return
+  try {
+    await call('frappe.client.set_value', {
+      doctype: props.doctype,
+      name: props.record.name,
+      fieldname,
+      value,
+    })
+    props.record[fieldname] = value
+  } catch (e) {
+    toast.error(e?.messages?.[0] || __('Could not save'))
+  }
+}
 
 const STAGES = [
   { label: 'Neu', group: 'Lead' },
@@ -205,6 +325,7 @@ const infoStage = computed(() => (infoIdx.value !== null ? STAGES[infoIdx.value]
 function openInfo(i) {
   infoIdx.value = i
 }
+watch(infoIdx, loadFieldDefs)
 function onAdvance(i) {
   const phase = projectPhaseFor(i)
   if (phase) emit('change', phase)

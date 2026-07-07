@@ -214,3 +214,10 @@ Won,Gewonnen
 worked at,war bei
 Working on it,Bearbeiter
 works at,arbeitet bei
+Funnel Phases,Funnel-Phasen
+Fill directly,Direkt ausfüllen
+"Description, criteria and fillable fields per funnel stage. One criterion / fieldname per line.","Beschreibung, Kriterien und ausfüllbare Felder je Funnel-Stufe. Ein Kriterium / Feldname pro Zeile."
+Fields to fill,Auszufüllende Felder
+one per line,eins pro Zeile
+one fieldname per line,ein Feldname pro Zeile
+Could not save,Konnte nicht speichern

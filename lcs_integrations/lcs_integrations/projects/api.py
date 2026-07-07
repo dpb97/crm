@@ -807,3 +807,64 @@ def get_sales_meeting_data():
         "count": len(rows), "total": total, "weighted": weighted,
         "due_actions": due_count, "important": len(important), "leads": len(leads),
     }}
+
+
+@frappe.whitelist()
+def get_funnel_phases():
+    """Editable funnel phase definitions for the FunnelFlowBar.
+
+    Managers maintain them via Settings -> Funnel Phases (LCS Funnel
+    Phase doctype); cached until a phase is edited.
+    """
+    cached = frappe.cache().get_value("lcs_funnel_phases")
+    if cached:
+        return cached
+    rows = frappe.get_all(
+        "LCS Funnel Phase",
+        fields=["stage", "entity_group", "funnel_index", "description", "criteria", "fields_to_fill"],
+        order_by="funnel_index asc",
+        limit_page_length=0,
+    )
+    out = {}
+    for r in rows:
+        out[r.stage] = {
+            "group": r.entity_group,
+            "index": r.funnel_index,
+            "desc": r.description or "",
+            "criteria": [c.strip() for c in (r.criteria or "").splitlines() if c.strip()],
+            "fields": [f.strip() for f in (r.fields_to_fill or "").splitlines() if f.strip()],
+        }
+    frappe.cache().set_value("lcs_funnel_phases", out)
+    return out
+
+
+@frappe.whitelist()
+def get_phase_field_defs(doctype: str, fieldnames):
+    """Field definitions for the phase panel's inline filling.
+
+    Silently skips fieldnames the doctype doesn't have, so one phase
+    config can serve CRM Lead, CRM Deal and LCS Project pages alike.
+    """
+    import json as _json
+
+    if isinstance(fieldnames, str):
+        fieldnames = _json.loads(fieldnames)
+    if doctype not in ("CRM Lead", "CRM Deal", "LCS Project"):
+        frappe.throw(_("Unsupported doctype"), frappe.PermissionError)
+    if not frappe.has_permission(doctype, "read"):
+        frappe.throw(_("Not permitted"), frappe.PermissionError)
+
+    skip_types = {"Section Break", "Column Break", "Tab Break", "HTML", "Table", "Table MultiSelect"}
+    meta = frappe.get_meta(doctype)
+    out = []
+    for fn in fieldnames:
+        df = meta.get_field(fn)
+        if not df or df.fieldtype in skip_types:
+            continue
+        out.append({
+            "fieldname": fn,
+            "label": df.label,
+            "fieldtype": df.fieldtype,
+            "options": df.options or "",
+        })
+    return out

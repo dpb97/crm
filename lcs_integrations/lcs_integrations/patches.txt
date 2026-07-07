@@ -29,3 +29,5 @@ lcs_integrations.patches.install_important_flag
 lcs_integrations.patches.install_estimated_start_date
 # Adds 'Previous Companies' to Contact (network graph / career history).
 lcs_integrations.patches.install_previous_companies
+# Seeds the editable funnel phase definitions (needs LCS Funnel Phase synced).
+lcs_integrations.patches.seed_funnel_phases

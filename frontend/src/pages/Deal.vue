@@ -36,7 +36,7 @@
       </Dropdown>
     </template>
   </LayoutHeader>
-  <FunnelFlowBar v-if="doc.name" entity="deal" :status="doc.status" />
+  <FunnelFlowBar v-if="doc.name" entity="deal" :status="doc.status" doctype="CRM Deal" :record="doc" />
   <div v-if="doc.name" class="flex h-full overflow-hidden">
     <Tabs
       v-model="tabIndex"

@@ -74,6 +74,7 @@ import EmailTemplatePage from '@/components/Settings/EmailTemplate/EmailTemplate
 import TelephonyPage from '@/components/Settings/Telephony/TelephonyPage.vue'
 import EmailConfig from '@/components/Settings/EmailConfig.vue'
 import OutlookGraphSettings from '@/components/lcs/OutlookGraphSettings.vue'
+import FunnelPhaseSettings from '@/components/lcs/FunnelPhaseSettings.vue'
 import SidebarLink from '@/components/SidebarLink.vue'
 import { usersStore } from '@/stores/users'
 import {
@@ -214,6 +215,11 @@ const tabs = computed(() => {
           label: __('Home Actions'),
           component: markRaw(HomeActions),
           icon: 'home',
+        },
+        {
+          label: __('Funnel Phases'),
+          component: markRaw(FunnelPhaseSettings),
+          icon: StepsIcon,
         },
       ],
       condition: () => isManager(),
