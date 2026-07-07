@@ -158,3 +158,10 @@ html[data-theme="dark"] {
   letter-spacing: 0.06em;
   color: rgb(107 114 128); /* gray-500 */
 }
+
+/* Autocomplete/Link popovers portal to <body> without a z-index; the LCS
+   side panels (inspector, funnel phase panel) sit at z-40 and would cover
+   the dropdown list. Nothing else in the app stacks above 40. */
+.PopoverContent {
+  z-index: 50;
+}
