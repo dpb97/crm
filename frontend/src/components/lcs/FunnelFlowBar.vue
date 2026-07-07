@@ -75,6 +75,18 @@
         </div>
       </template>
 
+      <!-- One-click advance to the next funnel stage -->
+      <div v-if="!isLost && nextStageLabel" class="flex items-center self-stretch pl-2">
+        <Button
+          size="sm"
+          variant="solid"
+          iconRight="arrow-right"
+          :label="__('Next phase')"
+          :title="__(STAGES[currentIdx]?.label || '') + ' → ' + __(nextStageLabel)"
+          @click="goNext()"
+        />
+      </div>
+
       <!-- Terminal: Verloren -->
       <template v-if="isLost">
         <div class="flex items-center self-stretch pt-3">
@@ -366,6 +378,27 @@ async function moveToStage(i) {
   if (!target) return
   await saveField('status', target)
   infoIdx.value = null
+}
+
+// Standalone "Next phase" button on the bar itself: advances exactly one
+// stage. Hidden where the next step is a different flow (lead hand-over
+// to deal = Convert-to-Deal, terminal stages, lost records).
+const nextStageLabel = computed(() => {
+  const next = currentIdx.value + 1
+  if (props.entity === 'project') {
+    return props.clickable && IDX_TO_PHASE[next] ? STAGES[next]?.label : null
+  }
+  return statusTargetFor(next) ? STAGES[next]?.label : null
+})
+function goNext() {
+  const next = currentIdx.value + 1
+  if (props.entity === 'project') {
+    const phase = IDX_TO_PHASE[next]
+    if (phase) emit('change', phase)
+    return
+  }
+  const target = statusTargetFor(next)
+  if (target) saveField('status', target)
 }
 
 // Phase detail side bar
