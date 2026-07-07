@@ -78,7 +78,7 @@
         <div class="border-b bg-gray-50 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
           {{ __('Offers in progress') }}
         </div>
-        <table class="w-full text-sm">
+        <div class="overflow-x-auto"><table class="w-full min-w-[40rem] text-sm">
           <thead>
             <tr class="border-b bg-gray-50/60 text-left text-[11px] font-medium uppercase text-gray-500">
               <th class="px-3 py-2"></th>
@@ -135,7 +135,7 @@
               <td colspan="10" class="px-4 py-12 text-center text-sm text-gray-400">{{ __('No active opportunities.') }}</td>
             </tr>
           </tbody>
-        </table>
+        </table></div>
       </div>
     </div>
   </div>

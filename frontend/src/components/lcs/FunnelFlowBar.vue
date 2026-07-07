@@ -94,7 +94,7 @@
   </div>
 
   <!-- Phase detail side bar -->
-  <div v-if="infoStage" class="fixed right-0 top-0 z-40 flex h-screen w-80 flex-col border-l bg-white shadow-2xl">
+  <div v-if="infoStage" class="fixed right-0 top-0 z-40 flex h-screen w-full flex-col border-l bg-white shadow-2xl sm:w-80">
     <div class="flex items-center justify-between border-b px-4 py-3">
       <span class="lcs-section-label">{{ __('Phase') }}</span>
       <button class="text-gray-400 hover:text-gray-700" @click="infoIdx = null"><FeatherIcon name="x" class="h-4 w-4" /></button>

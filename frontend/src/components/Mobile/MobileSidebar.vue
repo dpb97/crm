@@ -100,6 +100,13 @@ import OrganizationsIcon from '@/components/Icons/OrganizationsIcon.vue'
 import NoteIcon from '@/components/Icons/NoteIcon.vue'
 import TaskIcon from '@/components/Icons/TaskIcon.vue'
 import PhoneIcon from '@/components/Icons/PhoneIcon.vue'
+import LucideFolderKanban from '~icons/lucide/folder-kanban'
+import LucideMap from '~icons/lucide/map'
+import LucideClipboardList from '~icons/lucide/clipboard-list'
+import LucideShare2 from '~icons/lucide/share-2'
+import LucideGlobe from '~icons/lucide/globe'
+import LucideTrendingUp from '~icons/lucide/trending-up'
+import LucideMic from '~icons/lucide/mic'
 import NotificationsIcon from '@/components/Icons/NotificationsIcon.vue'
 import SidebarLink from '@/components/SidebarLink.vue'
 import { viewsStore } from '@/stores/views'
@@ -121,6 +128,41 @@ const links = [
     to: 'Deals',
   },
   {
+    label: 'Projects',
+    icon: LucideFolderKanban,
+    to: 'LCS Projects',
+  },
+  {
+    label: 'Projects Map',
+    icon: LucideMap,
+    to: 'LCS Projects Map',
+  },
+  {
+    label: 'Sales Meeting',
+    icon: LucideClipboardList,
+    to: 'LCS Sales Meeting',
+  },
+  {
+    label: 'Network',
+    icon: LucideShare2,
+    to: 'LCS Network',
+  },
+  {
+    label: 'Market Assignment',
+    icon: LucideGlobe,
+    to: 'LCS Market Assignment',
+  },
+  {
+    label: 'Forecasting',
+    icon: LucideTrendingUp,
+    to: 'LCS Forecasting',
+  },
+  {
+    label: 'Quick Note',
+    icon: LucideMic,
+    to: 'LCS Quick Note',
+  },
+  {
     label: 'Contacts',
     icon: ContactsIcon,
     to: 'Contacts',
@@ -140,11 +182,8 @@ const links = [
     icon: TaskIcon,
     to: 'Tasks',
   },
-  {
-    label: 'Call Logs',
-    icon: PhoneIcon,
-    to: 'Call Logs',
-  },
+  // Call Logs intentionally hidden — same decision as the desktop sidebar
+  // (telephony is not part of the LCS feature set).
 ]
 
 const allViews = computed(() => {

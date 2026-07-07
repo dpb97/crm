@@ -132,7 +132,7 @@
             {{ __('Top Weighted Opportunities') }}
           </h3>
         </div>
-        <table class="w-full text-sm">
+        <div class="overflow-x-auto"><table class="w-full min-w-[40rem] text-sm">
           <thead>
             <tr class="border-b bg-gray-50 text-left text-xs font-medium uppercase text-gray-500">
               <th class="px-4 py-2">{{ __('Project') }}</th>
@@ -159,7 +159,7 @@
               <td class="px-4 py-2.5 text-right tabular-nums font-semibold text-lcs-primary">{{ formatCurrency(p.weighted) }}</td>
             </tr>
           </tbody>
-        </table>
+        </table></div>
       </div>
 
       <!-- Source analytics donut -->

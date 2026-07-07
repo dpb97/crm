@@ -111,7 +111,7 @@
         <div class="border-b bg-gray-50 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
           {{ __('Territory assignment') }}
         </div>
-        <table class="w-full text-sm">
+        <div class="overflow-x-auto"><table class="w-full min-w-[40rem] text-sm">
           <thead class="bg-gray-50/60">
             <tr class="border-b text-left text-[11px] font-medium uppercase text-gray-500">
               <th
@@ -159,7 +159,7 @@
               <td colspan="11" class="px-4 py-12 text-center text-sm text-gray-400">{{ __('No territories match the filter.') }}</td>
             </tr>
           </tbody>
-        </table>
+        </table></div>
       </div>
 
       <!-- Segment responsibility matrix -->
@@ -167,7 +167,7 @@
         <div class="border-b bg-gray-50 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
           {{ __('Segment responsibility') }}
         </div>
-        <table class="w-full text-sm">
+        <div class="overflow-x-auto"><table class="w-full min-w-[40rem] text-sm">
           <thead class="bg-gray-50/60">
             <tr class="border-b text-left text-[11px] font-medium uppercase text-gray-500">
               <th class="px-3 py-2">{{ __('Segment') }}</th>
@@ -182,7 +182,7 @@
               <td class="px-3 py-2.5 text-gray-600">{{ s.deputy_code || '—' }}</td>
             </tr>
           </tbody>
-        </table>
+        </table></div>
       </div>
     </div>
   </div>

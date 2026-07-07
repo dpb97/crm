@@ -37,8 +37,8 @@
 
   <div class="flex flex-1 flex-col overflow-hidden">
     <!-- H1: Visibility of system status — result count + active filters indicator -->
-    <div class="flex items-center justify-between border-b bg-white px-5 py-3">
-      <div class="flex items-center gap-4">
+    <div class="flex flex-wrap items-center justify-between gap-y-2 border-b bg-white px-5 py-3">
+      <div class="flex flex-wrap items-center gap-2 sm:gap-4">
         <!-- My Projects toggle — personalized view -->
         <div class="flex rounded-lg border bg-white p-0.5">
           <Tooltip :text="__('Show all projects')">
@@ -100,7 +100,7 @@
         />
       </div>
       <!-- H1: System status — total count + cache indicator -->
-      <div class="flex items-center gap-3 text-sm text-gray-500">
+      <div class="flex flex-wrap items-center gap-3 text-sm text-gray-500">
         <!-- Stale-data indicator when showing cached results -->
         <Tooltip v-if="projectsFromCache" :text="__('Showing cached results from') + ' ' + cacheAgeLabel">
           <span class="flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700 border border-amber-200">
@@ -144,7 +144,7 @@
     </div>
 
     <!-- Main content area -->
-    <div class="flex-1 overflow-y-auto">
+    <div class="flex-1 overflow-y-auto overflow-x-auto">
       <!-- Map / Dashboard views (full portfolio, independent of list filters) -->
       <div v-if="viewMode !== 'list'" class="p-5">
         <div v-if="mapData.loading && !mapProjects.length" class="flex items-center justify-center py-16">
@@ -328,7 +328,7 @@
   <!-- Inspector — right sidebar showing details of the selected project -->
   <div
     v-if="selectedProject"
-    class="fixed right-0 top-0 z-40 flex h-screen w-[22rem] flex-col border-l bg-white shadow-2xl"
+    class="fixed right-0 top-0 z-40 flex h-screen w-full flex-col border-l bg-white shadow-2xl sm:w-[22rem]"
   >
     <div class="flex items-center justify-between border-b px-3 py-2">
       <span class="text-xs font-semibold uppercase tracking-wide text-gray-500">{{ __('Inspector') }}</span>
