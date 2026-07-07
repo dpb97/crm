@@ -101,6 +101,7 @@ def _persist_event(user: str, event: dict[str, Any]) -> bool:
         ev.starts_on = starts_on
         ev.ends_on = ends_on
         ev.description = body
+        _link_event_to_crm(ev, event)
         ev.save(ignore_permissions=True)
     else:
         ev = frappe.get_doc(
@@ -116,8 +117,52 @@ def _persist_event(user: str, event: dict[str, Any]) -> bool:
                 "graph_event_id": graph_id,
             }
         )
+        _link_event_to_crm(ev, event)
         ev.insert(ignore_permissions=True)
     return True
+
+
+def _attendee_emails(event: dict[str, Any]) -> list[str]:
+    """All participant addresses of a Graph event (attendees + organizer)."""
+    out = []
+    for a in event.get("attendees") or []:
+        addr = ((a.get("emailAddress") or {}).get("address") or "").strip().lower()
+        if addr:
+            out.append(addr)
+    org = (((event.get("organizer") or {}).get("emailAddress") or {}).get("address") or "").strip().lower()
+    if org:
+        out.append(org)
+    return out
+
+
+def _link_event_to_crm(ev, event: dict[str, Any]) -> None:
+    """Attach the Event to the CRM record its participants belong to, so it
+    shows up in the Events tab on the Lead/Deal page.
+
+    Match order per attendee address: open CRM Lead by email, CRM Deal by
+    primary-contact email, then Contact -> a deal that contact is linked
+    to. An existing reference is never overwritten (users may relink
+    manually in the desk).
+    """
+    if ev.get("reference_docname"):
+        return
+    for addr in _attendee_emails(event):
+        lead = frappe.db.get_value("CRM Lead", {"email": addr, "converted": 0}, "name")
+        if lead:
+            ev.reference_doctype, ev.reference_docname = "CRM Lead", lead
+            return
+        deal = frappe.db.get_value("CRM Deal", {"email": addr}, "name")
+        if deal:
+            ev.reference_doctype, ev.reference_docname = "CRM Deal", deal
+            return
+        contact = frappe.db.get_value("Contact Email", {"email_id": addr}, "parent")
+        if contact:
+            deal = frappe.db.get_value(
+                "CRM Contacts", {"contact": contact, "parenttype": "CRM Deal"}, "parent"
+            )
+            if deal:
+                ev.reference_doctype, ev.reference_docname = "CRM Deal", deal
+                return
 
 
 def _parse_graph_dt(node: dict[str, Any] | None) -> str | None:

@@ -213,6 +213,18 @@
         @click="moveToStage(infoIdx)"
       />
     </div>
+
+    <!-- Footer: one-click advance from the record's current stage -->
+    <div v-if="!isLost && nextStageLabel" class="border-t px-4 py-3">
+      <Button
+        class="w-full"
+        variant="solid"
+        iconRight="arrow-right"
+        :label="__('Next phase') + ': ' + __(nextStageLabel)"
+        :title="__(STAGES[currentIdx]?.label || '') + ' → ' + __(nextStageLabel)"
+        @click="goNext()"
+      />
+    </div>
   </div>
 </template>
 

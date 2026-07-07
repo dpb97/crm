@@ -187,6 +187,8 @@
                   @click="showFilesUploader = true"
                 />
 
+                <FollowButton doctype="CRM Lead" :docname="leadId" />
+
                 <Button
                   v-if="canDelete"
                   :tooltip="__('Delete')"
@@ -276,6 +278,7 @@ import LinkIcon from '@/components/Icons/LinkIcon.vue'
 import AttachmentIcon from '@/components/Icons/AttachmentIcon.vue'
 import LostReasonModal from '@/components/Modals/LostReasonModal.vue'
 import LayoutHeader from '@/components/LayoutHeader.vue'
+import FollowButton from '@/components/lcs/FollowButton.vue'
 import FunnelFlowBar from '@/components/lcs/FunnelFlowBar.vue'
 import Activities from '@/components/Activities/Activities.vue'
 import AssignTo from '@/components/AssignTo.vue'

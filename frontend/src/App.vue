@@ -10,6 +10,7 @@
       v-model:open="showPreferences"
       @saved="onPrefsSaved"
     />
+    <GlobalSearchDialog v-if="session.isLoggedIn" v-model="showGlobalSearch" />
     <Dialogs />
     <DoctypeModals />
     <EventNotificationPopup />
@@ -21,6 +22,7 @@ import NotPermitted from '@/pages/NotPermitted.vue'
 import EventNotificationPopup from '@/components/EventNotificationPopup.vue'
 import OfflineIndicator from '@/components/lcs/OfflineIndicator.vue'
 import DisplayPreferencesDialog from '@/components/lcs/DisplayPreferencesDialog.vue'
+import GlobalSearchDialog from '@/components/lcs/GlobalSearchDialog.vue'
 import DoctypeModals from '@/components/Modals/DoctypeModals.vue'
 import { Dialogs } from '@/utils/dialogs'
 import { sessionStore } from '@/stores/session'
@@ -69,11 +71,24 @@ setConfig('systemTimezone', window.timezone?.system || null)
 setConfig('localTimezone', window.timezone?.user || null)
 setConfig('translatedMessages', window.translated_messages || {})
 
+// Ctrl/Cmd+K — global search across leads, deals, contacts, projects
+const showGlobalSearch = ref(false)
+function onGlobalKeydown(e) {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+    e.preventDefault()
+    showGlobalSearch.value = !showGlobalSearch.value
+  }
+}
+
 // Start the offline sync engine — replays queued mutations when online
 onMounted(() => {
   startSyncEngine()
   startOfflinePrefetch()
   window.addEventListener('lcs-open-preferences', openPrefs)
+  window.addEventListener('keydown', onGlobalKeydown)
 })
-onUnmounted(() => window.removeEventListener('lcs-open-preferences', openPrefs))
+onUnmounted(() => {
+  window.removeEventListener('lcs-open-preferences', openPrefs)
+  window.removeEventListener('keydown', onGlobalKeydown)
+})
 </script>
