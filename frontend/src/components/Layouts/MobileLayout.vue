@@ -1,7 +1,11 @@
 <template>
   <div class="flex h-screen w-screen">
     <MobileSidebar />
-    <div class="flex h-full flex-1 flex-col overflow-auto bg-surface-white">
+    <!-- min-w-0 + overflow-x-hidden: without them any over-wide child
+         (mail cards, long addresses) stretches past the viewport and the
+         whole page scrolls horizontally on phones. Inner tables keep
+         their own overflow-x-auto containers. -->
+    <div class="flex h-full min-w-0 flex-1 flex-col overflow-y-auto overflow-x-hidden bg-surface-white">
       <MobileAppHeader />
       <slot />
     </div>
