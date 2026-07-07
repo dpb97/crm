@@ -14,7 +14,7 @@
           <FeatherIcon name="clock" class="h-3 w-3 animate-pulse" />
           {{ pendingChangeCount }} {{ __('pending') }}
         </span>
-        <span v-else-if="lastSaved" class="text-xs text-gray-400">{{ __('Saved') }} {{ lastSaved }}</span>
+        <span v-else-if="lastSaved" class="hidden text-xs text-gray-400 sm:inline">{{ __('Saved') }} {{ lastSaved }}</span>
         <Dropdown v-if="phaseDropdownOptions.length" :options="phaseDropdownOptions" placement="right">
           <template #default="{ open }">
             <Button :iconRight="open ? 'chevron-up' : 'chevron-down'">
@@ -160,12 +160,14 @@
     </div>
 
     <!-- Main layout: tabs + side panel -->
-    <div class="flex flex-1 overflow-hidden">
+    <!-- Below lg the side panel stacks under the tabs and the page scrolls
+         as a whole; on desktop it stays a resizable right column. -->
+    <div class="flex min-h-0 flex-1 flex-col overflow-y-auto lg:flex-row lg:overflow-hidden">
       <Tabs
         v-model="tabIndex"
         as="div"
         :tabs="tabs"
-        class="flex flex-1 overflow-hidden flex-col [&_[role='tab']]:px-0 [&_[role='tab']]:shrink-0 [&_[role='tablist']]:px-5 [&_[role='tablist']::-webkit-scrollbar]:h-0 [&_[role='tablist']]:min-h-[45px] [&_[role='tablist']]:gap-7.5 [&_[role='tabpanel']:not([hidden])]:flex [&_[role='tabpanel']:not([hidden])]:grow"
+        class="flex min-h-[70vh] flex-1 shrink-0 overflow-hidden flex-col lg:min-h-0 lg:shrink [&_[role='tab']]:px-0 [&_[role='tab']]:shrink-0 [&_[role='tablist']]:px-5 [&_[role='tablist']::-webkit-scrollbar]:h-0 [&_[role='tablist']]:min-h-[45px] [&_[role='tablist']]:gap-7.5 [&_[role='tabpanel']:not([hidden])]:flex [&_[role='tabpanel']:not([hidden])]:grow"
       >
         <template #tab-panel>
           <div class="flex-1 overflow-y-auto p-5">
@@ -519,7 +521,7 @@
       </Tabs>
 
       <!-- Side panel -->
-      <Resizer side="right" class="flex flex-col justify-between border-l bg-white">
+      <Resizer side="right" class="flex !w-full shrink-0 flex-col justify-between border-t bg-white lg:!w-auto lg:border-l lg:border-t-0">
         <!-- Integrated systems: CRM · ERPNext · BSM · HRMS · LMS · Fusion Manage
            Hidden if user disabled this panel in preferences OR profile hides it. -->
         <div v-if="doc.name && canShow('show_integration_panel')" class="border-b px-5 py-4">

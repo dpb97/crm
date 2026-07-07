@@ -36,6 +36,7 @@
       </div>
     </header>
   </LayoutHeader>
+  <FunnelFlowBar v-if="doc.name" entity="lead" :status="doc.status" doctype="CRM Lead" :record="doc" />
   <div
     v-if="doc.name"
     class="flex h-12 items-center justify-between gap-2 border-b px-3 py-2.5"
@@ -138,6 +139,7 @@ import WhatsAppIcon from '@/components/Icons/WhatsAppIcon.vue'
 import IndicatorIcon from '@/components/Icons/IndicatorIcon.vue'
 import LostReasonModal from '@/components/Modals/LostReasonModal.vue'
 import LayoutHeader from '@/components/LayoutHeader.vue'
+import FunnelFlowBar from '@/components/lcs/FunnelFlowBar.vue'
 import Activities from '@/components/Activities/Activities.vue'
 import AssignTo from '@/components/AssignTo.vue'
 import SidePanelLayout from '@/components/SidePanelLayout.vue'
