@@ -185,7 +185,6 @@ import LucideMap from '~icons/lucide/map'
 import LucideClipboardList from '~icons/lucide/clipboard-list'
 import LucideShare2 from '~icons/lucide/share-2'
 import LucideGlobe from '~icons/lucide/globe'
-import LucideFactory from '~icons/lucide/factory'
 import LucideTrendingUp from '~icons/lucide/trending-up'
 import LucideMic from '~icons/lucide/mic'
 import CollapseSidebar from '@/components/Icons/CollapseSidebar.vue'
@@ -259,11 +258,6 @@ const links = [
     label: 'Projects Map',
     icon: LucideMap,
     to: 'LCS Projects Map',
-  },
-  {
-    label: 'ERP Projects',
-    icon: LucideFactory,
-    to: 'LCS ERP Projects',
   },
   {
     label: 'Sales Meeting',

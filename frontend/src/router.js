@@ -59,11 +59,6 @@ const routes = [
     props: true,
   },
   {
-    path: '/erp-projects',
-    name: 'LCS ERP Projects',
-    component: () => import('@/pages/LCSErpProjects.vue'),
-  },
-  {
     path: '/network',
     name: 'LCS Network',
     component: () => import('@/pages/LCSNetwork.vue'),
