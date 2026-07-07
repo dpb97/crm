@@ -117,57 +117,67 @@
         </ul>
       </div>
 
-      <!-- Inline filling of the phase's fields on the current record -->
+      <!-- Inline filling of the phase's fields on the current record.
+           Editable only while the record actually sits in this phase —
+           other phases show their fields read-only. -->
       <div v-if="record && fieldDefs.length" class="space-y-3 rounded-lg border p-3">
-        <div class="lcs-section-label">{{ __('Fill directly') }}</div>
+        <div class="flex items-center justify-between">
+          <div class="lcs-section-label">{{ __('Fill directly') }}</div>
+          <span v-if="!canFill" class="text-[10px] text-gray-400">{{ __('Only editable in the active phase') }}</span>
+        </div>
         <div v-for="df in fieldDefs" :key="df.fieldname">
           <div class="mb-1 flex items-center gap-1 text-xs text-gray-400">
             {{ __(df.label) }}
             <FeatherIcon v-if="isFilled(df.fieldname)" name="check" class="h-3 w-3 text-green-500" />
           </div>
-          <Link
-            v-if="df.fieldtype === 'Link'"
-            class="text-sm"
-            :doctype="df.options"
-            :modelValue="record[df.fieldname]"
-            @change="(v) => queueSave(df.fieldname, v, true)"
-          />
-          <FormControl
-            v-else-if="df.fieldtype === 'Select'"
-            type="select"
-            size="sm"
-            :options="selectOptions(df.options)"
-            :modelValue="record[df.fieldname]"
-            @update:modelValue="(v) => queueSave(df.fieldname, v, true)"
-          />
-          <FormControl
-            v-else-if="['Date', 'Datetime'].includes(df.fieldtype)"
-            type="date"
-            size="sm"
-            :modelValue="record[df.fieldname]"
-            @update:modelValue="(v) => queueSave(df.fieldname, v, true)"
-          />
-          <FormControl
-            v-else-if="df.fieldtype === 'Check'"
-            type="checkbox"
-            size="sm"
-            :modelValue="record[df.fieldname]"
-            @update:modelValue="(v) => queueSave(df.fieldname, v ? 1 : 0, true)"
-          />
-          <FormControl
-            v-else-if="['Int', 'Float', 'Currency', 'Percent'].includes(df.fieldtype)"
-            type="number"
-            size="sm"
-            :modelValue="record[df.fieldname]"
-            @update:modelValue="(v) => queueSave(df.fieldname, Number(v) || 0)"
-          />
-          <FormControl
-            v-else
-            type="text"
-            size="sm"
-            :modelValue="record[df.fieldname]"
-            @update:modelValue="(v) => queueSave(df.fieldname, v)"
-          />
+          <div v-if="!canFill" class="rounded bg-gray-50 px-2 py-1.5 text-sm" :class="isFilled(df.fieldname) ? 'text-gray-700' : 'text-gray-300'">
+            {{ record[df.fieldname] || '—' }}
+          </div>
+          <template v-else>
+            <Link
+              v-if="df.fieldtype === 'Link'"
+              class="text-sm"
+              :doctype="df.options"
+              :modelValue="record[df.fieldname]"
+              @change="(v) => queueSave(df.fieldname, v, true)"
+            />
+            <FormControl
+              v-else-if="df.fieldtype === 'Select'"
+              type="select"
+              size="sm"
+              :options="selectOptions(df.options)"
+              :modelValue="record[df.fieldname]"
+              @update:modelValue="(v) => queueSave(df.fieldname, v, true)"
+            />
+            <FormControl
+              v-else-if="['Date', 'Datetime'].includes(df.fieldtype)"
+              type="date"
+              size="sm"
+              :modelValue="record[df.fieldname]"
+              @update:modelValue="(v) => queueSave(df.fieldname, v, true)"
+            />
+            <FormControl
+              v-else-if="df.fieldtype === 'Check'"
+              type="checkbox"
+              size="sm"
+              :modelValue="record[df.fieldname]"
+              @update:modelValue="(v) => queueSave(df.fieldname, v ? 1 : 0, true)"
+            />
+            <FormControl
+              v-else-if="['Int', 'Float', 'Currency', 'Percent'].includes(df.fieldtype)"
+              type="number"
+              size="sm"
+              :modelValue="record[df.fieldname]"
+              @update:modelValue="(v) => queueSave(df.fieldname, Number(v) || 0)"
+            />
+            <FormControl
+              v-else
+              type="text"
+              size="sm"
+              :modelValue="record[df.fieldname]"
+              @update:modelValue="(v) => queueSave(df.fieldname, v)"
+            />
+          </template>
         </div>
       </div>
 
@@ -237,9 +247,13 @@ function isFilled(fieldname) {
   return v !== null && v !== undefined && v !== '' && v !== 0
 }
 
+// Fields are only fillable while the record sits in the opened phase
+const canFill = computed(() => infoIdx.value === currentIdx.value && !isLost.value)
+
 // Save on change; text/number inputs debounce so we don't spam set_value.
 const saveTimers = {}
 function queueSave(fieldname, value, immediate = false) {
+  if (!canFill.value) return
   clearTimeout(saveTimers[fieldname])
   if (immediate) return saveField(fieldname, value)
   saveTimers[fieldname] = setTimeout(() => saveField(fieldname, value), 700)
