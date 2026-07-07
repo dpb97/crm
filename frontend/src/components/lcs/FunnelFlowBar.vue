@@ -75,8 +75,12 @@
         </div>
       </template>
 
-      <!-- One-click advance to the next funnel stage -->
-      <div v-if="!isLost && nextStageLabel" class="flex items-center self-stretch pl-2">
+      <!-- One-click advance to the next funnel stage — sticky so it stays
+           visible at the right edge however far the bar scrolls -->
+      <div
+        v-if="!isLost && nextStageLabel"
+        class="sticky right-0 z-10 flex items-center self-stretch bg-gradient-to-l from-white via-white to-transparent pl-6 pr-1"
+      >
         <Button
           size="sm"
           variant="solid"
