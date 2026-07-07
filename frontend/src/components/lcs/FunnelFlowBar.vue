@@ -188,6 +188,14 @@
         :label="__('Move to this phase')"
         @click="onAdvance(infoIdx)"
       />
+      <!-- Lead/Deal: move the record's status to this funnel stage -->
+      <Button
+        v-else-if="record && statusTargetFor(infoIdx) && infoIdx !== currentIdx && !isLost"
+        variant="solid"
+        iconLeft="arrow-right"
+        :label="__('Move to this phase')"
+        @click="moveToStage(infoIdx)"
+      />
     </div>
   </div>
 </template>
@@ -341,6 +349,23 @@ function groupBoxClass(gi) {
 
 function projectPhaseFor(i) {
   return props.entity === 'project' ? IDX_TO_PHASE[i] : null
+}
+
+// Lead/Deal: funnel stage -> status of the record's own doctype.
+// Lead stages beyond Qualified belong to the Deal — the hand-over is the
+// upstream Convert-to-Deal flow, so no shortcut button is offered there.
+const LEAD_TARGET = { 0: 'New', 1: 'Contacted', 2: 'Qualified' }
+const DEAL_TARGET = { 3: 'Qualification', 4: 'Demo/Making', 5: 'Proposal/Quotation', 6: 'Negotiation', 7: 'Won' }
+function statusTargetFor(i) {
+  if (props.entity === 'lead') return LEAD_TARGET[i] ?? null
+  if (props.entity === 'deal') return DEAL_TARGET[i] ?? null
+  return null
+}
+async function moveToStage(i) {
+  const target = statusTargetFor(i)
+  if (!target) return
+  await saveField('status', target)
+  infoIdx.value = null
 }
 
 // Phase detail side bar
