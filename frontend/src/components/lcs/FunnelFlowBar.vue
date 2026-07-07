@@ -139,7 +139,7 @@
               class="text-sm"
               :doctype="df.options"
               :modelValue="record[df.fieldname]"
-              @change="(v) => queueSave(df.fieldname, v, true)"
+              @update:modelValue="(v) => queueSave(df.fieldname, v, true)"
             />
             <FormControl
               v-else-if="df.fieldtype === 'Select'"

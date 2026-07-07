@@ -63,7 +63,7 @@
               class="text-sm"
               doctype="CRM Organization"
               :modelValue="draft.organization"
-              @change="(v) => (draft.organization = v)"
+              @update:modelValue="(v) => (draft.organization = v)"
             />
           </div>
           <div>
@@ -72,7 +72,7 @@
               class="text-sm"
               doctype="Country"
               :modelValue="draft.country"
-              @change="(v) => (draft.country = v)"
+              @update:modelValue="(v) => (draft.country = v)"
             />
           </div>
           <div>
@@ -82,7 +82,7 @@
               doctype="User"
               :filters="{ user_type: 'System User', enabled: 1 }"
               :modelValue="draft.salesperson"
-              @change="(v) => (draft.salesperson = v)"
+              @update:modelValue="(v) => (draft.salesperson = v)"
             />
           </div>
         </div>
