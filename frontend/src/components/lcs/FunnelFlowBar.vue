@@ -93,8 +93,13 @@
     </div>
   </div>
 
-  <!-- Phase detail side bar -->
-  <div v-if="infoStage" class="fixed right-0 top-0 z-40 flex h-screen w-full flex-col border-l bg-white shadow-2xl sm:w-80">
+  <!-- Phase detail side bar — closes on outside click / Escape so the
+       page sidebar underneath stays reachable -->
+  <div
+    v-if="infoStage"
+    ref="panelRef"
+    class="fixed right-0 top-0 z-40 flex h-screen w-full flex-col border-l bg-white shadow-2xl sm:w-80"
+  >
     <div class="flex items-center justify-between border-b px-4 py-3">
       <span class="lcs-section-label">{{ __('Phase') }}</span>
       <button class="text-gray-400 hover:text-gray-700" @click="infoIdx = null"><FeatherIcon name="x" class="h-4 w-4" /></button>
@@ -178,7 +183,8 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { onClickOutside } from '@vueuse/core'
 import { FeatherIcon, Button, FormControl, createResource, call, toast } from 'frappe-ui'
 import Link from '@/components/Controls/Link.vue'
 
@@ -326,6 +332,18 @@ function openInfo(i) {
   infoIdx.value = i
 }
 watch(infoIdx, loadFieldDefs)
+
+// Close on outside click / Escape. Popovers (autocomplete lists) portal
+// to <body>, so clicks inside them must not count as "outside".
+const panelRef = ref(null)
+onClickOutside(panelRef, () => (infoIdx.value = null), {
+  ignore: ['.PopoverContent'],
+})
+function onKeydown(e) {
+  if (e.key === 'Escape' && infoIdx.value !== null) infoIdx.value = null
+}
+onMounted(() => window.addEventListener('keydown', onKeydown))
+onUnmounted(() => window.removeEventListener('keydown', onKeydown))
 function onAdvance(i) {
   const phase = projectPhaseFor(i)
   if (phase) emit('change', phase)
