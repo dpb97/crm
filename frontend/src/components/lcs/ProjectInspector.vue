@@ -29,17 +29,63 @@
       </div>
 
       <div class="flex-1 space-y-4 overflow-y-auto p-4">
-        <!-- Key facts -->
-        <div class="grid grid-cols-2 gap-2 text-xs">
-          <div><div class="text-gray-400">{{ __('Phase') }}</div><div class="font-medium text-gray-800">{{ __(project.phase) }}</div></div>
-          <div><div class="text-gray-400">{{ __('Status') }}</div><div class="font-medium text-gray-800">{{ __(project.status) }}</div></div>
-          <div><div class="text-gray-400">{{ __('Value') }}</div><div class="font-medium tabular-nums text-gray-800">{{ money(project.estimated_value) }}</div></div>
-          <div><div class="text-gray-400">{{ __('Chance') }}</div><div class="font-medium tabular-nums text-gray-800">{{ Math.round(project.probability || 0) }}%</div></div>
-          <div><div class="text-gray-400">{{ __('Customer') }}</div><div class="truncate font-medium text-gray-800">{{ project.organization || '—' }}</div></div>
-          <div><div class="text-gray-400">{{ __('Country') }}</div><div class="font-medium text-gray-800">{{ project.country || '—' }}</div></div>
+        <!-- Key facts — inline editable, each change saves immediately -->
+        <div class="grid grid-cols-2 gap-x-2 gap-y-3 text-xs">
+          <div>
+            <div class="mb-1 text-gray-400">{{ __('Phase') }}</div>
+            <FormControl
+              type="select"
+              size="sm"
+              :options="PHASE_OPTIONS"
+              :modelValue="project.phase"
+              @update:modelValue="(v) => save('phase', v)"
+            />
+          </div>
+          <div>
+            <div class="mb-1 text-gray-400">{{ __('Status') }}</div>
+            <FormControl
+              type="select"
+              size="sm"
+              :options="STATUS_OPTIONS"
+              :modelValue="project.status || 'Open'"
+              @update:modelValue="(v) => save('status', v)"
+            />
+          </div>
+          <div>
+            <div class="mb-1 text-gray-400">{{ __('Value') }} (€)</div>
+            <FormControl type="number" size="sm" v-model="draft.estimated_value" />
+          </div>
+          <div>
+            <div class="mb-1 text-gray-400">{{ __('Chance') }} (%)</div>
+            <FormControl type="number" size="sm" :min="0" :max="100" v-model="draft.probability" />
+          </div>
           <div class="col-span-2">
-            <div class="text-gray-400">{{ __('Working on it') }}</div>
-            <div class="font-medium text-gray-800">{{ (project.salesperson || '').split('@')[0] || '—' }}</div>
+            <div class="mb-1 text-gray-400">{{ __('Customer') }}</div>
+            <Link
+              class="text-sm"
+              doctype="CRM Organization"
+              :modelValue="project.organization"
+              @change="(v) => save('organization', v)"
+            />
+          </div>
+          <div>
+            <div class="mb-1 text-gray-400">{{ __('Country') }}</div>
+            <Link
+              class="text-sm"
+              doctype="Country"
+              :modelValue="project.country"
+              @change="(v) => save('country', v)"
+            />
+          </div>
+          <div>
+            <div class="mb-1 text-gray-400">{{ __('Working on it') }}</div>
+            <Link
+              class="text-sm"
+              doctype="User"
+              :filters="{ user_type: 'System User', enabled: 1 }"
+              :modelValue="project.salesperson"
+              @change="(v) => save('salesperson', v)"
+            />
           </div>
         </div>
 
@@ -65,14 +111,52 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
-import { call, Button, FeatherIcon } from 'frappe-ui'
+import { ref, reactive, computed, watch } from 'vue'
+import { call, Button, FeatherIcon, FormControl, toast } from 'frappe-ui'
+import { watchDebounced } from '@vueuse/core'
+import Link from '@/components/Controls/Link.vue'
 import QuickContactActions from '@/components/lcs/QuickContactActions.vue'
 
 const props = defineProps({ project: { type: Object, default: null } })
-defineEmits(['open'])
+const emit = defineEmits(['open', 'updated'])
+
+const PHASE_OPTIONS = ['Qualified', 'Budget', 'Richtpreis', 'Offer', 'Negotiation', 'Won', 'Execution', 'Completed', 'Lost']
+  .map((v) => ({ label: __(v), value: v }))
+const STATUS_OPTIONS = ['Open', 'Active', 'On Hold', 'Completed', 'Cancelled']
+  .map((v) => ({ label: __(v), value: v }))
 
 const tagList = computed(() => (props.project?.tags || '').split(',').map((s) => s.trim()).filter(Boolean))
+
+// Save a single field immediately; mutate the row so list + inspector stay
+// in sync without a full reload, and tell the parent something changed.
+async function save(fieldname, value) {
+  if (!props.project?.name || props.project[fieldname] === value) return
+  try {
+    await call('frappe.client.set_value', {
+      doctype: 'LCS Project',
+      name: props.project.name,
+      fieldname,
+      value,
+    })
+    props.project[fieldname] = value
+    emit('updated', { name: props.project.name, fieldname, value })
+  } catch (e) {
+    toast.error(e?.messages?.[0] || __('Could not save'))
+  }
+}
+
+// Number inputs save debounced — set_value per keystroke would spam the API.
+const draft = reactive({ estimated_value: null, probability: null })
+watch(
+  () => props.project?.name,
+  () => {
+    draft.estimated_value = props.project?.estimated_value ?? null
+    draft.probability = props.project?.probability ?? null
+  },
+  { immediate: true },
+)
+watchDebounced(() => draft.estimated_value, (v) => save('estimated_value', Number(v) || 0), { debounce: 800 })
+watchDebounced(() => draft.probability, (v) => save('probability', Math.min(100, Math.max(0, Number(v) || 0))), { debounce: 800 })
 
 async function toggleImportant() {
   if (!props.project?.name) return
@@ -80,6 +164,7 @@ async function toggleImportant() {
   try {
     await call('frappe.client.set_value', { doctype: 'LCS Project', name: props.project.name, fieldname: 'is_important', value: v })
     props.project.is_important = v
+    emit('updated', { name: props.project.name, fieldname: 'is_important', value: v })
   } catch (e) {
     /* ignore */
   }
