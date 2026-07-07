@@ -33,7 +33,7 @@
         >
           <!-- entity label above its stages -->
           <div
-            class="mb-1 text-[9px] font-bold uppercase tracking-wider"
+            class="mb-1 text-[10px] font-bold uppercase tracking-wider"
             :class="groupActive(gi) && !isLost ? 'text-lcs-primary' : 'text-gray-400'"
           >
             {{ __(g.name) }}
@@ -53,14 +53,14 @@
                 @click="openInfo(s.idx)"
               >
                 <span
-                  class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 text-[9px] font-bold transition"
+                  class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 text-[11px] font-bold transition"
                   :class="nodeClass(s.idx)"
                 >
-                  <FeatherIcon v-if="s.idx < currentIdx && !isLost" name="check" class="h-2.5 w-2.5" />
+                  <FeatherIcon v-if="s.idx < currentIdx && !isLost" name="check" class="h-3 w-3" />
                   <span v-else>{{ s.idx + 1 }}</span>
                 </span>
                 <span
-                  class="whitespace-nowrap text-[11px] leading-none"
+                  class="whitespace-nowrap text-[13px] leading-none"
                   :class="s.idx === currentIdx && !isLost
                     ? 'font-semibold text-ink-gray-9'
                     : s.idx < currentIdx && !isLost
@@ -81,12 +81,12 @@
           <FeatherIcon name="chevron-right" class="h-4 w-4 shrink-0 text-red-300" />
         </div>
         <div class="flex min-w-fit flex-col rounded-lg border border-red-200 bg-red-50/60 px-3 pb-1.5 pt-1">
-          <div class="mb-1 text-[9px] font-bold uppercase tracking-wider text-red-500">{{ __('Ende') }}</div>
+          <div class="mb-1 text-[10px] font-bold uppercase tracking-wider text-red-500">{{ __('Ende') }}</div>
           <div class="flex items-center gap-1.5 px-1 py-0.5">
-            <span class="flex h-5 w-5 items-center justify-center rounded-full border-2 border-red-500 bg-red-500 text-white">
-              <FeatherIcon name="x" class="h-2.5 w-2.5" />
+            <span class="flex h-6 w-6 items-center justify-center rounded-full border-2 border-red-500 bg-red-500 text-white">
+              <FeatherIcon name="x" class="h-3 w-3" />
             </span>
-            <span class="whitespace-nowrap text-[11px] font-semibold leading-none text-red-600">{{ __('Lost') }}</span>
+            <span class="whitespace-nowrap text-[13px] font-semibold leading-none text-red-600">{{ __('Lost') }}</span>
           </div>
         </div>
       </template>
