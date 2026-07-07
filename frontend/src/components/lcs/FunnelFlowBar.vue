@@ -260,6 +260,10 @@ function queueSave(fieldname, value, immediate = false) {
 }
 async function saveField(fieldname, value) {
   if (!props.record?.name || props.record[fieldname] === value) return
+  // Optimistic: reflect the pick immediately — set_value runs the full
+  // doc save incl. hooks (scoring, sync) and can take a moment.
+  const prev = props.record[fieldname]
+  props.record[fieldname] = value
   try {
     await call('frappe.client.set_value', {
       doctype: props.doctype,
@@ -267,8 +271,8 @@ async function saveField(fieldname, value) {
       fieldname,
       value,
     })
-    props.record[fieldname] = value
   } catch (e) {
+    props.record[fieldname] = prev
     toast.error(e?.messages?.[0] || __('Could not save'))
   }
 }

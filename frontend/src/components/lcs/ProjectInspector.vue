@@ -189,6 +189,14 @@ async function saveAll(extra = {}) {
   if (!props.project?.name) return
   const fields = { ...changedFields.value, ...extra }
   if (!Object.keys(fields).length) return
+  // Optimistic: list row + inspector reflect the edit immediately;
+  // reverted if the server rejects it.
+  const prev = {}
+  for (const [f, v] of Object.entries(fields)) {
+    prev[f] = props.project[f]
+    props.project[f] = v
+    draft[f] = v
+  }
   saving.value = true
   try {
     await call('frappe.client.set_value', {
@@ -196,13 +204,13 @@ async function saveAll(extra = {}) {
       name: props.project.name,
       fieldname: fields,
     })
-    for (const [f, v] of Object.entries(fields)) {
-      props.project[f] = v
-      draft[f] = v
-    }
     emit('updated', { name: props.project.name, fields })
     toast.success(__('Saved'))
   } catch (e) {
+    for (const [f, v] of Object.entries(prev)) {
+      props.project[f] = v
+      draft[f] = v
+    }
     toast.error(e?.messages?.[0] || __('Could not save'))
   } finally {
     saving.value = false
