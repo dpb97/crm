@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { createResource } from 'frappe-ui'
+import { createResource, call } from 'frappe-ui'
 import { sessionStore } from './session'
 import { computed, reactive } from 'vue'
 import { useRouter } from 'vue-router'
@@ -27,6 +27,18 @@ export const usersStore = defineStore('crm-users', () => {
     onError(error) {
       if (error && error.exc_type === 'AuthenticationError') {
         router.push('/login')
+        return
+      }
+      if (error && error.exc_type === 'PermissionError') {
+        // A stale browser session hits this too: the server treats the
+        // request as Guest, and a Guest calling a non-whitelisted method
+        // raises PermissionError — which the router guard would misread
+        // as "no CRM role" and dead-end on Access Denied. Verify the
+        // session first; only genuinely logged-in users without a CRM
+        // role stay on the permission page.
+        call('frappe.auth.get_logged_user').catch(() => {
+          window.location.href = '/login?redirect-to=/crm'
+        })
       }
     },
   })
