@@ -29,6 +29,7 @@
         <div
           class="flex min-w-fit flex-col rounded-lg border px-3 pb-1.5 pt-1 transition"
           :class="groupBoxClass(gi)"
+          :style="{ flexGrow: g.stages.length, flexBasis: 0 }"
         >
           <!-- entity label above its stages -->
           <div
@@ -38,11 +39,11 @@
             {{ __(g.name) }}
           </div>
 
-          <div class="flex items-center">
+          <div class="flex w-full items-center" :class="g.stages.length === 1 ? 'justify-center' : ''">
             <template v-for="(s, si) in g.stages" :key="s.label">
               <div
                 v-if="si > 0"
-                class="mx-1 h-0.5 w-4 shrink-0 rounded"
+                class="mx-1 h-0.5 min-w-[1rem] flex-1 rounded"
                 :class="s.idx <= currentIdx && !isLost ? 'bg-lcs-primary' : 'bg-gray-200'"
               />
               <button
