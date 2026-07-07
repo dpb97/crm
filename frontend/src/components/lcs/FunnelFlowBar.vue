@@ -4,9 +4,10 @@
   One unified business-process flow across the whole LCS funnel:
   Lead → Qualifiziert → Budget → Richtpreis → Angebot → Verhandlung → Auftrag.
   The same bar is shown on Lead, Angebot (Deal) and Projekt; the current
-  position is derived from the record's own status/phase and grouped by
-  entity (Lead | Angebot | Projekt). The hand-over to the next entity only
-  happens at the group boundary. "Verloren" is a terminal red node.
+  position is derived from the record's own status/phase. Stages are grouped
+  into labelled entity segments (Interessent | Angebot | Projekt) — the label
+  sits ABOVE its stages, the active segment is highlighted. "Verloren" is a
+  terminal red node.
 
   On a Projekt the bar is clickable (advances the project phase, gated);
   on Lead/Deal it is read-only display.
@@ -14,59 +15,80 @@
 
 <template>
   <div class="border-b bg-surface-white px-5 py-2">
-    <div class="flex items-start gap-0 overflow-x-auto">
-      <template v-for="(s, i) in STAGES" :key="s.label">
-        <!-- connector line — uniform spacing, runs through the circle center;
-             a subtle divider marks the entity-group boundary -->
-        <div v-if="i > 0" class="flex h-6 min-w-[1.5rem] flex-1 items-center">
-          <div
-            class="h-0.5 w-full"
-            :class="[
-              i <= currentIdx && !isLost ? 'bg-lcs-primary' : 'bg-gray-200',
-              s.group !== STAGES[i - 1].group ? 'border-l-2 border-dotted border-gray-300' : '',
-            ]"
+    <div class="flex items-stretch gap-1.5 overflow-x-auto">
+      <template v-for="(g, gi) in GROUPS" :key="g.name">
+        <!-- hand-over chevron between entity segments -->
+        <div v-if="gi > 0" class="flex items-center self-stretch pt-3">
+          <FeatherIcon
+            name="chevron-right"
+            class="h-4 w-4 shrink-0"
+            :class="groupReached(gi) && !isLost ? 'text-lcs-primary' : 'text-gray-300'"
           />
         </div>
 
-        <component
-          :is="'button'"
-          type="button"
-          class="flex shrink-0 flex-col items-center gap-0.5 px-1"
-          :title="`${s.group}: ${s.label}`"
-          @click="openInfo(i)"
+        <div
+          class="flex min-w-fit flex-col rounded-lg border px-3 pb-1.5 pt-1 transition"
+          :class="groupBoxClass(gi)"
         >
-          <span
-            class="flex h-6 w-6 items-center justify-center rounded-full border-2 text-[10px] font-bold transition"
-            :class="nodeClass(i)"
+          <!-- entity label above its stages -->
+          <div
+            class="mb-1 text-[9px] font-bold uppercase tracking-wider"
+            :class="groupActive(gi) && !isLost ? 'text-lcs-primary' : 'text-gray-400'"
           >
-            <FeatherIcon v-if="i < currentIdx && !isLost" name="check" class="h-3 w-3" />
-            <span v-else>{{ i + 1 }}</span>
-          </span>
-          <span class="whitespace-nowrap text-[10px]" :class="i === currentIdx && !isLost ? 'font-semibold text-ink-gray-9' : 'text-gray-400'">
-            {{ __(s.label) }}
-          </span>
-        </component>
+            {{ __(g.name) }}
+          </div>
+
+          <div class="flex items-center">
+            <template v-for="(s, si) in g.stages" :key="s.label">
+              <div
+                v-if="si > 0"
+                class="mx-1 h-0.5 w-4 shrink-0 rounded"
+                :class="s.idx <= currentIdx && !isLost ? 'bg-lcs-primary' : 'bg-gray-200'"
+              />
+              <button
+                type="button"
+                class="group flex shrink-0 items-center gap-1.5 rounded-md px-1 py-0.5 transition hover:bg-gray-50"
+                :title="`${__(g.name)}: ${__(s.label)}`"
+                @click="openInfo(s.idx)"
+              >
+                <span
+                  class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 text-[9px] font-bold transition"
+                  :class="nodeClass(s.idx)"
+                >
+                  <FeatherIcon v-if="s.idx < currentIdx && !isLost" name="check" class="h-2.5 w-2.5" />
+                  <span v-else>{{ s.idx + 1 }}</span>
+                </span>
+                <span
+                  class="whitespace-nowrap text-[11px] leading-none"
+                  :class="s.idx === currentIdx && !isLost
+                    ? 'font-semibold text-ink-gray-9'
+                    : s.idx < currentIdx && !isLost
+                      ? 'text-ink-gray-7'
+                      : 'text-gray-400'"
+                >
+                  {{ __(s.label) }}
+                </span>
+              </button>
+            </template>
+          </div>
+        </div>
       </template>
 
       <!-- Terminal: Verloren -->
       <template v-if="isLost">
-        <div class="flex h-6 min-w-[1rem] flex-1 items-center"><div class="h-0.5 w-full bg-red-300" /></div>
-        <div class="flex shrink-0 flex-col items-center gap-0.5 px-1">
-          <span class="flex h-6 w-6 items-center justify-center rounded-full border-2 border-red-500 bg-red-500 text-white">
-            <FeatherIcon name="x" class="h-3 w-3" />
-          </span>
-          <span class="whitespace-nowrap text-[10px] font-semibold text-red-600">{{ __('Lost') }}</span>
+        <div class="flex items-center self-stretch pt-3">
+          <FeatherIcon name="chevron-right" class="h-4 w-4 shrink-0 text-red-300" />
+        </div>
+        <div class="flex min-w-fit flex-col rounded-lg border border-red-200 bg-red-50/60 px-3 pb-1.5 pt-1">
+          <div class="mb-1 text-[9px] font-bold uppercase tracking-wider text-red-500">{{ __('Ende') }}</div>
+          <div class="flex items-center gap-1.5 px-1 py-0.5">
+            <span class="flex h-5 w-5 items-center justify-center rounded-full border-2 border-red-500 bg-red-500 text-white">
+              <FeatherIcon name="x" class="h-2.5 w-2.5" />
+            </span>
+            <span class="whitespace-nowrap text-[11px] font-semibold leading-none text-red-600">{{ __('Lost') }}</span>
+          </div>
         </div>
       </template>
-    </div>
-
-    <!-- entity group legend -->
-    <div class="mt-1 flex items-center gap-3 text-[9px] uppercase tracking-wider text-gray-400">
-      <span :class="entity === 'lead' ? 'font-bold text-lcs-primary' : ''">{{ __('Lead') }}</span>
-      <span>›</span>
-      <span :class="entity === 'deal' ? 'font-bold text-lcs-primary' : ''">{{ __('Angebot') }}</span>
-      <span>›</span>
-      <span :class="entity === 'project' ? 'font-bold text-lcs-primary' : ''">{{ __('Projekt') }}</span>
     </div>
   </div>
 
@@ -121,6 +143,20 @@ const STAGES = [
   { label: 'Auftrag', group: 'Projekt' },
 ]
 
+// Entity segments with their stages (stage keeps its global funnel index)
+const GROUPS = computed(() => {
+  const groups = []
+  STAGES.forEach((s, i) => {
+    let g = groups[groups.length - 1]
+    if (!g || g.name !== s.group) {
+      g = { name: s.group, stages: [] }
+      groups.push(g)
+    }
+    g.stages.push({ ...s, idx: i })
+  })
+  return groups
+})
+
 const LEAD_MAP = { New: 0, Contacted: 1, Nurture: 1, Qualified: 2, Converted: 3 }
 const PROJECT_MAP = { Qualified: 2, Budget: 3, Richtpreis: 4, Offer: 5, Negotiation: 6, Won: 7, Execution: 7, Completed: 7 }
 const LOST = ['Lost', 'Unqualified', 'Junk', 'Closed Lost']
@@ -144,6 +180,19 @@ const currentIdx = computed(() => {
   if (props.entity === 'project') return PROJECT_MAP[props.status] ?? 2
   return dealIdx(props.status)
 })
+
+function groupActive(gi) {
+  return GROUPS.value[gi].stages.some((s) => s.idx === currentIdx.value)
+}
+function groupReached(gi) {
+  return currentIdx.value >= GROUPS.value[gi].stages[0].idx
+}
+function groupBoxClass(gi) {
+  if (isLost.value) return 'border-gray-200 bg-gray-50/40'
+  if (groupActive(gi)) return 'border-lcs-primary/40 bg-lcs-primary/[0.04] shadow-sm'
+  if (groupReached(gi)) return 'border-gray-200 bg-white'
+  return 'border-gray-200 bg-gray-50/40'
+}
 
 function projectPhaseFor(i) {
   return props.entity === 'project' ? IDX_TO_PHASE[i] : null

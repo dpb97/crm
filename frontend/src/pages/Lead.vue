@@ -122,6 +122,29 @@
                   {{ title }}
                 </div>
               </Tooltip>
+              <!-- LCS: always show reachable email/phone with click-to-act icons -->
+              <div v-if="doc.email || doc.mobile_no" class="flex flex-col gap-1">
+                <button
+                  v-if="doc.email"
+                  class="flex max-w-full items-center gap-1.5 text-base text-ink-gray-7 hover:text-ink-gray-9"
+                  :title="doc.email"
+                  @click="openEmailBox()"
+                >
+                  <Email2Icon class="h-3.5 w-3.5 shrink-0 text-ink-gray-5" />
+                  <span class="truncate">{{ doc.email }}</span>
+                </button>
+                <component
+                  :is="callEnabled ? 'button' : 'a'"
+                  v-if="doc.mobile_no"
+                  :href="callEnabled ? undefined : `tel:${doc.mobile_no}`"
+                  class="flex max-w-full items-center gap-1.5 text-base text-ink-gray-7 hover:text-ink-gray-9"
+                  :title="doc.mobile_no"
+                  @click="callEnabled && makeCall(doc.mobile_no)"
+                >
+                  <PhoneIcon class="h-3.5 w-3.5 shrink-0 text-ink-gray-5" />
+                  <span class="truncate">{{ doc.mobile_no }}</span>
+                </component>
+              </div>
               <div class="flex gap-1.5">
                 <Button
                   v-if="callEnabled"
