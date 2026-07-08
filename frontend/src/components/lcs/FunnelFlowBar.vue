@@ -393,7 +393,8 @@ async function moveToStage(i) {
   const target = statusTargetFor(i)
   if (!target) return
   await saveField('status', target)
-  infoIdx.value = null
+  // Keep the panel open — it now shows the (newly active) stage with
+  // its fields editable.
 }
 
 // Standalone "Next phase" button on the bar itself: advances exactly one
@@ -424,6 +425,13 @@ function openInfo(i) {
   infoIdx.value = i
 }
 watch(infoIdx, loadFieldDefs)
+
+// When the record moves to another stage while the panel shows the
+// previously active one (Next phase button, gated project change),
+// follow along so the panel always renders the new active phase.
+watch(currentIdx, (now, before) => {
+  if (infoIdx.value !== null && infoIdx.value === before) infoIdx.value = now
+})
 
 // Close on outside click / Escape. Popovers (autocomplete lists) portal
 // to <body>, so clicks inside them must not count as "outside".
