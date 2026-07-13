@@ -13,7 +13,14 @@
       <Breadcrumbs :items="[{ label: __('Sales Meeting'), route: { name: 'LCS Sales Meeting' } }]" />
     </template>
     <template #right-header>
-      <Button :label="__('Refresh')" iconLeft="refresh-cw" @click="board.reload()" :loading="board.loading" />
+      <div class="flex items-center gap-2">
+        <Button
+          :label="__('Insights')"
+          iconLeft="bar-chart-2"
+          @click="$router.push({ name: 'LCS Forecasting' })"
+        />
+        <Button :label="__('Refresh')" iconLeft="refresh-cw" @click="board.reload()" :loading="board.loading" />
+      </div>
     </template>
   </LayoutHeader>
 

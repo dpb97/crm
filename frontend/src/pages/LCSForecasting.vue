@@ -137,6 +137,7 @@
             <tr class="border-b bg-gray-50 text-left text-xs font-medium uppercase text-gray-500">
               <th class="px-4 py-2">{{ __('Project') }}</th>
               <th class="px-4 py-2">{{ __('Phase') }}</th>
+              <th class="px-4 py-2">{{ __('Responsible') }}</th>
               <th class="px-4 py-2 text-right">{{ __('Value') }}</th>
               <th class="px-4 py-2 text-right">{{ __('Prob.') }}</th>
               <th class="px-4 py-2 text-right">{{ __('Weighted') }}</th>
@@ -154,6 +155,7 @@
                 <div class="text-xs text-gray-400">{{ p.project_number }} • {{ p.project_type }}</div>
               </td>
               <td class="px-4 py-2.5 text-gray-600">{{ __(p.phase) }}</td>
+              <td class="px-4 py-2.5 text-gray-600">{{ shortUser(p.salesperson) }}</td>
               <td class="px-4 py-2.5 text-right tabular-nums text-gray-700">{{ formatCurrency(p.value) }}</td>
               <td class="px-4 py-2.5 text-right tabular-nums" :class="probabilityClass(p.probability)">{{ Math.round(p.probability || 0) }}%</td>
               <td class="px-4 py-2.5 text-right tabular-nums font-semibold text-lcs-primary">{{ formatCurrency(p.weighted) }}</td>
@@ -340,6 +342,10 @@ function probabilityClass(val) {
   if (val >= 70) return 'text-green-600'
   if (val >= 40) return 'text-amber-600'
   return 'text-red-500'
+}
+
+function shortUser(u) {
+  return (u || '').split('@')[0] || '—'
 }
 
 function formatCurrency(val, compact = false) {
