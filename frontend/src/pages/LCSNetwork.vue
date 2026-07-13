@@ -29,6 +29,12 @@
       <div v-if="!nodes.length" class="flex h-full items-center justify-center text-sm text-gray-400">
         {{ graph.loading ? __('Loading...') : __('No network data yet.') }}
       </div>
+      <!-- Companies mode: pilanda_theme SSOT block (ring layout, token
+           colors, light/dark). The dense people clusters stay on the
+           bespoke radial layout below — a plain ring cannot hold them. -->
+      <div v-else-if="mode === 'companies'" class="mx-auto h-full max-w-4xl p-6">
+        <PpNetworkGraph :nodes="ppNodes" :edges="ppEdges" @node-click="openCompany" />
+      </div>
       <svg v-else :viewBox="`0 0 ${W} ${H}`" class="h-full w-full" preserveAspectRatio="xMidYMid meet">
         <!-- company ↔ company links (Kunde X arbeitet mit Kunde Y) -->
         <g>
@@ -74,6 +80,7 @@ import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { createResource, Breadcrumbs, Button } from 'frappe-ui'
 import LayoutHeader from '@/components/LayoutHeader.vue'
+import PpNetworkGraph from '@/components/pp/PpNetworkGraph.vue'
 
 const router = useRouter()
 const W = 1400
@@ -150,6 +157,29 @@ const edgeLines = computed(() =>
     })
     .filter(Boolean),
 )
+
+// Companies mode → PpNetworkGraph props: biggest customer in the center,
+// the rest on the ring; edge label carries the shared-project weight.
+const ppNodes = computed(() => {
+  const companies = nodes.value.filter((n) => n.type === 'company')
+  const maxSize = Math.max(...companies.map((c) => c.size || 0), 0)
+  let centerTaken = false
+  return companies.map((c) => {
+    const isCenter = !centerTaken && maxSize > 0 && (c.size || 0) === maxSize
+    if (isCenter) centerTaken = true
+    return { id: c.id, label: c.label, kind: 'brand', center: isCenter }
+  })
+})
+const ppEdges = computed(() =>
+  companyEdges.value.map((e) => ({
+    from: e.source,
+    to: e.target,
+    label: (e.weight || 1) > 1 ? `${e.weight}×` : '',
+  })),
+)
+function openCompany(id) {
+  router.push({ name: 'Organization', params: { organizationId: String(id).replace('org::', '') } })
+}
 
 function companyR(n) {
   return Math.min(40, 22 + (n.size || 0) * 1.5)
