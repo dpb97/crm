@@ -897,3 +897,25 @@ def reassign_territory(territory: str, sales_manager_code: str | None = None, sa
         "sales_manager_code": doc.sales_manager_code,
         "sales_manager": doc.sales_manager,
     }
+
+
+@frappe.whitelist()
+def get_organization_emails(organization: str) -> list[dict]:
+    """Communications linked to a CRM Organization — the mailbox-synced customer
+    mail. The upstream Organization page has no email view, so this backs the
+    LCS "Emails" tab. Returns newest first with a plain-text preview."""
+    if not frappe.has_permission("CRM Organization", doc=organization):
+        frappe.throw(_("Not permitted"), frappe.PermissionError)
+    rows = frappe.get_all(
+        "Communication",
+        filters={"reference_doctype": "CRM Organization", "reference_name": organization},
+        fields=["name", "sender", "subject", "sent_or_received", "communication_date", "content"],
+        order_by="communication_date desc",
+        limit=200,
+    )
+    import html as _html
+    for r in rows:
+        text = _html.unescape(frappe.utils.strip_html(r.get("content") or ""))
+        r["preview"] = " ".join(text.split())[:160]
+        r.pop("content", None)
+    return rows

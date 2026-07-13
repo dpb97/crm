@@ -141,25 +141,32 @@
         </button>
       </template>
       <template #tab-panel="{ tab }">
-        <DealsListView
-          v-if="tab.label === 'Deals' && rows.length"
-          class="mt-4"
-          :rows="rows"
-          :columns="columns"
-          :options="{ selectable: false, showTooltip: false }"
+        <!-- LCS: mailbox-synced emails -->
+        <OrgEmailsTab
+          v-if="tab.label === 'Emails'"
+          :emails="orgEmails.data"
         />
-        <ContactsListView
-          v-if="tab.label === 'Contacts' && rows.length"
-          class="mt-4"
-          :rows="rows"
-          :columns="columns"
-          :options="{ selectable: false, showTooltip: false }"
-        />
-        <EmptyState
-          v-if="!rows.length"
-          :icon="tab.icon"
-          :name="__(tab.label)"
-        />
+        <template v-else>
+          <DealsListView
+            v-if="tab.label === 'Deals' && rows.length"
+            class="mt-4"
+            :rows="rows"
+            :columns="columns"
+            :options="{ selectable: false, showTooltip: false }"
+          />
+          <ContactsListView
+            v-if="tab.label === 'Contacts' && rows.length"
+            class="mt-4"
+            :rows="rows"
+            :columns="columns"
+            :options="{ selectable: false, showTooltip: false }"
+          />
+          <EmptyState
+            v-if="!rows.length"
+            :icon="tab.icon"
+            :name="__(tab.label)"
+          />
+        </template>
       </template>
     </Tabs>
   </div>
@@ -189,6 +196,8 @@ import WebsiteIcon from '@/components/Icons/WebsiteIcon.vue'
 import CameraIcon from '@/components/Icons/CameraIcon.vue'
 import DealsIcon from '@/components/Icons/DealsIcon.vue'
 import ContactsIcon from '@/components/Icons/ContactsIcon.vue'
+import EmailIcon from '@/components/Icons/EmailIcon.vue'
+import OrgEmailsTab from '@/components/lcs/OrgEmailsTab.vue'
 import DeleteLinkedDocModal from '@/components/DeleteLinkedDocModal.vue'
 import CustomActions from '@/components/CustomActions.vue'
 import { useDocument } from '@/data/document'
@@ -381,6 +390,12 @@ const tabs = [
     icon: ContactsIcon,
     count: computed(() => contacts.data?.length),
   },
+  // LCS: mailbox-synced customer mail linked to this organization
+  {
+    label: 'Emails',
+    icon: EmailIcon,
+    count: computed(() => orgEmails.data?.length),
+  },
 ]
 
 const deals = createListResource({
@@ -424,6 +439,13 @@ const contacts = createListResource({
   },
   orderBy: 'modified desc',
   pageLength: 20,
+  auto: true,
+})
+
+// LCS: mailbox-synced emails for the Emails tab
+const orgEmails = createResource({
+  url: 'lcs_integrations.projects.api.get_organization_emails',
+  params: { organization: props.organizationId },
   auto: true,
 })
 

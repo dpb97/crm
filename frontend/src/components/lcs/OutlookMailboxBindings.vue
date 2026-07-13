@@ -65,6 +65,7 @@
             <td class="px-3 py-2">
               <div class="flex items-center justify-end gap-1">
                 <Button size="sm" variant="ghost" iconLeft="zap" :label="__('Test')" :loading="testing === b.name" @click="test(b)" />
+                <Button size="sm" variant="ghost" iconLeft="download-cloud" :label="__('History')" @click="openBackfill(b)" />
                 <Button size="sm" variant="ghost" theme="red" icon="trash-2" @click="remove(b)" />
               </div>
             </td>
@@ -97,12 +98,31 @@
     <p v-if="testResult" class="text-sm" :class="testResult.ok ? 'text-green-600' : 'text-red-600'">
       {{ testResult.text }}
     </p>
+
+    <!-- Historical backfill -->
+    <Dialog v-model="showBackfill" :options="{ title: __('Load mail history'), size: 'sm' }">
+      <template #body-content>
+        <div class="space-y-3">
+          <p class="text-sm text-ink-gray-6">
+            {{ __('Imports historical mail from known contacts/companies for') }}
+            <span class="font-medium text-ink-gray-9">{{ backfillTarget?.graph_mailbox }}</span>.
+            {{ __('Runs in the background; new emails appear on the linked companies.') }}
+          </p>
+          <FormControl type="date" :label="__('Since (optional)')" v-model="backfillSince" />
+          <p class="text-xs text-ink-gray-4">{{ __('Leave empty to load the full mailbox history.') }}</p>
+          <div class="flex justify-end gap-2 pt-1">
+            <Button :label="__('Cancel')" @click="showBackfill = false" />
+            <Button variant="solid" iconLeft="download-cloud" :label="__('Start')" :loading="backfilling" @click="startBackfill" />
+          </div>
+        </div>
+      </template>
+    </Dialog>
   </div>
 </template>
 
 <script setup>
 import { reactive, ref, computed } from 'vue'
-import { createListResource, call, toast, Button, FormControl } from 'frappe-ui'
+import { createListResource, call, toast, Button, FormControl, Dialog } from 'frappe-ui'
 import Link from '@/components/Controls/Link.vue'
 
 const DOCTYPE = 'Outlook Mailbox Binding'
@@ -110,6 +130,11 @@ const testing = ref('')
 const adding = ref(false)
 const testResult = ref(null)
 const draft = reactive({ user: '', graph_mailbox: '' })
+
+const showBackfill = ref(false)
+const backfillTarget = ref(null)
+const backfillSince = ref('')
+const backfilling = ref(false)
 
 const list = createListResource({
   doctype: DOCTYPE,
@@ -190,6 +215,28 @@ async function test(binding) {
     testResult.value = { ok: false, text: e?.messages?.[0] || __('Test failed') }
   } finally {
     testing.value = ''
+  }
+}
+
+function openBackfill(binding) {
+  backfillTarget.value = binding
+  backfillSince.value = ''
+  showBackfill.value = true
+}
+
+async function startBackfill() {
+  backfilling.value = true
+  try {
+    await call('lcs_integrations.outlook_sync.backfill_service.enqueue_backfill', {
+      user: backfillTarget.value.user,
+      since: backfillSince.value || null,
+    })
+    toast.success(__('History backfill started — running in the background.'))
+    showBackfill.value = false
+  } catch (e) {
+    toast.error(e?.messages?.[0] || __('Could not start the backfill.'))
+  } finally {
+    backfilling.value = false
   }
 }
 

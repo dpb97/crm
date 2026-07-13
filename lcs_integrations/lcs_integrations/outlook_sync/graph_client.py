@@ -87,6 +87,32 @@ class GraphClient:
             )
         return self._check(resp, 200)
 
+    def messages_list(
+        self,
+        mailbox: str,
+        *,
+        since_iso: str | None = None,
+        page_url: str | None = None,
+        top: int = 50,
+    ) -> dict[str, Any]:
+        """Page through a mailbox's messages across ALL folders (Inbox, Sent,
+        Archive, subfolders) — used for historical backfill, not the delta
+        stream. `since_iso` limits to receivedDateTime >= that instant; follow
+        `@odata.nextLink` via `page_url` for subsequent pages."""
+        headers = self._headers()
+        if page_url:
+            resp = self._http.get(page_url, headers=headers)
+        else:
+            params = {
+                "$select": "id,subject,from,toRecipients,receivedDateTime,isDraft,body",
+                "$top": str(top),
+                "$orderby": "receivedDateTime desc",
+            }
+            if since_iso:
+                params["$filter"] = f"receivedDateTime ge {since_iso}"
+            resp = self._http.get(f"/users/{mailbox}/messages", params=params, headers=headers)
+        return self._check(resp, 200)
+
     # ----------------------------------------------------------- Calendar
 
     def events_delta(

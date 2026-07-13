@@ -64,21 +64,37 @@ def _persist_message(user: str, message: dict[str, Any], only_known: bool = True
     # Deduplicate by Graph message ID stored in `message_id`.
     if frappe.db.exists("Communication", {"message_id": graph_id}):
         return False
-    sender = (message.get("from", {}).get("emailAddress", {}).get("address") or "").lower()
+    sender_raw = (message.get("from", {}).get("emailAddress", {}).get("address") or "").lower()
+    # Historical mail can carry non-SMTP senders (X.500/EX addresses, empty
+    # from). Frappe's Communication.validate rejects those hard, so normalise
+    # first and skip anything without a usable sender address.
+    sender = frappe.utils.validate_email_address(sender_raw) or ""
+    if not sender:
+        return False
+    # Skip mail sent from our own company domain — internal correspondence is
+    # noise in a customer-facing CRM. "Own domain" = the mailbox owner's domain.
+    own_domain = user.rsplit("@", 1)[-1].lower() if "@" in (user or "") else ""
+    if own_domain and sender.lower().endswith("@" + own_domain):
+        return False
     # Import filter: skip mail whose sender domain is not linked to any CRM
     # contact/deal — keeps private and unrelated mail out of the CRM entirely
     # (same matching rule the auto-link hook applies after insert).
     if only_known and not match_reference_for_sender(sender):
         return False
+    # Keep only recipients that are valid SMTP addresses; distribution-list
+    # display names and X.500 recipients would otherwise fail validation.
+    recipients = ", ".join(
+        addr for addr in (
+            (r.get("emailAddress", {}) or {}).get("address", "")
+            for r in message.get("toRecipients", [])
+        ) if addr and frappe.utils.validate_email_address(addr)
+    )
     comm = frappe.get_doc({
         "doctype": "Communication",
         "communication_medium": "Email",
         "sent_or_received": "Received" if message.get("isDraft") is False else "Sent",
-        "sender": (message.get("from", {}).get("emailAddress", {}).get("address") or "").lower(),
-        "recipients": ", ".join(
-            r.get("emailAddress", {}).get("address", "")
-            for r in message.get("toRecipients", [])
-        ),
+        "sender": sender,
+        "recipients": recipients,
         "subject": message.get("subject") or "(no subject)",
         "content": message.get("body", {}).get("content") or "",
         "message_id": graph_id,
