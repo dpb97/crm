@@ -40,18 +40,11 @@
       >
         {{ testResult.message }}
       </p>
-      <p class="mt-3 text-sm text-ink-gray-6">
-        {{ __('Tracked mailboxes are configured per account under') }}
-        <a
-          class="font-medium text-ink-gray-9 underline"
-          href="/app/outlook-mailbox-binding"
-          target="_blank"
-          rel="noopener"
-        >
-          Outlook Mailbox Binding
-        </a>
-        ({{ __('one row per mailbox, toggle “Active”') }}).
-      </p>
+    </div>
+
+    <!-- Mailbox mapping (user ↔ Graph mailbox), editable inline -->
+    <div class="border-t px-8 py-6">
+      <OutlookMailboxBindings />
     </div>
   </div>
 </template>
@@ -60,6 +53,7 @@
 import { ref } from 'vue'
 import { Button, call, toast } from 'frappe-ui'
 import SettingsPage from '@/components/Settings/SettingsPage.vue'
+import OutlookMailboxBindings from '@/components/lcs/OutlookMailboxBindings.vue'
 
 const probeMailbox = ref('')
 const testing = ref(false)

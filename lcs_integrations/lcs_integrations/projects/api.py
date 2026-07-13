@@ -868,3 +868,29 @@ def get_phase_field_defs(doctype: str, fieldnames):
             "options": df.options or "",
         })
     return out
+
+
+@frappe.whitelist()
+def reassign_territory(territory: str, sales_manager_code: str | None = None, sales_manager: str | None = None) -> dict:
+    """Remap a territory to a different sales manager from the market-assignment
+    UI. Sets the code AND the user link together so the view stays consistent,
+    and — via the LCS Sales Territory controller's on_update — clears the
+    country->territory cache so new leads/deals/projects auto-assign to the new
+    owner. Managers + System Managers only; existing records are NOT reassigned.
+    """
+    frappe.only_for(["System Manager", "Sales Manager"])
+    if not frappe.db.exists("LCS Sales Territory", territory):
+        frappe.throw(_("Territory not found."))
+    doc = frappe.get_doc("LCS Sales Territory", territory)
+    if sales_manager_code is not None:
+        doc.sales_manager_code = sales_manager_code or None
+    if sales_manager is not None:
+        doc.sales_manager = sales_manager or None
+    doc.save(ignore_permissions=True)
+    frappe.db.commit()
+    return {
+        "ok": True,
+        "territory": territory,
+        "sales_manager_code": doc.sales_manager_code,
+        "sales_manager": doc.sales_manager,
+    }

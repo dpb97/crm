@@ -230,3 +230,20 @@ Chat,Chat
 Teams call started — logged in Call Logs.,Teams-Anruf gestartet — in den Anrufprotokollen erfasst.
 Could not start the Teams call.,Teams-Anruf konnte nicht gestartet werden.
 No phone number or Teams address for this contact.,Keine Telefonnummer oder Teams-Adresse für diesen Kontakt.
+Mailbox mapping,Postfach-Zuordnung
+One mailbox per salesperson. Import stays filtered to known contacts/companies when enabled.,Ein Postfach pro Vertriebler. Import bleibt bei Aktivierung auf bekannte Kontakte/Firmen gefiltert.
+CRM User,CRM-Benutzer
+Graph Mailbox (UPN),Graph-Postfach (UPN)
+Only known,Nur bekannte
+Last sync,Letzter Sync
+No mailboxes mapped yet.,Noch keine Postfächer zugeordnet.
+Add mailbox,Postfach hinzufügen
+Pick a user and a mailbox.,Benutzer und Postfach wählen.
+Mailbox mapped.,Postfach zugeordnet.
+Mailbox removed.,Postfach entfernt.
+Could not add the mailbox.,Postfach konnte nicht hinzugefügt werden.
+Could not remove the mailbox.,Postfach konnte nicht entfernt werden.
+Territory reassigned to,Gebiet neu zugewiesen an
+Could not reassign the territory.,Gebiet konnte nicht neu zugewiesen werden.
+connection OK,Verbindung OK
+Test failed,Test fehlgeschlagen

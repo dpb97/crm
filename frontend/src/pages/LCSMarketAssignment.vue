@@ -134,7 +134,16 @@
               </td>
               <td class="px-3 py-2.5 text-gray-600">{{ __(r.region) }}</td>
               <td class="px-3 py-2.5">
-                <div class="flex items-center gap-1.5">
+                <FormControl
+                  v-if="canManage"
+                  type="select"
+                  size="sm"
+                  :options="managerOptions"
+                  :modelValue="r.code"
+                  class="min-w-[9rem]"
+                  @update:modelValue="(v) => reassign(r, v)"
+                />
+                <div v-else class="flex items-center gap-1.5">
                   <span class="rounded bg-lcs-primary/10 px-1.5 py-0.5 text-[10px] font-bold text-lcs-primary">{{ r.code }}</span>
                   <span class="text-xs text-gray-700">{{ r.user_name || shortUser(r.user) || '—' }}</span>
                 </div>
@@ -190,8 +199,12 @@
 
 <script setup>
 import { computed, ref } from 'vue'
-import { createResource, Breadcrumbs, Button, FormControl, FeatherIcon } from 'frappe-ui'
+import { createResource, call, toast, Breadcrumbs, Button, FormControl, FeatherIcon } from 'frappe-ui'
 import LayoutHeader from '@/components/LayoutHeader.vue'
+import { usersStore } from '@/stores/users'
+
+const { isManager } = usersStore()
+const canManage = computed(() => isManager())
 
 const board = createResource({
   url: 'lcs_integrations.projects.api.get_market_assignment',
@@ -202,6 +215,36 @@ const summary = computed(() => board.data?.summary || { territories: 0, countrie
 const managers = computed(() => board.data?.managers || [])
 const territories = computed(() => board.data?.territories || [])
 const segments = computed(() => board.data?.segments || [])
+
+// Reassign a territory to a different sales manager inline. The dropdown
+// offers the known market-split managers (code + user); picking one saves
+// code + user together and re-aggregates the board.
+const managerOptions = computed(() =>
+  managers.value
+    .filter((m) => m.code && m.code !== '—')
+    .map((m) => ({ label: `${m.code} · ${m.user_name || m.code}`, value: m.code })),
+)
+async function reassign(row, code) {
+  if (!code || code === row.code) return
+  const m = managers.value.find((x) => x.code === code)
+  const prev = { code: row.code, user: row.user, user_name: row.user_name }
+  // optimistic
+  row.code = code
+  row.user = m?.user || null
+  row.user_name = m?.user_name || code
+  try {
+    await call('lcs_integrations.projects.api.reassign_territory', {
+      territory: row.territory,
+      sales_manager_code: code,
+      sales_manager: m?.user || null,
+    })
+    toast.success(__('Territory reassigned to') + ' ' + code)
+    board.reload()
+  } catch (e) {
+    Object.assign(row, prev)
+    toast.error(e?.messages?.[0] || __('Could not reassign the territory.'))
+  }
+}
 
 const PRIORITIES = ['Go', 'Watch', 'Maintain', 'Exit']
 // German labels for the market-split priorities. Kept local instead of __()
