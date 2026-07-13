@@ -58,30 +58,22 @@ export default defineConfig(async ({ mode }) => {
           lang: 'de',
           orientation: 'portrait',
           categories: ['business', 'productivity'],
+          // Pilanda "PA" brand-mark icons, generated into the CRM frontend
+          // public dir (served at /assets/crm/frontend/) — the previous
+          // lcs_integrations icons 404'd (app assets weren't symlinked) and
+          // were empty placeholders.
           icons: [
             {
-              src: '/assets/lcs_integrations/manifest/lcs-icon-192.maskable.png',
+              src: '/assets/crm/frontend/favicon-192.png',
               sizes: '192x192',
               type: 'image/png',
-              purpose: 'any',
+              purpose: 'any maskable',
             },
             {
-              src: '/assets/lcs_integrations/manifest/lcs-icon-192.maskable.png',
-              sizes: '192x192',
-              type: 'image/png',
-              purpose: 'maskable',
-            },
-            {
-              src: '/assets/lcs_integrations/manifest/lcs-icon-512.maskable.png',
+              src: '/assets/crm/frontend/favicon-512.png',
               sizes: '512x512',
               type: 'image/png',
-              purpose: 'any',
-            },
-            {
-              src: '/assets/lcs_integrations/manifest/lcs-icon-512.maskable.png',
-              sizes: '512x512',
-              type: 'image/png',
-              purpose: 'maskable',
+              purpose: 'any maskable',
             },
           ],
         },
