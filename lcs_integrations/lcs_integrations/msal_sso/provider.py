@@ -18,9 +18,11 @@ ENTRA_KEY_NAME = "entra"
 
 def install_or_update() -> None:
     """Idempotent: create / refresh the Entra Social Login Key."""
-    tenant = os.environ.get("ENTRA_TENANT_ID", "common")
-    client_id = os.environ.get("ENTRA_CLIENT_ID", "")
-    client_secret = os.environ.get("ENTRA_CLIENT_SECRET", "")
+    from lcs_integrations.entra_config import entra
+
+    tenant = entra("ENTRA_TENANT_ID", "common")
+    client_id = entra("ENTRA_CLIENT_ID", "")
+    client_secret = entra("ENTRA_CLIENT_SECRET", "")
     authority = f"https://login.microsoftonline.com/{tenant}"
     doc = frappe.get_doc("Social Login Key", ENTRA_KEY_NAME) if frappe.db.exists(
         "Social Login Key", ENTRA_KEY_NAME

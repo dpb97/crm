@@ -17,11 +17,12 @@ log and persist the error on the bound DocType row.
 
 from __future__ import annotations
 
-import os
 from typing import Any
 
 import httpx
 import msal
+
+from lcs_integrations.entra_config import entra, missing_keys
 
 
 class GraphClientError(RuntimeError):
@@ -30,9 +31,12 @@ class GraphClientError(RuntimeError):
 
 class GraphClient:
     def __init__(self, *, transport: httpx.BaseTransport | None = None) -> None:
-        self._tenant = os.environ["ENTRA_TENANT_ID"]
-        self._client_id = os.environ["ENTRA_CLIENT_ID"]
-        self._client_secret = os.environ["ENTRA_CLIENT_SECRET"]
+        missing = missing_keys()
+        if missing:
+            raise GraphClientError("Missing Entra credentials: " + ", ".join(missing))
+        self._tenant = entra("ENTRA_TENANT_ID")
+        self._client_id = entra("ENTRA_CLIENT_ID")
+        self._client_secret = entra("ENTRA_CLIENT_SECRET")
         self._authority = f"https://login.microsoftonline.com/{self._tenant}"
         self._scopes = ["https://graph.microsoft.com/.default"]
         self._http = httpx.Client(

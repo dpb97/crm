@@ -147,14 +147,13 @@ def test_connection(mailbox: str | None = None) -> dict[str, Any]:
     (optionally) probes a mailbox's inbox. Read-only; returns a clear
     ok/error so the connection can be validated before enabling the sync.
     """
-    import os
+    from lcs_integrations.entra_config import missing_keys
 
     frappe.only_for(["System Manager", "Sales Manager"])
 
-    required = ("ENTRA_TENANT_ID", "ENTRA_CLIENT_ID", "ENTRA_CLIENT_SECRET")
-    missing = [k for k in required if not os.environ.get(k)]
+    missing = missing_keys()
     if missing:
-        return {"ok": False, "error": f"Missing environment variables: {', '.join(missing)}"}
+        return {"ok": False, "error": f"Missing Entra credentials: {', '.join(missing)}"}
 
     from .graph_client import GraphClient, GraphClientError
 
