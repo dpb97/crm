@@ -1,8 +1,8 @@
 # Entwicklungsplan — pilanda_sales (Vertrieb: Lastenheft → Kalkulation → Angebot)
 > Master: pilanda/ENTWICKLUNGSPLAN.md · Theme-Mitbau: pilanda_theme/CONTRIBUTING.md
-> Stand: 07.07.2026 · Regel: NUR echte Zustände abhaken — Wahrheit ist Pflicht.
+> Stand: 13.07.2026 · Regel: NUR echte Zustände abhaken — Wahrheit ist Pflicht.
 
-Rolle: baut aus Oswalds Prototyp (read-only Referenz, **kein Code-Port**) das kaufmännische Angebotswesen für Seilkran-Projekte nach: Questionnaire/Lastenheft → Kalkulation → Angebot (+ Pricing Sheet/LV, Pflichtenheft). Modul „Vertrieb" (4 Bereiche: CRM · Questionnaire · Kalkulation · Angebot). **CRM-App/-Backend liefert Dominik** (eigenes Repo, CRM-SPA `/crm`); Optik/UX baut das Theme.
+Rolle: baut aus Oswalds Prototyp (read-only Referenz, **kein Code-Port**) das kaufmännische Angebotswesen für Seilkran-Projekte nach: Questionnaire/Lastenheft → Kalkulation → Angebot (+ Pricing Sheet/LV, Pflichtenheft). Im Vertriebsschnitt der Nav (Master §6) liefert die App vor allem **„Projekte ▸ Lastenheft" + „Angebote ▸ Varianten"**; der CRM-Teil erscheint dort als eigener Bereich **„Netzwerk"** (Kunden/Kontakte/Agenten/Partner). **CRM-SPA = Frappe CRM App `/crm`** (Owner Dominik); die LCS-Logik dazu liegt in `pilanda_sales/crm/` — Optik/UX baut das Theme.
 
 ## Bindende Entscheide
 - **Backend rechnet alles, Vue zeigt nur** (E-5/E-14). Formeln 1:1 aus Dossier 11; Beweis per **Golden-Master gegen Referenzquote `03c6eb4dfc`**.
@@ -21,6 +21,7 @@ Rolle: baut aus Oswalds Prototyp (read-only Referenz, **kein Code-Port**) das ka
 - [x] CRM-Rücklink `Project.custom_sales_crm_deal` (Link → `CRM Deal`, nur wenn Frappe CRM installiert) in der CRM-Domäne `crm/custom_fields.py`, Owner Dominik — 02.07., `54077b7`
 
 ## Offen — wird wirklich gebaut
+- [ ] **SO-Automatik spezifizieren (Master §6/E3, WICHTIG):** beim Statuswechsel → „Auftrag" automatisch verdeckter ERPNext Sales Order (1:1 aufs Projekt, nirgends in der Nav; „Aufträge"-Sicht = gefilterte Projektliste `q:status=Auftrag`). Zu klären: Verhältnis eigener Angebots-DocType ↔ ERPNext Quotation ↔ Sales Order; welches Feld speist die „Aufträge"-Filterliste (`Project.custom_sales_phase` vs. `Project.status`) — mit dem projectengineering-Ablauf-SSOT abstimmen. Detail-Spez gehört in diese App (`pilanda_sales`).
 - [ ] Phase 3 Rest: Portal-Wizard (Vue/Token/Companion), PDF-Generator + Rück-Import, Datei-Anhänge, International-Felder (E-16)
 - [ ] Phase 5 Gros: vollständige VK-Cascade (8 Stufen, 3 Gross-ups), N/E/A/S, Phasen/Manpower, Commission/WHT/Einfuhrzoll/Financing/Buyback/AfA-PMT, Kalkulations-DocType + Kostenübersicht (13 Spalten), **Golden-Master gegen `03c6eb4dfc`** (braucht Phase-2-Daten 🔒)
 - [ ] Phase 2 Datenimport (Stammdaten): Item-DB (222, CN passiv), Board-/Markup-Defaults, Textbausteine — Abgleichsprotokoll Pflicht; braucht Prototyp-Lesezugriff (`C:\CoWork\Pilanda\Questionaire`)
@@ -34,7 +35,7 @@ Rolle: baut aus Oswalds Prototyp (read-only Referenz, **kein Code-Port**) das ka
 - **B-4 CN erledigt** — CN nur passives Attribut, keine Automatik; nicht erneut aufmachen.
 - **[OFFEN] Innendienst-Benachrichtigungsmechanik** — *wie* der Innendienst über eine anstehende Übergabe informiert wird (Notification/Assignment/ToDo), ist nicht entschieden. Das Übergabe-Feld steht; die Benachrichtigung darum herum nicht bauen, bis Marco den Mechanismus definiert.
 - Nichts aus dem Prototyp portieren; nichts [OFFEN] bauen. Feature-Branch → PR → develop (Review Dominik).
-- UI-Vorschläge entstehen als A-Liga-Showcases im Theme (`pilanda_theme/Entwicklungsplan.md §14/§14.1`); Verdrahtung hierher erst, wenn Codes final **und** CRM steht.
+- UI-Vorschläge entstehen als A-Liga-Showcases im Theme (`pilanda_theme/Entwicklungsplan.md`, Abschnitt „Modul-Roadmap"/Baustein-Index); Verdrahtung hierher erst, wenn Codes final **und** CRM steht.
 
 ## Verweise
 - CRM-Domäne `pilanda_sales/crm/` (Owner Dominik) hält als einziges den ERPNext-Rücklink `custom_sales_crm_deal` — ein Eigentümer je Feld, gehört bewusst NICHT in `custom_fields.py`.
