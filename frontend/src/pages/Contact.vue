@@ -83,16 +83,16 @@
                   >
                     {{ contact.doc.company_name }}
                   </div>
-                  <!-- LCS: always-available quick communication actions -->
-                  <QuickContactActions
-                    class="mt-1 w-full max-w-md"
-                    :email="contact.doc.email_id"
-                    :phone="contact.doc.mobile_no"
-                    :cols="4"
-                  />
                   <ErrorMessage :message="__(error)" />
                 </div>
               </div>
+              <!-- LCS: quick communication actions — own full-width row below
+                   the avatar so the narrow name column can't clip them -->
+              <QuickContactActions
+                class="w-full"
+                :email="contact.doc.email_id"
+                :phone="contact.doc.mobile_no"
+              />
               <div class="flex gap-1.5">
                 <Button
                   v-if="callEnabled && contact.doc.mobile_no"
