@@ -73,9 +73,17 @@
               {{ __(doc.status) }}
             </span>
             <div class="text-right">
-              <div class="text-2xl font-bold tabular-nums text-gray-900">
-                {{ doc.value ? formatCurrency(doc.value) : '—' }}
-              </div>
+              <MoneyDual
+                v-if="doc.value"
+                class="items-end"
+                :amount="doc.value"
+                :currency="doc.currency"
+                :value-eur="doc.value_eur"
+                :rate="doc.exchange_rate_to_eur || liveRateValue"
+                :frozen-at="doc.rate_frozen_at"
+                size="lg"
+              />
+              <div v-else class="text-2xl font-bold text-gray-300">—</div>
               <div v-if="doc.probability" class="text-[10px] uppercase text-gray-400">
                 {{ Math.round(doc.probability) }}% {{ __('probability') }}
               </div>
@@ -271,6 +279,7 @@ import {
 import LayoutHeader from '@/components/LayoutHeader.vue'
 import VoiceInput from '@/components/lcs/VoiceInput.vue'
 import ErpNextDeepLink from '@/components/lcs/ErpNextDeepLink.vue'
+import MoneyDual from '@/components/lcs/MoneyDual.vue'
 
 // Inline-editable field — click to edit, blur to save
 const InlineField = {

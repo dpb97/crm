@@ -413,9 +413,16 @@
                         <span class="h-1.5 w-1.5 rounded-full" :class="offerStatusDotClass(offer.status)" />
                         {{ __(offer.status) }}
                       </span>
-                      <span v-if="offer.value" class="text-lg font-bold text-gray-900">
-                        {{ formatCurrency(offer.value) }}
-                      </span>
+                      <MoneyDual
+                        v-if="offer.value"
+                        class="items-end text-right"
+                        :amount="offer.value"
+                        :currency="offer.currency"
+                        :value-eur="offer.value_eur"
+                        :rate="offer.exchange_rate_to_eur"
+                        :frozen-at="offer.rate_frozen_at"
+                        size="lg"
+                      />
                     </div>
                   </div>
                   <!-- Status change dropdown -->
@@ -700,6 +707,7 @@ import {
 } from 'frappe-ui'
 import LayoutHeader from '@/components/LayoutHeader.vue'
 import FunnelFlowBar from '@/components/lcs/FunnelFlowBar.vue'
+import MoneyDual from '@/components/lcs/MoneyDual.vue'
 import Resizer from '@/components/Resizer.vue'
 import SyncStatusBadge from '@/components/lcs/SyncStatusBadge.vue'
 import ErpNextDeepLink from '@/components/lcs/ErpNextDeepLink.vue'

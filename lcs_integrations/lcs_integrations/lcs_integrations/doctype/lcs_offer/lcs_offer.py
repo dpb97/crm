@@ -21,12 +21,19 @@ class LCSOffer(Document):
         self.freeze_fx_rate()
         self.sync_project_phase()
 
-    def freeze_fx_rate(self):
-        """Snapshot the EUR conversion rate at save time.
+    # Statuses that mean the offer has been sent to the customer — from
+    # this point the FX rate is locked ("eingefroren beim Absenden").
+    SENT_STATUSES = ("Sent", "In Review", "Accepted", "Rejected")
 
-        Re-freezes only when value/currency changed since the last save,
-        otherwise the historical rate stays — that's the whole point of
-        "frozen" pricing for offer revisions.
+    def freeze_fx_rate(self):
+        """EUR conversion handling with freeze-on-send semantics.
+
+        - Draft: the EUR value tracks the CURRENT rate on every save, so a
+          draft always shows today's conversion (rate_frozen_at stays null).
+        - On send (status enters Sent/In Review/Accepted/Rejected): the rate
+          is captured once and locked — subsequent edits keep that frozen
+          rate. This is the whole point of a binding offer.
+        - EUR offers: rate 1, value_eur == value.
         """
         if not self.value or not self.currency:
             self.exchange_rate_to_eur = None
@@ -34,36 +41,31 @@ class LCSOffer(Document):
             self.rate_frozen_at = None
             return
 
-        prev_value, prev_currency, prev_rate = None, None, None
-        if not self.is_new():
-            prev_value, prev_currency, prev_rate = frappe.db.get_value(
-                "LCS Offer",
-                self.name,
-                ("value", "currency", "exchange_rate_to_eur"),
-            ) or (None, None, None)
-
-        # prev_rate may be 0.0 (Float column default) before the very
-        # first freeze — treat that as "no rate yet".
-        had_rate_before = bool(prev_rate) and float(prev_rate) > 0
-        unchanged = (
-            self.value == prev_value
-            and self.currency == prev_currency
-            and had_rate_before
-        )
-        if unchanged:
+        if self.currency == "EUR":
+            self.exchange_rate_to_eur = 1.0
+            self.value_eur = round(float(self.value), 2)
+            self.rate_frozen_at = self.rate_frozen_at or now_datetime()
             return
 
+        is_sent = self.status in self.SENT_STATUSES
+        already_frozen = bool(self.rate_frozen_at) and bool(self.exchange_rate_to_eur) and float(self.exchange_rate_to_eur) > 0
+
+        # Already sent AND already frozen → keep the locked rate; only
+        # recompute the EUR figure in case the value was corrected.
+        if is_sent and already_frozen:
+            self.value_eur = round(float(self.value) * float(self.exchange_rate_to_eur), 2)
+            return
+
+        # Draft (live) OR the moment of sending (freeze now).
         rate = get_rate(self.currency, "EUR")
         if rate is None:
-            # Upstream Frankfurter unreachable: keep the stale rate
-            # rather than zeroing it out. The UI shows a banner so
-            # the user knows the frozen value might be from a prior
-            # save.
+            # Frankfurter unreachable: keep any stale rate rather than
+            # zeroing it. The UI banners this so the user knows.
             return
 
         self.exchange_rate_to_eur = rate
         self.value_eur = round(float(self.value) * rate, 2)
-        self.rate_frozen_at = now_datetime()
+        self.rate_frozen_at = now_datetime() if is_sent else None
 
     def validate_version(self):
         """Ensure version increments per project.
