@@ -35,16 +35,54 @@ def _counterparty_addresses(doc: Any) -> list[str]:
     return [doc.sender] if doc.sender else []
 
 
-def match_reference_for_sender(sender: str | None) -> tuple[str, str] | None:
-    """Resolve a sender address to the CRM record its mails should attach to.
+def _contact_for_email(address: str | None) -> str | None:
+    """Name of a Contact that carries this e-mail address (case-insensitive)."""
+    if not address:
+        return None
+    rows = frappe.db.sql(
+        "SELECT parent FROM `tabContact Email` WHERE LOWER(email_id) = %s LIMIT 1",
+        (address.strip().lower(),),
+    )
+    return rows[0][0] if rows else None
 
-    Same domain-binding rules as auto_link: bindable domain → organization's
-    most recent active LCS Project, falling back to the organization itself.
-    Used by the Outlook delta sync as its import filter, so "known domain"
-    means the same thing everywhere. Returns None for unknown or personal
-    mail domains.
+
+def match_reference_for_sender(sender: str | None) -> tuple[str, str] | None:
+    """Resolve a sender address to a CRM record — the import filter's
+    "is this address known?" test. Imports the mail when EITHER the exact
+    contact OR its company is already in the CRM:
+
+      1. Contact match: the address belongs to an existing Contact → link to
+         that contact's CRM Deal / Organization if any, else the Contact
+         itself. Works even for personal-domain addresses, because an
+         explicitly created contact IS the "known" signal.
+      2. Company match: the sender's mail domain belongs to a CRM
+         Organization → its most recent active LCS Project, else the org.
+
+    Returns None when neither is known (mail is skipped by the sync).
     """
-    domain = domain_of(sender or "")
+    address = (sender or "").strip()
+
+    # 1. Known contact (by exact e-mail).
+    contact = _contact_for_email(address)
+    if contact:
+        link = frappe.db.get_value(
+            "Dynamic Link",
+            {"parenttype": "Contact", "parent": contact, "link_doctype": "CRM Deal"},
+            "link_name",
+        )
+        if link:
+            return ("CRM Deal", link)
+        org_link = frappe.db.get_value(
+            "Dynamic Link",
+            {"parenttype": "Contact", "parent": contact, "link_doctype": "CRM Organization"},
+            "link_name",
+        )
+        if org_link:
+            return ("CRM Organization", org_link)
+        return ("Contact", contact)
+
+    # 2. Known company (by mail domain).
+    domain = domain_of(address)
     if not is_bindable_domain(domain):
         return None
     org = org_for_domain(domain)
