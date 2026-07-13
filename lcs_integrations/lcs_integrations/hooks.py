@@ -132,6 +132,9 @@ scheduler_events = {
         # directory-import setting). Idempotent backfill for contacts that
         # arrived before their organization had an email_domain set.
         "lcs_integrations.contacts.domain_binding.reconcile_all",
+        # Persist the day's ECB rates (frankfurter.dev) into LCS FX Rate so
+        # offer conversions read from the DB, not a live API call.
+        "lcs_integrations.currency.frankfurter.daily_fetch",
     ],
 }
 
