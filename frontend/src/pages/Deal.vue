@@ -92,22 +92,20 @@
               <Email2Icon class="h-3.5 w-3.5 shrink-0 text-ink-gray-5" />
               <span class="truncate">{{ doc.email }}</span>
             </button>
-            <component
-              :is="callEnabled ? 'button' : 'a'"
+            <button
               v-if="doc.mobile_no"
-              :href="callEnabled ? undefined : `tel:${doc.mobile_no}`"
+              type="button"
               class="flex max-w-full items-center gap-1.5 text-base text-ink-gray-7 hover:text-ink-gray-9"
-              :title="doc.mobile_no"
-              @click="callEnabled && triggerCall()"
+              :title="__('Call via Teams')"
+              @click="triggerCall()"
             >
               <PhoneIcon class="h-3.5 w-3.5 shrink-0 text-ink-gray-5" />
               <span class="truncate">{{ doc.mobile_no }}</span>
-            </component>
+            </button>
           </div>
           <div class="flex gap-1.5">
             <Button
-              v-if="callEnabled"
-              :tooltip="__('Make a Call')"
+              :tooltip="__('Call via Teams')"
               :icon="PhoneIcon"
               @click="triggerCall"
             />
@@ -403,11 +401,11 @@ import {
 import { getView } from '@/utils/view'
 import { getSettings } from '@/stores/settings'
 import { globalStore } from '@/stores/global'
+import { useTeamsCall } from '@/composables/useTeamsCall'
 import { statusesStore } from '@/stores/statuses'
 import { getMeta } from '@/stores/meta'
 import { useDocument } from '@/data/document'
 import { whatsappEnabled } from '@/composables/whatsapp'
-import { callEnabled } from '@/composables/telephony'
 import { useBroadcast } from '@/composables/useBroadcast'
 import {
   createResource,
@@ -435,7 +433,8 @@ import { useActiveTabManager } from '@/composables/useActiveTabManager'
 
 const { on } = useBroadcast()
 const { brand } = getSettings()
-const { $dialog, $socket, makeCall } = globalStore()
+const { $dialog, $socket } = globalStore()
+const { teamsCall } = useTeamsCall()
 const { statusOptions, getDealStatus } = statusesStore()
 const { doctypeMeta } = getMeta('CRM Deal')
 
@@ -742,20 +741,20 @@ const dealContacts = createResource({
 if (!dealContacts.data) dealContacts.fetch()
 
 function triggerCall() {
-  let primaryContact = dealContacts.data?.find((c) => c.is_primary)
-  let mobile_no = primaryContact.mobile_no || null
-
-  if (!primaryContact) {
-    toast.error(__('No Primary Contact Set'))
+  // Call via Teams (VoIP by email, PSTN by number) and log it — no Twilio.
+  const primaryContact = dealContacts.data?.find((c) => c.is_primary)
+  const email = primaryContact?.email_id || doc.value?.email || null
+  const mobile_no = primaryContact?.mobile_no || doc.value?.mobile_no || null
+  if (!email && !mobile_no) {
+    toast.error(__('No phone number or Teams address for this contact.'))
     return
   }
-
-  if (!mobile_no) {
-    toast.error(__('No Mobile Number Set'))
-    return
-  }
-
-  makeCall(mobile_no)
+  teamsCall({
+    email,
+    phone: mobile_no,
+    reference_doctype: 'CRM Deal',
+    reference_name: props.dealId,
+  })
 }
 
 async function triggerStatusChange(value) {

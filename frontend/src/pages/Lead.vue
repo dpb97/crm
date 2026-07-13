@@ -133,31 +133,22 @@
                   <Email2Icon class="h-3.5 w-3.5 shrink-0 text-ink-gray-5" />
                   <span class="truncate">{{ doc.email }}</span>
                 </button>
-                <component
-                  :is="callEnabled ? 'button' : 'a'"
+                <button
                   v-if="doc.mobile_no"
-                  :href="callEnabled ? undefined : `tel:${doc.mobile_no}`"
+                  type="button"
                   class="flex max-w-full items-center gap-1.5 text-base text-ink-gray-7 hover:text-ink-gray-9"
-                  :title="doc.mobile_no"
-                  @click="callEnabled && makeCall(doc.mobile_no)"
+                  :title="__('Call via Teams')"
+                  @click="triggerTeamsCall()"
                 >
                   <PhoneIcon class="h-3.5 w-3.5 shrink-0 text-ink-gray-5" />
                   <span class="truncate">{{ doc.mobile_no }}</span>
-                </component>
+                </button>
               </div>
               <div class="flex gap-1.5">
                 <Button
-                  v-if="callEnabled"
-                  :tooltip="__('Make a Call')"
+                  :tooltip="__('Call via Teams')"
                   :icon="PhoneIcon"
-                  @click="
-                    () =>
-                      doc.mobile_no
-                        ? makeCall(doc.mobile_no)
-                        : toast.error(
-                            __('Please set a mobile number to make calls'),
-                          )
-                  "
+                  @click="triggerTeamsCall()"
                 />
 
                 <Button
@@ -297,11 +288,11 @@ import {
 import { getView } from '@/utils/view'
 import { getSettings } from '@/stores/settings'
 import { globalStore } from '@/stores/global'
+import { useTeamsCall } from '@/composables/useTeamsCall'
 import { statusesStore } from '@/stores/statuses'
 import { getMeta } from '@/stores/meta'
 import { useDocument } from '@/data/document'
 import { whatsappEnabled } from '@/composables/whatsapp'
-import { callEnabled } from '@/composables/telephony'
 import {
   createResource,
   FileUploader,
@@ -319,7 +310,24 @@ import { useRouter, useRoute } from 'vue-router'
 import { useActiveTabManager } from '@/composables/useActiveTabManager'
 
 const { brand } = getSettings()
-const { $dialog, $socket, makeCall } = globalStore()
+const { $dialog, $socket } = globalStore()
+const { teamsCall } = useTeamsCall()
+
+// Call via Teams (VoIP by email, PSTN by number) + log as a CRM Call Log.
+function triggerTeamsCall() {
+  const email = doc.value?.email || null
+  const phone = doc.value?.mobile_no || null
+  if (!email && !phone) {
+    toast.error(__('No phone number or Teams address for this contact.'))
+    return
+  }
+  teamsCall({
+    email,
+    phone,
+    reference_doctype: 'CRM Lead',
+    reference_name: props.leadId,
+  })
+}
 const { statusOptions, getLeadStatus } = statusesStore()
 const { doctypeMeta } = getMeta('CRM Lead')
 

@@ -8,9 +8,11 @@
 
 <template>
   <div class="grid grid-cols-2 gap-2" :class="cols === 4 ? 'sm:grid-cols-4' : ''">
-    <a :href="phone ? `tel:${phone}` : null" :class="actionCls(phone)">
+    <!-- Calling goes through Teams (VoIP by email, PSTN by number) and is
+         logged as a CRM Call Log — no Twilio dialer involved. -->
+    <button type="button" :disabled="!(phone || email)" :class="actionCls(phone || email)" @click="onCall">
       <FeatherIcon name="phone" class="h-4 w-4" /> {{ __('Call') }}
-    </a>
+    </button>
     <a :href="email ? `mailto:${email}` : null" :class="actionCls(email)">
       <FeatherIcon name="mail" class="h-4 w-4" /> {{ __('Mail') }}
     </a>
@@ -18,20 +20,35 @@
       <FeatherIcon name="message-circle" class="h-4 w-4" /> WhatsApp
     </a>
     <a :href="email ? teamsLink(email) : null" target="_blank" rel="noopener" :class="actionCls(email)">
-      <FeatherIcon name="users" class="h-4 w-4" /> Teams
+      <FeatherIcon name="message-square" class="h-4 w-4" /> {{ __('Chat') }}
     </a>
   </div>
 </template>
 
 <script setup>
 import { FeatherIcon } from 'frappe-ui'
+import { useTeamsCall } from '@/composables/useTeamsCall'
 
-defineProps({
+const props = defineProps({
   email: { type: String, default: '' },
   phone: { type: String, default: '' },
   // 4 = two-up on mobile, four-up on >=sm; otherwise always two-up.
   cols: { type: Number, default: 2 },
+  // Optional: link the logged call to the record it was started from.
+  referenceDoctype: { type: String, default: '' },
+  referenceName: { type: String, default: '' },
 })
+
+const { teamsCall } = useTeamsCall()
+function onCall() {
+  if (!props.phone && !props.email) return
+  teamsCall({
+    email: props.email,
+    phone: props.phone,
+    reference_doctype: props.referenceDoctype,
+    reference_name: props.referenceName,
+  })
+}
 
 // wa.me wants the country code without '+' and without leading zeros. Strip the
 // '+' and a leading international '00' prefix. A purely national number (single
