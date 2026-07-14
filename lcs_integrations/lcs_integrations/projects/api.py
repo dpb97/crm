@@ -977,6 +977,52 @@ def get_communication_email(name: str) -> dict:
 
 
 @frappe.whitelist()
+def get_contact_emails(contact) -> list[dict]:
+    """Email Communications linked to a contact — via the timeline link table or
+    a direct reference — newest first, with a plain-text preview. Backs the
+    contact Emails tab (same shape as get_organization_emails)."""
+    if not frappe.has_permission("Contact", doc=contact):
+        frappe.throw(_("Not permitted"), frappe.PermissionError)
+
+    rows = frappe.db.sql(
+        """
+        SELECT DISTINCT comm FROM (
+            SELECT cl.parent AS comm
+            FROM `tabCommunication Link` cl
+            JOIN `tabCommunication` c ON c.name = cl.parent
+            WHERE cl.link_doctype = 'Contact' AND cl.link_name = %(c)s
+              AND c.communication_medium = 'Email'
+            UNION
+            SELECT c.name AS comm
+            FROM `tabCommunication` c
+            WHERE c.reference_doctype = 'Contact' AND c.reference_name = %(c)s
+              AND c.communication_medium = 'Email'
+        ) t
+        """,
+        {"c": contact},
+        as_dict=True,
+    )
+    ids = [r.comm for r in rows]
+    if not ids:
+        return []
+
+    emails = frappe.get_all(
+        "Communication",
+        filters={"name": ["in", ids]},
+        fields=["name", "sender", "recipients", "subject", "sent_or_received",
+                "communication_date", "content"],
+        order_by="communication_date desc",
+        limit=200,
+    )
+    import html as _html
+    for e in emails:
+        text = _html.unescape(frappe.utils.strip_html(e.get("content") or ""))
+        e["preview"] = " ".join(text.split())[:160]
+        e.pop("content", None)
+    return emails
+
+
+@frappe.whitelist()
 def get_contact_email_counts(contacts) -> dict:
     """Count e-mail Communications directly linked to each contact — via the
     timeline link table (Communication Link) or a direct reference. Batched for

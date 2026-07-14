@@ -151,14 +151,21 @@
         </button>
       </template>
       <template #tab-panel="{ tab }">
-        <DealsListView
-          v-if="tab.label === 'Deals' && rows.length"
-          class="mt-4"
-          :rows="rows"
-          :columns="columns"
-          :options="{ selectable: false, showTooltip: false }"
+        <!-- LCS: mailbox-synced emails -->
+        <OrgEmailsTab
+          v-if="tab.label === 'Emails'"
+          :emails="contactEmails.data"
         />
-        <EmptyState v-if="!rows.length" :icon="tab.icon" name="Deals" />
+        <template v-else>
+          <DealsListView
+            v-if="tab.label === 'Deals' && rows.length"
+            class="mt-4"
+            :rows="rows"
+            :columns="columns"
+            :options="{ selectable: false, showTooltip: false }"
+          />
+          <EmptyState v-if="!rows.length" :icon="tab.icon" name="Deals" />
+        </template>
       </template>
     </Tabs>
   </div>
@@ -187,6 +194,8 @@ import PhoneIcon from '@/components/Icons/PhoneIcon.vue'
 import CameraIcon from '@/components/Icons/CameraIcon.vue'
 import DealsIcon from '@/components/Icons/DealsIcon.vue'
 import DealsListView from '@/components/ListViews/DealsListView.vue'
+import EmailIcon from '@/components/Icons/EmailIcon.vue'
+import OrgEmailsTab from '@/components/lcs/OrgEmailsTab.vue'
 import CustomActions from '@/components/CustomActions.vue'
 import {
   formatDate,
@@ -310,11 +319,24 @@ const tabs = [
     icon: DealsIcon,
     count: computed(() => deals.data?.length),
   },
+  // LCS: mailbox-synced emails linked to this contact
+  {
+    label: 'Emails',
+    icon: EmailIcon,
+    count: computed(() => contactEmails.data?.length),
+  },
 ]
 
 const deals = createResource({
   url: 'crm.api.contact.get_linked_deals',
   cache: ['deals', props.contactId],
+  params: { contact: props.contactId },
+  auto: true,
+})
+
+// LCS: emails linked to this contact for the Emails tab
+const contactEmails = createResource({
+  url: 'lcs_integrations.projects.api.get_contact_emails',
   params: { contact: props.contactId },
   auto: true,
 })
