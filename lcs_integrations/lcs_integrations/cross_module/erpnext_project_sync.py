@@ -1,7 +1,8 @@
 """
-Auto-create an ERPNext Project when an LCS Project enters Order or
-Execution phase, so resource/capacity planning has a place to live
-while the project is still active (not just after closure).
+Auto-create an ERPNext Project when an LCS Project enters the Won
+(order/Auftrag) or Execution phase, so resource/capacity planning has a
+place to live while the project is still active (not just after closure).
+This is the boundary where the project "leaves the CRM" for ERP execution.
 
 Why two project DocTypes:
   - LCS Project owns sales-pipeline data (phase, source, 3-stage
@@ -18,9 +19,13 @@ no-ops. Re-saving the LCS Project never spawns a second ERPNext one.
 import frappe
 
 
-# Phases at which an ERPNext Project is genuinely useful for planning.
-# Order = sales done, planning starts.  Execution = on-site work running.
-TRIGGER_PHASES = {"Order", "Execution"}
+# Phases at which an ERPNext Project is genuinely useful for planning — this is
+# the point where work "leaves the CRM" for ERP execution.
+# Won = order received (Auftrag/Unterschrift), planning starts.
+# Execution = on-site work running.
+# NB: the trigger was previously the legacy "Order" value which is not a valid
+# LCS Project phase, so the handoff never fired. "Won" is the real order phase.
+TRIGGER_PHASES = {"Won", "Execution"}
 
 
 def on_lcs_project_update(doc, method=None):

@@ -74,7 +74,11 @@ def _create_project_from_deal(deal) -> str | None:
     project = frappe.new_doc("LCS Project")
     project.project_name = _safe_name(deal)
     project.project_type = project_type
-    project.phase = "Order"       # Deal is won → project skips "Inquiry/Offer/Negotiation"
+    # "Won" is the order/Auftrag phase (displayed as "Auftrag"). "Order" was a
+    # legacy value that isn't in the phase Select — writing it left projects in
+    # an invalid state and broke the ERPNext handoff. A won deal skips the early
+    # sales phases straight to the order stage.
+    project.phase = "Won"
     project.status = "Active"
     project.deal = deal.name
     if deal.get("organization"):
