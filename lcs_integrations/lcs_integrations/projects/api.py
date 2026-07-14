@@ -964,8 +964,8 @@ def get_communication_email(name: str) -> dict:
     c = frappe.db.get_value(
         "Communication",
         name,
-        ["subject", "sender", "recipients", "sent_or_received",
-         "communication_date", "content", "reference_doctype", "reference_name"],
+        ["subject", "sender", "recipients", "sent_or_received", "communication_date",
+         "content", "reference_doctype", "reference_name", "message_id", "user"],
         as_dict=True,
     )
     if not c:
@@ -973,6 +973,9 @@ def get_communication_email(name: str) -> dict:
     if c.reference_doctype == "CRM Organization" and c.reference_name:
         if not frappe.has_permission("CRM Organization", doc=c.reference_name):
             frappe.throw(_("Not permitted"), frappe.PermissionError)
+    # Fetch attachments on demand: inline images into the body, list files.
+    from lcs_integrations.outlook_sync.attachments import enrich_email
+    c = enrich_email(c)
     return c
 
 

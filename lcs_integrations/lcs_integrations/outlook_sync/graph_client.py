@@ -113,6 +113,16 @@ class GraphClient:
             resp = self._http.get(f"/users/{mailbox}/messages", params=params, headers=headers)
         return self._check(resp, 200)
 
+    def message_attachments(self, mailbox: str, graph_id: str) -> list[dict[str, Any]]:
+        """All attachments of a message (fileAttachment carries `contentBytes`).
+        Used on demand by the email reader to inline images and list files."""
+        resp = self._http.get(
+            f"/users/{mailbox}/messages/{graph_id}/attachments",
+            headers=self._headers(),
+        )
+        body = self._check(resp, 200)
+        return body.get("value", [])
+
     # ----------------------------------------------------------- Calendar
 
     def events_delta(

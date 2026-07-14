@@ -61,7 +61,30 @@
           </div>
           <div class="max-h-[65vh] overflow-y-auto px-5 py-4">
             <div v-if="loading" class="py-10 text-center text-sm text-ink-gray-4">{{ __('Loading…') }}</div>
-            <div v-else class="email-body text-sm text-ink-gray-8" v-html="current?.content || ''" />
+            <div v-else>
+              <div class="email-body text-sm text-ink-gray-8" v-html="current?.content || ''" />
+              <div v-if="current?.attachments?.length" class="mt-4 border-t pt-3">
+                <div class="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-gray-4">
+                  {{ __('Attachments') }} ({{ current.attachments.length }})
+                </div>
+                <div class="flex flex-wrap gap-2">
+                  <a
+                    v-for="(att, i) in current.attachments"
+                    :key="i"
+                    :href="att.data_url"
+                    :download="att.name"
+                    target="_blank"
+                    rel="noopener"
+                    class="flex items-center gap-2 rounded-lg border px-3 py-2 text-xs hover:bg-surface-gray-2"
+                    :title="att.name"
+                  >
+                    <img v-if="att.is_image" :src="att.data_url" class="h-10 w-10 rounded object-cover" :alt="att.name" />
+                    <FeatherIcon v-else name="paperclip" class="h-4 w-4 text-ink-gray-5" />
+                    <span class="max-w-[12rem] truncate text-ink-gray-8">{{ att.name }}</span>
+                  </a>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </template>
