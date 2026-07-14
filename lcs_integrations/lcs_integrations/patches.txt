@@ -31,3 +31,5 @@ lcs_integrations.patches.install_estimated_start_date
 lcs_integrations.patches.install_previous_companies
 # Seeds the editable funnel phase definitions (needs LCS Funnel Phase synced).
 lcs_integrations.patches.seed_funnel_phases
+# Exposes CRM Deal `currency` in the create dialog + side panel layouts.
+lcs_integrations.patches.install_deal_currency_field
