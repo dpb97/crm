@@ -61,8 +61,12 @@ doc_events = {
     },
     "CRM Deal": {
         "before_insert": "lcs_integrations.territory.auto_assign.on_crm_deal_before_insert",
-        # Close the Lead → Deal → LCS Project loop: when a deal is won,
-        # auto-create the project so Ops doesn't have to click anything.
+        # Unified Deal/Project: the LCS Project is spun up as soon as the deal
+        # exists (lead conversion / new deal), so the opportunity is one record
+        # from the start — not only once it is won.
+        "after_insert": "lcs_integrations.cross_module.deal_to_project.on_deal_insert",
+        # Keep the order boundary in sync: a won deal advances its project to
+        # "Won" (Auftrag); legacy deals without a project get one here.
         "on_update": "lcs_integrations.cross_module.deal_to_project.on_deal_update",
     },
     "Communication": {

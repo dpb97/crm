@@ -1,14 +1,18 @@
 """
-Auto-create an LCS Project whenever a CRM Deal moves to status 'Won'.
+Unified Deal ↔ LCS Project bridge.
 
-Closes the forward automation gap in the Lead → Deal → Project flow:
-previously an admin had to click a button (or call the whitelisted
-create_project_from_deal endpoint) to spin up a project when a deal
-landed. Now it's hands-off.
+The LCS Project is the single sales entity in the CRM. It is created as soon as
+a CRM Deal exists (lead conversion / new deal) via ``on_deal_insert`` — so the
+opportunity is one record from the very start, not only once the deal is won.
+The project spans the whole sales cycle (offers, pricing, negotiation) and only
+hands off to ERP execution at the "Won" (Auftrag) phase.
 
-Idempotent: if the deal already has an LCS Project linked back to it
-(via LCS Project.deal field) we skip — double-save or migrate re-runs
-don't duplicate projects.
+``on_deal_update`` keeps the order boundary in sync: when a deal is won, the
+linked project advances to "Won". Legacy deals that predate unified creation
+(no linked project) get one created here as a fallback.
+
+Idempotent throughout: creation is skipped when a project already links back to
+the deal (LCS Project.deal), so re-saves / migrate re-runs never duplicate.
 """
 
 import frappe
@@ -16,26 +20,55 @@ import frappe
 
 WON_STATUSES = {"Won", "Ordered"}  # tolerate different CRM Deal Status naming
 
+# CRM Deal status -> initial LCS Project phase. A fresh deal starts at the first
+# sales stage; the phase then advances via offers / manual edits / winning.
+STATUS_TO_PHASE = {
+    "Qualification": "Qualified",
+    "Demo/Making": "Budget",
+    "Proposal/Quotation": "Offer",
+    "Negotiation": "Negotiation",
+    "Ready to Close": "Negotiation",
+    "Won": "Won",
+    "Ordered": "Won",
+    "Lost": "Lost",
+}
+
+# Phases we never regress away from when a deal is (re-)won.
+_TERMINAL_PHASES = {"Won", "Execution", "Completed", "Lost"}
+
+
+def on_deal_insert(doc, method=None):
+    """CRM Deal after_insert — spin up the unified LCS Project immediately, so
+    the opportunity is one record from the start."""
+    if frappe.db.get_value("LCS Project", {"deal": doc.name}, "name"):
+        return
+    try:
+        _create_project_from_deal(doc, phase=_phase_for_status(doc))
+    except Exception as e:
+        frappe.log_error(
+            f"Auto-project creation on insert failed for deal {doc.name}: {e}",
+            "cross_module.deal_to_project",
+        )
+
 
 def on_deal_update(doc, method=None):
-    """CRM Deal on_update hook. Fires on every save — quick early-exit
-    for deals that are still in-flight."""
+    """CRM Deal on_update — keep the order boundary in sync. On win, advance the
+    linked project to 'Won' (Auftrag); create one for legacy deals that have no
+    project yet."""
     status = (doc.get("status") or "").strip()
     if not status:
         return
-
-    # Only act on wins, and only once per deal
-    status_label = _resolve_status_label(status)
-    if status_label not in WON_STATUSES:
+    if _resolve_status_label(status) not in WON_STATUSES:
         return
 
-    # Already linked? (either the deal points at a project or a project points at this deal)
     existing = frappe.db.get_value("LCS Project", {"deal": doc.name}, "name")
     if existing:
+        _advance_to_won(existing)
         return
 
+    # Legacy deal without a project (created before unified creation).
     try:
-        project_name = _create_project_from_deal(doc)
+        project_name = _create_project_from_deal(doc, phase="Won")
         if project_name:
             frappe.msgprint(
                 f"Auto-created LCS Project <a href='/crm/projects/{project_name}'>{project_name}</a> "
@@ -45,61 +78,61 @@ def on_deal_update(doc, method=None):
             )
     except Exception as e:
         frappe.log_error(
-            f"Auto-project creation failed for deal {doc.name}: {e}",
+            f"Auto-project creation on win failed for deal {doc.name}: {e}",
             "cross_module.deal_to_project",
         )
 
 
+def _advance_to_won(project_name: str) -> None:
+    """Move a linked project to the 'Won' (Auftrag) phase without regressing a
+    project that is already won / in execution / closed."""
+    phase = frappe.db.get_value("LCS Project", project_name, "phase")
+    if phase in _TERMINAL_PHASES:
+        return
+    project = frappe.get_doc("LCS Project", project_name)
+    project.phase = "Won"
+    project.save(ignore_permissions=True)
+
+
+def _phase_for_status(deal) -> str:
+    label = _resolve_status_label((deal.get("status") or "").strip())
+    return STATUS_TO_PHASE.get(label, "Qualified")
+
+
 def _resolve_status_label(status_value: str) -> str:
-    """CRM Deal.status may be either a direct string or a Link to
-    CRM Deal Status — normalise to the display label so we can
-    compare against WON_STATUSES reliably."""
-    # If the status is already a known label, return as-is
+    """CRM Deal.status may be a direct string or a Link to CRM Deal Status —
+    normalise to the display label for comparison."""
     if status_value in WON_STATUSES:
         return status_value
-    # Otherwise try to resolve as a CRM Deal Status record
     if frappe.db.exists("CRM Deal Status", status_value):
         return status_value  # record name equals label in frappe/crm
     return status_value
 
 
-def _create_project_from_deal(deal) -> str | None:
-    """Build the LCS Project record from the deal's fields. Keeps the
-    mapping in one place so future fields (value, probability, etc.)
-    are easy to add."""
-    # Figure out a sensible project type from the deal's notes or name,
-    # mirroring the back-fill heuristic so behaviour is consistent.
-    project_type = _infer_type_from_deal(deal)
-
+def _create_project_from_deal(deal, phase: str = "Qualified") -> str | None:
+    """Build the LCS Project from the deal's fields at the given phase. Keeps the
+    field mapping in one place."""
     project = frappe.new_doc("LCS Project")
     project.project_name = _safe_name(deal)
-    project.project_type = project_type
-    # "Won" is the order/Auftrag phase (displayed as "Auftrag"). "Order" was a
-    # legacy value that isn't in the phase Select — writing it left projects in
-    # an invalid state and broke the ERPNext handoff. A won deal skips the early
-    # sales phases straight to the order stage.
-    project.phase = "Won"
-    project.status = "Active"
+    project.project_type = _infer_type_from_deal(deal)
+    project.phase = phase
+    project.status = "Active" if phase in ("Won", "Execution") else "Open"
     project.deal = deal.name
     if deal.get("organization"):
         project.organization = deal.organization
-    # Attempt to pull the salesperson from the deal's owner
     if deal.get("deal_owner"):
         project.salesperson = deal.deal_owner
-    # Commercial: if the deal tracked a value, prefill budget
     if deal.get("annual_revenue"):
         project.budget_customer = deal.annual_revenue
-    # expected_close_date from the deal's close_date
     if deal.get("close_date"):
         project.expected_close_date = deal.close_date
     project.insert(ignore_permissions=True)
-    frappe.db.commit()
     return project.name
 
 
 def _safe_name(deal) -> str:
-    """CRM Deal names aren't guaranteed unique across projects — if
-    another project already has this name, append the deal number."""
+    """CRM Deal names aren't guaranteed unique across projects — if another
+    project already has this name, append the deal number."""
     base = deal.get("deal_name") or deal.name
     if not frappe.db.exists("LCS Project", {"project_name": base}):
         return base
@@ -107,8 +140,8 @@ def _safe_name(deal) -> str:
 
 
 def _infer_type_from_deal(deal) -> str:
-    """Look at the deal's name + notes for product keywords — same rules
-    as the BSM back-fill so behaviour is predictable."""
+    """Look at the deal's name + org for product keywords — same rules as the
+    BSM back-fill so behaviour is predictable."""
     haystack = " ".join([
         deal.get("deal_name") or "",
         deal.get("organization") or "",
