@@ -37,7 +37,7 @@
     <!-- Edit mode -->
     <div v-else class="mt-2 space-y-2">
       <div class="flex items-center gap-1">
-        <span class="text-sm text-gray-400">€</span>
+        <span class="text-sm text-gray-400">{{ currency }}</span>
         <input
           ref="inputEl"
           v-model.number="editValue"
@@ -79,6 +79,7 @@ const props = defineProps({
   color: { type: String, default: 'gray' },
   icon: { type: String, default: '' },
   editable: { type: Boolean, default: false },
+  currency: { type: String, default: 'EUR' },
 })
 
 const emit = defineEmits(['save'])
@@ -135,6 +136,6 @@ function cancel() {
 }
 
 function formatCurrency(val) {
-  return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(val)
+  return new Intl.NumberFormat('de-DE', { style: 'currency', currency: props.currency || 'EUR', maximumFractionDigits: 0 }).format(val)
 }
 </script>

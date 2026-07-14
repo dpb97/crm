@@ -32,6 +32,7 @@
   "expected_close_date",
   "probability",
   "section_pricing",
+  "currency",
   "budget_customer",
   "richtpreis",
   "column_break_pricing",
@@ -228,15 +229,25 @@
    "label": "Pricing Stages"
   },
   {
+   "default": "EUR",
+   "description": "Deal currency — pricing stages are shown in this currency",
+   "fieldname": "currency",
+   "fieldtype": "Link",
+   "label": "Currency",
+   "options": "Currency"
+  },
+  {
    "description": "What the customer indicates they are willing to spend",
    "fieldname": "budget_customer",
    "fieldtype": "Currency",
+   "options": "currency",
    "label": "Budget (Customer)"
   },
   {
    "description": "Internal rough estimate before formal quote",
    "fieldname": "richtpreis",
    "fieldtype": "Currency",
+   "options": "currency",
    "label": "Richtpreis (Internal Estimate)"
   },
   {
@@ -247,12 +258,14 @@
    "description": "Formal quoted total (from accepted or latest offer)",
    "fieldname": "angebot_total",
    "fieldtype": "Currency",
+   "options": "currency",
    "label": "Angebot (Quoted Total)"
   },
   {
    "description": "Working estimate used for pipeline value (falls back to Angebot → Richtpreis → Budget)",
    "fieldname": "estimated_value",
    "fieldtype": "Currency",
+   "options": "currency",
    "label": "Estimated Value"
   },
   {

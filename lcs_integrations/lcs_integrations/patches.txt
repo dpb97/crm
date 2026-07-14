@@ -35,3 +35,5 @@ lcs_integrations.patches.seed_funnel_phases
 lcs_integrations.patches.install_deal_currency_field
 # Relabels CRM Deal `annual_revenue` -> "Geschätzter Umsatz" (deal value, not company revenue).
 lcs_integrations.patches.relabel_deal_annual_revenue
+# Backfills LCS Project.currency from the linked deal (default EUR).
+lcs_integrations.patches.backfill_project_currency

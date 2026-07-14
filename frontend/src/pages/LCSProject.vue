@@ -276,6 +276,7 @@
                     color="gray"
                     icon="user"
                     :editable="true"
+                    :currency="doc.currency"
                     @save="updateField('budget_customer', $event)"
                   />
                   <PriceStageCard
@@ -285,6 +286,7 @@
                     color="blue"
                     icon="clipboard"
                     :editable="true"
+                    :currency="doc.currency"
                     @save="updateField('richtpreis', $event)"
                   />
                   <PriceStageCard
@@ -294,6 +296,7 @@
                     color="green"
                     icon="file-text"
                     :editable="true"
+                    :currency="doc.currency"
                     @save="updateField('angebot_total', $event)"
                   />
                 </div>
@@ -1216,7 +1219,7 @@ function probabilityClass(val) {
   return 'text-red-500'
 }
 function formatCurrency(val) {
-  return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(val)
+  return new Intl.NumberFormat('de-DE', { style: 'currency', currency: doc.value?.currency || 'EUR', maximumFractionDigits: 0 }).format(val)
 }
 function formatDate(dateStr) {
   if (!dateStr) return ''

@@ -118,6 +118,8 @@ def _create_project_from_deal(deal, phase: str = "Qualified") -> str | None:
     project.phase = phase
     project.status = "Active" if phase in ("Won", "Execution") else "Open"
     project.deal = deal.name
+    if deal.get("currency"):
+        project.currency = deal.currency
     if deal.get("organization"):
         project.organization = deal.organization
     if deal.get("deal_owner"):
