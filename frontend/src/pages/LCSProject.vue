@@ -703,7 +703,7 @@ import { useRouter } from 'vue-router'
 import {
   createDocumentResource, createListResource, createResource,
   Breadcrumbs, Button, Dropdown, Dialog, Tabs, Tooltip, FeatherIcon, FormControl,
-  toast, usePageMeta,
+  toast, usePageMeta, call,
 } from 'frappe-ui'
 import LayoutHeader from '@/components/LayoutHeader.vue'
 import FunnelFlowBar from '@/components/lcs/FunnelFlowBar.vue'
@@ -1084,7 +1084,24 @@ createResource({
     }
   },
 })
-function onMatrixUpdate({ field, value }) { matrixValues.value[field] = value }
+let matrixSaveTimer = null
+function onMatrixUpdate({ field, value }) {
+  matrixValues.value[field] = value
+  // Debounce — the slider fires many @input events while dragging.
+  clearTimeout(matrixSaveTimer)
+  matrixSaveTimer = setTimeout(saveMatrix, 500)
+}
+async function saveMatrix() {
+  try {
+    await call('lcs_integrations.projects.api.save_opportunity_matrix', {
+      project: projectId.value,
+      ...matrixValues.value,
+    })
+    toast({ title: __('Matrix saved'), icon: 'check-circle', iconClasses: 'text-green-500' })
+  } catch (err) {
+    toast({ title: __('Could not save matrix'), text: err.messages?.[0], icon: 'alert-circle', iconClasses: 'text-red-500' })
+  }
+}
 
 const activities = createListResource({
   doctype: 'Comment',

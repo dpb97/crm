@@ -98,6 +98,43 @@ def get_opportunity_matrix(project):
 
 
 @frappe.whitelist()
+def save_opportunity_matrix(project, technical_fit=0, commercial_fit=0,
+                            relationship_strength=0, competition_level=0,
+                            strategic_importance=0):
+    """Upsert the opportunity-matrix scores for a project (one row per project).
+    Derived fields (total_score, weighted_probability, classification,
+    activity_level) and the project's probability are recomputed by the
+    doctype's validate()."""
+    if not frappe.has_permission("LCS Project", ptype="write", doc=project):
+        frappe.throw(_("Not permitted"), frappe.PermissionError)
+
+    scores = {
+        "technical_fit": int(technical_fit or 0),
+        "commercial_fit": int(commercial_fit or 0),
+        "relationship_strength": int(relationship_strength or 0),
+        "competition_level": int(competition_level or 0),
+        "strategic_importance": int(strategic_importance or 0),
+    }
+    name = frappe.db.get_value("LCS Opportunity Matrix", {"project": project}, "name")
+    if name:
+        doc = frappe.get_doc("LCS Opportunity Matrix", name)
+    else:
+        doc = frappe.new_doc("LCS Opportunity Matrix")
+        doc.project = project
+        doc.organization = frappe.db.get_value("LCS Project", project, "organization")
+    doc.update(scores)
+    doc.save(ignore_permissions=True)
+    frappe.db.commit()
+    return {
+        "name": doc.name,
+        "total_score": doc.total_score,
+        "weighted_probability": doc.weighted_probability,
+        "classification": doc.classification,
+        "activity_level": doc.activity_level,
+    }
+
+
+@frappe.whitelist()
 def get_execution_summary(project: str) -> dict:
     """Pull Tasks + Time Logs + Costing from the linked ERPNext Project
     so the LCS Project detail page can show execution data without the
