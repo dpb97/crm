@@ -148,13 +148,28 @@
               </div>
             </div>
           </Tooltip>
-          <!-- Win probability badge -->
-          <div v-if="doc.probability" class="ml-2 flex flex-col items-center">
-            <span :class="probabilityClass(doc.probability)" class="rounded-md bg-gray-50 px-2 py-0.5 text-sm font-bold">
-              {{ Math.round(doc.probability) }}%
+          <!-- Win probability — driven by the Opportunity Matrix -->
+          <button
+            type="button"
+            class="ml-2 flex flex-col items-center focus:outline-none"
+            @click="goToMatrixTab"
+            :title="matrixFilled ? __('From the Opportunity Matrix — click to edit') : __('Fill the Opportunity Matrix to compute the win probability')"
+          >
+            <span
+              v-if="matrixFilled"
+              :class="probabilityClass(doc.probability)"
+              class="rounded-md bg-gray-50 px-2 py-0.5 text-sm font-bold"
+            >
+              {{ Math.round(doc.probability || 0) }}%
             </span>
-            <span class="mt-0.5 text-[9px] uppercase text-gray-400">{{ __('Win') }}</span>
-          </div>
+            <span
+              v-else
+              class="flex items-center gap-1 rounded-md bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700 hover:bg-amber-100"
+            >
+              <FeatherIcon name="grid" class="h-3 w-3" /> {{ __('Fill matrix') }}
+            </span>
+            <span class="mt-0.5 text-[9px] uppercase text-gray-400">{{ __('Opportunity Matrix') }}</span>
+          </button>
         </div>
       </div>
     </div>
@@ -875,9 +890,25 @@ const phaseDropdownOptions = computed(() =>
     onClick: () => initiatePhaseChange(phase),
   })),
 )
+// Advancing INTO these phases requires a filled Opportunity Matrix.
+const MATRIX_REQUIRED_PHASES = ['Offer', 'Negotiation', 'Won']
 function initiatePhaseChange(phase) {
   if (phase === doc.value.phase) return
   pendingPhase.value = phase
+  // Gate: the Opportunity Matrix must be filled before moving forward into the
+  // offer / negotiation / order phases. Backward moves are not gated.
+  if (!isBackwardPhaseMove.value && MATRIX_REQUIRED_PHASES.includes(phase)
+      && !matrixFilled.value && canShow('show_opportunity_matrix')) {
+    pendingPhase.value = null
+    toast({
+      title: __('Opportunity Matrix required'),
+      text: __('Fill the Opportunity Matrix before moving to this phase.'),
+      icon: 'alert-circle',
+      iconClasses: 'text-amber-500',
+    })
+    goToMatrixTab()
+    return
+  }
   if (isBackwardPhaseMove.value) showPhaseConfirm.value = true
   else confirmPhaseChange()
 }
@@ -1104,6 +1135,14 @@ async function saveMatrix() {
   } catch (err) {
     toast({ title: __('Could not save matrix'), text: err.messages?.[0], icon: 'alert-circle', iconClasses: 'text-red-500' })
   }
+}
+// Matrix is "filled" once any dimension has been scored above zero.
+const matrixFilled = computed(() =>
+  Object.values(matrixValues.value).some((v) => (Number(v) || 0) > 0),
+)
+function goToMatrixTab() {
+  const i = tabs.value.findIndex((t) => t.name === 'Matrix')
+  if (i >= 0) tabIndex.value = i
 }
 
 const activities = createListResource({
