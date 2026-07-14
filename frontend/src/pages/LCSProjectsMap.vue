@@ -57,33 +57,9 @@
       </span>
     </div>
 
-    <!-- Map body — SSOT token map by default, OSM detail map on demand -->
+    <!-- Map body — OSM detail map -->
     <div class="flex-1 overflow-auto bg-gray-50 p-3">
-      <div class="mb-2 flex justify-end">
-        <div class="flex overflow-hidden rounded-lg border bg-white text-xs">
-          <button
-            class="px-3 py-1 font-medium transition"
-            :class="mapStyle === 'token' ? 'bg-lcs-primary text-white' : 'text-gray-600 hover:bg-gray-50'"
-            @click="mapStyle = 'token'"
-          >
-            {{ __('Overview') }}
-          </button>
-          <button
-            class="px-3 py-1 font-medium transition"
-            :class="mapStyle === 'osm' ? 'bg-lcs-primary text-white' : 'text-gray-600 hover:bg-gray-50'"
-            @click="mapStyle = 'osm'"
-          >
-            {{ __('Detail map') }}
-          </button>
-        </div>
-      </div>
-      <PpMap
-        v-if="mapStyle === 'token'"
-        :markers="ppMarkers"
-        @marker-click="openProject"
-      />
       <ProjectMap
-        v-else
         :projects="filteredProjects"
         height-class="h-[calc(100vh-16rem)]"
       />
@@ -107,28 +83,9 @@
 
 <script setup>
 import { computed, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
 import { Button, FormControl, createResource } from 'frappe-ui'
 import LucideRefreshCw from '~icons/lucide/refresh-cw'
 import ProjectMap from '@/components/lcs/ProjectMap.vue'
-import PpMap from '@/components/pp/PpMap.vue'
-
-const router = useRouter()
-// 'token' = pilanda_theme SSOT world map (offline, light/dark);
-// 'osm' = Leaflet detail map with real basemap tiles.
-const mapStyle = ref('token')
-
-const PHASE_KIND = {
-  Qualified: 'brand',
-  Budget: 'info',
-  Richtpreis: 'info',
-  Offer: 'warning',
-  Negotiation: 'warning',
-  Won: 'success',
-  Execution: 'success',
-  Completed: 'neutral',
-  Lost: 'danger',
-}
 
 const allProjects = ref([])
 const unmappedCountries = ref([])
@@ -188,37 +145,6 @@ const filteredProjects = computed(() =>
 function clearFilters() {
   phaseFilter.value = ''
   salesManagerFilter.value = ''
-}
-
-// PpMap markers from the filtered projects. Country centroids stack —
-// spread duplicates in a small golden-angle spiral (same trick as the
-// Leaflet map) so every project stays clickable.
-const ppMarkers = computed(() => {
-  const seen = {}
-  return filteredProjects.value.map((p) => {
-    const key = `${p.latitude},${p.longitude}`
-    const dup = seen[key] || 0
-    seen[key] = dup + 1
-    let lat = p.latitude
-    let lon = p.longitude
-    if (dup > 0) {
-      const angle = dup * 2.4
-      const radius = 2.5 * Math.sqrt(dup)
-      lat += radius * Math.cos(angle)
-      lon += radius * Math.sin(angle)
-    }
-    return {
-      id: p.name,
-      lat,
-      lon,
-      label: p.project_name || p.name,
-      kind: PHASE_KIND[p.phase] || 'brand',
-    }
-  })
-})
-
-function openProject(id) {
-  router.push({ name: 'LCS Project', params: { id } })
 }
 
 async function fetchData() {
