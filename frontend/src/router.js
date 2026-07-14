@@ -36,6 +36,13 @@ const routes = [
     path: '/deals/view/:viewType?',
     name: 'Deals',
     component: () => import('@/pages/Deals.vue'),
+    // Default the Deals landing to the Kanban board. Any explicit view type
+    // (e.g. the List tab) is respected; only the bare /deals redirects.
+    beforeEnter: (to) => {
+      if (!to.params.viewType && !to.query.view) {
+        return { name: 'Deals', params: { viewType: 'kanban' }, query: to.query }
+      }
+    },
   },
   {
     path: '/deals/:dealId',
