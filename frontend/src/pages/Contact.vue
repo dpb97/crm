@@ -347,6 +347,7 @@ const parsedSections = computed(() => {
           return {
             ...field,
             read_only: false,
+            hidden: false,
             fieldtype: 'Dropdown',
             options: (contact.doc?.email_ids || []).map((email) => ({
               name: email.name,
@@ -388,6 +389,7 @@ const parsedSections = computed(() => {
           return {
             ...field,
             read_only: false,
+            hidden: false,
             fieldtype: 'Dropdown',
             options: (contact.doc?.phone_nos || []).map((phone) => ({
               name: phone.name,
