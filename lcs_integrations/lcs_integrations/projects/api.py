@@ -922,6 +922,24 @@ def get_organization_emails(organization: str) -> list[dict]:
 
 
 @frappe.whitelist()
+def get_communication_email(name: str) -> dict:
+    """Full body of one Communication for the org Emails-tab reader modal."""
+    c = frappe.db.get_value(
+        "Communication",
+        name,
+        ["subject", "sender", "recipients", "sent_or_received",
+         "communication_date", "content", "reference_doctype", "reference_name"],
+        as_dict=True,
+    )
+    if not c:
+        frappe.throw(_("Email not found"))
+    if c.reference_doctype == "CRM Organization" and c.reference_name:
+        if not frappe.has_permission("CRM Organization", doc=c.reference_name):
+            frappe.throw(_("Not permitted"), frappe.PermissionError)
+    return c
+
+
+@frappe.whitelist()
 def get_contact_email_counts(contacts) -> dict:
     """Count e-mail Communications directly linked to each contact — via the
     timeline link table (Communication Link) or a direct reference. Batched for
