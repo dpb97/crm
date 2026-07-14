@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { call } from 'frappe-ui'
 import { usersStore } from '@/stores/users'
 import { sessionStore } from '@/stores/session'
 import { viewsStore } from '@/stores/views'
@@ -41,6 +42,24 @@ const routes = [
     name: 'Deal',
     component: () => import(`@/pages/${handleMobileView('Deal')}.vue`),
     props: true,
+    // Unified Deal/Project: open the LCS Project workspace instead of the bare
+    // deal page. Falls through to the deal page if no project exists yet, or
+    // when ?noredirect=1 is set (escape hatch for debugging the raw deal).
+    beforeEnter: async (to) => {
+      if (to.query.noredirect) return true
+      try {
+        const project = await call(
+          'lcs_integrations.projects.api.find_project_for',
+          { doctype: 'CRM Deal', name: to.params.dealId },
+        )
+        if (project?.name) {
+          return { name: 'LCS Project', params: { id: project.name }, query: to.query }
+        }
+      } catch (e) {
+        /* fall through to the deal page */
+      }
+      return true
+    },
   },
   {
     path: '/projects',
