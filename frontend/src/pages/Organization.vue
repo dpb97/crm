@@ -449,6 +449,25 @@ const orgEmails = createResource({
   auto: true,
 })
 
+// LCS: e-mail count per contact for the Contacts tab column
+const contactEmailCounts = ref({})
+watch(
+  () => contacts.data,
+  async (data) => {
+    const names = (data || []).map((c) => c.name).filter(Boolean)
+    if (!names.length) return
+    try {
+      contactEmailCounts.value = await call(
+        'lcs_integrations.projects.api.get_contact_email_counts',
+        { contacts: names },
+      )
+    } catch (e) {
+      // non-fatal: column just shows 0
+    }
+  },
+  { immediate: true },
+)
+
 const rows = computed(() => {
   let list = !tabIndex.value ? deals : contacts
 
@@ -504,6 +523,7 @@ function getContactRowObject(contact) {
       label: contact.company_name,
       logo: organization.doc?.organization_logo,
     },
+    email_count: String(contactEmailCounts.value[contact.name] ?? 0),
     modified: {
       label: formatDate(contact.modified),
       timeAgo: __(timeAgo(contact.modified)),
@@ -570,6 +590,12 @@ const contactColumns = [
     label: __('Organization'),
     key: 'company_name',
     width: '12rem',
+  },
+  {
+    label: __('Emails'),
+    key: 'email_count',
+    width: '7rem',
+    align: 'right',
   },
   {
     label: __('Last Modified'),

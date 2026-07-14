@@ -71,7 +71,8 @@ import ViewControls from '@/components/ViewControls.vue'
 import { getMeta } from '@/stores/meta'
 import { organizationsStore } from '@/stores/organizations.js'
 import { formatDate, timeAgo } from '@/utils'
-import { ref, computed } from 'vue'
+import { call } from 'frappe-ui'
+import { ref, computed, watch } from 'vue'
 
 const { getFormattedPercent, getFormattedFloat, getFormattedCurrency } =
   getMeta('Contact')
@@ -87,6 +88,25 @@ const loadMore = ref(1)
 const triggerResize = ref(1)
 const updatedPageCount = ref(20)
 const viewControls = ref(null)
+
+// LCS: count of e-mails directly linked to each contact, shown as a column
+const emailCounts = ref({})
+watch(
+  () => contacts.value?.data?.data,
+  async (data) => {
+    const names = (data || []).map((c) => c.name).filter(Boolean)
+    if (!names.length) return
+    try {
+      emailCounts.value = await call(
+        'lcs_integrations.projects.api.get_contact_email_counts',
+        { contacts: names },
+      )
+    } catch (e) {
+      // non-fatal: the column just shows 0
+    }
+  },
+  { immediate: true },
+)
 
 const rows = computed(() => {
   if (
@@ -141,12 +161,22 @@ const rows = computed(() => {
         }
       }
     })
+    // LCS: e-mail count per contact (string so a 0 still renders in the cell)
+    _rows['email_count'] = String(emailCounts.value[contact.name] ?? 0)
     return _rows
   })
 })
 
 const columns = computed(() => {
   let _columns = contacts.value?.data?.columns || []
+
+  // LCS: append an e-mail count column
+  if (_columns.length) {
+    _columns = [
+      ..._columns,
+      { label: __('Emails'), key: 'email_count', type: 'Data', width: '6rem' },
+    ]
+  }
 
   // Set align right for last column
   if (_columns.length) {

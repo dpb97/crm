@@ -919,3 +919,38 @@ def get_organization_emails(organization: str) -> list[dict]:
         r["preview"] = " ".join(text.split())[:160]
         r.pop("content", None)
     return rows
+
+
+@frappe.whitelist()
+def get_contact_email_counts(contacts) -> dict:
+    """Count e-mail Communications directly linked to each contact — via the
+    timeline link table (Communication Link) or a direct reference. Batched for
+    the contact list views. Returns {contact_name: count}. UNION dedupes a
+    communication that is both referenced and timeline-linked."""
+    import json
+
+    if isinstance(contacts, str):
+        contacts = json.loads(contacts)
+    contacts = [c for c in (contacts or []) if c]
+    if not contacts:
+        return {}
+
+    rows = frappe.db.sql(
+        """
+        SELECT contact, COUNT(*) AS n FROM (
+            SELECT cl.link_name AS contact, c.name AS comm
+            FROM `tabCommunication Link` cl
+            JOIN `tabCommunication` c ON c.name = cl.parent
+            WHERE cl.link_doctype = 'Contact' AND cl.link_name IN %(contacts)s
+              AND c.communication_medium = 'Email'
+            UNION
+            SELECT c.reference_name AS contact, c.name AS comm
+            FROM `tabCommunication` c
+            WHERE c.reference_doctype = 'Contact' AND c.reference_name IN %(contacts)s
+              AND c.communication_medium = 'Email'
+        ) t GROUP BY contact
+        """,
+        {"contacts": tuple(contacts)},
+        as_dict=True,
+    )
+    return {r.contact: r.n for r in rows}
