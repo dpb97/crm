@@ -54,7 +54,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch, onUnmounted } from 'vue'
+import { ref, onMounted, watch, onUnmounted, nextTick } from 'vue'
 import { FeatherIcon } from 'frappe-ui'
 
 const props = defineProps({
@@ -82,26 +82,32 @@ const phaseColors = {
   Lost: '#ef4444',
 }
 
+// Create the Leaflet map once. Safe to call before projects arrive — the
+// container lives under v-show (kept in the DOM), so the map can be built and
+// resized once it becomes visible.
+async function ensureMap() {
+  const L = await import('leaflet')
+  if (map) return L
+  await import('leaflet/dist/leaflet.css')
+  map = L.map(mapContainer.value, {
+    zoomControl: true,
+    attributionControl: true,
+  }).setView([47.0, 13.0], 3)
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap',
+    maxZoom: 18,
+  }).addTo(map)
+  return L
+}
+
 onMounted(async () => {
-  if (!props.projects.length) {
-    loading.value = false
-    return
-  }
   try {
-    const L = await import('leaflet')
-    await import('leaflet/dist/leaflet.css')
-
-    map = L.map(mapContainer.value, {
-      zoomControl: true,
-      attributionControl: true,
-    }).setView([47.0, 13.0], 3)
-
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap',
-      maxZoom: 18,
-    }).addTo(map)
-
-    renderMarkers(L)
+    if (props.projects.length) {
+      const L = await ensureMap()
+      await nextTick()
+      map.invalidateSize()
+      renderMarkers(L)
+    }
   } catch (err) {
     console.error('Map initialization failed:', err)
   } finally {
@@ -182,9 +188,16 @@ watch(
       loading.value = false
       return
     }
-    if (map) {
-      const L = await import('leaflet')
+    try {
+      // Build the map now if it wasn't created at mount (data loaded late).
+      const L = await ensureMap()
+      await nextTick()
+      map.invalidateSize()
       renderMarkers(L)
+    } catch (err) {
+      console.error('Map render failed:', err)
+    } finally {
+      loading.value = false
     }
   },
   { deep: true },
