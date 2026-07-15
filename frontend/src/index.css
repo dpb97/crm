@@ -8,10 +8,15 @@
    ============================================================ */
 
 :root {
-  /* Brand */
-  --lcs-primary:    #0B3A6F;   /* LCS navy */
-  --lcs-secondary:  #1E78C2;   /* LCS link blue */
-  --lcs-accent:     #F5A524;   /* LCS signal yellow */
+  /* Brand — Pilanda live-theming. `--pp-brand-primary-rgb` (space-separated
+     R G B) drives BOTH the Tailwind `lcs-primary` utilities (which read this
+     var with a navy fallback) and the hand-written CSS below, so the whole CRM
+     follows the Pilanda brand from one place. Pilanda dark-cyan = #008B8B.
+     Set back to `11 58 111` for the legacy LCS navy. */
+  --pp-brand-primary-rgb: 0 139 139;
+  --lcs-primary:    rgb(var(--pp-brand-primary-rgb, 11 58 111));
+  --lcs-secondary:  #1E78C2;   /* link blue */
+  --lcs-accent:     #F5A524;   /* signal yellow */
 
   /* Semantic */
   --lcs-success:    #16A34A;
