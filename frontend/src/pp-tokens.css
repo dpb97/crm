@@ -1,0 +1,473 @@
+/* pilanda_theme_tokens.css
+ *
+ * Token-Layer for the LCS Pilanda Design System (ADR-006).
+ * Pure CSS variables — consumable by Frappe Desk, the Vue
+ * sidebar bundle, the public landing pages, and any future
+ * Tailwind-4-based frontend (via `@theme { --color-*: var(--…) }`).
+ *
+ * Layer order (strict):
+ *   1. primitive   — raw OKLCH palette + 15 module-accent hues
+ *   2. semantic    — bg / text / border / state — the public API
+ *   3. module-accent — one hue per module, set by the shell on
+ *                      :root, consumed via --accent-current
+ *   4. shape       — radii, spacing, shadows, motion
+ *
+ * Only the semantic + shape layers are meant to be referenced
+ * from components / pages. Primitives are private to this file.
+ *
+ * Phase 0/1 theme: slate-light. Multi-theme is folder-ready:
+ * a future slate-dark would override only the semantic layer
+ * inside `[data-theme="slate-dark"] { … }`.
+ */
+
+:root {
+    /* =========================================================
+     * 1. PRIMITIVE — Slate OKLCH palette
+     * =========================================================
+     * Lightness-stepped, perceptually uniform. 11 stops between
+     * white and slate-950. Hue ~258° (cool slate).
+     */
+    --pp-slate-50:   oklch(0.984 0.003 247.858);
+    --pp-slate-100:  oklch(0.968 0.007 247.896);
+    --pp-slate-200:  oklch(0.929 0.013 255.508);
+    --pp-slate-300:  oklch(0.869 0.022 252.894);
+    --pp-slate-400:  oklch(0.704 0.040 256.788);
+    --pp-slate-500:  oklch(0.554 0.046 257.417);
+    --pp-slate-600:  oklch(0.446 0.043 257.281);
+    --pp-slate-700:  oklch(0.372 0.044 257.287);
+    --pp-slate-800:  oklch(0.279 0.041 260.031);
+    --pp-slate-900:  oklch(0.208 0.042 265.755);
+    --pp-slate-950:  oklch(0.129 0.042 264.695);
+
+    /* =========================================================
+     * 1a-brand. PRIMITIVE — Brand-Cyan-Skala (OKLCH, Hue ~195)
+     * =========================================================
+     * Basis = Pilanda-Logo Dark-Cyan #008B8B (= --pp-brand-700 exakt);
+     * Entscheid Marco 07.07.2026 (vorher Navy #0B3A6F, Hue 256).
+     * 50→950 lightness-stepped, perceptuell gleichmaessig.
+     */
+    --pp-brand-50:  oklch(0.970 0.020 195);
+    --pp-brand-100: oklch(0.935 0.040 195);
+    --pp-brand-200: oklch(0.880 0.060 195);
+    --pp-brand-300: oklch(0.800 0.080 195);
+    --pp-brand-400: oklch(0.710 0.095 195);
+    --pp-brand-500: oklch(0.650 0.100 195);
+    --pp-brand-600: oklch(0.612 0.100 195);
+    --pp-brand-700: oklch(0.577 0.098 194.8); /* = #008B8B (Logo-Cyan) */
+    --pp-brand-800: oklch(0.480 0.085 195);
+    --pp-brand-900: oklch(0.390 0.070 195);
+    --pp-brand-950: oklch(0.290 0.055 195);
+
+    /* =========================================================
+     * 1a-accent. PRIMITIVE — kuratierte Design-Akzente (OKLCH)
+     * =========================================================
+     * Handverlesene Palette fuer States + bewusste Farb-Akzente
+     * im UI. Loest den 15-Hue-Regenbogen als DESIGN-Akzent ab;
+     * die 15 Modul-Hues (1b) bleiben rein zur Nav-Orientierung.
+     */
+    --pp-accent-teal:    oklch(0.62 0.11 205);
+    --pp-accent-emerald: oklch(0.62 0.14 155);
+    --pp-accent-amber:   oklch(0.76 0.14 075);
+    --pp-accent-rose:    oklch(0.60 0.20 020);
+    --pp-accent-violet:  oklch(0.56 0.16 290);
+
+    /* =========================================================
+     * 1b. PRIMITIVE — 15-Hue Module-Accent Palette
+     * =========================================================
+     * All at L 0.55 / C 0.12 → perceptually equal lightness and
+     * saturation. Used as orientation accents, never as area
+     * colour. Hues evenly spaced 24° apart starting at 12°.
+     */
+    --pp-accent-h-01: oklch(0.55 0.12 012);  /* warm-red    */
+    --pp-accent-h-02: oklch(0.55 0.12 036);  /* orange      */
+    --pp-accent-h-03: oklch(0.55 0.12 060);  /* amber       */
+    --pp-accent-h-04: oklch(0.55 0.12 084);  /* yellow-grn  */
+    --pp-accent-h-05: oklch(0.55 0.12 108);  /* lime        */
+    --pp-accent-h-06: oklch(0.55 0.12 132);  /* green       */
+    --pp-accent-h-07: oklch(0.55 0.12 156);  /* emerald     */
+    --pp-accent-h-08: oklch(0.55 0.12 180);  /* teal        */
+    --pp-accent-h-09: oklch(0.55 0.12 204);  /* cyan        */
+    --pp-accent-h-10: oklch(0.55 0.12 228);  /* azure       */
+    --pp-accent-h-11: oklch(0.55 0.12 252);  /* blue        */
+    --pp-accent-h-12: oklch(0.55 0.12 276);  /* violet      */
+    --pp-accent-h-13: oklch(0.55 0.12 300);  /* purple      */
+    --pp-accent-h-14: oklch(0.55 0.12 324);  /* magenta     */
+    --pp-accent-h-15: oklch(0.55 0.12 348);  /* red-pink    */
+
+    /* Default `--accent-current` — Navy-Brand statt knalligem Blau.
+     * Die Basis-UI (Links, Fokus, Primaeraktion) ist bewusst
+     * zurueckhaltend: Blau→Grau→Schwarz→Weiss. Die kuratierten
+     * Akzente (teal/emerald/amber/rose/violet) + 15 Modul-Hues
+     * bleiben definiert, erscheinen aber NUR als Signale
+     * (Alerts, Status-/Workflow-Chips, Gates). */
+    --accent-current: var(--pp-brand-600);
+
+    /* =========================================================
+     * 1c. PRIMITIVE — State-color seeds (OKLCH)
+     * =========================================================
+     * Auf die kuratierten Akzente (1a-accent) gemappt:
+     * success=emerald, warning=amber, danger=rose, info=teal.
+     */
+    --pp-state-success-500: var(--pp-accent-emerald);
+    --pp-state-warning-500: var(--pp-accent-amber);
+    --pp-state-danger-500:  var(--pp-accent-rose);
+    --pp-state-info-500:    var(--pp-accent-teal);
+
+    /* =========================================================
+     * 2. SEMANTIC — the public token API
+     * =========================================================
+     * Components, templates and the Frappe Desk reskin must
+     * only reference semantic + shape vars (and --accent-current).
+     */
+
+    /* Native UI im Hell-Schema (Gegenstück zu color-scheme:dark unten). */
+    color-scheme: light;
+
+    /* Surfaces — „modernes Hellgrau" lt. Klickdummy-Handoff (Master §6/N1,
+     * 13.07.2026): bewusst vom Weiß weggerückt. Rampe (hell→tief):
+     * surface/elevated #e2e5ea (panel: Sidebar/Topbar/Karten/Popover) ›
+     * base #dcdfe5 (Arbeitsfläche) › sunken #d7dbe1 (Fensterhintergrund) ›
+     * stage #c4c9d1 (tiefste Bühne). */
+    --pp-bg-base:        #dcdfe5;                 /* Arbeitsfläche / page background */
+    --pp-bg-surface:     #e2e5ea;                 /* card / panel / sidebar / topbar */
+    --pp-bg-elevated:    #e2e5ea;                 /* dialogs, popovers (= panel im Dummy) */
+    --pp-bg-sunken:      #d7dbe1;                 /* subtle inset / Fensterhintergrund */
+    --pp-bg-stage:       #c4c9d1;                 /* tiefste Bühne (Login-/Vorschau-Grund) */
+    --pp-bg-hover:       #d4d8de;                 /* Hover-Fläche (= line-2 im Dummy) */
+    --pp-bg-pressed:     #cdd3db;                 /* abgeleitet — Dummy definiert kein pressed */
+
+    /* Text — Klickdummy §6/N1 */
+    --pp-text-primary:   #232a36;                 /* ink */
+    --pp-text-secondary: #69707d;                 /* muted */
+    --pp-text-tertiary:  #9aa1ad;                 /* faint */
+    --pp-text-disabled:  var(--pp-slate-400);
+    --pp-text-inverse:   #ffffff;
+    --pp-text-on-accent: #ffffff;
+    --pp-text-link:      var(--accent-current);
+
+    /* Borders — Klickdummy §6/N1 (line / line-2 / line-hover) */
+    --pp-border-subtle:  #d4d8de;
+    --pp-border-default: #c7ccd4;
+    --pp-border-strong:  #b4bbc5;
+    --pp-border-focus:   var(--accent-current);
+
+    /* Aktive Markierung (Nav-Item aktiv, Dropdown aktiv) — Dummy accent-soft */
+    --pp-accent-soft:    #d2e5e5;
+
+    /* Nav-Signale (Herkunfts-/Status-Kategorie in Spezifikation/Suche;
+     * §6/N3 — Dummy frp/cus/ext/live). NUR als Signal, nie als UI-Fläche. */
+    --pp-cat-std:   #2f6fed;   /* Frappe-Standard */
+    --pp-cat-cust:  #c9861c;   /* Custom (Pilanda) */
+    --pp-cat-ext:   #0f9e93;   /* Extern */
+
+    /* Schattenfarben als RGB-Tripel (§6/N1) — rgb(var(--…) / α) */
+    --pp-shadow-ink-rgb:   20 35 70;
+    --pp-shadow-deep-rgb:  10 20 30;
+    --pp-shadow-brand-rgb: 0 139 139;
+
+    /* Login-Reskin (§6/E-Login, Umsetzung N4) — Radial-Verlauf im Marken-Cyan */
+    --pp-login-grad: radial-gradient(1200px 720px at 75% -15%,
+                     #12a594 0%, #008b8b 42%, #075c5c 100%);
+    --pp-login-field: #eef1f5;
+    --pp-login-ph:    #7c8698;
+
+    /* States */
+    --pp-state-success:  var(--pp-state-success-500);
+    --pp-state-warning:  var(--pp-state-warning-500);
+    --pp-state-danger:   var(--pp-state-danger-500);
+    --pp-state-info:     var(--pp-state-info-500);
+
+    /* Brand — LCS Pilanda primary blue (SSOT, ADR-006 §P3)
+     * pilanda_theme_app.css referenziert diese --pp-brand-*-Tokens direkt.
+     * Primary zeigt auf die Brand-Skala (--pp-brand-700 = #008B8B).
+     * --pp-brand-primary-rgb ist das space-separierte Triple fuer
+     * rgb(var(--pp-brand-primary-rgb) / α) — bewusst statisch
+     * gehalten (var() ist in rgb()-Triple-Syntax nicht aufloesbar). */
+    --pp-brand-primary:     var(--pp-brand-700);   /* = #008B8B (Logo-Cyan) */
+    --pp-brand-primary-d:   var(--pp-brand-800);
+    --pp-brand-secondary:   var(--pp-brand-500);
+    --pp-brand-primary-rgb: 0 139 139;   /* #008B8B → rgb(var(--…) / α) */
+
+    /* =========================================================
+     * 3. MODULE-ACCENT — application
+     * =========================================================
+     * The shell sets `--accent-current` per route, e.g.
+     *   [data-pp-module="vertrieb"]      { --accent-current: var(--pp-accent-h-11); }
+     *   [data-pp-module="produktion"]    { --accent-current: var(--pp-accent-h-08); }
+     * Components reference `--accent-current` only — they never
+     * know which module they live in.
+     */
+
+    /* =========================================================
+     * 4. SHAPE — radii, spacing, shadows, motion, z-index
+     * =========================================================
+     */
+
+    /* 4-pt spacing scale */
+    --pp-space-0:  0;
+    --pp-space-1:  4px;
+    --pp-space-2:  8px;
+    --pp-space-3:  12px;
+    --pp-space-4:  16px;
+    --pp-space-5:  20px;
+    --pp-space-6:  24px;
+    --pp-space-8:  32px;
+    --pp-space-10: 40px;
+    --pp-space-12: 48px;
+    --pp-space-16: 64px;
+    --pp-space-20: 80px;
+
+    /* Radii — Enterprise: max 3px, nur Kreise/Pills voll rund.
+     * sm..2xl sind bewusst Aliasse auf 3px, damit Bestands-
+     * referenzen nicht brechen, aber NIE > 3px rendern. */
+    --pp-radius-ui:   3px;    /* durchgängiger Standard-UI-Radius (Buttons/Inputs/Cards) — Enterprise 3px (User 22.06.) */
+    --pp-radius-xs:   2px;
+    --pp-radius-sm:   3px;
+    --pp-radius-md:   3px;
+    --pp-radius-lg:   3px;
+    --pp-radius-xl:   3px;
+    --pp-radius-2xl:  3px;
+    --pp-radius-full: 9999px;   /* Kreise/Pills bleiben rund */
+
+    /* Shadows — flat, soft, low-noise */
+    --pp-shadow-xs:  0 1px 2px 0 oklch(0 0 0 / 0.04);
+    --pp-shadow-sm:  0 1px 3px 0 oklch(0 0 0 / 0.06),
+                      0 1px 2px -1px oklch(0 0 0 / 0.04);
+    --pp-shadow-md:  0 4px 6px -1px oklch(0 0 0 / 0.08),
+                      0 2px 4px -2px oklch(0 0 0 / 0.04);
+    --pp-shadow-lg:  0 10px 15px -3px oklch(0 0 0 / 0.10),
+                      0 4px 6px -4px oklch(0 0 0 / 0.06);
+    --pp-shadow-xl:  0 20px 25px -5px oklch(0 0 0 / 0.12),
+                      0 8px 10px -6px oklch(0 0 0 / 0.06);
+    --pp-shadow-focus: 0 0 0 2px var(--pp-bg-elevated),
+                       0 0 0 4px var(--accent-current);
+    /* Brand-getönter Fokus-/Aktiv-Ring (SSOT statt ~30 ad-hoc-Ringe mit driftendem
+     * Alpha). Brand-RGB flippt im Dark-Block automatisch → kein eigener Dark-Wert. */
+    --pp-shadow-focus-ring: 0 0 0 3px rgb(var(--pp-brand-primary-rgb) / 0.15);
+    --pp-shadow-focus-ring-strong: 0 0 0 3px rgb(var(--pp-brand-primary-rgb) / 0.30);
+
+    /* Motion */
+    --pp-duration-fast: 120ms;
+    --pp-duration-base: 200ms;
+    --pp-duration-slow: 320ms;
+    --pp-ease-standard:   cubic-bezier(0.4, 0, 0.2, 1);
+    --pp-ease-accelerate: cubic-bezier(0.4, 0, 1, 1);
+    --pp-ease-decelerate: cubic-bezier(0, 0, 0.2, 1);
+
+    /* Z-index scale */
+    --pp-z-base:    0;
+    --pp-z-sticky:  100;
+    --pp-z-overlay: 1000;
+    --pp-z-modal:   1100;
+    --pp-z-toast:   1200;
+    --pp-z-tooltip: 1300;
+
+    /* Icon sizes (Lucide) */
+    --pp-icon-sm: 16px;
+    --pp-icon-md: 20px;
+    --pp-icon-lg: 24px;
+
+    /* Type-Scale (1.250 Major Third) — values are static,
+     * fluid clamp() variants come with Mockup M1. */
+    --pp-fs-12: 12px;
+    --pp-fs-14: 14px;
+    --pp-fs-16: 16px;
+    --pp-fs-20: 20px;
+    --pp-fs-24: 24px;
+    --pp-fs-32: 32px;
+    --pp-fs-40: 40px;
+    --pp-fs-56: 56px;
+}
+
+/* =============================================================
+ * DARK THEME — überschreibt NUR die semantische Schicht.
+ * =============================================================
+ * Gleiche Regeln/Struktur wie Light; hier kippen ausschliesslich
+ * die Token-WERTE (Slate-Skala invertiert). Aktiv via
+ * <html data-theme="dark"> (Frappe-Desk setzt das selbst; das
+ * Theme-Preview-Steuerpult schaltet es manuell um).
+ * Startwerte — gemeinsam am /theme-preview feinjustieren.
+ */
+:root[data-theme="dark"], [data-theme="dark"] {
+    /* Native UI (Scrollbalken, Select/Date/Checkbox, Form-Defaults) im
+     * Dunkel-Schema rendern — sonst bleiben sie hell auf dunklem Grund. */
+    color-scheme: dark;
+
+    /* Surfaces — NEUTRALE Dunkelgrau-Rampe (Iteration 3).
+     * Ziel: ruhiges Dunkelgrau, KEIN Schwarz, kein Blaustich, kleine
+     * gleichmaessige L-Schritte (sonst „fleckig"). Daher NICHT mehr die
+     * blaustichige Slate-Skala, sondern explizite low-chroma-Werte.
+     * Range bewusst eng (L 17,5 → 27,5 %) statt 12,9 → 27,9 %.
+     * Startwerte — am /theme-preview feinjustieren. */
+    /* Surfaces — Dunkel-Werte lt. Klickdummy-Handoff (Master §6/N1):
+     * surface/elevated #1b212b (panel) › base #161b23 (canvas) ›
+     * sunken #12161d (bg) › stage #0c0f14. */
+    --pp-bg-sunken:   #12161d;
+    --pp-bg-base:     #161b23;
+    --pp-bg-surface:  #1b212b;
+    --pp-bg-elevated: #1b212b;
+    --pp-bg-stage:    #0c0f14;
+    --pp-bg-hover:    #222932;                  /* = line-2 dunkel im Dummy */
+    --pp-bg-pressed:  oklch(1 0 0 / 0.09);      /* abgeleitet — Dummy definiert kein pressed */
+
+    /* Text — Klickdummy §6/N1 dunkel */
+    --pp-text-primary:   #e7ebf1;
+    --pp-text-secondary: #98a2b3;
+    --pp-text-tertiary:  #6c7683;
+    --pp-text-disabled:  var(--pp-slate-600);
+    --pp-text-inverse:   var(--pp-slate-900);
+
+    /* Borders — Klickdummy §6/N1 dunkel (line-2 / line / line-hover) */
+    --pp-border-subtle:  #222932;
+    --pp-border-default: #2b333f;
+    --pp-border-strong:  #3a434f;
+
+    /* Brand — Klickdummy-Dunkel-Akzent (§6/N1): accent #17b3b3,
+     * helle Hover-/Text-Variante #54d3d3. */
+    --pp-brand-primary:     #17b3b3;
+    --pp-brand-primary-d:   #54d3d3;
+    --pp-brand-secondary:   var(--pp-brand-400);
+    --pp-brand-primary-rgb: 23 179 179;   /* #17b3b3 */
+
+    /* Aktive Markierung + Schatten-Tripel dunkel (§6/N1) */
+    --pp-accent-soft:      #123739;
+    --pp-shadow-ink-rgb:   0 0 0;
+    --pp-shadow-deep-rgb:  0 0 0;
+
+    /* Nav-Signale dunkel (§6/N3) — etwas leuchtender */
+    --pp-cat-std:   #6b9bff;
+    --pp-cat-cust:  #e0a63a;
+    --pp-cat-ext:   #2bc0b3;
+
+    /* Akzent (Links/Fokus/Primaer) im Dark folgt dem Klickdummy-
+     * Dunkel-Akzent (#17b3b3) — --pp-text-link + --pp-border-focus
+     * folgen --accent-current. */
+    --accent-current: var(--pp-brand-primary);
+
+    /* Inverse-Text auf hellem Akzent: dunkler Grund, damit Text auf
+     * der hellen Brand-Flaeche (z.B. solid Primaer-Button) lesbar ist. */
+    --pp-text-on-accent: var(--pp-slate-950);
+
+    /* States — etwas heller/leuchtender auf dunklem Grund */
+    --pp-state-success-500: oklch(0.70 0.14 155);
+    --pp-state-warning-500: oklch(0.80 0.14 075);
+    --pp-state-danger-500:  oklch(0.68 0.19 020);
+    --pp-state-info-500:    oklch(0.70 0.11 205);
+
+    /* Shadows — weicher (nicht reinschwarz/voll deckend), sonst „poppen"
+     * die Flaechen und es wirkt fleckig. Trennung kommt jetzt mehr ueber
+     * die Border + kleine L-Stufen, weniger ueber harte Schlagschatten. */
+    --pp-shadow-sm: 0 1px 2px 0 oklch(0 0 0 / 0.28);
+    --pp-shadow-md: 0 4px 8px -2px oklch(0 0 0 / 0.32), 0 2px 4px -2px oklch(0 0 0 / 0.22);
+    --pp-shadow-lg: 0 10px 20px -4px oklch(0 0 0 / 0.38), 0 4px 8px -4px oklch(0 0 0 / 0.26);
+}
+
+/* =============================================================
+ * Module-scope helpers — set on the page shell (e.g. <body
+ * data-pp-module="vertrieb">) so descendants inherit the accent.
+ * Manually mapped from pilanda.modules_data.MODULES; extend here
+ * when a new module ships.
+ *
+ * DEZENTE PALETTE (Iteration 2): --accent-current bleibt modul-
+ * uebergreifend Navy-Brand, damit Links/Fokus/Primaeraktion ueberall
+ * ruhig sind. Die modul-spezifische Orientierungs-Farbe wandert in
+ * --pp-module-accent — gezielt nur fuer Nav-Marker (Sidebar-Strich,
+ * Modul-Badge) zu konsumieren, NICHT als allgemeine UI-Farbe.
+ * ============================================================= */
+[data-pp-module="dashboard-user"]       { --pp-module-accent: var(--pp-accent-h-10); }
+[data-pp-module="projektleitstelle"]    { --pp-module-accent: var(--pp-accent-h-11); }
+[data-pp-module="vertrieb"]             { --pp-module-accent: var(--pp-accent-h-01); }
+[data-pp-module="produktmanagement"]    { --pp-module-accent: var(--pp-accent-h-02); }
+[data-pp-module="projektmanagement"]    { --pp-module-accent: var(--pp-accent-h-03); }
+[data-pp-module="engineering"]          { --pp-module-accent: var(--pp-accent-h-06); }
+[data-pp-module="einkauf"]              { --pp-module-accent: var(--pp-accent-h-05); }
+[data-pp-module="produktion"]           { --pp-module-accent: var(--pp-accent-h-08); }
+[data-pp-module="installation"]         { --pp-module-accent: var(--pp-accent-h-04); }
+[data-pp-module="betrieb"]              { --pp-module-accent: var(--pp-accent-h-07); }
+[data-pp-module="after-sales"]          { --pp-module-accent: var(--pp-accent-h-14); }
+[data-pp-module="artikel"]              { --pp-module-accent: var(--pp-accent-h-12); }
+[data-pp-module="tickets"]              { --pp-module-accent: var(--pp-accent-h-15); }
+[data-pp-module="finanzen"]             { --pp-module-accent: var(--pp-accent-h-07); }
+[data-pp-module="personal"]             { --pp-module-accent: var(--pp-accent-h-10); }
+[data-pp-module="qualitat"]             { --pp-module-accent: var(--pp-accent-h-12); }
+[data-pp-module="arbeitssicherheit"]    { --pp-module-accent: var(--pp-accent-h-02); }
+[data-pp-module="recht"]                { --pp-module-accent: var(--pp-accent-h-13); }
+[data-pp-module="helpdesk"]             { --pp-module-accent: var(--pp-accent-h-09); }
+[data-pp-module="lms"]                  { --pp-module-accent: var(--pp-accent-h-05); }
+[data-pp-module="wissen"]               { --pp-module-accent: var(--pp-accent-h-13); }
+
+/* =============================================================
+ * FIX 2 — Radius-Disziplin an ECHTEN Komponenten (Enterprise).
+ * =============================================================
+ * frappe-ui/Tailwind rendern rounded-sm..2xl = 4..20px. Hier
+ * deckeln wir ALLE interaktiven Flaechen auf --pp-radius-ui (3px).
+ * Greift ueberall, wo diese Datei geladen ist (Desk via
+ * app_include_css; /theme-preview via explizitem <link>).
+ *
+ * AUSNAHME: echte Kreise/Pills bleiben voll rund — Avatare,
+ * Switch-Tracks, .rounded-full, Spinner/Loader-Kreise, Status-Dots.
+ * ============================================================= */
+button,
+input,
+select,
+textarea,
+.form-input,
+.form-textarea,
+.form-select,
+[class*="rounded-sm"],
+[class*="rounded-md"],
+[class*="rounded-lg"],
+[class*="rounded-xl"],
+[class*="rounded-2xl"],
+[class*="rounded-3xl"],
+/* arbitrary-value-Radii (z.B. Tailwind `rounded-[9px]`) — diese matchen
+ * KEINEN der Suffix-Selektoren oben und wuerden sonst ihren Roh-Radius
+ * behalten. Ohne diese Zeile kann eine interaktive Flaeche je nach
+ * gerenderter Klasse einen abweichenden Radius zeigen. Gilt in BEIDEN
+ * Modi gleich (Selektor ist modus-unabhaengig). */
+[class*="rounded-["],
+[class~="rounded"],
+[role="dialog"],
+[role="menu"],
+[role="listbox"],
+[role="combobox"],
+[role="tooltip"],
+.dropdown-menu,
+.popover,
+[data-radix-popper-content-wrapper] > * {
+    border-radius: var(--pp-radius-ui) !important;
+}
+
+/* Voll-runde Elemente NICHT deckeln — sie bleiben Kreise/Pills. */
+.rounded-full,
+[class*="rounded-full"],
+[role="switch"],
+[role="switch"] *,
+.avatar,
+[class*="avatar"],
+img.rounded-full,
+.pp-radius-full,
+.pp-spinner,
+[data-pp-shape="pill"],
+[data-pp-shape="circle"] {
+    border-radius: var(--pp-radius-full) !important;
+}
+
+/* FIX 2b — frappe-ui Badge ist per Default `rounded-full` (Pille),
+ * wirkt im Enterprise-Kontext zu rund. Badge-Wurzel ist ein
+ * `.inline-flex.rounded-full`-Container mit Text → gezielt auf 3px
+ * deckeln. Avatare/Switch-Tracks/Status-Dots sind KEINE inline-flex-
+ * Text-Container und bleiben rund. Gewinnt durch hoehere Spezifitaet
+ * (zwei Klassen) gegen die rounded-full-Ausnahme oben. */
+.inline-flex.rounded-full,
+[role="status"].rounded-full,
+.badge.rounded-full {
+    border-radius: var(--pp-radius-ui) !important;
+}
+/* Echte runde Indikatoren/Avatare innerhalb solcher Container bleiben
+ * rund (z.B. Avatar-Gruppen in einer Badge-Zeile). */
+.inline-flex.rounded-full .avatar,
+.inline-flex.rounded-full [class*="avatar"],
+.inline-flex.rounded-full img.rounded-full {
+    border-radius: var(--pp-radius-full) !important;
+}

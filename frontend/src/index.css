@@ -1,4 +1,7 @@
 @import 'frappe-ui/style.css';
+/* Pilanda design tokens (--pp-*) — consumed by the Pp* shell components
+   (PpSidebar) in Pilanda mode. Namespaced, so no clash with the --lcs-* set. */
+@import './pp-tokens.css';
 
 /* ============================================================
    LCS Theme Tokens — single source of truth for design tokens.
