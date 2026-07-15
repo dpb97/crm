@@ -37,3 +37,5 @@ lcs_integrations.patches.install_deal_currency_field
 lcs_integrations.patches.relabel_deal_annual_revenue
 # Backfills LCS Project.currency from the linked deal (default EUR).
 lcs_integrations.patches.backfill_project_currency
+# Adds company_name (Firma) as a quick filter on the Contacts list.
+lcs_integrations.patches.add_contact_company_quick_filter

@@ -96,7 +96,7 @@ No contact linked.,Kein Kontakt verknüpft.
 No countries yet.,Noch keine Länder.
 No emails on file yet.,Noch keine E-Mails vorhanden.
 No leads yet.,Noch keine Leads.
-No matching organizations.,Keine passenden Organisationen.
+No matching organizations.,Keine passenden Firmen.
 No matching persons.,Keine passenden Personen.
 No matching projects.,Keine passenden Projekte.
 No network data yet.,Noch keine Netzwerkdaten.
@@ -111,7 +111,7 @@ Not a clear match — pick the project,Keine eindeutige Zuordnung – Projekt w�
 Not a clear match — pick the project(s),Keine eindeutige Zuordnung – Projekt(e) wählen
 Not shared with anyone yet.,Noch mit niemandem geteilt.
 Note attached to,Notiz angehängt an
-Note linked to organization,Notiz mit Organisation verknüpft
+Note linked to organization,Notiz mit Firma verknüpft
 Note linked to person,Notiz mit Person verknüpft
 Note matched to,Notiz zugeordnet zu
 Note saved,Notiz gespeichert
@@ -130,9 +130,9 @@ Open project,Projekt öffnen
 Open the project list in ERPNext,Projektliste in ERPNext öffnen
 Opportunities,Chancen
 Or link to a person,Oder einer Person zuordnen
-Or link to an organization,Oder einer Organisation zuordnen
-Organization,Kunde
-Organizations,Kunden
+Or link to an organization,Oder einer Firma zuordnen
+Organization,Firma
+Organizations,Firmen
 out,raus
 Outcome,Ergebnis
 outgoing,ausgehend
@@ -174,7 +174,7 @@ Save note,Notiz speichern
 Saved to,Gespeichert in
 Saved to the project activity; next steps become a task.,In der Projekt-Aktivität gespeichert; nächste Schritte werden zur Aufgabe.
 Search any project by number or name...,Projekt nach Nummer oder Name suchen …
-Search organization by name...,Organisation nach Name suchen …
+Search organization by name...,Firma nach Name suchen …
 Search person by name...,Person nach Name suchen …
 Search projects...,Projekte suchen …
 Search territory / country...,Gebiet / Land suchen...
@@ -253,3 +253,14 @@ captured,erfasst
 EUR equivalent,EUR-Gegenwert
 Amount in EUR,Betrag in EUR
 Deals,Angebotsphasen
+
+Add Organization...,Firma hinzufügen …
+Choose Existing Organization,Bestehende Firma wählen
+Delete Organization,Firma löschen
+New Organization,Neue Firma
+Organization Logo,Firmenlogo
+Set an Organization,Firma festlegen
+Organization Name,Firmenname
+Organization Details,Firmendetails
+Choose Existing Contact,Bestehenden Kontakt wählen
+Company Name,Firma
