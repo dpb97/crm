@@ -1,7 +1,7 @@
 <template>
   <LayoutHeader>
     <template #left-header>
-      <Breadcrumbs :items="[{ label: __('Laufende Projekte'), route: { name: 'LCS Projects' } }]" />
+      <Breadcrumbs :items="[{ label: __('Vertriebsprojekte'), route: { name: 'LCS Projects' } }]" />
     </template>
     <template #right-header>
       <div class="flex items-center gap-2">

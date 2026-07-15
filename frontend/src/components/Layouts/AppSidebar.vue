@@ -245,12 +245,12 @@ const links = [
     to: 'Leads',
   },
   {
-    label: 'Angebotsphasen',
+    label: 'Verkaufschance',
     icon: DealsIcon,
     to: 'Deals',
   },
   {
-    label: 'Laufende Projekte',
+    label: 'Vertriebsprojekte',
     icon: LucideFolderKanban,
     to: 'LCS Projects',
   },

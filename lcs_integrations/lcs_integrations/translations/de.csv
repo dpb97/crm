@@ -67,7 +67,7 @@ Inspector,Inspektor
 just now,gerade eben
 Last comment,Letzter Kommentar
 Latest from my projects,Neueste Aktivität meiner Projekte
-Leads,Leads
+Leads,Interessent
 Loading...,Lädt …
 locations,Standorte
 Log call note,Protokoll erfassen
@@ -252,7 +252,6 @@ frozen,eingefroren
 captured,erfasst
 EUR equivalent,EUR-Gegenwert
 Amount in EUR,Betrag in EUR
-Deals,Angebotsphasen
 
 Add Organization...,Firma hinzufügen …
 Choose Existing Organization,Bestehende Firma wählen
@@ -264,3 +263,5 @@ Organization Name,Firmenname
 Organization Details,Firmendetails
 Choose Existing Contact,Bestehenden Kontakt wählen
 Company Name,Firma
+Deals,Verkaufschance
+Lead,Interessent
