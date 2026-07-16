@@ -61,7 +61,7 @@ Rolle: baut aus Oswalds Prototyp (read-only Referenz, **kein Code-Port**) das ka
   clear-cache VOR migrate. Verifiziert: /crm/projects,/network,
   /organizations,/contacts,/forecasting eingeloggt = 0 Fehlerboxen,
   0 JS-Fehler. **Seit 16.07. abends: Einspielen/Redeploy = EIN Befehl:**
-  `docker exec pilanda-frappe bash /workspace/frappe-bench/apps/pilanda/_devenv-link/install-crm.sh`
+  `docker exec pilanda-frappe bash /workspace/frappe-bench/apps/pilanda/_devenv/install-crm.sh`
   (Skript `pilanda/_devenv/install-crm.sh`, idempotent — Marco #1).
 - **CRM-Bestandsdaten-Übernahme (Marco-Befund „nur ein Datensatz sichtbar",
   16.07.2026 abends):** Dominiks CRM ist eine EIGENE Datenwelt und startete
