@@ -1,0 +1,41 @@
+[pre_model_sync]
+# Drop legacy Custom Fields BEFORE the schema sync — their fieldnames
+# now exist as native columns on CRM Lead / CRM Deal.
+lcs_integrations.patches.drop_lead_deal_qualification_custom_fields
+lcs_integrations.patches.v1_0.install_custom_fields
+lcs_integrations.patches.seed_lookup_data
+lcs_integrations.patches.migrate_legacy_source_reason
+lcs_integrations.patches.remove_abas_legacy
+lcs_integrations.patches.reinstall_bsm_fields
+lcs_integrations.patches.fusion_upgrade_oauth
+lcs_integrations.patches.install_sales_manager_fields
+lcs_integrations.patches.reinstall_erpnext_project_field
+lcs_integrations.patches.migrate_lead_score_to_crm_lead
+lcs_integrations.patches.install_outlook_teams_fields
+lcs_integrations.patches.install_followup_fields
+lcs_integrations.patches.install_domain_binding_fields
+lcs_integrations.patches.install_contact_release_fields
+
+[post_model_sync]
+# Needs the LCS Segment / LCS Sales Territory DocTypes synced first.
+lcs_integrations.patches.seed_market_split
+# Resolves sales-manager codes (JFA/PKO/CLU/DRO) to User accounts on territories.
+lcs_integrations.patches.map_sales_manager_users
+# Touches LCS Project rows after the new phase options exist.
+lcs_integrations.patches.migrate_project_phase
+# Adds the 'Important' star flag to CRM Lead / CRM Deal.
+lcs_integrations.patches.install_important_flag
+# Adds 'Expected Start Date' to CRM Lead / CRM Deal.
+lcs_integrations.patches.install_estimated_start_date
+# Adds 'Previous Companies' to Contact (network graph / career history).
+lcs_integrations.patches.install_previous_companies
+# Seeds the editable funnel phase definitions (needs LCS Funnel Phase synced).
+lcs_integrations.patches.seed_funnel_phases
+# Exposes CRM Deal `currency` in the create dialog + side panel layouts.
+lcs_integrations.patches.install_deal_currency_field
+# Relabels CRM Deal `annual_revenue` -> "Geschätzter Umsatz" (deal value, not company revenue).
+lcs_integrations.patches.relabel_deal_annual_revenue
+# Backfills LCS Project.currency from the linked deal (default EUR).
+lcs_integrations.patches.backfill_project_currency
+# Adds company_name (Firma) as a quick filter on the Contacts list.
+lcs_integrations.patches.add_contact_company_quick_filter

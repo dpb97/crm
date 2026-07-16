@@ -1,0 +1,45 @@
+# LCS CRM · Production image (layered on the official erpnext image).
+#
+# Contains: frappe + erpnext (base image) + crm fork (incl. lcs_integrations)
+# + pilanda_theme + pilanda_sales. Assets are built at image build time —
+# the container starts no dev server and needs no node at runtime.
+#
+# Build (from repo root):
+#   docker build -f docker/Dockerfile.prod \
+#     --build-arg GITHUB_TOKEN=<read-only PAT for Pilanda-ERP> \
+#     -t lcs-crm:latest .
+#
+# The token is only needed while `bench get-app` clones the private repos;
+# it is not persisted in the final layer (single RUN, git creds unset).
+
+ARG ERPNEXT_VERSION=v16
+FROM frappe/erpnext:${ERPNEXT_VERSION}
+
+USER frappe
+WORKDIR /home/frappe/frappe-bench
+
+ARG GITHUB_TOKEN=
+ARG CRM_REPO=https://github.com/dpb97/crm
+ARG CRM_BRANCH=develop
+ARG THEME_REPO=https://github.com/Pilanda-ERP/pilanda_theme
+ARG SALES_REPO=https://github.com/Pilanda-ERP/pilanda_sales
+
+RUN set -e; \
+    auth() { \
+      if [ -n "$GITHUB_TOKEN" ]; then \
+        echo "$1" | sed "s#https://github.com#https://x-access-token:${GITHUB_TOKEN}@github.com#"; \
+      else echo "$1"; fi; \
+    }; \
+    bench get-app --branch "${CRM_BRANCH}" crm "$(auth ${CRM_REPO})"; \
+    bench get-app --branch develop pilanda_theme "$(auth ${THEME_REPO})"; \
+    bench get-app --branch develop pilanda_sales "$(auth ${SALES_REPO})"; \
+    # lcs_integrations lives inside the crm repo — register as its own app
+    ln -s /home/frappe/frappe-bench/apps/crm/lcs_integrations apps/lcs_integrations; \
+    env/bin/pip install --no-cache-dir -e apps/lcs_integrations; \
+    echo lcs_integrations >> sites/apps.txt; \
+    bench build --apps crm,pilanda_theme,pilanda_sales; \
+    # strip anything that might hold the token
+    find apps -name "*.git" -type d -prune -exec sh -c \
+      'git -C "$(dirname {})" remote set-url origin "$(git -C "$(dirname {})" remote get-url origin | sed "s#https://[^@]*@#https://#")"' \; || true
+
+# Runtime = unchanged from base image (gunicorn entrypoint etc.)

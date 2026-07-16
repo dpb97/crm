@@ -1,0 +1,69 @@
+{
+    "actions": [],
+    "creation": "2026-04-21 00:00:00",
+    "doctype": "DocType",
+    "engine": "InnoDB",
+    "istable": 1,
+    "field_order": [
+        "employee",
+        "employee_name",
+        "role",
+        "training_status",
+        "allocated_from",
+        "allocated_to"
+    ],
+    "fields": [
+        {
+            "fieldname": "employee",
+            "fieldtype": "Link",
+            "in_list_view": 1,
+            "label": "Employee",
+            "options": "Employee",
+            "reqd": 1
+        },
+        {
+            "fetch_from": "employee.employee_name",
+            "fieldname": "employee_name",
+            "fieldtype": "Data",
+            "in_list_view": 1,
+            "label": "Name",
+            "read_only": 1
+        },
+        {
+            "fieldname": "role",
+            "fieldtype": "Select",
+            "in_list_view": 1,
+            "label": "Role",
+            "options": "\nProject Manager\nSite Lead\nEngineer\nTechnician\nOperator\nHelper"
+        },
+        {
+            "default": "Unknown",
+            "fieldname": "training_status",
+            "fieldtype": "Select",
+            "in_list_view": 1,
+            "label": "Training Status",
+            "options": "Unknown\nCompliant\nMissing Certifications\nExpiring Soon",
+            "read_only": 1
+        },
+        {
+            "fieldname": "allocated_from",
+            "fieldtype": "Date",
+            "label": "From"
+        },
+        {
+            "fieldname": "allocated_to",
+            "fieldtype": "Date",
+            "label": "To"
+        }
+    ],
+    "index_web_pages_for_search": 0,
+    "links": [],
+    "modified": "2026-04-21 00:00:00",
+    "modified_by": "Administrator",
+    "module": "LCS Integrations",
+    "name": "LCS Project Team Member",
+    "owner": "Administrator",
+    "permissions": [],
+    "sort_field": "modified",
+    "sort_order": "DESC"
+}

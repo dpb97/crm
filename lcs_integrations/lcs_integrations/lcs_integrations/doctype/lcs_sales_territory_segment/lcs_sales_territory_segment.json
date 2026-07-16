@@ -1,0 +1,35 @@
+{
+    "actions": [],
+    "creation": "2026-05-14 00:00:00",
+    "doctype": "DocType",
+    "engine": "InnoDB",
+    "istable": 1,
+    "field_order": ["segment", "is_active"],
+    "fields": [
+        {
+            "fieldname": "segment",
+            "fieldtype": "Link",
+            "in_list_view": 1,
+            "label": "Segment",
+            "options": "LCS Segment",
+            "reqd": 1
+        },
+        {
+            "default": "1",
+            "fieldname": "is_active",
+            "fieldtype": "Check",
+            "in_list_view": 1,
+            "label": "Active"
+        }
+    ],
+    "index_web_pages_for_search": 0,
+    "links": [],
+    "modified": "2026-05-14 00:00:00",
+    "modified_by": "Administrator",
+    "module": "LCS Integrations",
+    "name": "LCS Sales Territory Segment",
+    "owner": "Administrator",
+    "permissions": [],
+    "sort_field": "modified",
+    "sort_order": "DESC"
+}

@@ -1,0 +1,150 @@
+{
+    "actions": [],
+    "creation": "2026-04-20 00:00:00",
+    "doctype": "DocType",
+    "engine": "InnoDB",
+    "field_order": [
+        "section_evaluation",
+        "project",
+        "organization",
+        "column_break_evaluation",
+        "classification",
+        "activity_level",
+        "section_scoring_matrix",
+        "technical_fit",
+        "commercial_fit",
+        "relationship_strength",
+        "competition_level",
+        "strategic_importance",
+        "section_result",
+        "total_score",
+        "weighted_probability"
+    ],
+    "fields": [
+        {
+            "fieldname": "section_evaluation",
+            "fieldtype": "Section Break",
+            "label": "Evaluation"
+        },
+        {
+            "fieldname": "project",
+            "fieldtype": "Link",
+            "in_list_view": 1,
+            "in_standard_filter": 1,
+            "label": "Project",
+            "options": "LCS Project",
+            "reqd": 1
+        },
+        {
+            "fieldname": "organization",
+            "fieldtype": "Link",
+            "label": "Company",
+            "options": "CRM Organization"
+        },
+        {
+            "fieldname": "column_break_evaluation",
+            "fieldtype": "Column Break"
+        },
+        {
+            "fieldname": "classification",
+            "fieldtype": "Select",
+            "in_list_view": 1,
+            "label": "Classification",
+            "options": "Pre-Project\nInquiry\nOffer\nNegotiation\nOrder",
+            "read_only": 1
+        },
+        {
+            "fieldname": "activity_level",
+            "fieldtype": "Int",
+            "in_list_view": 1,
+            "label": "Activity Level (1-4)",
+            "read_only": 1
+        },
+        {
+            "fieldname": "section_scoring_matrix",
+            "fieldtype": "Section Break",
+            "label": "Scoring Matrix"
+        },
+        {
+            "fieldname": "technical_fit",
+            "fieldtype": "Int",
+            "label": "Technical Fit (0-100)"
+        },
+        {
+            "fieldname": "commercial_fit",
+            "fieldtype": "Int",
+            "label": "Commercial Fit (0-100)"
+        },
+        {
+            "fieldname": "relationship_strength",
+            "fieldtype": "Int",
+            "label": "Relationship Strength (0-100)"
+        },
+        {
+            "fieldname": "competition_level",
+            "fieldtype": "Int",
+            "label": "Competition Level (0-100)"
+        },
+        {
+            "fieldname": "strategic_importance",
+            "fieldtype": "Int",
+            "label": "Strategic Importance (0-100)"
+        },
+        {
+            "fieldname": "section_result",
+            "fieldtype": "Section Break",
+            "label": "Result"
+        },
+        {
+            "fieldname": "total_score",
+            "fieldtype": "Percent",
+            "in_list_view": 1,
+            "label": "Total Score",
+            "read_only": 1
+        },
+        {
+            "fieldname": "weighted_probability",
+            "fieldtype": "Percent",
+            "label": "Weighted Probability",
+            "read_only": 1
+        }
+    ],
+    "index_web_pages_for_search": 0,
+    "links": [],
+    "modified": "2026-04-20 00:00:00",
+    "modified_by": "Administrator",
+    "module": "LCS Integrations",
+    "name": "LCS Opportunity Matrix",
+    "owner": "Administrator",
+    "permissions": [
+        {
+            "create": 1,
+            "delete": 1,
+            "export": 1,
+            "read": 1,
+            "report": 1,
+            "role": "System Manager",
+            "write": 1
+        },
+        {
+            "create": 1,
+            "export": 1,
+            "read": 1,
+            "report": 1,
+            "role": "Sales User",
+            "write": 1
+        },
+        {
+            "create": 1,
+            "delete": 1,
+            "export": 1,
+            "read": 1,
+            "report": 1,
+            "role": "Sales Manager",
+            "write": 1
+        }
+    ],
+    "sort_field": "modified",
+    "sort_order": "DESC",
+    "track_changes": 1
+}

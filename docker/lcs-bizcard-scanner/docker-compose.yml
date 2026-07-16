@@ -1,0 +1,31 @@
+# Standalone compose for the LCS business-card OCR microservice.
+# Run from this directory:
+#   docker compose up -d --build
+#
+# The bench's Frappe app `lcs_bizcard` reads BIZCARD_SCANNER_URL from
+# the site config (default http://host.docker.internal:8089 on
+# Windows/Mac, http://localhost:8089 on native Linux).
+
+services:
+  bizcard-scanner:
+    build: .
+    image: lcs-bizcard-scanner:latest
+    container_name: lcs-bizcard-scanner
+    restart: unless-stopped
+    ports:
+      - "8089:8089"
+    environment:
+      # Tesseract languages enabled at runtime (must be installed at
+      # build time — see Dockerfile apt-get).
+      OCR_LANGS: "eng+deu"
+      # Polish backend: "none" (default, heuristics only) or "ollama".
+      POLISH_BACKEND: "none"
+      OLLAMA_URL: "http://host.docker.internal:11434"
+      OLLAMA_MODEL: "qwen2.5:3b"
+      # Max upload size in bytes (5 MB default — phone photos compress well)
+      MAX_UPLOAD_BYTES: "5242880"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8089/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3

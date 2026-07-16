@@ -1,0 +1,199 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:territory_name",
+ "creation": "2026-05-14 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_identity",
+  "territory_name",
+  "region",
+  "sub_region",
+  "column_break_identity",
+  "priority",
+  "is_active",
+  "section_ownership",
+  "sales_manager_code",
+  "sales_manager",
+  "deputy_sales_manager_code",
+  "deputy_sales_manager",
+  "column_break_ownership",
+  "agent_name",
+  "agent_notes",
+  "section_countries",
+  "countries",
+  "section_segments",
+  "segments",
+  "section_notes",
+  "notes"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_identity",
+   "fieldtype": "Section Break",
+   "label": "Identity"
+  },
+  {
+   "description": "Territory label as used in the market-split sheet (country or region, e.g. 'Brazil', 'LATAM', 'Middle East').",
+   "fieldname": "territory_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Territory Name",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "region",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Region",
+   "options": "\nAmerika\nEuropa\nAfrika\nOzeanien\nAsien"
+  },
+  {
+   "fieldname": "sub_region",
+   "fieldtype": "Data",
+   "label": "Sub Region"
+  },
+  {
+   "fieldname": "column_break_identity",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Strategic priority for this territory.",
+   "fieldname": "priority",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Priority",
+   "options": "\nGo\nWatch\nMaintain\nExit"
+  },
+  {
+   "default": "1",
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "label": "Active"
+  },
+  {
+   "fieldname": "section_ownership",
+   "fieldtype": "Section Break",
+   "label": "Ownership"
+  },
+  {
+   "description": "Three-letter staff code from the market-split sheet (e.g. JFA, PKO, CLU, DRO). Used as fallback when the User link is empty.",
+   "fieldname": "sales_manager_code",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Sales Manager Code",
+   "reqd": 1
+  },
+  {
+   "description": "Resolved User account for the sales manager. Auto-assign hooks read this field.",
+   "fieldname": "sales_manager",
+   "fieldtype": "Link",
+   "label": "Sales Manager (User)",
+   "options": "User",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "deputy_sales_manager_code",
+   "fieldtype": "Data",
+   "label": "Deputy Sales Manager Code"
+  },
+  {
+   "fieldname": "deputy_sales_manager",
+   "fieldtype": "Link",
+   "label": "Deputy Sales Manager (User)",
+   "options": "User",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "column_break_ownership",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "agent_name",
+   "fieldtype": "Data",
+   "label": "Agent / Partner Name"
+  },
+  {
+   "fieldname": "agent_notes",
+   "fieldtype": "Small Text",
+   "label": "Agent Notes"
+  },
+  {
+   "fieldname": "section_countries",
+   "fieldtype": "Section Break",
+   "label": "Countries Covered"
+  },
+  {
+   "description": "ISO countries that fall under this territory. Used by auto-assignment lookups.",
+   "fieldname": "countries",
+   "fieldtype": "Table",
+   "label": "Countries",
+   "options": "LCS Sales Territory Country"
+  },
+  {
+   "fieldname": "section_segments",
+   "fieldtype": "Section Break",
+   "label": "Active Segments"
+  },
+  {
+   "fieldname": "segments",
+   "fieldtype": "Table",
+   "label": "Segments",
+   "options": "LCS Sales Territory Segment"
+  },
+  {
+   "fieldname": "section_notes",
+   "fieldtype": "Section Break",
+   "label": "Notes"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Text Editor",
+   "label": "Notes"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-05-14 00:00:00",
+ "modified_by": "Administrator",
+ "module": "LCS Integrations",
+ "name": "LCS Sales Territory",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "read": 1,
+   "report": 1,
+   "role": "Sales User"
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Sales Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "territory_name",
+ "sort_order": "ASC",
+ "track_changes": 1
+}

@@ -1,0 +1,267 @@
++ tag,+ Tag
+Actions due (7d),Aktionen fällig (7T)
+Active,Aktiv
+Activity,Aktivität
+Add country (e.g. Austria) + Enter,Land hinzufügen (z. B. Austria) + Enter
+Add task,Aufgabe hinzufügen
+Add to contacts,Zu Kontakten
+All regions,Alle Regionen
+All responsible,Alle Verantwortlichen
+Allow editing,Bearbeiten erlauben
+Analyze & Dispatch,Analysieren & Zuordnen
+Assign,Zuordnen
+Assign countries to projects to see them on the map.,"Projekten Länder zuweisen, damit sie auf der Karte erscheinen."
+Assign to,Zuordnen zu
+Attach PDF,PDF anhängen
+Call,Anrufen
+Call / Meeting note,Gesprächs-/Meeting-Notiz
+Call note,Gesprächsnotiz
+Chance,Chance
+Change photo,Foto ändern
+Change status,Status ändern
+characters,Zeichen
+Choose columns,Spalten wählen
+Clear,Leeren
+Columns — choose which to show,Spalten — Anzeige wählen
+Companies,Firmen
+Completed,Abgeschlossen
+connected,verbunden
+Connection failed,Verbindung fehlgeschlagen
+Contact,Person
+Contact released,Kontakt freigegeben
+Contact shared,Kontakt geteilt
+Contacted,Kontaktiert
+Contacts,Personen
+Convert to Deal,In Angebot umwandeln
+Converted,Konvertiert
+Could not add task,Aufgabe konnte nicht angelegt werden
+Could not attach PDF,PDF konnte nicht angehängt werden
+Could not save role,Rolle konnte nicht gespeichert werden
+Could not update photo,Foto konnte nicht aktualisiert werden
+Countries,Länder
+Countries covered,Abgedeckte Länder
+Country,Land
+Create,Anlegen
+Create at least one offer before Negotiation.,"Vor „Verhandlung"" mindestens ein Angebot anlegen."
+Create territories and assign a responsible sales user.,Gebiete anlegen und einen zuständigen Vertriebsuser zuordnen.
+Criteria,Kriterien
+Customer,Kunde
+Deputy,Stellvertreter
+Due,Fällig
+e.g. Pricing discussion,z. B. Preisgespräch
+Event,Veranstaltung
+Execution,Ausführung
+Expected Close,Geschätztes Abschlussdatum
+Expected Start,Geschätztes Startdatum
+Expected Start Date,Geschätztes Startdatum
+Follow-up,Wiedervorlage
+Follow-up date,Wiedervorlage
+for voice,für Sprache
+Forecasting,Prognose
+From,Von
+If this is wrong:,Falls das falsch ist:
+Important,Wichtig
+in,rein
+incoming,eingehend
+Inspector,Inspektor
+just now,gerade eben
+Last comment,Letzter Kommentar
+Latest from my projects,Neueste Aktivität meiner Projekte
+Leads,Interessent
+Loading...,Lädt …
+locations,Standorte
+Log call note,Protokoll erfassen
+Lost,Verloren
+Mail,Mail
+Mail activity,Mail-Aktivität
+Mark an offer as Accepted before moving to Won.,"Vor „Gewonnen"" ein Angebot als „Akzeptiert"" markieren."
+Mark important,Als wichtig markieren
+Marked important,Als wichtig markiert
+Market Assignment,Marktaufteilung
+Meeting,Termin
+Microsoft Graph connection OK,Microsoft-Graph-Verbindung OK
+Move to this phase,Zu dieser Phase wechseln
+Name,Name
+Negotiation,Verhandlung
+Network,Netzwerk
+New,Neu
+New task,Neue Aufgabe
+New territory,Neues Gebiet
+Next action,Nächste Aktion
+Next steps,Nächste Schritte
+No active opportunities.,Keine aktiven Chancen.
+No activities recorded yet.,Noch keine Aktivitäten erfasst.
+No activity yet.,Keine Aktivität.
+No contact linked.,Kein Kontakt verknüpft.
+No countries yet.,Noch keine Länder.
+No emails on file yet.,Noch keine E-Mails vorhanden.
+No leads yet.,Noch keine Leads.
+No matching organizations.,Keine passenden Firmen.
+No matching persons.,Keine passenden Personen.
+No matching projects.,Keine passenden Projekte.
+No network data yet.,Noch keine Netzwerkdaten.
+No notifications.,Keine Benachrichtigungen.
+No projects with location data available.,Keine Projekte mit Standortdaten vorhanden.
+No projects yet.,Noch keine Projekte.
+No recent activity on your projects.,Keine aktuelle Aktivität auf deinen Projekten.
+No tasks yet — add one to follow up.,Noch keine Aufgaben – lege eine zum Nachfassen an.
+No territories match the filter.,Keine Gebiete entsprechen dem Filter.
+No territories yet.,Noch keine Gebiete.
+Not a clear match — pick the project,Keine eindeutige Zuordnung – Projekt wählen
+Not a clear match — pick the project(s),Keine eindeutige Zuordnung – Projekt(e) wählen
+Not shared with anyone yet.,Noch mit niemandem geteilt.
+Note attached to,Notiz angehängt an
+Note linked to organization,Notiz mit Firma verknüpft
+Note linked to person,Notiz mit Person verknüpft
+Note matched to,Notiz zugeordnet zu
+Note saved,Notiz gespeichert
+Note saved — auto-matched to,Notiz gespeichert – automatisch zugeordnet zu
+Notes,Notizen
+Notifications,Benachrichtigungen
+Nurture,Pflege
+Offer,Angebot
+Offers,Angebote
+Offers in progress,Angebote in Bearbeitung
+Only you can see this contact until you release it,"Nur du siehst diesen Kontakt, bis du ihn freigibst"
+Open,Offen
+Open in ERPNext,In ERPNext öffnen
+Open in project,Im Projekt öffnen
+Open project,Projekt öffnen
+Open the project list in ERPNext,Projektliste in ERPNext öffnen
+Opportunities,Chancen
+Or link to a person,Oder einer Person zuordnen
+Or link to an organization,Oder einer Firma zuordnen
+Organization,Firma
+Organizations,Firmen
+out,raus
+Outcome,Ergebnis
+outgoing,ausgehend
+PDF attached,PDF angehängt
+People,Personen
+Phone,Telefon
+Photo updated,Foto aktualisiert
+Pick manually,Manuell wählen
+Pipeline,Pipeline
+Pipeline total,Pipeline gesamt
+Primary contact,Hauptkontakt
+Probability,Wahrscheinlichkeit
+Progress,Fortschritt
+Project,Projekt
+Project #,Projekt-Nr.
+Projects,Projekte
+Projects Map,Projektkarte
+Qualified,Qualifiziert
+Quick Note,Schnellnotiz
+reassign manually,manuell neu zuordnen
+Reference,Bezug
+Refresh,Aktualisieren
+Region,Region
+Region…,Region …
+Release,Freigeben
+Replace PDF,PDF ersetzen
+Reply,Antworten
+Resp.,Verantw.
+Responsibility per sales manager,Verantwortung je Vertriebsleiter
+Responsible,Verantwortlich
+Revoke access,Zugriff entziehen
+Role in project,Rolle im Projekt
+Role…,Rolle…
+Sales manager,Vertriebsleiter
+Sales managers,Vertriebsleiter
+Sales Meeting,Sales Meeting
+Salesperson,Vertrieb
+Save note,Notiz speichern
+Saved to,Gespeichert in
+Saved to the project activity; next steps become a task.,In der Projekt-Aktivität gespeichert; nächste Schritte werden zur Aufgabe.
+Search any project by number or name...,Projekt nach Nummer oder Name suchen …
+Search organization by name...,Firma nach Name suchen …
+Search person by name...,Person nach Name suchen …
+Search projects...,Projekte suchen …
+Search territory / country...,Gebiet / Land suchen...
+Search user by name or email,Benutzer nach Name oder E-Mail suchen
+Segment responsibility,Segment-Verantwortung
+Select a project to see details,"Projekt links wählen, um Details zu sehen"
+Select several to log the note to multiple projects.,"Mehrere auswählen, um die Notiz mehreren Projekten zuzuordnen."
+Set a Richtpreis before moving to Offer.,"Vor „Angebot"" einen Richtpreis setzen."
+Share,Teilen
+Share contact,Kontakt teilen
+Share with,Teilen mit
+Shared with,Geteilt mit
+Show emails & activity,E-Mails & Aktivität anzeigen
+Show only important,Nur wichtige zeigen
+Stage gate,Stage-Gate
+Tags,Tags
+Task added,Aufgabe hinzugefügt
+Tasks,Aufgaben
+Territories,Gebiete
+Territory,Gebiet
+Territory assignment,Gebietszuordnung
+Test connection,Verbindung testen
+Test Microsoft Graph connection,Microsoft-Graph-Verbindung testen
+To,An
+Toggle done,Erledigt umschalten
+Topic,Thema
+Total value,Gesamtwert
+Type,Typ
+Unassigned,Nicht zugeordnet
+Value,Wert
+Visit,Besuch
+Voice language,Spracheingabe-Sprache
+Weighted,Gewichtet
+What needs doing? (e.g. nachfassen),Was ist zu tun? (z. B. nachfassen)
+Win chance,Gewinn-Wahrscheinlichkeit
+Won,Auftrag
+worked at,war bei
+Working on it,Bearbeiter
+works at,arbeitet bei
+Funnel Phases,Funnel-Phasen
+Fill directly,Direkt ausfüllen
+"Description, criteria and fillable fields per funnel stage. One criterion / fieldname per line.","Beschreibung, Kriterien und ausfüllbare Felder je Funnel-Stufe. Ein Kriterium / Feldname pro Zeile."
+Fields to fill,Auszufüllende Felder
+one per line,eins pro Zeile
+one fieldname per line,ein Feldname pro Zeile
+Could not save,Konnte nicht speichern
+Next phase,Nächste Phase
+Only editable in the active phase,Nur in der aktiven Phase ausfüllbar
+Overview,Übersicht
+Detail map,Detailkarte
+Call via Teams,Über Teams anrufen
+Chat,Chat
+Teams call started — logged in Call Logs.,Teams-Anruf gestartet — in den Anrufprotokollen erfasst.
+Could not start the Teams call.,Teams-Anruf konnte nicht gestartet werden.
+No phone number or Teams address for this contact.,Keine Telefonnummer oder Teams-Adresse für diesen Kontakt.
+Mailbox mapping,Postfach-Zuordnung
+One mailbox per salesperson. Import stays filtered to known contacts/companies when enabled.,Ein Postfach pro Vertriebler. Import bleibt bei Aktivierung auf bekannte Kontakte/Firmen gefiltert.
+CRM User,CRM-Benutzer
+Graph Mailbox (UPN),Graph-Postfach (UPN)
+Only known,Nur bekannte
+Last sync,Letzter Sync
+No mailboxes mapped yet.,Noch keine Postfächer zugeordnet.
+Add mailbox,Postfach hinzufügen
+Pick a user and a mailbox.,Benutzer und Postfach wählen.
+Mailbox mapped.,Postfach zugeordnet.
+Mailbox removed.,Postfach entfernt.
+Could not add the mailbox.,Postfach konnte nicht hinzugefügt werden.
+Could not remove the mailbox.,Postfach konnte nicht entfernt werden.
+Territory reassigned to,Gebiet neu zugewiesen an
+Could not reassign the territory.,Gebiet konnte nicht neu zugewiesen werden.
+connection OK,Verbindung OK
+Test failed,Test fehlgeschlagen
+live,live
+frozen,eingefroren
+captured,erfasst
+EUR equivalent,EUR-Gegenwert
+Amount in EUR,Betrag in EUR
+
+Add Organization...,Firma hinzufügen …
+Choose Existing Organization,Bestehende Firma wählen
+Delete Organization,Firma löschen
+New Organization,Neue Firma
+Organization Logo,Firmenlogo
+Set an Organization,Firma festlegen
+Organization Name,Firmenname
+Organization Details,Firmendetails
+Choose Existing Contact,Bestehenden Kontakt wählen
+Company Name,Firma
+Deals,Verkaufschance
+Lead,Interessent

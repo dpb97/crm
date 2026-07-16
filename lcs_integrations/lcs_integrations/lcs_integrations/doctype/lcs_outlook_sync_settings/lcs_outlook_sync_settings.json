@@ -1,0 +1,149 @@
+{
+    "actions": [],
+    "creation": "2026-05-04 00:00:00",
+    "doctype": "DocType",
+    "engine": "InnoDB",
+    "issingle": 1,
+    "field_order": [
+        "section_shared_mailbox",
+        "shared_contacts_mailbox",
+        "enable_contact_push",
+        "column_break_shared",
+        "enable_inbound_contacts_sync",
+        "enable_directory_domain_import",
+        "section_calendar",
+        "enable_calendar_sync",
+        "calendar_lookahead_days",
+        "calendar_lookback_days",
+        "section_teams",
+        "enable_teams_notifications",
+        "notifications_channel_name",
+        "column_break_teams",
+        "notify_phase_change",
+        "notify_high_probability",
+        "high_probability_threshold"
+    ],
+    "fields": [
+        {
+            "fieldname": "section_shared_mailbox",
+            "fieldtype": "Section Break",
+            "label": "Shared Mailbox (Contacts-Sales)"
+        },
+        {
+            "description": "UPN of the shared mailbox that holds the canonical Sales address book (e.g. contacts-sales@lcs-group.com)",
+            "fieldname": "shared_contacts_mailbox",
+            "fieldtype": "Data",
+            "label": "Shared Mailbox UPN"
+        },
+        {
+            "default": "0",
+            "description": "Push every Frappe Contact to the shared mailbox address book",
+            "fieldname": "enable_contact_push",
+            "fieldtype": "Check",
+            "label": "Push Contacts to Shared Mailbox"
+        },
+        {
+            "fieldname": "column_break_shared",
+            "fieldtype": "Column Break"
+        },
+        {
+            "default": "0",
+            "description": "Pull external contacts edited in the shared mailbox back into Frappe",
+            "fieldname": "enable_inbound_contacts_sync",
+            "fieldtype": "Check",
+            "label": "Pull Contacts from Shared Mailbox"
+        },
+        {
+            "default": "0",
+            "description": "For every CRM Organization with an Email Domain set, pull all matching contacts from the shared mailbox address book and bind them to the organization.",
+            "fieldname": "enable_directory_domain_import",
+            "fieldtype": "Check",
+            "label": "Import & Bind Contacts by Domain"
+        },
+        {
+            "fieldname": "section_calendar",
+            "fieldtype": "Section Break",
+            "label": "Calendar Sync (per-user inbound)"
+        },
+        {
+            "default": "0",
+            "description": "Pull each bound user's calendar into Frappe Event",
+            "fieldname": "enable_calendar_sync",
+            "fieldtype": "Check",
+            "label": "Enable Calendar Sync"
+        },
+        {
+            "default": "60",
+            "fieldname": "calendar_lookahead_days",
+            "fieldtype": "Int",
+            "label": "Lookahead (days)"
+        },
+        {
+            "default": "7",
+            "fieldname": "calendar_lookback_days",
+            "fieldtype": "Int",
+            "label": "Lookback (days)"
+        },
+        {
+            "fieldname": "section_teams",
+            "fieldtype": "Section Break",
+            "label": "Teams Notifications"
+        },
+        {
+            "default": "0",
+            "fieldname": "enable_teams_notifications",
+            "fieldtype": "Check",
+            "label": "Enable Teams Notifications"
+        },
+        {
+            "default": "01-Sales",
+            "description": "Channel name as created by teams.provision (must match exactly)",
+            "fieldname": "notifications_channel_name",
+            "fieldtype": "Data",
+            "label": "Notifications Channel"
+        },
+        {
+            "fieldname": "column_break_teams",
+            "fieldtype": "Column Break"
+        },
+        {
+            "default": "1",
+            "fieldname": "notify_phase_change",
+            "fieldtype": "Check",
+            "label": "Notify on Phase Change"
+        },
+        {
+            "default": "1",
+            "fieldname": "notify_high_probability",
+            "fieldtype": "Check",
+            "label": "Notify on High Probability"
+        },
+        {
+            "default": "75",
+            "fieldname": "high_probability_threshold",
+            "fieldtype": "Percent",
+            "label": "Probability Threshold (%)"
+        }
+    ],
+    "index_web_pages_for_search": 0,
+    "links": [],
+    "modified": "2026-05-04 00:00:00",
+    "modified_by": "Administrator",
+    "module": "LCS Integrations",
+    "name": "LCS Outlook Sync Settings",
+    "owner": "Administrator",
+    "permissions": [
+        {
+            "role": "System Manager",
+            "read": 1,
+            "write": 1,
+            "create": 1,
+            "delete": 0,
+            "export": 1,
+            "report": 1
+        }
+    ],
+    "sort_field": "modified",
+    "sort_order": "DESC",
+    "track_changes": 1
+}

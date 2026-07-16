@@ -1,0 +1,73 @@
+{
+ "actions": [],
+ "autoname": "format:{fx_date}-{currency}",
+ "creation": "2026-07-13 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "fx_date",
+  "currency",
+  "rate_to_eur",
+  "source"
+ ],
+ "fields": [
+  {
+   "fieldname": "fx_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "currency",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Currency",
+   "reqd": 1
+  },
+  {
+   "description": "Value in EUR of 1 unit of this currency (currency -> EUR).",
+   "fieldname": "rate_to_eur",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Rate to EUR",
+   "precision": "9"
+  },
+  {
+   "default": "frankfurter.dev (ECB)",
+   "fieldname": "source",
+   "fieldtype": "Data",
+   "label": "Source",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-07-13 00:00:00",
+ "modified_by": "Administrator",
+ "module": "LCS Integrations",
+ "name": "LCS FX Rate",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "export": 1,
+   "report": 1
+  },
+  {
+   "role": "Sales Manager",
+   "read": 1
+  },
+  {
+   "role": "Sales User",
+   "read": 1
+  }
+ ],
+ "sort_field": "fx_date",
+ "sort_order": "DESC",
+ "track_changes": 0
+}

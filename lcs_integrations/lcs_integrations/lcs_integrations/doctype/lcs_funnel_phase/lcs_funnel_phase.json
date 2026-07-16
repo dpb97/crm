@@ -1,0 +1,86 @@
+{
+ "actions": [],
+ "autoname": "field:stage",
+ "creation": "2026-07-07 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "stage",
+  "entity_group",
+  "funnel_index",
+  "description",
+  "criteria",
+  "fields_to_fill"
+ ],
+ "fields": [
+  {
+   "fieldname": "stage",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Stage",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "entity_group",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Entity Group",
+   "options": "Lead\nAngebot\nProjekt"
+  },
+  {
+   "fieldname": "funnel_index",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Funnel Index"
+  },
+  {
+   "description": "Shown in the phase info panel of the funnel bar.",
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Description"
+  },
+  {
+   "description": "One criterion per line.",
+   "fieldname": "criteria",
+   "fieldtype": "Small Text",
+   "label": "Criteria"
+  },
+  {
+   "description": "One fieldname per line. Fields that exist on the doctype of the page (CRM Lead / CRM Deal / LCS Project) are offered for inline filling in the phase panel.",
+   "fieldname": "fields_to_fill",
+   "fieldtype": "Small Text",
+   "label": "Fields To Fill"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-07-07 00:00:00",
+ "modified_by": "Administrator",
+ "module": "LCS Integrations",
+ "name": "LCS Funnel Phase",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "export": 1,
+   "report": 1
+  },
+  {
+   "role": "Sales Manager",
+   "read": 1,
+   "write": 1
+  },
+  {
+   "role": "Sales User",
+   "read": 1
+  }
+ ],
+ "sort_field": "funnel_index",
+ "sort_order": "ASC",
+ "track_changes": 1
+}

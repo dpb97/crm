@@ -1,38 +1,38 @@
 ---
-name: Bug Report
-about: Report a bug to help us improve
-title: "[BUG] "
-labels: bug
+name: Bug report
+about: Create a report to help us improve
+title: ''
+labels: 'bug'
 assignees: ''
+
 ---
 
-## Description
-
+**Describe the bug**
 A clear and concise description of what the bug is.
 
-## Steps to Reproduce
-
+**To Reproduce**
+Steps to reproduce the behavior:
 1. Go to '...'
-2. Call API method '...'
-3. With args '...'
+2. Click on '....'
+3. Scroll down to '....'
 4. See error
 
-## Expected Behavior
+**Expected behavior**
+A clear and concise description of what you expected to happen.
 
-What you expected to happen.
+**Screenshots**
+If applicable, add screenshots to help explain your problem.
 
-## Actual Behavior
+**Desktop (please complete the following information):**
+ - OS: [e.g. iOS]
+ - Browser [e.g. chrome, safari]
+ - Version [e.g. 22]
 
-What actually happened. Include error messages, tracebacks, Error Log entries.
+**Smartphone (please complete the following information):**
+ - Device: [e.g. iPhone6]
+ - OS: [e.g. iOS8.1]
+ - Browser [e.g. stock browser, safari]
+ - Version [e.g. 22]
 
-## Environment
-
-- **OS:** [e.g., Windows 11, Ubuntu 22.04]
-- **Python Version:** [e.g., 3.11.x]
-- **Frappe Version:** [e.g., v16.x.x]
-- **MariaDB Version:** [e.g., 10.6]
-- **Branch:** [e.g., develop]
-
-## Additional Context
-
-Add any other context, screenshots, or Error Log output.
+**Additional context**
+Add any other context about the problem here.

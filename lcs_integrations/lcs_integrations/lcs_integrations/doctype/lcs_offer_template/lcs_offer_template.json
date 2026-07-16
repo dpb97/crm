@@ -1,0 +1,142 @@
+{
+    "actions": [],
+    "allow_rename": 1,
+    "autoname": "field:template_name",
+    "creation": "2026-04-21 00:00:00",
+    "doctype": "DocType",
+    "engine": "InnoDB",
+    "field_order": [
+        "section_template",
+        "template_name",
+        "project_type",
+        "language",
+        "column_break_template",
+        "is_active",
+        "default_validity_days",
+        "default_probability",
+        "section_defaults",
+        "default_title",
+        "default_notes",
+        "section_usage",
+        "usage_count",
+        "last_used"
+    ],
+    "fields": [
+        {
+            "fieldname": "section_template",
+            "fieldtype": "Section Break",
+            "label": "Template"
+        },
+        {
+            "fieldname": "template_name",
+            "fieldtype": "Data",
+            "in_list_view": 1,
+            "label": "Template Name",
+            "reqd": 1,
+            "unique": 1
+        },
+        {
+            "fieldname": "project_type",
+            "fieldtype": "Select",
+            "in_list_view": 1,
+            "in_standard_filter": 1,
+            "label": "Project Type",
+            "options": "\nSB\nWI\nLL\nSK\nAll"
+        },
+        {
+            "default": "de",
+            "fieldname": "language",
+            "fieldtype": "Select",
+            "label": "Language",
+            "options": "de\nen\nit\nfr"
+        },
+        {
+            "fieldname": "column_break_template",
+            "fieldtype": "Column Break"
+        },
+        {
+            "default": "1",
+            "fieldname": "is_active",
+            "fieldtype": "Check",
+            "in_list_view": 1,
+            "label": "Active"
+        },
+        {
+            "default": "60",
+            "fieldname": "default_validity_days",
+            "fieldtype": "Int",
+            "label": "Default Validity (Days)"
+        },
+        {
+            "default": "50",
+            "fieldname": "default_probability",
+            "fieldtype": "Percent",
+            "label": "Default Probability"
+        },
+        {
+            "fieldname": "section_defaults",
+            "fieldtype": "Section Break",
+            "label": "Default Content"
+        },
+        {
+            "fieldname": "default_title",
+            "fieldtype": "Data",
+            "label": "Default Offer Title",
+            "description": "Use {project_number} or {project_name} as placeholders"
+        },
+        {
+            "fieldname": "default_notes",
+            "fieldtype": "Text Editor",
+            "label": "Default Notes / Description"
+        },
+        {
+            "fieldname": "section_usage",
+            "fieldtype": "Section Break",
+            "label": "Usage Statistics"
+        },
+        {
+            "default": "0",
+            "fieldname": "usage_count",
+            "fieldtype": "Int",
+            "label": "Times Used",
+            "read_only": 1
+        },
+        {
+            "fieldname": "last_used",
+            "fieldtype": "Datetime",
+            "label": "Last Used",
+            "read_only": 1
+        }
+    ],
+    "index_web_pages_for_search": 0,
+    "links": [],
+    "modified": "2026-04-21 00:00:00",
+    "modified_by": "Administrator",
+    "module": "LCS Integrations",
+    "name": "LCS Offer Template",
+    "owner": "Administrator",
+    "permissions": [
+        {
+            "create": 1,
+            "delete": 1,
+            "export": 1,
+            "read": 1,
+            "report": 1,
+            "role": "System Manager",
+            "write": 1
+        },
+        {
+            "create": 1,
+            "read": 1,
+            "role": "Sales Manager",
+            "write": 1
+        },
+        {
+            "read": 1,
+            "role": "Sales User"
+        }
+    ],
+    "sort_field": "modified",
+    "sort_order": "DESC",
+    "track_changes": 1
+}

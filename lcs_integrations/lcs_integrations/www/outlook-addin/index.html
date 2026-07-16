@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>LCS CRM — Outlook Add-in Installation</title>
+<style>
+  :root { --primary:#0B3A6F; --secondary:#1E78C2; --accent:#F5A524; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    margin: 0;
+    background: #f9fafb;
+    color: #111827;
+    line-height: 1.55;
+  }
+  .wrap { max-width: 820px; margin: 0 auto; padding: 48px 24px; }
+  h1 { color: var(--primary); margin: 0 0 8px; font-size: 32px; }
+  .subtitle { color: #6b7280; margin-bottom: 40px; }
+  .card {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+  }
+  .step {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+  }
+  .step-num {
+    flex-shrink: 0;
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: white;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  h2 { margin: 0 0 6px; font-size: 17px; color: var(--primary); }
+  .actions { display: flex; gap: 12px; margin-top: 16px; flex-wrap: wrap; }
+  a.btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 10px 18px;
+    background: var(--primary);
+    color: white;
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: background 0.15s;
+  }
+  a.btn:hover { background: var(--secondary); }
+  a.btn.outline {
+    background: white;
+    color: var(--primary);
+    border: 1px solid var(--primary);
+  }
+  a.btn.outline:hover { background: #f3f4f6; }
+  code {
+    background: #f3f4f6;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 13px;
+    color: var(--secondary);
+  }
+  pre {
+    background: #1f2937;
+    color: #f9fafb;
+    padding: 14px;
+    border-radius: 6px;
+    overflow-x: auto;
+    font-size: 12px;
+  }
+  ul { padding-left: 20px; }
+  ul li { margin-bottom: 6px; }
+  .feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+    margin-top: 16px;
+  }
+  .feature {
+    background: #f9fafb;
+    padding: 12px 14px;
+    border-radius: 8px;
+    border-left: 3px solid var(--secondary);
+  }
+  .feature h3 { margin: 0 0 4px; font-size: 14px; color: var(--primary); }
+  .feature p { margin: 0; font-size: 13px; color: #4b5563; }
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    background: var(--accent);
+    color: white;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-left: 8px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>LCS CRM — Outlook Add-in <span class="badge">Beta</span></h1>
+  <p class="subtitle">
+    Verknüpft Outlook-Nachrichten direkt mit LCS Projekten, Angeboten und Kontakten.
+    Passender Kontext erscheint automatisch beim Öffnen einer E-Mail.
+  </p>
+
+  <div class="card">
+    <h2>Funktionen</h2>
+    <div class="feature-grid">
+      <div class="feature">
+        <h3>🎯 Automatische Erkennung</h3>
+        <p>Zeigt passende Projekte und offene Angebote zum Absender — ohne Suchen.</p>
+      </div>
+      <div class="feature">
+        <h3>📧 One-Click-Log</h3>
+        <p>Ribbon-Button „Zu Projekt loggen" hängt die E-Mail als Aktivität ans Projekt.</p>
+      </div>
+      <div class="feature">
+        <h3>🆕 Lead-Erfassung</h3>
+        <p>Unbekannter Absender? Lead mit einem Klick aus E-Mail-Daten anlegen.</p>
+      </div>
+      <div class="feature">
+        <h3>🔍 Projekt-Picker</h3>
+        <p>Mehrere Treffer? Schnellsuche nach Nummer oder Name im Task Pane.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Installation (Outlook Desktop / Web / Mobile)</h2>
+
+    <div class="step" style="margin-bottom:16px">
+      <div class="step-num">1</div>
+      <div>
+        <h2 style="margin:0;font-size:15px">Manifest herunterladen</h2>
+        <p style="margin:4px 0 8px">Die XML-Datei beschreibt das Add-in für deinen Outlook-Client.</p>
+        <a class="btn outline" href="manifest.xml" download>⬇️ manifest.xml</a>
+      </div>
+    </div>
+
+    <div class="step" style="margin-bottom:16px">
+      <div class="step-num">2</div>
+      <div>
+        <h2 style="margin:0;font-size:15px">In Outlook hinzufügen</h2>
+        <p style="margin:4px 0 8px">Wähle <strong>Add-Ins verwalten</strong> → <strong>Eigenes Add-In hinzufügen</strong> → <strong>Aus Datei…</strong></p>
+        <p style="margin:0;font-size:13px;color:#6b7280">Alternativ zentral über das Microsoft 365 Admin Center ausrollen (empfohlen für Teams).</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">3</div>
+      <div>
+        <h2 style="margin:0;font-size:15px">Einmalig anmelden</h2>
+        <p style="margin:4px 0 8px">Beim ersten Öffnen authentifiziert sich das Add-in über deine bestehende CRM-Session bei <code>lcs.local</code>.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Zentrale Ausrollung (IT)</h2>
+    <p>Für die firmenweite Verteilung via Microsoft 365 Admin Center:</p>
+    <ol>
+      <li>Öffne <a href="https://admin.microsoft.com" target="_blank">admin.microsoft.com</a> → <strong>Einstellungen → Integrierte Apps</strong></li>
+      <li><strong>App hochladen</strong> → Office-Add-in → <strong>URL angeben</strong></li>
+      <li>Manifest-URL eingeben:
+        <pre>https://lcs.local/outlook-addin/manifest.xml</pre>
+      </li>
+      <li>Zuordnung wählen: bestimmte Benutzer / Gruppen / gesamte Organisation</li>
+      <li>Nach bis zu 12 Stunden erscheint das Add-in in allen Outlook-Clients der zugeordneten Benutzer.</li>
+    </ol>
+  </div>
+
+  <div class="card">
+    <h2>Support &amp; Troubleshooting</h2>
+    <ul>
+      <li><strong>Add-in lädt nicht:</strong> In Outlook-Einstellungen prüfen ob <code>lcs.local</code> als Trusted Domain hinterlegt ist.</li>
+      <li><strong>Keine Treffer obwohl Kontakt existiert:</strong> E-Mail-Adresse am Kontakt prüfen (Groß-/Kleinschreibung wird ignoriert).</li>
+      <li><strong>„Zu Projekt loggen" tut nichts:</strong> Session in Browser bei <code>lcs.local</code> prüfen — Add-in nutzt SSO-Cookie.</li>
+    </ul>
+    <div class="actions">
+      <a class="btn" href="mailto:it@lcs-group.com?subject=Outlook%20Add-in%20Support">IT kontaktieren</a>
+      <a class="btn outline" href="/crm">Zum CRM</a>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

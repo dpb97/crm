@@ -1,0 +1,44 @@
+{
+    // Team-recommended VS Code extensions for the LCS Frappe CRM fork.
+    // VS Code prompts contributors to install these on first open.
+    "recommendations": [
+        // Python — linter, formatter, type checker
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "charliermarsh.ruff",
+
+        // JS / Vue / TS
+        "Vue.volar",
+        "esbenp.prettier-vscode",
+        "dbaeumer.vscode-eslint",
+
+        // Tailwind — picks up bg-lcs-* tokens once tailwind.config.js loads
+        "bradlc.vscode-tailwindcss",
+
+        // Frappe templates
+        "samuelcolvin.jinjahtml",
+
+        // Docker (microservices, OCR scanner, ERPNext stack)
+        "ms-azuretools.vscode-docker",
+
+        // Database — connects to the MariaDB bench via settings.json
+        "mtxr.sqltools",
+        "mtxr.sqltools-driver-mysql",
+
+        // WSL — most LCS dev happens against /home/dboeckle/frappe-bench
+        "ms-vscode-remote.remote-wsl",
+
+        // Markdown linting for the docs/ tree
+        "DavidAnson.vscode-markdownlint",
+
+        // EditorConfig support so .editorconfig is honored
+        "EditorConfig.EditorConfig",
+
+        // Git lens — invaluable for tracking which lines are upstream vs LCS
+        "eamodio.gitlens"
+    ],
+    "unwantedRecommendations": [
+        // ESLint v1 successor that conflicts with the v3+ flat config in this repo
+        "octref.vetur"
+    ]
+}

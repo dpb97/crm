@@ -1,0 +1,57 @@
+{
+    "actions": [],
+    "creation": "2026-04-21 00:00:00",
+    "doctype": "DocType",
+    "engine": "InnoDB",
+    "istable": 1,
+    "field_order": [
+        "course",
+        "course_name",
+        "is_mandatory",
+        "validity_months"
+    ],
+    "fields": [
+        {
+            "description": "LMS course (from frappe/lms) that team members must complete",
+            "fieldname": "course",
+            "fieldtype": "Link",
+            "in_list_view": 1,
+            "label": "Course",
+            "options": "LMS Course",
+            "reqd": 1
+        },
+        {
+            "fetch_from": "course.title",
+            "fieldname": "course_name",
+            "fieldtype": "Data",
+            "in_list_view": 1,
+            "label": "Title",
+            "read_only": 1
+        },
+        {
+            "default": "1",
+            "fieldname": "is_mandatory",
+            "fieldtype": "Check",
+            "in_list_view": 1,
+            "label": "Mandatory"
+        },
+        {
+            "description": "Max months the certification stays valid (0 = never expires)",
+            "default": "24",
+            "fieldname": "validity_months",
+            "fieldtype": "Int",
+            "in_list_view": 1,
+            "label": "Valid (Months)"
+        }
+    ],
+    "index_web_pages_for_search": 0,
+    "links": [],
+    "modified": "2026-04-21 00:00:00",
+    "modified_by": "Administrator",
+    "module": "LCS Integrations",
+    "name": "LCS Project Required Training",
+    "owner": "Administrator",
+    "permissions": [],
+    "sort_field": "modified",
+    "sort_order": "DESC"
+}
