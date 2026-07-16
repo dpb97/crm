@@ -1,20 +1,23 @@
 # pilanda_sales
 
-Frappe-App im **LCS-Pilanda-Stack** für **Vertrieb / Sales** — LCS-spezifische
-Vertriebslogik rund um die Frappe-CRM-SPA (`/crm`). Teil der geteilten Pilanda-Bench
-(Site `lcs.local`) — **nicht standalone**.
+Frappe-App im **LCS-Pilanda-Stack** für **Vertrieb / Sales** — Angebotswesen
+(Lastenheft → Kalkulation → Angebot), Vertriebs-Custom-Fields am Project und das
+Vertrieb-Modul-Dashboard. Teil der geteilten Pilanda-Bench (Site `lcs.local`) —
+**nicht standalone**. Maßgeblicher Status/Fahrplan: [`Entwicklungsplan.md`](Entwicklungsplan.md).
 
-> **Frühes Stadium:** aus dem Org-Template initialisiert. Der eigentliche App-Code
-> wird per `bench new-app pilanda_sales` **im Repo-Root** angelegt (Root-Layout,
-> siehe unten).
+> **CRM:** Dominiks Frappe-CRM-Fork liegt als eigenständiger Branch
+> `feature/unify-deal-project` in diesem Repo (keine gemeinsame Historie —
+> Dominiks Hoheit, wird von uns nicht bearbeitet; Entscheid Marco 16.07.2026,
+> s. Entwicklungsplan). Unsere Arbeit läuft ausschließlich auf `develop`.
 
 ## Pilanda-Stack-Kontext
 
-- **Modul:** Vertrieb (`modules_data.py`-Slug `vertrieb`, Navigationsziel `/crm`)
+- **Modul:** Vertrieb (`modules_data.py`-Slug `vertrieb`, **live** — Navigationsziel `/app/sales-dashboard`; Interessent/Verkaufschance → `/crm/leads`//`crm/deals`)
 - **Custom-Field-Namespace:** `custom_sales_` (Eigentum: Vertriebs-/Sales-Felder am Project)
-- **Oberfläche:** die Vertriebs-UI **ist** die Frappe-CRM-SPA (3rd-party, via
-  `chrome_injection` eingebettet); `pilanda_sales` ergänzt LCS-Logik/Felder/Reports —
-  **kein** CRM-Nachbau, daher i. d. R. **kein** eigenes Vue-Frontend.
+- **Oberfläche:** Modul-Dashboard `/app/sales-dashboard` (eigenes Vue-Frontend
+  `frontend/`, Theme-Kopien `PpDashboard@1`/`PpDataGrid@3`) + die Frappe-CRM-SPA
+  `/crm` (Dominiks Fork, `chrome_injection` liefert unsere Sidebar) —
+  **kein** CRM-Nachbau in dieser App.
 - **Project-Objekt-SSOT:** ein geteiltes ERPNext-`Project`; erweitern nur per Custom
   Field (als Code, `after_migrate`), ein Eigentümer je Feld. Regel:
   `pilanda/docs/conventions/project-object-ssot.md`.
@@ -48,18 +51,18 @@ erwarten und wie es die bestehenden Apps (`pilanda_pm`, `pilanda_pls`,
 **Kein `src/<app>/`-Layout, kein per-App `infrastructure/`.** Begründung: `bench
 get-app <url>` klont das Repo nach `apps/<name>` und führt `pip install -e` aus — das
 setzt `pyproject.toml` + App-Paket im **Repo-Root** voraus. Dasselbe gilt für die
-Bind-Mounts der Dev-Umgebung (`pilanda_pm/_devenv/docker-compose.dev.yml`, Repo-Root →
-`apps/<name>`) und für `pilanda_pm/install.sh` (`pip install -e apps/<app>`). Ein
+Bind-Mounts der Dev-Umgebung (`pilanda/_devenv/docker-compose.dev.yml`, Repo-Root →
+`apps/<name>`) und für `pilanda/install.sh` (`pip install -e apps/<app>`). Ein
 `src/`-Layout würde `bench get-app`, die Mounts und `install.sh` brechen. Setup,
-Docker und Deploy liegen **zentral** in `pilanda_pm/_devenv` + `pilanda_pm/install.sh`
+Docker und Deploy liegen **zentral** in `pilanda/_devenv` + `pilanda/install.sh`
 (eine geteilte Bench) — deshalb kein eigener `infrastructure/`-Ordner je App.
 
 ## Frontend
 
-In der Regel **keines** — die Vertriebsoberfläche ist die eingebettete Frappe-CRM-SPA.
-Falls doch eine eigene Desk-Page nötig wird: Vue 3 + Vite (analog `pilanda_pm/frontend`),
-Optik nur über `pilanda_theme`-Tokens. (Das generische Org-Template nennt React —
-im Pilanda-Stack gilt **Vue 3**, siehe `ARCHITEKTUR-PILANDA.md §6`.)
+`frontend/` (Vue 3 + Vite, IIFE-Bundle `sales_dashboard` → `public/dist`,
+gitignored — Build: `cd frontend && npm run build`). Optik ausschließlich über
+`pilanda_theme`-Tokens/Kopien (Copy-Modell, PP_REV). Die CRM-SPA selbst ist
+Dominiks Fork und wird hier nicht gebaut.
 
 ## Git-Workflow
 
