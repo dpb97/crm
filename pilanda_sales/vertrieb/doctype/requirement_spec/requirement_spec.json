@@ -1,0 +1,113 @@
+{
+    "actions": [],
+    "allow_rename": 0,
+    "autoname": "LH-.#####",
+    "creation": "2026-06-14 00:00:00",
+    "doctype": "DocType",
+    "engine": "InnoDB",
+    "field_order": [
+        "project",
+        "catalog_version",
+        "column_break_head",
+        "language",
+        "status",
+        "frozen_on",
+        "section_answers",
+        "answers",
+        "section_files",
+        "files"
+    ],
+    "fields": [
+        {
+            "fieldname": "project",
+            "fieldtype": "Link",
+            "label": "Projekt",
+            "options": "Project",
+            "reqd": 1,
+            "in_list_view": 1,
+            "in_standard_filter": 1
+        },
+        {
+            "fieldname": "catalog_version",
+            "fieldtype": "Link",
+            "label": "Katalog-Version",
+            "options": "Field Catalog",
+            "in_list_view": 1,
+            "description": "Eingefroren bei Erstellung (Lastenheft kennt seine Katalogversion)."
+        },
+        {
+            "fieldname": "column_break_head",
+            "fieldtype": "Column Break"
+        },
+        {
+            "fieldname": "language",
+            "fieldtype": "Data",
+            "label": "Sprache",
+            "default": "en",
+            "read_only": 1,
+            "description": "Kundenseitig immer Englisch (E-12)."
+        },
+        {
+            "fieldname": "status",
+            "fieldtype": "Select",
+            "label": "Status",
+            "options": "Entwurf\nAn Kunde gesendet\nRücklauf erhalten\nGeprüft",
+            "default": "Entwurf",
+            "in_list_view": 1,
+            "in_standard_filter": 1
+        },
+        {
+            "fieldname": "frozen_on",
+            "fieldtype": "Datetime",
+            "label": "Eingefroren am",
+            "read_only": 1,
+            "description": "Beim finalen Angebot -> internes Pflichtenheft (E-13)."
+        },
+        {
+            "fieldname": "section_answers",
+            "fieldtype": "Section Break",
+            "label": "Antworten"
+        },
+        {
+            "fieldname": "answers",
+            "fieldtype": "Table",
+            "options": "Requirement Spec Answer"
+        },
+        {
+            "fieldname": "section_files",
+            "fieldtype": "Section Break",
+            "label": "Anhänge",
+            "collapsible": 1
+        },
+        {
+            "fieldname": "files",
+            "fieldtype": "Table",
+            "options": "Requirement Spec File"
+        }
+    ],
+    "index_web_pages_for_search": 1,
+    "links": [],
+    "modified": "2026-06-14 00:00:00",
+    "modified_by": "Administrator",
+    "module": "Vertrieb",
+    "name": "Requirement Spec",
+    "owner": "Administrator",
+    "permissions": [
+        {
+            "create": 1, "delete": 1, "email": 1, "export": 1, "print": 1,
+            "read": 1, "report": 1, "role": "System Manager", "share": 1, "write": 1
+        },
+        {
+            "create": 1, "delete": 1, "email": 1, "export": 1, "print": 1,
+            "read": 1, "report": 1, "role": "Projects Manager", "share": 1, "write": 1
+        },
+        {
+            "create": 1, "email": 1, "export": 1, "print": 1,
+            "read": 1, "report": 1, "role": "Verkäufer", "share": 1, "write": 1
+        }
+    ],
+    "sort_field": "modified",
+    "sort_order": "DESC",
+    "title_field": "project",
+    "track_changes": 1
+}

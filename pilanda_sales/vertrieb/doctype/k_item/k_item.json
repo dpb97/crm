@@ -1,0 +1,151 @@
+{
+    "actions": [],
+    "allow_rename": 0,
+    "autoname": "naming_series:",
+    "creation": "2026-06-14 00:00:00",
+    "doctype": "DocType",
+    "engine": "InnoDB",
+    "field_order": [
+        "naming_series",
+        "item_label",
+        "status",
+        "column_break_head",
+        "is_stockable",
+        "is_estimate",
+        "section_desc",
+        "description",
+        "section_composition",
+        "components",
+        "section_promote",
+        "target_item"
+    ],
+    "fields": [
+        {
+            "fieldname": "naming_series",
+            "fieldtype": "Select",
+            "label": "Nummernkreis",
+            "options": "K-.#####",
+            "default": "K-.#####",
+            "reqd": 1
+        },
+        {
+            "fieldname": "item_label",
+            "fieldtype": "Data",
+            "label": "Bezeichnung",
+            "reqd": 1,
+            "in_list_view": 1,
+            "description": "Sprechender Name; im Angebot wahlweise verwendbar."
+        },
+        {
+            "fieldname": "status",
+            "fieldtype": "Select",
+            "label": "Status",
+            "options": "Entwurf\nGeprüft\nFreigegeben",
+            "default": "Entwurf",
+            "in_list_view": 1,
+            "in_standard_filter": 1,
+            "description": "Eigene, lockerere Freigaberegeln als echte Items; Frappe-Workflow folgt (E-23)."
+        },
+        {
+            "fieldname": "column_break_head",
+            "fieldtype": "Column Break"
+        },
+        {
+            "fieldname": "is_stockable",
+            "fieldtype": "Check",
+            "label": "Dispofähig",
+            "default": 0,
+            "read_only": 1,
+            "description": "K-Artikel sind NICHT dispofähig (kein Einkauf/keine Fertigung) — E-22."
+        },
+        {
+            "fieldname": "is_estimate",
+            "fieldtype": "Check",
+            "label": "Schätzung",
+            "description": "Für noch zu entwickelnde Teile."
+        },
+        {
+            "fieldname": "section_desc",
+            "fieldtype": "Section Break",
+            "label": "Beschreibung"
+        },
+        {
+            "fieldname": "description",
+            "fieldtype": "Text",
+            "label": "Beschreibung"
+        },
+        {
+            "fieldname": "section_composition",
+            "fieldtype": "Section Break",
+            "label": "Preis-Zusammensetzung",
+            "description": "Hauptbaugruppen (Item/K-Artikel) + Zuschläge; Preis ≈ Σ Baugruppen + Zuschlag."
+        },
+        {
+            "fieldname": "components",
+            "fieldtype": "Table",
+            "label": "Baugruppen",
+            "options": "K Item Component"
+        },
+        {
+            "fieldname": "section_promote",
+            "fieldtype": "Section Break",
+            "label": "In Artikelstamm überführen",
+            "collapsible": 1
+        },
+        {
+            "fieldname": "target_item",
+            "fieldtype": "Link",
+            "label": "Ziel-Item",
+            "options": "Item",
+            "description": "Beim Rückschreiben in den Stamm entstehendes echtes Item (E-17)."
+        }
+    ],
+    "index_web_pages_for_search": 1,
+    "links": [],
+    "modified": "2026-06-14 00:00:00",
+    "modified_by": "Administrator",
+    "module": "Vertrieb",
+    "name": "K Item",
+    "owner": "Administrator",
+    "permissions": [
+        {
+            "create": 1,
+            "delete": 1,
+            "email": 1,
+            "export": 1,
+            "print": 1,
+            "read": 1,
+            "report": 1,
+            "role": "System Manager",
+            "share": 1,
+            "write": 1
+        },
+        {
+            "create": 1,
+            "email": 1,
+            "export": 1,
+            "print": 1,
+            "read": 1,
+            "report": 1,
+            "role": "Projects User",
+            "share": 1,
+            "write": 1
+        },
+        {
+            "create": 1,
+            "delete": 1,
+            "email": 1,
+            "export": 1,
+            "print": 1,
+            "read": 1,
+            "report": 1,
+            "role": "Projects Manager",
+            "share": 1,
+            "write": 1
+        }
+    ],
+    "sort_field": "modified",
+    "sort_order": "DESC",
+    "title_field": "item_label",
+    "track_changes": 1
+}

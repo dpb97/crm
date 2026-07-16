@@ -1,0 +1,112 @@
+{
+    "actions": [],
+    "allow_rename": 1,
+    "autoname": "PVAR-.#####",
+    "creation": "2026-06-14 00:00:00",
+    "doctype": "DocType",
+    "engine": "InnoDB",
+    "field_order": [
+        "project",
+        "variant_label",
+        "contract_type",
+        "column_break_main",
+        "is_winner",
+        "section_cranes",
+        "cranes"
+    ],
+    "fields": [
+        {
+            "fieldname": "project",
+            "fieldtype": "Link",
+            "label": "Projekt",
+            "options": "Project",
+            "reqd": 1,
+            "in_list_view": 1,
+            "in_standard_filter": 1
+        },
+        {
+            "fieldname": "variant_label",
+            "fieldtype": "Data",
+            "label": "Bezeichnung",
+            "reqd": 1,
+            "in_list_view": 1,
+            "description": "z. B. \"Line 1\" / \"3x20t\" (units[].label im Prototyp)."
+        },
+        {
+            "fieldname": "contract_type",
+            "fieldtype": "Select",
+            "label": "Vertragsart",
+            "options": "\nrental\nsale",
+            "in_list_view": 1
+        },
+        {
+            "fieldname": "column_break_main",
+            "fieldtype": "Column Break"
+        },
+        {
+            "fieldname": "is_winner",
+            "fieldtype": "Check",
+            "label": "Gewinner-Variante",
+            "description": "Wird bei Projekt-Status 'gewonnen' gesetzt."
+        },
+        {
+            "fieldname": "section_cranes",
+            "fieldtype": "Section Break",
+            "label": "Krane"
+        },
+        {
+            "fieldname": "cranes",
+            "fieldtype": "Table",
+            "label": "Krane",
+            "options": "Project Variant Crane"
+        }
+    ],
+    "index_web_pages_for_search": 1,
+    "links": [],
+    "modified": "2026-06-14 00:00:00",
+    "modified_by": "Administrator",
+    "module": "Vertrieb",
+    "name": "Project Variant",
+    "owner": "Administrator",
+    "permissions": [
+        {
+            "create": 1,
+            "delete": 1,
+            "email": 1,
+            "export": 1,
+            "print": 1,
+            "read": 1,
+            "report": 1,
+            "role": "System Manager",
+            "share": 1,
+            "write": 1
+        },
+        {
+            "create": 1,
+            "email": 1,
+            "export": 1,
+            "print": 1,
+            "read": 1,
+            "report": 1,
+            "role": "Projects User",
+            "share": 1,
+            "write": 1
+        },
+        {
+            "create": 1,
+            "delete": 1,
+            "email": 1,
+            "export": 1,
+            "print": 1,
+            "read": 1,
+            "report": 1,
+            "role": "Projects Manager",
+            "share": 1,
+            "write": 1
+        }
+    ],
+    "sort_field": "modified",
+    "sort_order": "DESC",
+    "title_field": "variant_label",
+    "track_changes": 1
+}

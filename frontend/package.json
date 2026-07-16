@@ -10,7 +10,9 @@
     "serve": "vite preview",
     "test": "vitest",
     "test:run": "vitest run",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "build:dashboard": "vite build --config vite.dashboard.config.js",
+    "dev:dashboard": "vite build --config vite.dashboard.config.js --watch"
   },
   "dependencies": {
     "@tiptap/extension-paragraph": "^2.12.0",

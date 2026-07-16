@@ -1,0 +1,39 @@
+# CI — Lint (Ruff). Bewusst schlank: KEIN Bench-Build in CI.
+# Grund: ein volles Frappe-Bench in CI ist teuer (private Repos = Minuten),
+# und der frühere Test-/Security-Job war Org-Template-Platzhalter ("my_app",
+# requirements.txt) und lief nie grün. Tests laufen lokal in der Bench.
+name: CI
+
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [develop]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  lint:
+    name: Lint (Ruff)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install Ruff
+        run: pip install ruff
+
+      - name: Run Ruff (lint + format check)
+        run: |
+          ruff check .
+          ruff format --check .

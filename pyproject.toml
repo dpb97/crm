@@ -1,12 +1,10 @@
 [project]
-name = "crm"
-authors = [
-    { name = "Frappe Technologies Pvt. Ltd.", email = "shariq@frappe.io"}
-]
-description = "Kick-ass Open Source CRM"
+name = "pilanda_sales"
+version = "0.0.1"
+description = "Pilanda Vertrieb — Questionnaire/Lastenheft, Kalkulation, Angebot (LCS) auf ERPNext."
 requires-python = ">=3.10"
 readme = "README.md"
-dynamic = ["version"]
+authors = [{ name = "LCS Group IT" }]
 dependencies = [
     # "frappe~=15.0.0" # Installed and managed by bench.
     "twilio==8.5.0"
@@ -15,6 +13,9 @@ dependencies = [
 [build-system]
 requires = ["flit_core >=3.4,<4"]
 build-backend = "flit_core.buildapi"
+
+[tool.flit.module]
+name = "pilanda_sales"
 
 # These dependencies are only installed when developer mode is enabled
 [tool.bench.dev-dependencies]

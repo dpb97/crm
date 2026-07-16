@@ -1,0 +1,39 @@
+{
+    "actions": [],
+    "creation": "2026-06-14 00:00:00",
+    "doctype": "DocType",
+    "editable_grid": 1,
+    "engine": "InnoDB",
+    "field_order": [
+        "value",
+        "option_label"
+    ],
+    "fields": [
+        {
+            "fieldname": "value",
+            "fieldtype": "Data",
+            "label": "Wert",
+            "reqd": 1,
+            "in_list_view": 1,
+            "columns": 4
+        },
+        {
+            "fieldname": "option_label",
+            "fieldtype": "Data",
+            "label": "Label",
+            "in_list_view": 1,
+            "columns": 5
+        }
+    ],
+    "index_web_pages_for_search": 1,
+    "istable": 1,
+    "links": [],
+    "modified": "2026-06-14 00:00:00",
+    "modified_by": "Administrator",
+    "module": "Vertrieb",
+    "name": "Field Catalog Option",
+    "owner": "Administrator",
+    "permissions": [],
+    "sort_field": "modified",
+    "sort_order": "DESC"
+}
