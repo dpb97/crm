@@ -78,6 +78,20 @@ Rolle: baut aus Oswalds Prototyp (read-only Referenz, **kein Code-Port**) das ka
   Theme-SSOT, Diff leer) — dort aber Dominiks Pflege.
 
 ## Offen — wird wirklich gebaut
+- [ ] **Vertrieb-Integration (Entscheid oben) — Wellenplan:**
+  - [x] Welle 1 (16.07., pilanda `33e628f`): Nav-Punkte Projekte →
+    `/crm/projects`, Netzwerk → `/crm/network`, Kunden →
+    `/crm/organizations`, Kontakte → `/crm/contacts` (E2E: Routen
+    aufgelöst, App rendert; Bench-Tests 35/35). Bekannter Fork-Rest:
+    `lcs_integrations.get_user_preferences`-Call wirft ValidationError
+    (App seit PR #13 im Repo, in der Bench NICHT installiert —
+    Dominik-Liste/Repo-Schnitt).
+  - [ ] Welle 2: Dominiks weitere Seiten als eigene Nav-Punkte ergänzen
+    (Forecasting, Sales Meeting, Marktzuteilung, Projektkarte) — braucht
+    T-Übersetzungen + INFO/DETAIL-Kette (Zähler ändern sich).
+  - [ ] Welle 3: fehlende Sub-Pages selbst bauen (Agenten, Partner,
+    Marketing, Produktmanagement-Übersicht; Aufträge nach E3-SO-Spez) —
+    UI aus pilanda_theme (Pp*-Kopien), Backend Dominiks CRM/ERPNext.
 - [ ] **Merge-Nacharbeit PR #13 (aus `9150ff62`):**
   - [x] (a) sales_dashboard-Build unter vite 5 VERIFIZIERT (16.07.):
     `yarn build:dashboard` grün (89,55 kB JS + 18,91 kB CSS), Assets über
