@@ -60,7 +60,9 @@ Rolle: baut aus Oswalds Prototyp (read-only Referenz, **kein Code-Port**) das ka
   crm-App: nach Recreate Symlink+apps.txt+pip -e neu setzen, dann
   clear-cache VOR migrate. Verifiziert: /crm/projects,/network,
   /organizations,/contacts,/forecasting eingeloggt = 0 Fehlerboxen,
-  0 JS-Fehler.
+  0 JS-Fehler. **Seit 16.07. abends: Einspielen/Redeploy = EIN Befehl:**
+  `docker exec pilanda-frappe bash /workspace/frappe-bench/apps/pilanda/_devenv-link/install-crm.sh`
+  (Skript `pilanda/_devenv/install-crm.sh`, idempotent — Marco #1).
 - **CRM-Bestandsdaten-Übernahme (Marco-Befund „nur ein Datensatz sichtbar",
   16.07.2026 abends):** Dominiks CRM ist eine EIGENE Datenwelt und startete
   leer — der ERPNext-Bestand (8 Leads, 22 Customers, 38 Contacts) war in den
@@ -114,19 +116,38 @@ Rolle: baut aus Oswalds Prototyp (read-only Referenz, **kein Code-Port**) das ka
 
 ## Offen — wird wirklich gebaut
 - [ ] **Vertrieb-Integration (Entscheid oben) — Wellenplan:**
-  - [x] Welle 1 (16.07., pilanda `33e628f`): Nav-Punkte Projekte →
-    `/crm/projects`, Netzwerk → `/crm/network`, Kunden →
-    `/crm/organizations`, Kontakte → `/crm/contacts` (E2E: Routen
-    aufgelöst, App rendert; Bench-Tests 35/35). Bekannter Fork-Rest:
-    `lcs_integrations.get_user_preferences`-Call wirft ValidationError
-    (App seit PR #13 im Repo, in der Bench NICHT installiert —
-    Dominik-Liste/Repo-Schnitt).
-  - [ ] Welle 2: Dominiks weitere Seiten als eigene Nav-Punkte ergänzen
-    (Forecasting, Sales Meeting, Marktzuteilung, Projektkarte) — braucht
-    T-Übersetzungen + INFO/DETAIL-Kette (Zähler ändern sich).
-  - [ ] Welle 3: fehlende Sub-Pages selbst bauen (Agenten, Partner,
-    Marketing, Produktmanagement-Übersicht; Aufträge nach E3-SO-Spez) —
-    UI aus pilanda_theme (Pp*-Kopien), Backend Dominiks CRM/ERPNext.
+  - [x] Welle 1 (16.07., pilanda `33e628f`): erste 4 Punkte auf CRM-Seiten.
+  - [x] Welle 2 ERLEDIGT durch die VOLLSTÄNDIGE CRM-Übernahme (16.07.,
+    pilanda `2ab8645`): Modul vertrieb = Dominiks Sidebar 1:1 (17 Punkte,
+    Target /crm, Zähler 142); ALLE seine Seiten sind Nav-Punkte.
+    „Aufträge" entfällt als Nav-Punkt bis E3-SO-Spez (Marco #8).
+  - [ ] Welle 3 = **Vue-Neubau der CRM-Optik (Marco-GO 16.07., Phasen):**
+    - [x] V0 Token-Konformität: nackte Hex/Alt-Navy in Dominiks
+      LCS-Komponenten → `var(--pp-*)` (Entscheid #4; Umsetzung 16.07.,
+      Verifikation s. u.).
+    - [ ] V1 Showcase im Theme (SSOT-Regel „CRM-Optik bauen WIR im
+      Theme"): A-Liga-Anlagenbau-CRM-Ansichten als Pp*-Showcases in
+      pilanda_theme (Lead-Liste, Deal-Kanban, Projekt-Workspace,
+      Netzwerk-Graph, Forecast) — Katalog + Abnahme Marco.
+    - [ ] V2 Adoption: abgenommene Showcases per Copy-Modell (PP_REV) in
+      die SPA/eigene Pages verdrahten — schrittweise je Ansicht, mit
+      Dominik synchronisiert (sein Fork-Kern bleibt merge-billig).
+- [x] **#3 Repo-Schnitt FESTGESCHRIEBEN (Marco 16.07., „wie empfohlen"):**
+  EIN Repo `pilanda_sales` mit drei Paketen (pilanda_sales, crm,
+  lcs_integrations); Bench-Einspielung/Persistenz = `pilanda/_devenv/
+  install-crm.sh` (idempotent, auch Redeploy; ersetzt die manuelle
+  Recreate-Anleitung oben). pyproject↔bench.assets bleibt wie von Dominik
+  gemergt (Pfad-relativ korrekt). Dominik-Bestätigung: nachrichtlich.
+- [x] **#7 README bleibt Upstream** (Marco 16.07.) — Identität in
+  README.LCS.md, Merges billig.
+- [x] **#5 Sicherheits-Patches (16.07., `38024739`):** 14/15 critical+high
+  gefixt (trivy-action 0.35.0, 6 frontend-resolutions, Pillow 12.2.0 +
+  python-multipart 0.0.30 im bizcard-Scanner — dessen Docker-Image braucht
+  beim nächsten Deploy einen Rebuild). **Bewusst OFFEN: vite #27** — kein
+  5.x-Backport, Fix nur via Major 6+ = Dominik-Entscheid (SPA-Baubarkeit).
+- [x] **#6 Fork-CI auf PR-only (16.07., `b763e381`):** CI/LCS-CI/CodeQL/
+  Trivy feuern nicht mehr je develop-Push (Dauerrot beseitigt); CodeQL
+  behält den Wochenplan.
 - [ ] **Merge-Nacharbeit PR #13 (aus `9150ff62`):**
   - [x] (a) sales_dashboard-Build unter vite 5 VERIFIZIERT (16.07.):
     `yarn build:dashboard` grün (89,55 kB JS + 18,91 kB CSS), Assets über
