@@ -70,9 +70,17 @@ Rolle: baut aus Oswalds Prototyp (read-only Referenz, **kein Code-Port**) das ka
   (7+7 Statuses + Layouts/Quellen), (b) NEU `pilanda_sales/crm/backfill.py`
   = einmalige idempotente Übernahme Customer→CRM Organization (12; Upsert
   per Name, kein Echo mit Dominiks Rück-Sync) + Lead→CRM Lead (8; Idempotenz
-  über E-Mail/Name+Firma). 2. Lauf verifiziert 0 neu. Opportunity→CRM Deal
-  BEWUSST nicht (Funnel-Phasen-/LCS-Project-Automatik = Dominik/E3).
-  E2E: leads/organizations/contacts zeigen die Daten.
+  über E-Mail/Name+Firma). 2. Lauf verifiziert 0 neu.
+  **VERVOLLSTÄNDIGT (Marco „keine importierten Schattenwelten", 16.07. spät):**
+  (c) Opportunity→CRM Deal ebenfalls migriert (8; Status-Mapping
+  Converted→Won/Lost→Lost/Quotation→Proposal-Quotation, Lost-Pflichtgrund
+  ehrlich als „Altbestand, Grund nicht erfasst"); Deal-Insert-Hook erzeugte
+  automatisch 8 LCS Projects (Deal=Projekt ✓). (d) **ERPNext-Altbestand
+  GELÖSCHT (Marco-GO):** tabLead 8→0, tabOpportunity 8→0 via delete_doc,
+  0 Fehler — Vertriebsprozess-Daten leben seither NUR im CRM (eine
+  Wahrheit); ERPNext behält nur Downstream (Customer/Quotation/SO via
+  Dominiks Ein-Weg-Sync). E2E: alle CRM-Seiten zeigen die Daten,
+  0 Fehlerboxen/0 JS-Fehler.
 - **CRM-Laufzeit in der Dev-Bench (16.07.2026, für Audit + Nav):** die App
   `crm` ist CONTAINER-LOKAL installiert (Frontend gebaut, Assets-Symlink
   `sites/assets/crm`, migrate grün) — überlebt Container-Restart, NICHT

@@ -91,8 +91,74 @@ def execute() -> dict:
         except Exception as e:
             stats["fehler"].append(f"Lead {lead.name}: {e}")
 
+    stats.update(backfill_opportunities())
+
     frappe.db.commit()
     # Fail-loud: Fehler nicht verschlucken, aber die restlichen Datensätze
     # trotzdem übernehmen — am Ende vollständige Bilanz ausgeben.
     print("BACKFILL:", stats)
+    return stats
+
+
+# ERPNext-Opportunity-Status → CRM-Deal-Status (Dominiks Funnel).
+_OPP_STATUS_MAP = {
+    "Open": "Qualification",
+    "Quotation": "Proposal/Quotation",
+    "Replied": "Negotiation",
+    "Converted": "Won",
+    "Lost": "Lost",
+    "Closed": "Won",
+}
+
+
+def backfill_opportunities() -> dict:
+    """Opportunity → CRM Deal (Migration in die EINE CRM-Datenwelt).
+
+    Der after_insert-Hook von lcs_integrations legt je Deal automatisch das
+    LCS Project an (Deal=Projekt) — Vertriebsprojekte füllen sich mit.
+    Idempotenz: pro Organisation+Status wird kein zweiter Deal angelegt.
+    """
+    stats = {"deals_neu": 0, "deals_vorhanden": 0, "deal_fehler": []}
+    fallback_status = frappe.db.get_value(
+        "CRM Deal Status", {}, "name", order_by="position asc"
+    )
+
+    for opp in frappe.get_all(
+        "Opportunity",
+        fields=["name", "customer_name", "title", "status",
+                "opportunity_amount", "currency", "probability", "territory"],
+    ):
+        org = opp.customer_name or opp.title
+        if not org:
+            continue
+        status = _OPP_STATUS_MAP.get(opp.status, fallback_status)
+        if frappe.db.exists("CRM Deal", {"organization": org, "status": status}):
+            stats["deals_vorhanden"] += 1
+            continue
+        try:
+            deal = frappe.new_doc("CRM Deal")
+            if frappe.db.exists("CRM Organization", org):
+                deal.organization = org
+            deal.status = status
+            if opp.opportunity_amount:
+                deal.annual_revenue = opp.opportunity_amount
+            if opp.currency and hasattr(deal, "currency"):
+                deal.currency = opp.currency
+            if opp.probability:
+                deal.probability = opp.probability
+            if opp.territory and frappe.db.exists("CRM Territory", opp.territory):
+                deal.territory = opp.territory
+            if status == "Lost":
+                # Pflichtfeld im CRM; Altbestand kennt den Grund nicht —
+                # ehrlich kennzeichnen statt raten.
+                reason = (frappe.db.exists("CRM Lost Reason", "Other")
+                          or frappe.db.get_value("CRM Lost Reason", {}, "name"))
+                if reason:
+                    deal.lost_reason = reason
+                deal.lost_notes = f"Migriert aus ERPNext-Altbestand ({opp.name}); ursprünglicher Verlustgrund nicht erfasst."
+            deal.insert(ignore_permissions=True)
+            stats["deals_neu"] += 1
+        except Exception as e:
+            stats["deal_fehler"].append(f"Opportunity {opp.name}: {e}")
+
     return stats
