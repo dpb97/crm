@@ -5,10 +5,18 @@
 > Pilanda-Bench (Site `lcs.local`, mehrere Apps) — nicht standalone. Root-Layout,
 > auf `lcs.local` installiert; Aufbau läuft (Vertriebs-/Kalkulations-DocTypes).
 > Aktueller Stand: `Entwicklungsplan.md`.
+>
+> **Seit PR #13 (16.07.2026):** Das Repo trägt ZWEI App-Pakete —
+> `pilanda_sales/` (unsere App) + `crm/` (Dominiks Frappe-CRM-Fork inkl.
+> CRM-SPA in `frontend/`, `lcs_integrations/`, `mobile/`, Submodule
+> `frappe-ui`). Fork-/Upstream-Teile pflegt Dominik (nicht anfassen, Merges
+> billig halten — `README.LCS.md`); unser Dashboard-Frontend lebt in
+> `frontend/src/dashboard/` (`yarn build:dashboard`). Root-`README.md` =
+> Upstream-README (gewollt).
 
 ## Pilanda-Stack-Kontext (verbindlich)
 
-- **Pilanda-Modul:** Vertrieb (`modules_data.py`-Slug `vertrieb`, Navigationsziel `/crm`).
+- **Pilanda-Modul:** Vertrieb (`modules_data.py`-Slug `vertrieb`, **live**, Navigationsziel `/app/sales-dashboard`; Interessent/Verkaufschance → `/crm/leads` / `/crm/deals`).
 - **Custom-Field-Namespace:** `custom_sales_` — Eigentum: Vertriebs-/Sales-Felder am Project.
 - **Project-Objekt-SSOT:** EIN geteiltes Project (ERPNext-Standard, eine `tabProject`).
   Erweitern nur per Custom Field (als Code, `after_migrate`), ein Eigentümer je Feld.
@@ -37,8 +45,9 @@ Stack-weite Konventionen liegen kanonisch in den Heimat-Repos — `pilanda_sales
 - **Repo-Layout = Root-Layout:** App-Paket + `pyproject.toml` im Repo-Root (wie
   `bench new-app`), **nicht** unter `src/<app>/`. Orientierung an bestehenden Apps
   (`pilanda_pm` etc.); Begründung in `README.md` + `pilanda/docs/ARCHITEKTUR-PILANDA.md`.
-- **Geteilte Bench:** Docker/Setup/Deploy zentral in `pilanda_pm/_devenv` +
-  `pilanda_pm/install.sh` — kein eigener `infrastructure/`-Ordner je App.
+- **Geteilte Bench:** Docker/Setup/Deploy zentral in `pilanda/_devenv` +
+  `pilanda/install.sh` (seit 02.07.2026 im Master-Repo) — kein eigener
+  `infrastructure/`-Ordner je App.
 
 ## Frappe-Konventionen
 
@@ -56,8 +65,9 @@ Dominik zieht Geprüftes manuell nach `main`.
 
 ## Claude-Memory (zentral, stack-weit)
 
-Claudes persistentes Gedächtnis liegt **zentral** in `pilanda_pm/.claude/memory/`
-(in Git, SSOT) — auch wenn Claude aus *diesem* Repo gestartet wird, wird dort per
-Junction gelesen/geschrieben. Dort pflegen, **nicht** lokal duplizieren. Setup an
-einem neuen Gerät (einmalig): `pilanda_pm/.claude/memory/setup-memory-junction.ps1 -All`.
-Details/Ablauf: `pilanda_pm/.claude/memory/JUNCTION-SETUP.md`.
+Claudes persistentes Gedächtnis liegt **zentral** in `pilanda/.claude/memory/`
+(in Git, SSOT — seit 05.07.2026 im Master-Repo, vorher pilanda_pm) — auch wenn
+Claude aus *diesem* Repo gestartet wird, wird dort per Junction gelesen/
+geschrieben. Dort pflegen, **nicht** lokal duplizieren. Setup an einem neuen
+Gerät (einmalig): `pilanda/.claude/memory/setup-memory-junction.ps1 -All`.
+Details/Ablauf: `pilanda/.claude/memory/JUNCTION-SETUP.md`.

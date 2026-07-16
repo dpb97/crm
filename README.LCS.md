@@ -1,5 +1,14 @@
 # LCS CRM — adaptation of `frappe/crm`
 
+> **Repo-Einordnung (Pilanda-ERP/pilanda_sales):** Dieses Repo ist die
+> Pilanda-Vertriebs-App und enthält seit PR #13 (16.07.2026, Merge
+> `9150ff62`) **zwei App-Pakete**: `pilanda_sales/` (Angebotswesen
+> Lastenheft → Kalkulation → Angebot + Vertrieb-Dashboard; maßgeblicher
+> Status/Fahrplan: [`Entwicklungsplan.md`](Entwicklungsplan.md)) und
+> `crm/` (Dominiks Frappe-CRM-Fork — dieser Doc beschreibt IHN). Das
+> Root-`README.md` ist bewusst das unveränderte Upstream-README (billige
+> Upstream-Merges). Stack-Kontext: [`CLAUDE.md`](CLAUDE.md).
+
 This fork adapts [Frappe CRM](./README.md) to LCS Cable Cranes' needs:
 MSAL / Entra SSO, bidirectional abas ERP sync, Outlook mail delta sync,
 Proxess DMS integration, and rule-driven lead scoring.

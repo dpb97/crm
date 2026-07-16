@@ -2,25 +2,48 @@
 > Master: pilanda/ENTWICKLUNGSPLAN.md · Theme-Mitbau: pilanda_theme/CONTRIBUTING.md
 > Stand: 16.07.2026 · Regel: NUR echte Zustände abhaken — Wahrheit ist Pflicht.
 
-Rolle: baut aus Oswalds Prototyp (read-only Referenz, **kein Code-Port**) das kaufmännische Angebotswesen für Seilkran-Projekte nach: Questionnaire/Lastenheft → Kalkulation → Angebot (+ Pricing Sheet/LV, Pflichtenheft). Im Vertriebsschnitt der Nav (Master §6) liefert die App vor allem **„Projekte ▸ Lastenheft" + „Angebote ▸ Varianten"**; der CRM-Teil erscheint dort als eigener Bereich **„Netzwerk"** (Kunden/Kontakte/Agenten/Partner). **CRM-SPA = Frappe CRM App `/crm`** (Owner Dominik; sein CRM-Fork liegt als eigenständiger Branch in DIESEM Repo — s. Entscheid unten); die LCS-Logik dazu liegt in `pilanda_sales/crm/` — Optik/UX baut das Theme.
+Rolle: baut aus Oswalds Prototyp (read-only Referenz, **kein Code-Port**) das kaufmännische Angebotswesen für Seilkran-Projekte nach: Questionnaire/Lastenheft → Kalkulation → Angebot (+ Pricing Sheet/LV, Pflichtenheft). Im Vertriebsschnitt der Nav (Master §6) liefert die App vor allem **„Projekte ▸ Lastenheft" + „Angebote ▸ Varianten"**; der CRM-Teil erscheint dort als eigener Bereich **„Netzwerk"** (Kunden/Kontakte/Agenten/Partner). **CRM-SPA = Frappe CRM App `/crm`** (Owner Dominik; sein CRM-Fork liegt seit **PR #13 (16.07.2026) GEMERGT auf `develop`** — s. Entscheid unten); die LCS-Rücklink-Logik liegt im Python-Subpackage `pilanda_sales/crm/` (nicht zu verwechseln mit dem Top-Level-Fork-Paket `crm/`) — Optik/UX baut das Theme.
 
 ## Bindende Entscheide
-- **CRM-Fork-Branch = Dominiks Hoheit, wir IGNORIEREN ihn (Marco 16.07.2026):**
-  Der Branch `feature/unify-deal-project` (kompletter Frappe-CRM-Fork, KEINE
-  gemeinsame Historie mit develop; Deal=Projekt-Vereinigung, deutsche Labels,
-  Pilanda-Tokens byte-gleich adoptiert) wird von uns weder gemergt noch
-  bearbeitet — kein Repo-Schnitt. Dominik zieht UNSER develop später in sein
-  Feature und dann nach main; das ist sein Prozess. **Unsere Arbeit läuft
-  ausschließlich auf `develop`** (diese App: Theme/CSS anwenden, Angebotswesen
-  weiterbauen, Doku/Plan hier pflegen).
+- **CRM-Fork liegt AUF develop (PR #13, Dominik, 16.07.2026)** — ersetzt den
+  Vormittags-Entscheid „Fork-Branch ignorieren" (der Fork ist nicht mehr
+  eigenständig): Dominik hat unser develop in `feature/unify-deal-project`
+  gemergt (`--allow-unrelated-histories`, Repo hat jetzt 3 Root-Commits;
+  Konfliktauflösung sauber dokumentiert im Merge-Commit `9150ff62`) und per
+  PR #13 nach develop gezogen. develop enthält seither BEIDE Welten:
+  unser App-Paket `pilanda_sales/` (im Merge unangetastet) + der komplette
+  Fork (`crm/`, `frontend/` = CRM-SPA — unser Dashboard lebt dort weiter
+  unter `src/dashboard/` + `vite.dashboard.config.js` —, `mobile/`,
+  `lcs_integrations/`, `lcs_bizcard/`, `e2e/`, `docker/`, Submodule
+  `frappe-ui`). **Hoheiten unverändert:** Upstream-/Fork-Teile (`crm/`,
+  CRM-SPA-Kern) pflegt Dominik — Upstream bleibt unberührt, damit Merges
+  billig bleiben (Prinzip in `README.LCS.md`); wir arbeiten weiter auf
+  develop in unseren Teilen (`pilanda_sales/`, `frontend/src/dashboard/`,
+  Doku, Theme-Konsum).
+- **Vom Merge geerbte OFFEN-Punkte (Quelle: Merge-Commit `9150ff62`, von
+  Dominik selbst benannt):** (a) ein Repo installiert nur EINE Frappe-App —
+  pyproject zeigt auf `pilanda_sales`, `[tool.bench.assets]` weiter auf
+  `crm/` (inkonsistent; die Repo-Schnitt-Frage ist damit faktisch wieder
+  offen [Marco/Dominik]); (b) `frontend/` trägt zwei Frontends — unser
+  sales_dashboard-Build läuft dort jetzt auf **vite 5 statt 7**
+  (`yarn build:dashboard`), vom Merge UNGETESTET; (c) kein Build/Install
+  aus dem gemergten Stand verifiziert. → Abarbeitung s. „Offen".
+- **README-Auflösung (Dominik, Merge `9150ff62`):** Root-`README.md` = Upstream-
+  Frappe-CRM-README (bleibt unberührt für billige Upstream-Merges); das frühere
+  pilanda_sales-README (Stand `f8e3a6df`) wurde dabei ersetzt. Repo-Identität +
+  LCS-Kontext stehen jetzt in `README.LCS.md` (Kopfblock); App-Wahrheit bleibt
+  HIER. Volle README-Wiederherstellung nur per Marco-Entscheid (Konfliktkosten
+  bei Dominiks Upstream-Merges).
 - **CRM-Laufzeit in der Dev-Bench (16.07.2026, für Audit + Nav):** die App
-  `crm` ist aus Dominiks Branch CONTAINER-LOKAL installiert (Frontend gebaut,
-  Assets-Symlink `sites/assets/crm`, migrate grün) — überlebt Container-
-  Restart, NICHT Recreate; danach neu einspielen (git archive des Branch →
-  apps/crm, pip -e, apps.txt, frontend yarn build, Symlink, migrate).
-  Bekannte Fork-Reste auf Dominiks Liste: Aufruf `lcs_integrations.*`
-  (Labor-App, hier nicht vorhanden — nicht blockierend), Service-Worker-
-  Scope-Warnung, einzelne 417/403-Calls.
+  `crm` ist CONTAINER-LOKAL installiert (Frontend gebaut, Assets-Symlink
+  `sites/assets/crm`, migrate grün) — überlebt Container-Restart, NICHT
+  Recreate; danach neu einspielen, seit PR #13 direkt **aus Repo-develop**
+  (git archive des Branch entfällt): Quelle → apps/crm, pip -e, apps.txt,
+  frontend yarn build, Symlink, migrate. Der bis dahin geblockte Compose-
+  Mount kann mit dem Repo-Stand neu bewertet werden — hängt am Repo-Schnitt-
+  /Zwei-Apps-Punkt oben [Marco]. Bekannte Fork-Reste auf Dominiks Liste:
+  Aufruf `lcs_integrations.*` (seit PR #13 im Repo, Install-Status in der
+  Bench ungeklärt), Service-Worker-Scope-Warnung, einzelne 417/403-Calls.
 - **Backend rechnet alles, Vue zeigt nur** (E-5/E-14). Formeln 1:1 aus Dossier 11; Beweis per **Golden-Master gegen Referenzquote `03c6eb4dfc`**.
 - Custom-Field-Namespace **`custom_sales_`**; Project = ERPNext-SSOT, nur per Custom Field erweitern (E-21/E-28). Technische Namen Englisch, Labels DE/EN (E-26).
 - Sätze/Prozente 3-stufig, zentral pro Projekt user-editierbar mit sichtbarem Default, Reset möglich (E-2/E-14). Prozent = `Percent` (5 = 5 %; Prototyp-Brüche beim Import ×100, E-25).
@@ -35,7 +58,7 @@ Rolle: baut aus Oswalds Prototyp (read-only Referenz, **kein Code-Port**) das ka
 - [x] Phase 5 Start: Rechenkern-Kern-Primitive `calculation/engine.py` + `test_engine.py` — 14.06., `ef2c9ab`
 - [x] Übergabe-Feld `Project.custom_sales_phase` (Lead → Projektierung → Kalkulation → Angebot → Verhandlung → Entscheidung Kunde) — 03.07., `43c6ddb`
 - [x] CRM-Rücklink `Project.custom_sales_crm_deal` (Link → `CRM Deal`, nur wenn Frappe CRM installiert) in der CRM-Domäne `crm/custom_fields.py`, Owner Dominik — 02.07., `54077b7`
-- [x] **Vertrieb-Modul-Dashboard (N10 Welle 2, Master §6.2, `0674222`)** — Desk-Page `/app/sales-dashboard` (Titel „Vertrieb"), erstes Vue-Frontend der App (`frontend/`, IIFE-Bundle `sales_dashboard`, Muster wie `pilanda_pls`). KOPIE des Theme-Bausteins `PpDashboard@1` + `PpDataGrid@3` (Copy-Modell, PP_REV mitkopiert); rein `--pp-*`-Tokens, hell+dunkel, Regel 6.1-6. **NUR echte Quellen** über `pilanda_sales.api.get_sales_dashboard`: KPI-Zeile Pilot-Treffer / Vertriebsprojekte / Aufträge / Angebote / Kunden; Karten Pilot-Feed (`Pilot Tender`, App optional → ehrlicher Leerzustand wenn fehlend), Projekte nach `custom_sales_phase`, Aufträge (`status=Auftrag`, E3 — SO-Automatik/Feld noch offen, s. u.), Absprünge (CRM-SPA `/crm`, Pilot-Workbench, Angebote, Kunden, Lastenheft, Varianten). **CRM-SPA `/crm` (Dominik) NICHT angefasst.** Verifiziert 14.07. (eingeloggt t.tester): 5 KPI (3/3/0/6/22) + 4 Karten + 3 Pilot-Treffer + 7 Phasen-Zeilen + 6 Absprünge, hell+dunkel, 0 Konsolenfehler. Build: `cd frontend && npm run build` (dist = Build-Artefakt, gitignored — wie Schwester-Apps). **Handoff ERLEDIGT (Marco 15.07., Master N10/E8-Nachtrag):** Modul „vertrieb" = live mit Nav-Ziel `/app/sales-dashboard`; Interessent → `/crm/leads`, Verkaufschance → `/crm/deals` (Laufzeit = Dominiks CRM-Fork, s. Entscheide)
+- [x] **Vertrieb-Modul-Dashboard (N10 Welle 2, Master §6.2, `0674222`)** — Desk-Page `/app/sales-dashboard` (Titel „Vertrieb"), erstes Vue-Frontend der App (`frontend/`, IIFE-Bundle `sales_dashboard`, Muster wie `pilanda_pls`). KOPIE des Theme-Bausteins `PpDashboard@1` + `PpDataGrid@3` (Copy-Modell, PP_REV mitkopiert); rein `--pp-*`-Tokens, hell+dunkel, Regel 6.1-6. **NUR echte Quellen** über `pilanda_sales.api.get_sales_dashboard`: KPI-Zeile Pilot-Treffer / Vertriebsprojekte / Aufträge / Angebote / Kunden; Karten Pilot-Feed (`Pilot Tender`, App optional → ehrlicher Leerzustand wenn fehlend), Projekte nach `custom_sales_phase`, Aufträge (`status=Auftrag`, E3 — SO-Automatik/Feld noch offen, s. u.), Absprünge (CRM-SPA `/crm`, Pilot-Workbench, Angebote, Kunden, Lastenheft, Varianten). **CRM-SPA `/crm` (Dominik) NICHT angefasst.** Verifiziert 14.07. (eingeloggt t.tester): 5 KPI (3/3/0/6/22) + 4 Karten + 3 Pilot-Treffer + 7 Phasen-Zeilen + 6 Absprünge, hell+dunkel, 0 Konsolenfehler. Build seit PR #13: `cd frontend && yarn build:dashboard` (`npm run build` baut jetzt die CRM-SPA!); dist = Build-Artefakt, gitignored — wie Schwester-Apps. **Handoff ERLEDIGT (Marco 15.07., Master N10/E8-Nachtrag):** Modul „vertrieb" = live mit Nav-Ziel `/app/sales-dashboard`; Interessent → `/crm/leads`, Verkaufschance → `/crm/deals` (Laufzeit = Dominiks CRM-Fork, s. Entscheide)
 
 - [x] **Theme-Konsistenz develop verifiziert (16.07.):** Kopien `PpDashboard@1`
   + `PpDataGrid@3` drift-frei (pp-rev-report ✓); Dashboard rein `--pp-*`-Tokens.
@@ -43,6 +66,12 @@ Rolle: baut aus Oswalds Prototyp (read-only Referenz, **kein Code-Port**) das ka
   Theme-SSOT, Diff leer) — dort aber Dominiks Pflege.
 
 ## Offen — wird wirklich gebaut
+- [ ] **Merge-Nacharbeit PR #13 (aus `9150ff62`):** (a) sales_dashboard-Build
+  unter vite 5 verifizieren/reparieren (`yarn build:dashboard`; Dashboard-
+  Quellen `frontend/src/dashboard/`); (b) Theme-Token-Drift-Check des Fork-
+  Frontends gegen `pilanda_theme` (Schicht 1 byte-gleich?); (c) pyproject ↔
+  `[tool.bench.assets]`-Inkonsistenz = Repo-Schnitt-/Zwei-Apps-Entscheid
+  [Marco/Dominik — nicht von uns lösen].
 - [ ] **SO-Automatik spezifizieren (Master §6/E3, WICHTIG):** beim Statuswechsel → „Auftrag" automatisch verdeckter ERPNext Sales Order (1:1 aufs Projekt, nirgends in der Nav; „Aufträge"-Sicht = gefilterte Projektliste `q:status=Auftrag`). Zu klären: Verhältnis eigener Angebots-DocType ↔ ERPNext Quotation ↔ Sales Order; welches Feld speist die „Aufträge"-Filterliste (`Project.custom_sales_phase` vs. `Project.status`) — mit dem projectengineering-Ablauf-SSOT abstimmen. Detail-Spez gehört in diese App (`pilanda_sales`).
 - [ ] Phase 3 Rest: Portal-Wizard (Vue/Token/Companion), PDF-Generator + Rück-Import, Datei-Anhänge, International-Felder (E-16)
 - [ ] Phase 5 Gros: vollständige VK-Cascade (8 Stufen, 3 Gross-ups), N/E/A/S, Phasen/Manpower, Commission/WHT/Einfuhrzoll/Financing/Buyback/AfA-PMT, Kalkulations-DocType + Kostenübersicht (13 Spalten), **Golden-Master gegen `03c6eb4dfc`** (braucht Phase-2-Daten 🔒)
