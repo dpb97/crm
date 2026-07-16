@@ -1,8 +1,7 @@
 name: LCS · CI
 
+# PR-only (Marco 16.07.2026): develop-Pushes lösten Dauerrot aus — s. ci.yml.
 on:
-  push:
-    branches: [main, develop]
   pull_request:
     branches: [main, develop]
 

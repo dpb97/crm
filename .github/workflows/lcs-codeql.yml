@@ -1,8 +1,7 @@
 name: LCS · CodeQL
 
+# PR-only + Wochenplan (Marco 16.07.2026): develop-Pushes lösten Dauerrot aus.
 on:
-  push:
-    branches: [main, develop]
   pull_request:
     branches: [main, develop]
   schedule:

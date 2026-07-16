@@ -4,11 +4,11 @@
 # requirements.txt) und lief nie grün. Tests laufen lokal in der Bench.
 name: CI
 
+# PR-only (Marco 16.07.2026): develop-Pushes lösten Dauerrot aus (Umgebung/
+# Secrets fehlen im Push-Kontext) — echte Signale gingen im Rauschen unter.
 on:
   pull_request:
     branches: [main, develop]
-  push:
-    branches: [develop]
 
 concurrency:
   group: ci-${{ github.ref }}

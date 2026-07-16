@@ -1,13 +1,7 @@
 name: LCS · Trivy Container Scan
 
+# PR-only (Marco 16.07.2026): develop-Pushes lösten Dauerrot aus — s. ci.yml.
 on:
-  push:
-    branches: [main, develop]
-    paths:
-      - "docker/**"
-      - "pyproject.toml"
-      - "lcs_integrations/pyproject.toml"
-      - ".github/workflows/lcs-trivy.yml"
   pull_request:
     branches: [main, develop]
     paths:
