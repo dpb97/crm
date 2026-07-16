@@ -66,12 +66,29 @@ Rolle: baut aus Oswalds Prototyp (read-only Referenz, **kein Code-Port**) das ka
   Theme-SSOT, Diff leer) — dort aber Dominiks Pflege.
 
 ## Offen — wird wirklich gebaut
-- [ ] **Merge-Nacharbeit PR #13 (aus `9150ff62`):** (a) sales_dashboard-Build
-  unter vite 5 verifizieren/reparieren (`yarn build:dashboard`; Dashboard-
-  Quellen `frontend/src/dashboard/`); (b) Theme-Token-Drift-Check des Fork-
-  Frontends gegen `pilanda_theme` (Schicht 1 byte-gleich?); (c) pyproject ↔
-  `[tool.bench.assets]`-Inkonsistenz = Repo-Schnitt-/Zwei-Apps-Entscheid
-  [Marco/Dominik — nicht von uns lösen].
+- [ ] **Merge-Nacharbeit PR #13 (aus `9150ff62`):**
+  - [x] (a) sales_dashboard-Build unter vite 5 VERIFIZIERT (16.07.):
+    `yarn build:dashboard` grün (89,55 kB JS + 18,91 kB CSS), Assets über
+    Bench 200, `/app/sales-dashboard` eingeloggt gerendert (4 Karten,
+    0 JS-Fehler). Engine-Tests 10/10 (pytest im Bench-Env; Achtung:
+    `bench run-tests` sammelt die pytest-Stil-Tests NICHT ein — 0 Tests,
+    Exit 0; nicht als grün fehlinterpretieren).
+  - [x] (b) Theme-Drift-Check (16.07.): `frontend/src/pp-tokens.css`
+    BYTE-GLEICH zum Theme-SSOT (SHA-256 identisch); pp-rev-report: alle
+    sales-Kopien aktuell (inkl. Dominiks PpCommandPalette@2/PpMap@1/
+    PpNetworkGraph@1); einziger Drift PpSidebar @4→@5 in der CRM-SPA
+    → auf @5 gehoben (byte-gleiche Theme-Kopie; @5 = E8 „bald"-Badge raus;
+    Wrapper PilandaSidebar nutzt kein Badge/Status-Markup).
+  - [ ] (c) pyproject ↔ `[tool.bench.assets]`-Inkonsistenz = Repo-Schnitt-/
+    Zwei-Apps-Entscheid [Marco/Dominik — nicht von uns lösen]. Randnotizen
+    dazu: `frontend/` trägt yarn.lock (maßgeblich, Fork) UND unser altes
+    package-lock.json (stale, npm-Ära — Entfernung empfohlen, Marco-Freigabe
+    ausstehend); Fork-CI-Workflows (ci/lcs-ci/lcs-codeql/lcs-trivy) feuern
+    jetzt auf jeden develop-Push; GitHub meldet seit dem Merge 39
+    Dependabot-Funde (1 critical/14 high) aus der Fork-Dependency-Masse
+    [Dominiks Liste]; nackte Hex-Farben in Dominiks LCS-Komponenten
+    (OpportunityMatrix `#1E78C2`, ProjectDashboard Alt-Navy `#0B3A6F` u. a.)
+    statt `var(--pp-*)` — CI-Korrektur analog Scout = Marco-Entscheid.
 - [ ] **SO-Automatik spezifizieren (Master §6/E3, WICHTIG):** beim Statuswechsel → „Auftrag" automatisch verdeckter ERPNext Sales Order (1:1 aufs Projekt, nirgends in der Nav; „Aufträge"-Sicht = gefilterte Projektliste `q:status=Auftrag`). Zu klären: Verhältnis eigener Angebots-DocType ↔ ERPNext Quotation ↔ Sales Order; welches Feld speist die „Aufträge"-Filterliste (`Project.custom_sales_phase` vs. `Project.status`) — mit dem projectengineering-Ablauf-SSOT abstimmen. Detail-Spez gehört in diese App (`pilanda_sales`).
 - [ ] Phase 3 Rest: Portal-Wizard (Vue/Token/Companion), PDF-Generator + Rück-Import, Datei-Anhänge, International-Felder (E-16)
 - [ ] Phase 5 Gros: vollständige VK-Cascade (8 Stufen, 3 Gross-ups), N/E/A/S, Phasen/Manpower, Commission/WHT/Einfuhrzoll/Financing/Buyback/AfA-PMT, Kalkulations-DocType + Kostenübersicht (13 Spalten), **Golden-Master gegen `03c6eb4dfc`** (braucht Phase-2-Daten 🔒)

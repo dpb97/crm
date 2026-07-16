@@ -1,4 +1,4 @@
-<!-- PP_REV: PpSidebar@4 -->
+<!-- PP_REV: PpSidebar@5 -->
 <!--
   PpSidebar.vue — vollständige App-Navigations-Sidebar (SSOT-Baustein).
 
@@ -15,6 +15,11 @@
       Minimum → klappt zu).
     · COLLAPSE AUF ICON-RAIL — Klick auf den Knopf; im Collapsed-Zustand bleibt
       der Knopf erreichbar (schmale Rail, nur Icons, Tooltips via title).
+
+  @5 (Marco 15.07.2026): KEINE Status-Badges in der Navigation — das
+  „bald"-Badge im Modul-Dropdown ist entfernt. Zustand/Status gehört
+  ausschließlich in die Canvas (Status-Pille in der Überschrift) bzw. den
+  Inspektor; SSOT dafür ist die Klickdummy-README §7 („Pille im Canvas").
 
   Aufbau (Spez Marco 13.07.2026):
     KOPF   Dropdown-Trigger: aktives Modul mit Icon; Panel = Hauptmodule der
@@ -251,7 +256,6 @@ const itemTitle = (it) => it.n || it.label || "";
                       :aria-selected="m.id === activeId" @click="pickModule(m)">
                 <span class="pp-nav__ic"><component :is="resolveIcon(m)" /></span>
                 <span class="pp-nav-dd__item-name">{{ m.name }}</span>
-                <span v-if="m.status === 'soon'" class="pp-nav__badge">bald</span>
               </button>
             </template>
           </div>
@@ -498,19 +502,13 @@ const itemTitle = (it) => it.n || it.label || "";
   border-radius: var(--pp-radius-ui); background: color-mix(in oklab, var(--pp-text-primary) 5%, transparent); }
 .pp-sidebar__general .pp-nav__sep { background: color-mix(in oklab, var(--pp-text-primary) 9%, transparent); }
 
-/* Dropdown-Badge */
-.pp-nav__badge { flex: 0 0 auto; font-size: 9px; font-weight: var(--pp-weight-bold); text-transform: uppercase;
-  letter-spacing: .04em; padding: 1px 6px; border-radius: var(--pp-radius-full);
-  background: var(--pp-bg-hover); color: var(--pp-text-tertiary); }
-
 /* ---- Icon-Rail (collapsed) ---- */
 .pp-sidebar.is-collapsed .pp-nav-dd__trigger { justify-content: center; padding: var(--pp-space-2) 0; }
 .pp-sidebar.is-collapsed .pp-nav__item,
 .pp-sidebar.is-collapsed .pp-nav__item--parent { justify-content: center; padding-left: 0; padding-right: 0; gap: 0; }
 .pp-sidebar.is-collapsed .pp-nav__label,
 .pp-sidebar.is-collapsed .pp-nav__count,
-.pp-sidebar.is-collapsed .pp-nav__chev,
-.pp-sidebar.is-collapsed .pp-nav__badge { display: none; }
+.pp-sidebar.is-collapsed .pp-nav__chev { display: none; }
 .pp-sidebar.is-collapsed .pp-nav__row { justify-content: center; }
 .pp-sidebar.is-collapsed .pp-nav__children { display: none; }        /* Rail zeigt nur Ebene 1 */
 .pp-sidebar.is-collapsed .pp-nav__item.is-active::before { left: 0; }
