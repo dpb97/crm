@@ -46,6 +46,21 @@ Rolle: baut aus Oswalds Prototyp (read-only Referenz, **kein Code-Port**) das ka
   LCS-Kontext stehen jetzt in `README.LCS.md` (Kopfblock); App-Wahrheit bleibt
   HIER. Volle README-Wiederherstellung nur per Marco-Entscheid (Konfliktkosten
   bei Dominiks Upstream-Merges).
+- **lcs_integrations in der Bench INSTALLIERT (Marco-GO 16.07.2026 nach
+  Fehlbefund-Screenshot):** Die App enthält das komplette CRM-Datenmodell
+  (30 DocTypes: LCS Project, Opportunity-Matrix, Offer, Funnel-Phasen,
+  Segmente/Territories) — ohne sie war „Vertriebsprojekte" tot („DocType
+  LCS Project nicht gefunden") und jede CRM-Seite warf den
+  get_user_preferences-Fehler. Install: Symlink `apps/lcs_integrations`
+  → Repo-Unterordner, pip -e, apps.txt, install-app + Patches.
+  **Zwei Stolpersteine dokumentiert:** (a) Redis-Modul-Cache hielt
+  `lcs_integrations: []` → DocType-Sync lief leer durch und ALLE Patches
+  wurden als „ausgeführt" verbucht ohne zu wirken — Fix: clear-cache,
+  sync_for, Patches erneut (26/26 OK); (b) CONTAINER-LOKAL wie die
+  crm-App: nach Recreate Symlink+apps.txt+pip -e neu setzen, dann
+  clear-cache VOR migrate. Verifiziert: /crm/projects,/network,
+  /organizations,/contacts,/forecasting eingeloggt = 0 Fehlerboxen,
+  0 JS-Fehler.
 - **CRM-Laufzeit in der Dev-Bench (16.07.2026, für Audit + Nav):** die App
   `crm` ist CONTAINER-LOKAL installiert (Frontend gebaut, Assets-Symlink
   `sites/assets/crm`, migrate grün) — überlebt Container-Restart, NICHT
