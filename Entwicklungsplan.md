@@ -5,6 +5,18 @@
 Rolle: baut aus Oswalds Prototyp (read-only Referenz, **kein Code-Port**) das kaufmännische Angebotswesen für Seilkran-Projekte nach: Questionnaire/Lastenheft → Kalkulation → Angebot (+ Pricing Sheet/LV, Pflichtenheft). Im Vertriebsschnitt der Nav (Master §6) liefert die App vor allem **„Projekte ▸ Lastenheft" + „Angebote ▸ Varianten"**; der CRM-Teil erscheint dort als eigener Bereich **„Netzwerk"** (Kunden/Kontakte/Agenten/Partner). **CRM-SPA = Frappe CRM App `/crm`** (Owner Dominik; sein CRM-Fork liegt seit **PR #13 (16.07.2026) GEMERGT auf `develop`** — s. Entscheid unten); die LCS-Rücklink-Logik liegt im Python-Subpackage `pilanda_sales/crm/` (nicht zu verwechseln mit dem Top-Level-Fork-Paket `crm/`) — Optik/UX baut das Theme.
 
 ## Bindende Entscheide
+- **VERTRIEB-INTEGRATION (Marco 16.07.2026, nach PR #13) — Zielbild:**
+  EIN Modul Vertrieb in der Pilanda-Shell, EINE App `pilanda_sales` — keine
+  zwei App-Welten. (1) **Backend = Dominiks CRM-Funktionen** (Deal=Projekt,
+  Leads, Outlook, FX, Opportunity-Matrix): wir nutzen seine bereits
+  aufbereiteten Pages oder bauen die Pages — Datenschicht bleibt seine.
+  (2) **Struktur übernehmen wir von Dominik** (Sub-Pages: Pilot, Projekte,
+  Netzwerk, Kunden, …) und **ergänzen eigene Punkte**, wo er noch nichts
+  gebaut hat. (3) **UI IMMER aus `pilanda_theme`** (Pp*-Kopien nach
+  Copy-Modell + Token-CSS) — keine Fremd-Optik, keine Neubauten neben dem
+  Theme. (4) **salesbot/Pilot wird als eigene Page „Pilot" im Modul
+  Vertrieb eingebunden.** Alles zusammengeführt auf einem sauberen
+  develop, in der Bench lauffähig (Wahrheit = E2E).
 - **CRM-Fork liegt AUF develop (PR #13, Dominik, 16.07.2026)** — ersetzt den
   Vormittags-Entscheid „Fork-Branch ignorieren" (der Fork ist nicht mehr
   eigenständig): Dominik hat unser develop in `feature/unify-deal-project`
