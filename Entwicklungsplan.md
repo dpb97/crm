@@ -61,6 +61,18 @@ Rolle: baut aus Oswalds Prototyp (read-only Referenz, **kein Code-Port**) das ka
   clear-cache VOR migrate. Verifiziert: /crm/projects,/network,
   /organizations,/contacts,/forecasting eingeloggt = 0 Fehlerboxen,
   0 JS-Fehler.
+- **CRM-Bestandsdaten-Übernahme (Marco-Befund „nur ein Datensatz sichtbar",
+  16.07.2026 abends):** Dominiks CRM ist eine EIGENE Datenwelt und startete
+  leer — der ERPNext-Bestand (8 Leads, 22 Customers, 38 Contacts) war in den
+  CRM-Sub-Pages unsichtbar; zusätzlich fehlten die crm-eigenen Standard-Seeds
+  (CRM Lead/Deal Status = 0 → auch Neuanlage unmöglich; gleiche Wurzel wie
+  der Cache-Stolperstein). Fix: (a) `crm.install.after_install()` nachgeholt
+  (7+7 Statuses + Layouts/Quellen), (b) NEU `pilanda_sales/crm/backfill.py`
+  = einmalige idempotente Übernahme Customer→CRM Organization (12; Upsert
+  per Name, kein Echo mit Dominiks Rück-Sync) + Lead→CRM Lead (8; Idempotenz
+  über E-Mail/Name+Firma). 2. Lauf verifiziert 0 neu. Opportunity→CRM Deal
+  BEWUSST nicht (Funnel-Phasen-/LCS-Project-Automatik = Dominik/E3).
+  E2E: leads/organizations/contacts zeigen die Daten.
 - **CRM-Laufzeit in der Dev-Bench (16.07.2026, für Audit + Nav):** die App
   `crm` ist CONTAINER-LOKAL installiert (Frontend gebaut, Assets-Symlink
   `sites/assets/crm`, migrate grün) — überlebt Container-Restart, NICHT
