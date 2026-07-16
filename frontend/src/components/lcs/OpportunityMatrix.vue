@@ -98,7 +98,7 @@
             :cy="center"
             :r="radius * level.val"
             fill="none"
-            :stroke="level.val === 0.5 ? '#d1d5db' : '#e5e7eb'"
+            :style="{ stroke: level.val === 0.5 ? 'var(--pp-border-default)' : 'var(--pp-border-subtle)' }"
             :stroke-width="level.val === 0.5 ? 1.5 : 1"
             :stroke-dasharray="level.val === 0.5 ? '4 2' : 'none'"
           />
@@ -120,7 +120,7 @@
             :y1="center"
             :x2="axisPoint(i, 1).x"
             :y2="axisPoint(i, 1).y"
-            stroke="#e5e7eb"
+            style="stroke: var(--pp-border-subtle)"
             stroke-width="1"
           />
           <!-- Axis labels — H8: Reduce memory -->
@@ -138,8 +138,7 @@
           <!-- Data polygon — H3: Visible feedback -->
           <polygon
             :points="polygonPoints"
-            fill="rgba(30, 120, 194, 0.12)"
-            stroke="#1E78C2"
+            style="fill: rgb(var(--pp-brand-primary-rgb) / 0.12); stroke: var(--pp-brand-primary)"
             stroke-width="2.5"
             stroke-linejoin="round"
           />
@@ -150,7 +149,7 @@
             :cx="dataPoint(i).x"
             :cy="dataPoint(i).y"
             r="5"
-            fill="#1E78C2"
+            style="fill: var(--pp-brand-primary)"
             stroke="white"
             stroke-width="2.5"
             class="drop-shadow-sm"
@@ -293,13 +292,16 @@ const activityBorderClass = computed(() => {
   return 'border-sky-100 bg-sky-50/30'
 })
 
-// Score color: red → amber → green gradient
+// Score color: Ampel-Semantik aus den semantischen Theme-States (nur
+// style-Binding auf :style="{ color }" -> var() loest zuverlaessig auf).
+// pp-tokens hat 3 State-Toene; die Zwischenstufe (0.6-0.8) teilt sich
+// bewusst den success-Ton mit >=0.8 (Verzweigung unveraendert).
 const scoreColor = computed(() => {
   const pct = weightedScore.value / 100
-  if (pct < 0.4) return '#DC2626'
-  if (pct < 0.6) return '#D97706'
-  if (pct < 0.8) return '#65A30D'
-  return '#16A34A'
+  if (pct < 0.4) return 'var(--pp-state-danger)'
+  if (pct < 0.6) return 'var(--pp-state-warning)'
+  if (pct < 0.8) return 'var(--pp-state-success)'
+  return 'var(--pp-state-success)'
 })
 
 // H1: Visibility — value box color indicates quality

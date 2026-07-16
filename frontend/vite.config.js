@@ -54,7 +54,7 @@ export default defineConfig(async ({ mode }) => {
           description:
             'LCS Cable Cranes Sales CRM — leads, deals, projects, market-split territories.',
           background_color: '#FFFFFF',
-          theme_color: '#0B3A6F',
+          theme_color: '#008B8B', // Brand-Cyan (Literal zwingend: PWA-Manifest kann kein var(); SSOT = pp-tokens --pp-brand-primary / --pp-brand-700)
           lang: 'de',
           orientation: 'portrait',
           categories: ['business', 'productivity'],

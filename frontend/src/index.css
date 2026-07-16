@@ -17,8 +17,8 @@
      follows the Pilanda brand from one place. Pilanda dark-cyan = #008B8B.
      Set back to `11 58 111` for the legacy LCS navy. */
   --pp-brand-primary-rgb: 0 139 139;
-  --lcs-primary:    rgb(var(--pp-brand-primary-rgb, 11 58 111));
-  --lcs-secondary:  #1E78C2;   /* link blue */
+  --lcs-primary:    rgb(var(--pp-brand-primary-rgb, 0 139 139));
+  --lcs-secondary:  var(--pp-brand-primary);   /* link/secondary accent -> Brand-Cyan (SSOT pp-tokens --pp-brand-primary; vormals Fremd-Blau) */
   --lcs-accent:     #F5A524;   /* signal yellow */
 
   /* Semantic */

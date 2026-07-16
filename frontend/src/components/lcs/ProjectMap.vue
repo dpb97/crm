@@ -70,6 +70,11 @@ const loading = ref(true)
 let map = null
 let markers = []
 
+// Diverging Phasen-Palette (unterscheidbare Datentoene, bewusst als Hex).
+// Alle Werte landen in Style-Bindings bzw. inline-style-HTML-Strings der
+// Leaflet-Marker/Popups (DOM-Elemente) -> var() loest hier auf, daher der
+// Marken-Ton 'Execution' als var() auf Brand-Cyan (SSOT --pp-brand-primary;
+// vormals Alt-Navy).
 const phaseColors = {
   Qualified: '#0ea5e9',
   Budget: '#14b8a6',
@@ -77,7 +82,7 @@ const phaseColors = {
   Offer: '#f59e0b',
   Negotiation: '#f97316',
   Won: '#22c55e',
-  Execution: '#0B3A6F',
+  Execution: 'var(--pp-brand-primary)',
   Completed: '#6b7280',
   Lost: '#ef4444',
 }
@@ -150,23 +155,23 @@ function renderMarkers(L) {
 
     // H3: Feedback — rich popup with clear information hierarchy
     const valueStr = p.estimated_value
-      ? `<div style="margin-top:6px;font-weight:600;color:#0B3A6F">&euro; ${Number(p.estimated_value).toLocaleString('de-DE')}</div>`
+      ? `<div style="margin-top:6px;font-weight:600;color:var(--pp-brand-primary)">&euro; ${Number(p.estimated_value).toLocaleString('de-DE')}</div>`
       : ''
     const probStr = p.probability
-      ? `<div style="margin-top:2px;font-size:11px;color:#666">Probability: ${Math.round(p.probability)}%</div>`
+      ? `<div style="margin-top:2px;font-size:11px;color:var(--pp-text-secondary)">Probability: ${Math.round(p.probability)}%</div>`
       : ''
 
     marker.bindPopup(`
       <div style="font-family:Inter,system-ui,sans-serif;min-width:160px;padding:4px 0">
-        <div style="font-weight:600;font-size:13px;color:#111">${p.project_name || ''}</div>
-        <div style="font-size:11px;color:#888;margin-top:2px">${p.project_number || ''} &middot; ${p.project_type || ''}</div>
+        <div style="font-weight:600;font-size:13px;color:var(--pp-text-primary)">${p.project_name || ''}</div>
+        <div style="font-size:11px;color:var(--pp-text-tertiary);margin-top:2px">${p.project_number || ''} &middot; ${p.project_type || ''}</div>
         <div style="margin-top:6px;display:flex;align-items:center;gap:4px">
           <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${color}"></span>
-          <span style="font-size:12px;color:#444">${p.phase || ''}</span>
+          <span style="font-size:12px;color:var(--pp-text-secondary)">${p.phase || ''}</span>
         </div>
         ${valueStr}
         ${probStr}
-        <a href="/crm/projects/${p.name}" style="display:block;margin-top:8px;font-size:11px;color:#1E78C2;text-decoration:none;font-weight:500">${__('Open project')} &rarr;</a>
+        <a href="/crm/projects/${p.name}" style="display:block;margin-top:8px;font-size:11px;color:var(--pp-text-link);text-decoration:none;font-weight:500">${__('Open project')} &rarr;</a>
       </div>
     `, { maxWidth: 240 })
 

@@ -55,8 +55,12 @@ export default {
           // space-separiertes Triple genau fuer dieses Tailwind-Muster —
           // Opacity-Modifier (bg-lcs-primary/10) funktionieren damit UND die
           // Farbe folgt dem Theme ohne Rebuild. Fallback = LCS-Logo-Blau.
-          primary:   'rgb(var(--pp-brand-primary-rgb, 11 58 111) / <alpha-value>)',
-          secondary: '#1E78C2',
+          primary:   'rgb(var(--pp-brand-primary-rgb, 0 139 139) / <alpha-value>)',
+          // Secondary folgt jetzt DEMSELBEN Brand-Cyan wie primary (Marken-
+          // Konsolidierung: Alt-Fremdblau raus). Gleiches rgb(var(--…))-Muster,
+          // damit Opacity-Modifier (border-lcs-secondary/60) weiter greifen und
+          // die Farbe dem Theme (inkl. Dark) ohne Rebuild folgt.
+          secondary: 'rgb(var(--pp-brand-primary-rgb, 0 139 139) / <alpha-value>)',
           accent:    '#F5A524',
           success:   '#16A34A',
           warning:   '#D97706',
@@ -72,7 +76,7 @@ export default {
       // Soft elevation matching LCS card aesthetic
       boxShadow: {
         'lcs-card': '0 1px 2px 0 rgb(0 0 0 / 0.03), 0 1px 1px 0 rgb(0 0 0 / 0.02)',
-        'lcs-card-hover': '0 4px 12px 0 rgb(11 58 111 / 0.08)',
+        'lcs-card-hover': '0 4px 12px 0 rgb(var(--pp-brand-primary-rgb, 0 139 139) / 0.08)',
       },
     },
   },

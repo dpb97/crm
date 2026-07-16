@@ -42,7 +42,7 @@
             v-for="(e, i) in companyEdgeLines"
             :key="'c' + i"
             :x1="e.x1" :y1="e.y1" :x2="e.x2" :y2="e.y2"
-            stroke="#1E78C2"
+            style="stroke: var(--pp-brand-primary)"
             :stroke-width="Math.min(5, 2 + e.weight)"
             stroke-opacity="0.55"
           />
@@ -61,12 +61,12 @@
         <!-- nodes -->
         <g v-for="n in positioned" :key="n.id" class="cursor-pointer" @click="open(n)">
           <template v-if="n.type === 'company'">
-            <circle :cx="n.x" :cy="n.y" :r="companyR(n)" fill="#0B3A6F" />
+            <circle :cx="n.x" :cy="n.y" :r="companyR(n)" style="fill: var(--pp-brand-primary)" />
             <text :x="n.x" :y="n.y + 4" text-anchor="middle" class="fill-white text-[13px] font-semibold" style="pointer-events:none">{{ short(n.label) }}</text>
             <text :x="n.x" :y="n.y + companyR(n) + 14" text-anchor="middle" class="fill-gray-700 text-[11px] font-medium" style="pointer-events:none">{{ n.label }}</text>
           </template>
           <template v-else>
-            <circle :cx="n.x" :cy="n.y" r="6" fill="#fff" stroke="#1E78C2" stroke-width="2" />
+            <circle :cx="n.x" :cy="n.y" r="6" fill="#fff" style="stroke: var(--pp-brand-primary)" stroke-width="2" />
             <text :x="n.x" :y="n.y - 9" text-anchor="middle" class="fill-gray-600 text-[10px]" style="pointer-events:none">{{ n.label }}</text>
           </template>
         </g>

@@ -118,7 +118,7 @@
         </h3>
         <div class="flex items-center justify-center py-4">
           <svg viewBox="0 0 200 200" class="h-44 w-44">
-            <circle cx="100" cy="100" r="75" fill="none" stroke="#f3f4f6" stroke-width="28" />
+            <circle cx="100" cy="100" r="75" fill="none" style="stroke: var(--pp-border-subtle)" stroke-width="28" />
             <circle
               v-for="segment in typeSegments"
               :key="segment.type"
@@ -213,6 +213,11 @@ const phasePipeline = computed(() => {
   }).filter((p) => p.count > 0) // H8: Only show phases with data
 })
 
+// Diverging Phasen-Palette (unterscheidbare Datentoene, bewusst als Hex):
+// die Werte werden fuer den Balken mit einem Alpha-Suffix ('+40') verkettet
+// und als SVG-:stroke-Attribut gesetzt -> var()/oklch sind dort NICHT
+// verwendbar. 'Execution' ist der Marken-Ton = Brand-Cyan (SSOT: pp-tokens
+// --pp-brand-primary / --pp-brand-700 = #008B8B); vormals Alt-Navy.
 const phaseColorMap = {
   Qualified: '#0ea5e9',
   Budget: '#14b8a6',
@@ -220,7 +225,7 @@ const phaseColorMap = {
   Offer: '#f59e0b',
   Negotiation: '#f97316',
   Won: '#22c55e',
-  Execution: '#0B3A6F',
+  Execution: '#008B8B',
   Completed: '#6b7280',
   Lost: '#ef4444',
 }

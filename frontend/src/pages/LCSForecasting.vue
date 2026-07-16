@@ -318,8 +318,12 @@ const sourceData = computed(() => sourceResource.data || [])
 const sourceTotal = computed(() => sourceData.value.reduce((s, r) => s + (r.value || 0), 0))
 const circumference = 2 * Math.PI * 75
 
+// Diverging Quellen-Palette (unterscheidbare Datentoene, bewusst als Hex):
+// die Werte werden als SVG-:stroke-Attribut des Donut gesetzt -> var() loest
+// dort NICHT auf. 'Direct' ist der Marken-Ton = Brand-Cyan (SSOT: pp-tokens
+// --pp-brand-primary / --pp-brand-700 = #008B8B); vormals Fremd-Blau.
 const sourceColorMap = {
-  Direct: '#1E78C2', Referral: '#10b981', Website: '#0ea5e9', 'Trade Fair': '#f59e0b',
+  Direct: '#008B8B', Referral: '#10b981', Website: '#0ea5e9', 'Trade Fair': '#f59e0b',
   Partner: '#a855f7', 'Email Campaign': '#ec4899', 'Cold Call': '#6b7280',
   'Existing Customer': '#16a34a', Other: '#94a3b8',
 }

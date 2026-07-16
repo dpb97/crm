@@ -128,7 +128,7 @@ async function open(e) {
   height: auto;
 }
 .email-body :deep(a) {
-  color: var(--ink-blue-600, #2563eb);
+  color: var(--pp-text-link);
   text-decoration: underline;
   word-break: break-word;
 }
