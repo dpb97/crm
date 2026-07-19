@@ -1,303 +1,285 @@
 <!--
-  LCSQuickNote
-  ============
-  A frictionless capture page for voice / typed notes. The user can:
-  1. Speak or type a note
-  2. Click "Analyze" → backend ranks LCS Projects by match score,
-     returns top candidates
-  3. Auto-dispatched if one candidate is clearly better than the
-     rest (score >= 0.8 and not tied), otherwise user picks from
-     suggestions
-  4. Manual fallback: searchable dropdown at the bottom for any
-     project (also usable when matching finds no good candidate)
+  LCSQuickNote — Schnellnotizen (V2, Showcase #9 „Speak-or-Type").
+  ============================================================
+  Reibungsloses Erfassen von Notizen — tippen ODER sprechen — mit dem
+  Theme-Baustein PpSpeakOrType. Zwei echte Datenwege, beide produktiv:
 
-  Keyboard: Ctrl+Shift+V toggles voice input; Ctrl+Enter dispatches.
+    · Text  → lcs_integrations.notes.api.dispatch_note
+              (matcht die Notiz auf ein LCS-Projekt und legt sie als Kommentar
+               an; bei klarem Treffer automatisch, sonst Vorschläge / manuelle
+               Wahl).
+    · Audio → upload_file + lcs_integrations.notes.api.retranscribe_audio
+              (lädt die Aufnahme hoch und reiht einen „LCS Audio Transcription
+               Job" ein; der Hermes-Agent transkribiert serverseitig nach).
+
+  Bewusste Umstellung ggü. V1 (Marco, Welle 2): die frühere Live-Transkription
+  im Browser (VoiceInput/WebSpeech) wird durch PpSpeakOrType + serverseitige
+  Transkription ersetzt — PpSpeakOrType nimmt nur Audio auf und transkribiert
+  NICHT selbst. Die Sprachauswahl (deckt der Baustein nicht ab) bleibt erhalten
+  und steuert die Sprache des Transkriptions-Jobs.
 -->
 
 <template>
-  <LayoutHeader>
-    <template #left-header>
-      <Breadcrumbs :items="[{ label: __('Quick Note'), route: { name: 'LCS Quick Note' } }]" />
-    </template>
-    <template #right-header>
-      <div class="flex items-center gap-2 text-xs text-gray-500">
-        <kbd class="rounded border bg-white px-1.5 py-0.5 font-mono">Ctrl+Enter</kbd>
-        {{ __('to dispatch') }}
-      </div>
-    </template>
-  </LayoutHeader>
+  <div class="flex h-full flex-col">
+    <LayoutHeader>
+      <template #left-header>
+        <Breadcrumbs :items="[{ label: 'Schnellnotiz', route: { name: 'LCS Quick Note' } }]" />
+      </template>
+    </LayoutHeader>
 
-  <div class="flex-1 overflow-y-auto p-5">
-    <div class="mx-auto max-w-3xl space-y-5">
-
-      <!-- Intro -->
-      <div class="rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900">
-        <div class="flex items-start gap-2">
-          <FeatherIcon name="mic" class="mt-0.5 h-4 w-4 shrink-0" />
-          <div>
-            <div class="font-semibold">{{ __('Speak or type — we match it to the right project automatically.') }}</div>
-            <div class="mt-0.5 text-xs text-blue-700">
-              {{ __('Mention a project number, name, customer, or location and the system picks the best fit. You can always assign manually.') }}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Text area -->
-      <div class="relative">
-        <textarea
-          v-model="noteText"
-          ref="noteInput"
-          class="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 pr-14 text-sm text-gray-900 shadow-sm focus:border-lcs-secondary focus:ring-1 focus:ring-lcs-secondary"
-          rows="8"
-          :placeholder="__('e.g. Heute Call mit Techint Chile zu SB-SADDN, Liefertermin 30.06. bestätigt')"
-          @keydown.ctrl.enter.prevent="analyze"
-          @keydown.meta.enter.prevent="analyze"
-          @input="onInput"
+    <div class="crms">
+      <div class="crms-inner">
+        <PpPageHead
+          eyebrow="Vertrieb / CRM"
+          title="Schnellnotiz"
+          :subtitle="`Notiz tippen oder sprechen · ${notes.length} ${notes.length === 1 ? 'Notiz' : 'Notizen'} in dieser Sitzung`"
         />
-        <div class="absolute right-3 top-3">
-          <VoiceInput
-            :hotkey="true"
-            :record-audio="true"
-            @transcript="onVoiceTranscript"
-            @done="onVoiceDone"
-            @audio-blob="onAudioBlob"
-          />
-        </div>
-        <!-- Audio captured indicator -->
-        <div
-          v-if="capturedAudio"
-          class="absolute bottom-2 right-3 flex items-center gap-1.5 rounded-full bg-purple-50 border border-purple-200 px-2 py-0.5 text-[10px] font-medium text-purple-700"
-          :title="__('Audio saved — can be re-transcribed later with better AI')"
-        >
-          <FeatherIcon name="headphones" class="h-2.5 w-2.5" />
-          {{ capturedAudio.sizeKb }} KB {{ capturedAudio.mime.split('/')[1] }}
-          <button class="ml-1 text-purple-500 hover:text-red-500" @click="capturedAudio = null" :title="__('Discard audio')">×</button>
-        </div>
-        <!-- Character counter -->
-        <div class="mt-1 flex items-center justify-between text-[11px] text-gray-400">
-          <span>{{ noteText.length }} {{ __('characters') }}</span>
-          <span v-if="noteText.trim()">
-            {{ __('Press') }}
-            <kbd class="rounded border bg-white px-1 font-mono">Ctrl+Shift+V</kbd>
-            {{ __('for voice') }}
-          </span>
-        </div>
-      </div>
 
-      <!-- Actions -->
-      <div class="flex items-center justify-between gap-2">
-        <div class="flex gap-2">
-          <Button
-            variant="solid"
-            :label="__('Analyze & Dispatch')"
-            iconLeft="target"
-            @click="analyze"
-            :loading="analyzing"
-            :disabled="!noteText.trim() || analyzing"
-          />
-          <Button
-            variant="ghost"
-            :label="__('Clear')"
-            iconLeft="x"
-            @click="reset"
-            :disabled="!noteText && !result"
-          />
-        </div>
-        <span v-if="lastDispatched" class="text-xs text-green-600">
-          <FeatherIcon name="check" class="inline h-3 w-3" />
-          {{ __('Saved to') }} {{ lastDispatched }}
-        </span>
-      </div>
-
-      <!-- Auto-dispatched banner -->
-      <div v-if="result && result.auto_dispatched" class="rounded-xl border border-green-200 bg-green-50 p-4">
-        <div class="flex items-start gap-3">
-          <FeatherIcon name="check-circle" class="mt-0.5 h-5 w-5 text-green-600" />
-          <div class="flex-1">
-            <div class="font-semibold text-green-900">
-              {{ __('Note saved — auto-matched to') }}
-              <router-link
-                :to="{ name: 'LCS Project', params: { id: result.target_project } }"
-                class="underline hover:text-green-700"
-              >
-                {{ result.target_project }}
-              </router-link>
-            </div>
-            <div class="mt-1 text-xs text-green-700">
-              {{ __('If this is wrong:') }}
-              <button @click="undoAndShowCandidates" class="font-medium underline">{{ __('reassign manually') }}</button>
-            </div>
+        <!-- Composer: PpSpeakOrType + Sprachauswahl (aus Alt-Seite erhalten) -->
+        <section class="crms-composer">
+          <div class="crms-lang">
+            <label class="crms-lang-cap" for="crms-lang">Sprache der Aufnahme</label>
+            <select id="crms-lang" v-model="language" class="crms-select">
+              <option v-for="l in LANGS" :key="l.value" :value="l.value">{{ l.label }}</option>
+            </select>
           </div>
-        </div>
-      </div>
-
-      <!-- Candidate suggestions -->
-      <div v-if="result && !result.auto_dispatched && result.candidates?.length" class="space-y-3">
-        <div class="text-xs font-semibold uppercase tracking-wide text-gray-500">
-          <FeatherIcon name="git-branch" class="mr-1 inline h-3 w-3" />
-          {{ __('Suggested projects') }}
-        </div>
-        <button
-          v-for="c in result.candidates"
-          :key="c.name"
-          class="group flex w-full items-start justify-between gap-3 rounded-xl border bg-white p-4 text-left transition hover:border-lcs-secondary hover:shadow-sm"
-          @click="dispatchToProject(c.name)"
-          :disabled="dispatching"
-        >
-          <div class="min-w-0 flex-1">
-            <div class="flex items-center gap-2">
-              <span class="font-semibold text-gray-900">{{ c.project_name }}</span>
-              <span :class="typeClass(c.project_type)" class="rounded-full px-1.5 py-0.5 text-[10px] font-bold">{{ c.project_type }}</span>
-            </div>
-            <div class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500">
-              <span class="font-mono">{{ c.project_number }}</span>
-              <span v-if="c.organization">· {{ c.organization }}</span>
-              <span v-if="c.country">· {{ c.country }}</span>
-              <span v-if="c.phase">· {{ c.phase }}</span>
-            </div>
-          </div>
-          <div class="flex flex-col items-end gap-1">
-            <span :class="confidenceClass(c.confidence)" class="rounded-full px-2 py-0.5 text-[10px] font-bold uppercase">
-              {{ confidenceLabel(c.confidence) }} · {{ Math.round(c.score * 100) }}%
-            </span>
-            <span class="text-[10px] text-gray-400 group-hover:text-lcs-primary">
-              {{ __('Click to assign') }} →
-            </span>
-          </div>
-        </button>
-      </div>
-
-      <!-- No candidates -->
-      <div v-if="result && !result.auto_dispatched && !result.candidates?.length" class="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-6 text-center">
-        <FeatherIcon name="search" class="mx-auto h-6 w-6 text-gray-400" />
-        <p class="mt-2 text-sm text-gray-600">{{ __('No project matched automatically.') }}</p>
-        <p class="mt-1 text-xs text-gray-400">{{ __('Pick one manually below.') }}</p>
-      </div>
-
-      <!-- Manual picker — always available -->
-      <div v-if="result" class="rounded-xl border bg-white p-4">
-        <div class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
-          <FeatherIcon name="edit-2" class="mr-1 inline h-3 w-3" />
-          {{ __('Pick manually') }}
-        </div>
-        <div class="relative">
-          <input
-            v-model="manualQuery"
-            type="search"
-            class="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-lcs-secondary focus:ring-1 focus:ring-lcs-secondary"
-            :placeholder="__('Search any project by number or name...')"
-            @input="onManualSearch"
+          <PpSpeakOrType
+            v-model="draft"
+            :disabled="busy"
+            placeholder="Schnellnotiz zum Projekt eintippen — Projektnummer, Name, Kunde oder Ort nennen. Oder Mikrofon für eine Sprachnotiz…"
+            @text="onText"
+            @audio="onAudio"
+            @error="onError"
           />
-          <div v-if="manualSearching" class="absolute right-3 top-2.5">
-            <div class="h-4 w-4 animate-spin rounded-full border-2 border-gray-200 border-t-lcs-secondary" />
-          </div>
-        </div>
+          <p class="crms-hint">
+            Getippte Notizen werden automatisch dem passenden Projekt zugeordnet. Sprachnotizen werden
+            hochgeladen und serverseitig transkribiert (Sprache: {{ langLabel }}) — die Zuordnung erfolgt danach.
+          </p>
+          <p v-if="lastError" class="crms-error" role="alert">
+            <FeatherIcon name="alert-triangle" class="crms-error-ico" />{{ lastError }}
+          </p>
+        </section>
 
-        <div v-if="manualResults.length" class="mt-2 max-h-60 overflow-y-auto rounded-md border">
-          <button
-            v-for="p in manualResults"
-            :key="p.name"
-            class="flex w-full items-start justify-between gap-2 border-b px-3 py-2 text-left hover:bg-blue-50"
-            @click="dispatchToProject(p.name)"
-            :disabled="dispatching"
-          >
-            <div class="min-w-0 flex-1">
-              <div class="text-sm font-medium text-gray-900">{{ p.project_name }}</div>
-              <div class="text-xs text-gray-500">
-                <span class="font-mono">{{ p.project_number }}</span>
-                <span v-if="p.organization"> · {{ p.organization }}</span>
+        <!-- Zuordnung wählen (wenn kein eindeutiger Treffer) -->
+        <section v-if="pending" class="crms-assign">
+          <div class="crms-assign-head">
+            <FeatherIcon name="git-branch" class="crms-assign-ico" />
+            <div class="crms-assign-titles">
+              <span class="crms-assign-title">Projekt zuordnen</span>
+              <span class="crms-assign-note">„{{ pending.text }}"</span>
+            </div>
+            <button type="button" class="crms-assign-x" aria-label="Verwerfen" @click="cancelPending"><FeatherIcon name="x" /></button>
+          </div>
+
+          <div v-if="candidates.length" class="crms-cands">
+            <span class="crms-cands-cap">Vorgeschlagene Projekte</span>
+            <button v-for="c in candidates" :key="c.name" type="button" class="crms-cand" :disabled="busy" @click="dispatchTo(c.name)">
+              <div class="crms-cand-main">
+                <span class="crms-cand-name">{{ c.project_name }}<span v-if="c.project_type" class="crms-type" :data-type="c.project_type">{{ c.project_type }}</span></span>
+                <span class="crms-cand-sub">
+                  <span class="crms-mono">{{ c.project_number }}</span>
+                  <template v-if="c.organization"> · {{ c.organization }}</template>
+                  <template v-if="c.country"> · {{ c.country }}</template>
+                </span>
               </div>
+              <span class="crms-cand-score" :data-conf="c.confidence">{{ confidenceLabel(c.confidence) }} · {{ Math.round(c.score * 100) }} %</span>
+            </button>
+          </div>
+          <p v-else class="crms-cands-empty">Kein Projekt automatisch erkannt — bitte unten manuell wählen.</p>
+
+          <div class="crms-manual">
+            <span class="crms-cands-cap">Manuell zuordnen</span>
+            <div class="crms-search">
+              <FeatherIcon name="search" class="crms-search-ico" />
+              <input v-model="manualQuery" type="search" class="crms-select crms-select--search"
+                     placeholder="Projekt nach Nummer oder Name suchen …" @input="onManualSearch" />
+              <span v-if="manualSearching" class="crms-spin" />
             </div>
-            <span :class="typeClass(p.project_type)" class="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold">
-              {{ p.project_type }}
-            </span>
-          </button>
-        </div>
-        <div v-else-if="manualQuery.length >= 2 && !manualSearching" class="mt-2 rounded-md bg-gray-50 p-3 text-center text-xs text-gray-500">
-          {{ __('No matching projects.') }}
-        </div>
+            <div v-if="manualResults.length" class="crms-manual-list">
+              <button v-for="p in manualResults" :key="p.name" type="button" class="crms-cand" :disabled="busy" @click="dispatchTo(p.name)">
+                <div class="crms-cand-main">
+                  <span class="crms-cand-name">{{ p.project_name }}<span v-if="p.project_type" class="crms-type" :data-type="p.project_type">{{ p.project_type }}</span></span>
+                  <span class="crms-cand-sub"><span class="crms-mono">{{ p.project_number }}</span><template v-if="p.organization"> · {{ p.organization }}</template></span>
+                </div>
+              </button>
+            </div>
+            <p v-else-if="manualQuery.length >= 2 && !manualSearching" class="crms-cands-empty">Keine passenden Projekte.</p>
+          </div>
+        </section>
+
+        <!-- Abgelegte Notizen (Sitzung) -->
+        <section class="crms-list-wrap">
+          <h3 class="crms-list-title">Abgelegte Notizen</h3>
+          <ol v-if="notes.length" class="crms-list">
+            <li v-for="n in notes" :key="n.id" class="crms-note" :class="'is-' + n.type">
+              <div class="crms-note-main">
+                <p v-if="n.type === 'text'" class="crms-note-text">{{ n.text }}</p>
+                <div v-else class="crms-note-audio">
+                  <audio class="crms-audio" :src="n.url" controls preload="metadata"></audio>
+                  <span class="crms-note-meta">Sprachnotiz · {{ n.seconds }} s · {{ n.kb }} kB · {{ n.mime }}</span>
+                </div>
+                <div class="crms-note-foot">
+                  <span v-if="n.target" class="crms-target">
+                    <FeatherIcon name="check" class="crms-target-ico" />
+                    <router-link :to="{ name: 'LCS Project', params: { id: n.target } }" class="crms-target-link">{{ n.target }}</router-link>
+                  </span>
+                  <span v-else-if="n.type === 'audio'" class="crms-queued">
+                    <FeatherIcon name="clock" class="crms-target-ico" />Transkription eingereiht<template v-if="n.job"> · {{ n.job }}</template>
+                  </span>
+                  <span class="crms-note-time">{{ n.time }}</span>
+                </div>
+              </div>
+              <button type="button" class="crms-del" aria-label="Notiz aus der Liste entfernen" title="Aus der Liste entfernen" @click="removeNote(n.id)">
+                <FeatherIcon name="trash-2" />
+              </button>
+            </li>
+          </ol>
+          <PpEmptyState
+            v-else
+            :icon="IconStickyNote"
+            title="Noch keine Notizen"
+            hint="Tippe eine Notiz und drücke Enter oder nimm eine Sprachnotiz auf."
+          />
+        </section>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { Breadcrumbs, Button, FeatherIcon, call, toast } from 'frappe-ui'
+import { ref, computed } from 'vue'
+import { Breadcrumbs, FeatherIcon, call, toast } from 'frappe-ui'
 import LayoutHeader from '@/components/LayoutHeader.vue'
-import VoiceInput from '@/components/lcs/VoiceInput.vue'
+import PpPageHead from '@/components/pp/PpPageHead.vue'
+import PpSpeakOrType from '@/components/pp/PpSpeakOrType.vue'
+import PpEmptyState from '@/components/pp/PpEmptyState.vue'
+import IconStickyNote from '~icons/lucide/sticky-note'
+import { useUserPreferences } from '@/composables/useUserPreferences'
 
-const router = useRouter()
-const noteText = ref('')
-const noteInput = ref(null)
-const result = ref(null)
-const analyzing = ref(false)
-const dispatching = ref(false)
-const lastDispatched = ref('')
-const capturedAudio = ref(null)  // { blob, mime, sizeKb }
-const uploadingAudio = ref(false)
+const LANGS = [
+  { label: 'Deutsch (DE)', value: 'de-DE' },
+  { label: 'English (US)', value: 'en-US' },
+  { label: 'Italiano (IT)', value: 'it-IT' },
+  { label: 'Français (FR)', value: 'fr-FR' },
+]
+const userPrefs = useUserPreferences()
+const language = ref(userPrefs.state.prefs.voice_input_language || 'de-DE')
+const langLabel = computed(() => LANGS.find((l) => l.value === language.value)?.label || language.value)
 
-// --- Voice input — append streamed transcript to noteText ---
-let voiceBaseline = ''
-function onVoiceTranscript({ final, interim }) {
-  if (final && voiceBaseline === '') voiceBaseline = noteText.value || ''
-  const separator = voiceBaseline ? (voiceBaseline.endsWith('\n') ? '' : '\n') : ''
-  noteText.value = voiceBaseline + separator + (final || '') + (interim || '')
-}
-function onVoiceDone() {
-  voiceBaseline = ''  // next recording starts fresh
-}
-function onInput() {
-  voiceBaseline = ''  // manual edit also resets the baseline
-}
+const draft = ref('')
+const busy = ref(false)
+const lastError = ref('')
 
-// Audio captured in parallel with the recognition. Kept in memory
-// until dispatch; then uploaded as a File and attached to the Comment.
-function onAudioBlob({ blob, mimeType }) {
-  if (!blob) return
-  capturedAudio.value = {
-    blob,
-    mime: mimeType || blob.type || 'audio/webm',
-    sizeKb: Math.round(blob.size / 1024),
-  }
+// Sitzungs-Notizliste (echte Aktionen: dispatch bzw. Transkriptions-Job).
+let seq = 0
+const notes = ref([])
+function now() {
+  return new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })
 }
 
-async function uploadAudioIfPresent() {
-  if (!capturedAudio.value) return null
-  uploadingAudio.value = true
+// Ausstehende Text-Notiz ohne eindeutigen Treffer (Vorschläge / manuelle Wahl).
+const pending = ref(null)          // { text }
+const candidates = ref([])
+
+function onError(msg) { lastError.value = msg }
+
+// --- Text-Weg: dispatch_note (Matching + Kommentar-Anlage) ------------------
+async function onText(text) {
+  lastError.value = ''
+  busy.value = true
   try {
-    const ext = _extensionFor(capturedAudio.value.mime)
-    const filename = `quicknote-${new Date().toISOString().replace(/[:.]/g, '-')}.${ext}`
-    const form = new FormData()
-    form.append('file', capturedAudio.value.blob, filename)
-    form.append('is_private', '1')
-    form.append('folder', 'Home/Attachments')
-    const csrf = window.csrf_token || ''
-    const res = await window.fetch('/api/method/upload_file', {
-      method: 'POST',
-      credentials: 'include',
-      headers: csrf ? { 'X-Frappe-CSRF-Token': csrf } : {},
-      body: form,
-    })
-    if (!res.ok) throw new Error(`Upload failed: ${res.status}`)
-    const payload = await res.json()
-    return payload?.message?.file_url || null
+    const res = await call('lcs_integrations.notes.api.dispatch_note', { text, dry_run: 0 })
+    const payload = res?.message || res || {}
+    if (payload.auto_dispatched && payload.target_project) {
+      addTextNote(text, payload.target_project)
+      toast.success('Notiz zugeordnet zu ' + payload.target_project)
+      clearPending()
+    } else {
+      pending.value = { text }
+      candidates.value = payload.candidates || []
+      manualQuery.value = ''
+      manualResults.value = []
+      if (!candidates.value.length) toast.info('Kein Projekt automatisch erkannt — bitte manuell wählen.')
+    }
   } catch (err) {
-    toast({
-      title: __('Audio upload failed'),
-      text: err.message || String(err),
-      icon: 'alert-circle',
-      iconClasses: 'text-amber-500',
-    })
-    return null
+    lastError.value = err?.message || 'Analyse fehlgeschlagen. Bitte erneut versuchen.'
   } finally {
-    uploadingAudio.value = false
+    busy.value = false
   }
 }
 
-function _extensionFor(mime) {
+async function dispatchTo(project) {
+  if (busy.value || !pending.value) return
+  const text = pending.value.text
+  busy.value = true
+  try {
+    await call('lcs_integrations.notes.api.dispatch_note', { text, project })
+    addTextNote(text, project)
+    toast.success('Notiz angehängt an ' + project)
+    clearPending()
+  } catch (err) {
+    lastError.value = err?.message || 'Konnte nicht speichern. Bitte erneut versuchen.'
+  } finally {
+    busy.value = false
+  }
+}
+
+function cancelPending() { clearPending() }
+function clearPending() {
+  pending.value = null
+  candidates.value = []
+  manualQuery.value = ''
+  manualResults.value = []
+}
+function addTextNote(text, target) {
+  notes.value.unshift({ id: 'n' + ++seq, type: 'text', text, target, time: now() })
+}
+
+// --- Audio-Weg: upload_file + retranscribe_audio (Transkriptions-Job) -------
+async function onAudio(a) {
+  lastError.value = ''
+  busy.value = true
+  try {
+    const fileUrl = await uploadAudio(a)
+    if (!fileUrl) return
+    let job = ''
+    try {
+      const res = await call('lcs_integrations.notes.api.retranscribe_audio', { file_url: fileUrl, language: language.value })
+      job = (res?.message || res || {}).job || ''
+    } catch (err) {
+      lastError.value = err?.message || 'Transkriptions-Job konnte nicht eingereiht werden.'
+    }
+    notes.value.unshift({
+      id: 'n' + ++seq, type: 'audio', url: a.url, mime: a.mimeType,
+      seconds: Math.round(a.ms / 1000), kb: Math.round(a.blob.size / 1024), job, time: now(),
+    })
+    if (job) toast.success('Sprachnotiz hochgeladen — Transkription eingereiht')
+  } catch (err) {
+    lastError.value = err?.message || 'Audio konnte nicht hochgeladen werden.'
+  } finally {
+    busy.value = false
+  }
+}
+
+async function uploadAudio(a) {
+  const ext = extensionFor(a.mimeType)
+  const filename = `quicknote-${new Date().toISOString().replace(/[:.]/g, '-')}.${ext}`
+  const form = new FormData()
+  form.append('file', a.blob, filename)
+  form.append('is_private', '1')
+  form.append('folder', 'Home/Attachments')
+  const csrf = window.csrf_token || ''
+  const res = await window.fetch('/api/method/upload_file', {
+    method: 'POST',
+    credentials: 'include',
+    headers: csrf ? { 'X-Frappe-CSRF-Token': csrf } : {},
+    body: form,
+  })
+  if (!res.ok) throw new Error(`Upload fehlgeschlagen: ${res.status}`)
+  const payload = await res.json()
+  return payload?.message?.file_url || null
+}
+function extensionFor(mime) {
   if (!mime) return 'webm'
   if (mime.includes('webm')) return 'webm'
   if (mime.includes('ogg')) return 'ogg'
@@ -306,139 +288,20 @@ function _extensionFor(mime) {
   return 'bin'
 }
 
-// --- Analyze + dispatch ---
-async function analyze() {
-  if (!noteText.value.trim() || analyzing.value) return
-  analyzing.value = true
-  try {
-    // Upload the captured audio first so its file_url can travel with
-    // the dispatch call — keeps the Comment + File tied to the right
-    // project in a single transaction server-side.
-    const audioUrl = await uploadAudioIfPresent()
-
-    const res = await call('lcs_integrations.notes.api.dispatch_note', {
-      text: noteText.value,
-      dry_run: 0,
-      audio_file_url: audioUrl || '',
-    })
-    result.value = res.message || res
-    if (result.value.auto_dispatched) {
-      lastDispatched.value = result.value.target_project
-      // Audio has been re-parented to the target project — clear the local
-      // blob so it doesn't get re-uploaded if the user dispatches another note
-      capturedAudio.value = null
-      toast({
-        title: __('Saved'),
-        text: `${__('Note matched to')} ${result.value.target_project}${audioUrl ? ' (+ audio)' : ''}`,
-        icon: 'check-circle',
-        iconClasses: 'text-green-500',
-      })
-    } else if (!result.value.candidates?.length) {
-      toast({
-        title: __('No match'),
-        text: __('Pick a project manually below.'),
-        icon: 'info',
-        iconClasses: 'text-blue-500',
-      })
-    }
-  } catch (err) {
-    toast({
-      title: __('Analysis failed'),
-      text: err.message || __('Please try again.'),
-      icon: 'alert-circle',
-      iconClasses: 'text-red-500',
-    })
-  } finally {
-    analyzing.value = false
-  }
-}
-
-async function dispatchToProject(projectName) {
-  if (dispatching.value || !noteText.value.trim()) return
-  dispatching.value = true
-  try {
-    // If audio is still sitting in memory (user picked manually before analyze),
-    // upload it now so it gets attached to the chosen project too.
-    const audioUrl = await uploadAudioIfPresent()
-
-    const res = await call('lcs_integrations.notes.api.dispatch_note', {
-      text: noteText.value,
-      project: projectName,
-      audio_file_url: audioUrl || '',
-    })
-    const payload = res.message || res
-    lastDispatched.value = payload.target_project || projectName
-    toast({
-      title: __('Saved'),
-      text: `${__('Note attached to')} ${lastDispatched.value}${audioUrl ? ' (+ audio)' : ''}`,
-      icon: 'check-circle',
-      iconClasses: 'text-green-500',
-    })
-    // Reset for the next note
-    noteText.value = ''
-    voiceBaseline = ''
-    result.value = null
-    capturedAudio.value = null
-    manualQuery.value = ''
-    manualResults.value = []
-    noteInput.value?.focus()
-  } catch (err) {
-    toast({
-      title: __('Could not save'),
-      text: err.message || __('Please try again.'),
-      icon: 'alert-circle',
-      iconClasses: 'text-red-500',
-    })
-  } finally {
-    dispatching.value = false
-  }
-}
-
-function reset() {
-  noteText.value = ''
-  result.value = null
-  voiceBaseline = ''
-  capturedAudio.value = null
-  manualQuery.value = ''
-  manualResults.value = []
-  lastDispatched.value = ''
-  noteInput.value?.focus()
-}
-
-// If auto-dispatch was wrong, let the user pick a different target
-function undoAndShowCandidates() {
-  // Keep the note text, clear the auto-dispatch state so user gets candidates + manual picker
-  if (result.value) {
-    result.value = { ...result.value, auto_dispatched: false, comment: null, target_project: null }
-  }
-  // Optionally: could also delete the already-created comment — left for a future "undo" flow
-}
-
-// --- Manual project picker ---
+// --- Manuelle Projektsuche --------------------------------------------------
 const manualQuery = ref('')
 const manualSearching = ref(false)
 const manualResults = ref([])
 let manualTimer = null
-
 function onManualSearch() {
   clearTimeout(manualTimer)
-  if (manualQuery.value.length < 2) {
-    manualResults.value = []
-    return
-  }
+  if (manualQuery.value.length < 2) { manualResults.value = []; return }
   manualSearching.value = true
   manualTimer = setTimeout(async () => {
     try {
-      // Dedicated search — hits name, number, abbr AND organization in one shot.
-      // Works past the filters-object serialization issue that broke
-      // the previous get_project_list-based implementation.
-      const res = await call('lcs_integrations.notes.api.search_projects', {
-        query: manualQuery.value,
-        limit: 20,
-      })
-      manualResults.value = res.message || res || []
-    } catch (err) {
-      console.warn('manual search failed:', err)
+      const res = await call('lcs_integrations.notes.api.search_projects', { query: manualQuery.value, limit: 20 })
+      manualResults.value = res?.message || res || []
+    } catch {
       manualResults.value = []
     } finally {
       manualSearching.value = false
@@ -446,35 +309,108 @@ function onManualSearch() {
   }, 250)
 }
 
-// --- Style helpers ---
-function typeClass(type) {
-  const m = {
-    SB: 'bg-blue-100 text-blue-800',
-    WI: 'bg-purple-100 text-purple-800',
-    LL: 'bg-emerald-100 text-emerald-800',
-    SK: 'bg-amber-100 text-amber-800',
-    Other: 'bg-gray-100 text-gray-700',
-  }
-  return m[type] || 'bg-gray-100 text-gray-700'
-}
-
-function confidenceClass(level) {
-  const m = {
-    high: 'bg-green-100 text-green-800',
-    medium: 'bg-amber-100 text-amber-800',
-    low: 'bg-gray-100 text-gray-600',
-    'very-low': 'bg-gray-100 text-gray-400',
-  }
-  return m[level] || 'bg-gray-100 text-gray-700'
+function removeNote(id) {
+  const n = notes.value.find((x) => x.id === id)
+  if (n && n.type === 'audio' && n.url) URL.revokeObjectURL(n.url)
+  notes.value = notes.value.filter((x) => x.id !== id)
 }
 
 function confidenceLabel(level) {
-  const m = {
-    high: __('High match'),
-    medium: __('Likely'),
-    low: __('Maybe'),
-    'very-low': __('Weak'),
-  }
-  return m[level] || level
+  return { high: 'Hoher Treffer', medium: 'Wahrscheinlich', low: 'Vielleicht', 'very-low': 'Schwach' }[level] || level || ''
 }
 </script>
+
+<style scoped>
+.crms { flex: 1; min-height: 0; overflow: auto; background: var(--pp-bg-base); }
+.crms-inner { max-width: 900px; margin: 0 auto; padding: var(--pp-space-6) var(--pp-space-6) var(--pp-space-12);
+  display: flex; flex-direction: column; gap: var(--pp-space-5); }
+
+.crms-composer { display: flex; flex-direction: column; gap: var(--pp-space-2); }
+.crms-lang { display: flex; flex-direction: column; gap: 3px; align-self: flex-start; }
+.crms-lang-cap { font-size: 10px; font-weight: var(--pp-weight-bold); letter-spacing: var(--pp-tracking-wide, 0.04em);
+  text-transform: uppercase; color: var(--pp-text-tertiary); }
+.crms-select { appearance: none; font-family: inherit; font-size: var(--pp-fs-13, 13px); color: var(--pp-text-primary);
+  padding: 6px var(--pp-space-3); border: 1px solid var(--pp-border-default); border-radius: var(--pp-radius-ui); background: var(--pp-bg-base); }
+.crms-select:focus { outline: none; border-color: var(--pp-brand-primary); box-shadow: 0 0 0 3px rgb(var(--pp-brand-primary-rgb) / 0.15); }
+.crms-hint { margin: 0; font-size: var(--pp-fs-12, 12px); color: var(--pp-text-tertiary); }
+.crms-error { margin: 0; display: flex; align-items: center; gap: 6px; font-size: var(--pp-fs-13, 13px); color: var(--pp-state-danger); }
+.crms-error-ico { width: 15px; height: 15px; flex-shrink: 0; }
+
+/* Zuordnungs-Panel */
+.crms-assign { display: flex; flex-direction: column; gap: var(--pp-space-3);
+  background: var(--pp-bg-surface); border: 1px solid var(--pp-border-default);
+  border-radius: var(--pp-radius-ui); box-shadow: var(--pp-shadow-xs); padding: var(--pp-space-4); }
+.crms-assign-head { display: flex; align-items: flex-start; gap: var(--pp-space-2); }
+.crms-assign-ico { width: 16px; height: 16px; color: var(--pp-brand-primary); flex-shrink: 0; margin-top: 2px; }
+.crms-assign-titles { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.crms-assign-title { font-size: var(--pp-fs-13, 13px); font-weight: var(--pp-weight-semibold); color: var(--pp-text-primary); }
+.crms-assign-note { font-size: var(--pp-fs-13, 13px); color: var(--pp-text-secondary); font-style: italic; }
+.crms-assign-x { appearance: none; cursor: pointer; flex-shrink: 0; display: inline-flex; padding: 4px; border: 0;
+  background: transparent; color: var(--pp-text-tertiary); border-radius: var(--pp-radius-ui); }
+.crms-assign-x:hover { color: var(--pp-state-danger); background: color-mix(in oklab, var(--pp-state-danger) 10%, transparent); }
+.crms-assign-x :deep(svg) { width: 15px; height: 15px; }
+
+.crms-cands, .crms-manual { display: flex; flex-direction: column; gap: var(--pp-space-2); }
+.crms-cands-cap { font-size: 10px; font-weight: var(--pp-weight-bold); letter-spacing: var(--pp-tracking-wide, 0.04em);
+  text-transform: uppercase; color: var(--pp-text-tertiary); }
+.crms-cands-empty { margin: 0; font-size: var(--pp-fs-13, 13px); color: var(--pp-text-secondary); }
+.crms-cand { appearance: none; cursor: pointer; text-align: left; font-family: inherit;
+  display: flex; align-items: center; justify-content: space-between; gap: var(--pp-space-3);
+  padding: var(--pp-space-2) var(--pp-space-3); background: var(--pp-bg-base);
+  border: 1px solid var(--pp-border-subtle); border-radius: var(--pp-radius-ui); }
+.crms-cand:hover:not(:disabled) { border-color: var(--pp-brand-primary); background: var(--pp-bg-hover); }
+.crms-cand:disabled { opacity: 0.6; cursor: not-allowed; }
+.crms-cand-main { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.crms-cand-name { display: flex; align-items: center; gap: 6px; font-size: var(--pp-fs-14, 14px); font-weight: var(--pp-weight-medium); color: var(--pp-text-primary); }
+.crms-cand-sub { font-size: var(--pp-fs-12, 12px); color: var(--pp-text-tertiary); }
+.crms-mono { font-variant-numeric: tabular-nums; }
+.crms-type { font-size: 10px; font-weight: var(--pp-weight-bold); padding: 1px 5px; border-radius: var(--pp-radius-ui);
+  background: var(--pp-bg-sunken); color: var(--pp-text-secondary); }
+.crms-cand-score { flex-shrink: 0; font-size: 11px; font-weight: var(--pp-weight-semibold); padding: 2px var(--pp-space-2);
+  border-radius: var(--pp-radius-full); background: var(--pp-bg-sunken); color: var(--pp-text-secondary); }
+.crms-cand-score[data-conf="high"]   { background: color-mix(in oklab, var(--pp-state-success) 16%, transparent); color: var(--pp-state-success); }
+.crms-cand-score[data-conf="medium"] { background: color-mix(in oklab, var(--pp-state-warning) 16%, transparent); color: var(--pp-state-warning); }
+
+.crms-search { position: relative; display: flex; align-items: center; }
+.crms-search-ico { position: absolute; left: 9px; width: 15px; height: 15px; color: var(--pp-text-tertiary); pointer-events: none; }
+.crms-select--search { width: 100%; padding-left: 30px; }
+.crms-spin { position: absolute; right: 10px; width: 14px; height: 14px; border-radius: 50%;
+  border: 2px solid var(--pp-border-default); border-top-color: var(--pp-brand-primary); animation: crms-spin 0.7s linear infinite; }
+@keyframes crms-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .crms-spin { animation: none; } }
+.crms-manual-list { display: flex; flex-direction: column; gap: var(--pp-space-2); max-height: 320px; overflow-y: auto; }
+
+/* Notizliste */
+.crms-list-wrap { display: flex; flex-direction: column; gap: var(--pp-space-3); }
+.crms-list-title { margin: 0; font-size: var(--pp-fs-12); font-weight: var(--pp-weight-bold);
+  letter-spacing: var(--pp-tracking-wide, 0.04em); text-transform: uppercase; color: var(--pp-text-tertiary); }
+.crms-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--pp-space-2); }
+.crms-note { display: flex; align-items: flex-start; gap: var(--pp-space-3);
+  background: var(--pp-bg-surface); border: 1px solid var(--pp-border-subtle);
+  border-radius: var(--pp-radius-ui); box-shadow: var(--pp-shadow-xs); padding: var(--pp-space-3) var(--pp-space-4); }
+.crms-note.is-audio { border-left: 2px solid var(--pp-state-success); }
+.crms-note.is-text { border-left: 2px solid var(--pp-brand-primary); }
+.crms-note-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.crms-note-text { margin: 0; font-size: var(--pp-fs-14); color: var(--pp-text-primary); line-height: var(--pp-lh-normal, 1.5); }
+.crms-note-audio { display: flex; flex-direction: column; gap: 4px; }
+.crms-audio { width: 100%; max-width: 420px; height: 36px; }
+.crms-note-meta { font-size: var(--pp-fs-12, 12px); color: var(--pp-text-tertiary); font-variant-numeric: tabular-nums; }
+.crms-note-foot { display: flex; align-items: center; gap: var(--pp-space-3); flex-wrap: wrap; }
+.crms-target, .crms-queued { display: inline-flex; align-items: center; gap: 5px; font-size: var(--pp-fs-12, 12px); }
+.crms-target { color: var(--pp-state-success); }
+.crms-queued { color: var(--pp-text-tertiary); }
+.crms-target-ico { width: 13px; height: 13px; flex-shrink: 0; }
+.crms-target-link { color: var(--pp-state-success); font-weight: var(--pp-weight-medium); text-decoration: underline; }
+.crms-note-time { margin-left: auto; font-size: 11px; color: var(--pp-text-tertiary); font-variant-numeric: tabular-nums; }
+
+.crms-del { appearance: none; cursor: pointer; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center;
+  width: 30px; height: 30px; border-radius: var(--pp-radius-ui); border: 1px solid transparent; background: transparent; color: var(--pp-text-tertiary); }
+.crms-del:hover { border-color: var(--pp-state-danger); color: var(--pp-state-danger); background: color-mix(in oklab, var(--pp-state-danger) 10%, transparent); }
+.crms-del :deep(svg) { width: 15px; height: 15px; }
+
+@media (max-width: 560px) {
+  .crms-inner { padding: var(--pp-space-4) var(--pp-space-4) var(--pp-space-10); }
+  .crms-cand { flex-direction: column; align-items: flex-start; }
+  .crms-cand-score { align-self: flex-start; }
+}
+</style>
