@@ -608,6 +608,21 @@ def get_market_assignment():
     deals_c = _by_country("CRM Deal")
     proj_c = _by_country("LCS Project")
 
+    # Representative map coordinate per territory = centroid of the country
+    # centroids it owns. Reuses the same static country-centroid table the
+    # pipeline map already relies on (Frappe's Country DocType has no lat/long);
+    # this adds only a geographic reference for the region, no business data.
+    from lcs_integrations.projects.country_coords import get_coords
+
+    def _territory_centroid(country_list: list[str]):
+        pts = [c for c in (get_coords(x) for x in country_list) if c]
+        if not pts:
+            return None, None
+        return (
+            round(sum(p[0] for p in pts) / len(pts), 4),
+            round(sum(p[1] for p in pts) / len(pts), 4),
+        )
+
     # Display name for only the handful of users referenced as (deputy) managers.
     needed_users = {t.sales_manager for t in territories if t.sales_manager}
     needed_users |= {t.deputy_sales_manager for t in territories if t.deputy_sales_manager}
@@ -636,6 +651,10 @@ def get_market_assignment():
         deals = sum(deals_c.get(c, 0) for c in countries)
         projects = sum(proj_c.get(c, 0) for c in countries)
 
+        # Coordinate from the territory's full country membership (not just the
+        # deduplicated attribution list) so the marker stays geographically true.
+        lat, lon = _territory_centroid(countries_by_terr.get(t.name, []))
+
         rows.append({
             "territory": t.name,
             "region": t.region,
@@ -647,6 +666,8 @@ def get_market_assignment():
             "deputy_code": t.deputy_sales_manager_code,
             "deputy_user": t.deputy_sales_manager,
             "agent": t.agent_name,
+            "latitude": lat,
+            "longitude": lon,
             "country_count": len(countries),
             "segment_count": segcount_by_terr.get(t.name, 0),
             "leads": leads,
