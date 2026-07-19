@@ -78,10 +78,13 @@ if (import.meta.env.DEV) {
 
 // PWA service worker — register with a /crm navigation scope so offline
 // deep links (e.g. /crm/contacts/view/list) are served from cache. The
-// broader scope needs  on the sw.js response
-// (set by nginx in production). Where that header is absent (dev/werkzeug),
-// the broad scope is rejected and we fall back to the default path scope,
-// so asset caching still works — only cold offline deep-nav degrades.
+// broader scope needs the `Service-Worker-Allowed: /crm` header on the
+// sw.js response (set by nginx in production, and by the lcs_integrations
+// `after_request` hook where sw.js is proxied through the WSGI app). Where
+// that header is absent (dev `bench serve`, whose SharedDataMiddleware serves
+// /assets ahead of the app), the broad scope is rejected and we fall back to
+// the default path scope, so asset caching still works — only cold offline
+// deep-nav degrades.
 if (!import.meta.env.DEV && "serviceWorker" in navigator) {
   window.addEventListener("load", async () => {
     const url = "/assets/crm/frontend/sw.js"

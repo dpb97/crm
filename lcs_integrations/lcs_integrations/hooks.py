@@ -151,6 +151,14 @@ override_whitelisted_methods: dict[str, str] = {}
 # Website routes — none for now.
 website_route_rules: list[dict[str, str]] = []
 
+# PWA: allow the CRM service worker (physically at /assets/crm/frontend/sw.js)
+# to control the /crm navigation scope by setting the Service-Worker-Allowed
+# response header. Prod nginx sets the SAME header on the sw.js location
+# (docker/nginx/nginx.conf) — keep both in sync. NOTE: this after_request hook
+# does NOT fire on the dev server (`bench serve`), where /assets/* is served by
+# werkzeug SharedDataMiddleware ahead of the WSGI app; see pwa/sw_scope.py.
+after_request = ["lcs_integrations.pwa.sw_scope.set_sw_allowed_scope"]
+
 # Fixtures fremder Apps (erpnext_enhancements) verbiegen Customer.customer_type
 # bei jedem migrate neu — der Guard raeumt das direkt danach wieder ab.
 after_migrate = [
