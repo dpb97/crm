@@ -1,148 +1,119 @@
 <!--
-  LCSSalesMeeting
-  ===============
-  Sales-meeting board mirroring the LCS Excel protocol ("Angebote in
-  Bearbeitung"): one row per active opportunity with PL/PN, last comment,
-  responsible (Wer), next action + due (KW), status, chance %, value.
-  Data from lcs_integrations.projects.api.get_sales_meeting_data.
+  LCSSalesMeeting — Sales Meeting (V2, Showcase #7 „Sales Meeting").
+  ============================================================
+  Besprechungsfläche „Angebote in Bearbeitung": eine Zeile je offener
+  Verkaufschance mit Forecast-Spalten (Wahrscheinlichkeit, Wert, gewichteter
+  Wert) und verantwortlichem Vertriebler.
+
+  Präsentation nach pilanda_theme-Showcase #7: PpPageHead + PpStatTile
+  (gewichtete Pipeline) + PpDataGrid (Forecast-Spalten mit Summen-Fußzeile
+  via agg) + PpEmptyState. Datenlogik unverändert produktiv:
+    lcs_integrations.projects.api.get_sales_meeting_data
 -->
 
 <template>
-  <LayoutHeader>
-    <template #left-header>
-      <Breadcrumbs :items="[{ label: __('Sales Meeting'), route: { name: 'LCS Sales Meeting' } }]" />
-    </template>
-    <template #right-header>
-      <div class="flex items-center gap-2">
-        <Button
-          :label="__('Insights')"
-          iconLeft="bar-chart-2"
-          @click="$router.push({ name: 'LCS Forecasting' })"
+  <div class="flex h-full flex-col">
+    <LayoutHeader>
+      <template #left-header>
+        <Breadcrumbs :items="[{ label: 'Sales Meeting', route: { name: 'LCS Sales Meeting' } }]" />
+      </template>
+      <template #right-header>
+        <div class="flex items-center gap-2">
+          <Button label="Insights" iconLeft="bar-chart-2" @click="$router.push({ name: 'LCS Forecasting' })" />
+          <Button label="Aktualisieren" iconLeft="refresh-cw" @click="board.reload()" :loading="board.loading" />
+        </div>
+      </template>
+    </LayoutHeader>
+
+    <div class="crmm">
+      <div class="crmm-inner">
+        <PpPageHead
+          eyebrow="Vertrieb / CRM"
+          title="Sales Meeting"
+          :subtitle="`Angebote in Bearbeitung · ${filteredRows.length} von ${rows.length} Chancen · ${money(kpiWeighted)} gewichtete Pipeline`"
         />
-        <Button :label="__('Refresh')" iconLeft="refresh-cw" @click="board.reload()" :loading="board.loading" />
-      </div>
-    </template>
-  </LayoutHeader>
 
-  <div class="flex-1 overflow-y-auto p-5">
-    <div class="space-y-4">
-      <!-- KPI row -->
-      <div class="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <div class="rounded-xl border bg-white p-4">
-          <div class="text-[10px] font-bold uppercase tracking-wider text-gray-400">{{ __('Pipeline total') }}</div>
-          <div class="mt-1 text-xl font-bold text-lcs-primary tabular-nums">{{ money(summary.total) }}</div>
-        </div>
-        <div class="rounded-xl border bg-white p-4">
-          <div class="text-[10px] font-bold uppercase tracking-wider text-gray-400">{{ __('Weighted') }}</div>
-          <div class="mt-1 text-xl font-bold text-green-600 tabular-nums">{{ money(summary.weighted) }}</div>
-        </div>
-        <div class="rounded-xl border bg-white p-4">
-          <div class="text-[10px] font-bold uppercase tracking-wider text-gray-400">{{ __('Opportunities') }}</div>
-          <div class="mt-1 text-xl font-bold text-gray-900 tabular-nums">{{ summary.count }}</div>
-        </div>
-        <div class="rounded-xl border bg-white p-4">
-          <div class="text-[10px] font-bold uppercase tracking-wider text-gray-400">{{ __('Actions due (7d)') }}</div>
-          <div class="mt-1 text-xl font-bold tabular-nums" :class="summary.due_actions ? 'text-amber-600' : 'text-gray-900'">{{ summary.due_actions }}</div>
-        </div>
-      </div>
+        <!-- KPI-Zeile — reaktiv aus dem (gefilterten) Meeting-Stand -->
+        <section class="crmm-kpis">
+          <PpStatTile v-for="k in kpis" :key="k.label" v-bind="k" />
+        </section>
 
-      <!-- Filters -->
-      <div class="flex flex-wrap items-center gap-2">
-        <FormControl type="text" v-model="search" :placeholder="__('Search...')" class="w-56">
-          <template #prefix><FeatherIcon name="search" class="h-4 w-4 text-gray-400" /></template>
-        </FormControl>
-        <FormControl type="select" :options="personOptions" v-model="person" class="w-52">
-          <template #prefix><span class="text-xs text-gray-400">{{ __('Responsible') }}:</span></template>
-        </FormControl>
-        <span class="ml-auto text-xs text-gray-400">{{ filteredRows.length }} {{ __('of') }} {{ rows.length }}</span>
-      </div>
-
-      <!-- Important across entities (star-flagged) -->
-      <div v-if="important.length" class="overflow-hidden rounded-xl border bg-white">
-        <div class="border-b bg-amber-50/60 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-amber-700">
-          <FeatherIcon name="star" class="mr-1 inline h-3.5 w-3.5 text-amber-400" /> {{ __('Marked important') }}
-        </div>
-        <div class="divide-y">
-          <div
-            v-for="it in important"
-            :key="it.entity + it.name"
-            class="flex cursor-pointer items-center gap-3 px-4 py-2.5 hover:bg-amber-50/40"
-            @click="openItem(it)"
-          >
-            <span class="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase" :class="entityClass(it.entity)">{{ entityLabel(it.entity) }}</span>
-            <div class="min-w-0 flex-1">
-              <p class="truncate text-sm font-medium text-gray-900">{{ it.label }}</p>
-              <p class="truncate text-xs text-gray-400">{{ it.sub }}<span v-if="it.person"> · {{ shortUser(it.person) }}</span></p>
+        <!-- Filter: verantwortlicher Vertriebler + Suche -->
+        <section class="crmm-filter">
+          <div class="crmm-field crmm-field--grow">
+            <label class="crmm-field-cap">Suche</label>
+            <div class="crmm-search">
+              <FeatherIcon name="search" class="crmm-search-ico" />
+              <input v-model="search" type="search" class="crmm-input crmm-input--search" placeholder="Chance, Nummer, Land, Notiz …" />
             </div>
-            <span class="shrink-0 rounded-full bg-blue-50 px-2 py-0.5 text-[11px] text-blue-700">{{ __(it.status) }}</span>
-            <span v-if="it.value" class="shrink-0 text-sm font-medium tabular-nums text-gray-800">{{ money(it.value) }}</span>
           </div>
-        </div>
-      </div>
+          <div class="crmm-field">
+            <label class="crmm-field-cap">Verantwortlich</label>
+            <select v-model="person" class="crmm-input">
+              <option value="">Alle Vertriebler</option>
+              <option v-for="v in vertriebler" :key="v" :value="v">{{ shortUser(v) }}</option>
+            </select>
+          </div>
+          <span class="crmm-count">{{ filteredRows.length }} von {{ rows.length }}</span>
+        </section>
 
-      <!-- Meeting board -->
-      <div class="overflow-x-auto rounded-xl border bg-white">
-        <div class="border-b bg-gray-50 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
-          {{ __('Offers in progress') }}
-        </div>
-        <div class="overflow-x-auto"><table class="w-full min-w-[40rem] text-sm">
-          <thead>
-            <tr class="border-b bg-gray-50/60 text-left text-[11px] font-medium uppercase text-gray-500">
-              <th class="px-3 py-2"></th>
-              <th class="px-3 py-2">{{ __('PL/PN') }}</th>
-              <th class="px-3 py-2">{{ __('Project') }}</th>
-              <th class="px-3 py-2">{{ __('Responsible') }}</th>
-              <th class="px-3 py-2">{{ __('Status') }}</th>
-              <th class="px-3 py-2">{{ __('Progress') }}</th>
-              <th class="px-3 py-2 text-right">{{ __('Win chance') }}</th>
-              <th class="px-3 py-2 text-right">{{ __('Value') }}</th>
-              <th class="px-3 py-2">{{ __('Last comment') }}</th>
-              <th class="px-3 py-2">{{ __('Next action') }}</th>
-              <th class="px-3 py-2">{{ __('Due') }}</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr
-              v-for="r in filteredRows"
-              :key="r.name"
-              class="cursor-pointer border-b align-top hover:bg-gray-50"
-              @click="$router.push({ name: 'LCS Project', params: { id: r.name } })"
+        <!-- Wichtig markiert (entitätsübergreifend, echte Sternflags) -->
+        <section v-if="important.length" class="crmm-important">
+          <div class="crmm-important-head">
+            <FeatherIcon name="star" class="crmm-important-star" /> Wichtig markiert
+          </div>
+          <div class="crmm-important-list">
+            <button
+              v-for="it in important"
+              :key="it.entity + it.name"
+              type="button"
+              class="crmm-important-row"
+              @click="openItem(it)"
             >
-              <td class="px-3 py-2.5">
-                <FeatherIcon v-if="r.is_important" name="star" class="h-3.5 w-3.5 text-amber-400" />
-              </td>
-              <td class="px-3 py-2.5 font-mono text-xs text-gray-500">{{ r.project_number }}</td>
-              <td class="px-3 py-2.5">
-                <div class="font-medium text-gray-900">{{ r.project_name }}</div>
-                <div class="text-[11px] text-gray-400">{{ r.type }} · {{ r.country }}</div>
-              </td>
-              <td class="px-3 py-2.5 text-xs text-gray-600">{{ shortUser(r.salesperson) }}</td>
-              <td class="px-3 py-2.5">
-                <span class="rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-medium text-blue-700">{{ __(r.phase) }}</span>
-              </td>
-              <td class="px-3 py-2.5">
-                <div class="flex items-center gap-2">
-                  <div class="h-1.5 w-20 overflow-hidden rounded-full bg-gray-100">
-                    <div class="h-full rounded-full" :class="progressClass(phaseProgress(r.phase))" :style="{ width: phaseProgress(r.phase) + '%' }" />
-                  </div>
-                  <span class="text-[11px] tabular-nums text-gray-500">{{ phaseProgress(r.phase) }}%</span>
-                </div>
-              </td>
-              <td class="px-3 py-2.5 text-right tabular-nums" :class="chanceClass(r.probability)">{{ Math.round(r.probability) }}%</td>
-              <td class="px-3 py-2.5 text-right font-medium tabular-nums text-gray-800">{{ money(r.value) }}</td>
-              <td class="px-3 py-2.5 max-w-[18rem]">
-                <span class="line-clamp-2 text-xs text-gray-600">{{ stripEmoji(r.comment) || '—' }}</span>
-              </td>
-              <td class="px-3 py-2.5 max-w-[12rem]">
-                <span class="line-clamp-2 text-xs text-gray-700">{{ r.next_action || '—' }}</span>
-              </td>
-              <td class="px-3 py-2.5 whitespace-nowrap text-xs" :class="dueClass(r.due)">{{ r.kw || (r.due ? r.due : '—') }}</td>
-            </tr>
-            <tr v-if="!filteredRows.length && !board.loading">
-              <td colspan="10" class="px-4 py-12 text-center text-sm text-gray-400">{{ __('No active opportunities.') }}</td>
-            </tr>
-          </tbody>
-        </table></div>
+              <span class="crmm-ent" :data-ent="it.entity">{{ entityLabel(it.entity) }}</span>
+              <span class="crmm-important-main">
+                <span class="crmm-important-title">{{ it.label }}</span>
+                <span class="crmm-important-sub">{{ it.sub }}<template v-if="it.person"> · {{ shortUser(it.person) }}</template></span>
+              </span>
+              <span v-if="it.status" class="crmm-pill" data-tone="info"><i class="crmm-dot" />{{ it.status }}</span>
+              <span v-if="it.value" class="crmm-important-val">{{ money(it.value) }}</span>
+            </button>
+          </div>
+        </section>
+
+        <!-- Meeting-Tabelle: Forecast-Spalten + Summen-Fußzeile -->
+        <section class="crmm-card">
+          <PpDataGrid v-if="filteredRows.length" :columns="columns" :rows="gridRows" @row-click="openProject">
+            <template #cell-chance="{ row }">
+              <span class="crmm-title">
+                <FeatherIcon v-if="row.is_important" name="star" class="crmm-title-star" />{{ row.chance }}
+              </span>
+              <span class="crmm-id">{{ row.project_number }}<template v-if="row.sub"> · {{ row.sub }}</template></span>
+            </template>
+            <template #cell-vertrieb="{ value }">
+              <span :class="{ 'crmm-muted': !value }">{{ value ? shortUser(value) : 'nicht zugewiesen' }}</span>
+            </template>
+            <template #cell-phase="{ value }">
+              <span class="crmm-pill" :data-tone="phaseTone(value)"><i class="crmm-dot" />{{ phaseLabel(value) }}</span>
+            </template>
+            <template #cell-wahrsch="{ value }">
+              <span :class="chanceClass(value)">{{ Math.round(value) }} %</span>
+            </template>
+            <template #cell-beschluss="{ row }">
+              <span class="crmm-beschluss">{{ row.beschluss || '—' }}</span>
+            </template>
+            <template #cell-due="{ value, row }">
+              <span :class="dueClass(row.due_raw)">{{ value || '—' }}</span>
+            </template>
+          </PpDataGrid>
+
+          <PpEmptyState
+            v-else
+            :icon="IconInbox"
+            :title="board.loading ? 'Chancen werden geladen …' : 'Keine offenen Chancen'"
+            :hint="board.loading ? '' : (person || search ? 'Für Filter/Suche gibt es aktuell keine Treffer.' : 'Sobald Angebote in Bearbeitung sind, erscheinen sie hier.')"
+          />
+        </section>
       </div>
     </div>
   </div>
@@ -151,8 +122,13 @@
 <script setup>
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { createResource, Breadcrumbs, Button, FormControl, FeatherIcon } from 'frappe-ui'
+import { createResource, Breadcrumbs, Button, FeatherIcon } from 'frappe-ui'
 import LayoutHeader from '@/components/LayoutHeader.vue'
+import PpPageHead from '@/components/pp/PpPageHead.vue'
+import PpStatTile from '@/components/pp/PpStatTile.vue'
+import PpDataGrid from '@/components/pp/PpDataGrid.vue'
+import PpEmptyState from '@/components/pp/PpEmptyState.vue'
+import IconInbox from '~icons/lucide/inbox'
 
 const router = useRouter()
 const board = createResource({
@@ -162,36 +138,24 @@ const board = createResource({
 const rows = computed(() => board.data?.rows || [])
 const important = computed(() => board.data?.important || [])
 
-// Progress toward the sale — how far along the funnel this opportunity is.
-const STAGE_PCT = { Qualified: 20, Budget: 35, Richtpreis: 50, Offer: 65, Negotiation: 85, Won: 100, Execution: 100, Completed: 100 }
-function phaseProgress(phase) {
-  return STAGE_PCT[phase] ?? 10
+// Phase → deutsche Bezeichnung + Ton (Funnel-Reihenfolge der LCS-Phasen).
+const PHASE = {
+  Qualified:   { label: 'Qualifiziert', tone: 'info' },
+  Budget:      { label: 'Budget',       tone: 'info' },
+  Richtpreis:  { label: 'Richtpreis',   tone: 'brand' },
+  Offer:       { label: 'Angebot',      tone: 'brand' },
+  Negotiation: { label: 'Verhandlung',  tone: 'warning' },
+  Won:         { label: 'Gewonnen',     tone: 'success' },
+  Execution:   { label: 'Ausführung',   tone: 'success' },
+  Completed:   { label: 'Abgeschlossen', tone: 'success' },
 }
-function progressClass(pct) {
-  if (pct >= 85) return 'bg-green-500'
-  if (pct >= 50) return 'bg-lcs-secondary'
-  return 'bg-amber-400'
-}
+function phaseLabel(p) { return PHASE[p]?.label || p || '—' }
+function phaseTone(p) { return PHASE[p]?.tone || 'info' }
 
-const ENTITY = {
-  project: { label: 'Projekt', route: 'LCS Project', param: 'id', cls: 'bg-green-50 text-green-700' },
-  lead: { label: 'Lead', route: 'Lead', param: 'leadId', cls: 'bg-amber-50 text-amber-700' },
-  deal: { label: 'Angebot', route: 'Deal', param: 'dealId', cls: 'bg-blue-50 text-blue-700' },
-}
-function entityLabel(e) { return __(ENTITY[e]?.label || e) }
-function entityClass(e) { return ENTITY[e]?.cls || 'bg-gray-100 text-gray-600' }
-function openItem(it) {
-  const cfg = ENTITY[it.entity]
-  if (cfg) router.push({ name: cfg.route, params: { [cfg.param]: it.name } })
-}
-const summary = computed(() => board.data?.summary || { total: 0, weighted: 0, count: 0, due_actions: 0 })
-
+// Filter (verantwortlicher Vertriebler + Freitext) — echt, clientseitig.
 const search = ref('')
 const person = ref('')
-const personOptions = computed(() => [
-  { label: __('All responsible'), value: '' },
-  ...[...new Set(rows.value.map((r) => r.salesperson).filter(Boolean))].map((u) => ({ label: shortUser(u), value: u })),
-])
+const vertriebler = computed(() => [...new Set(rows.value.map((r) => r.salesperson).filter(Boolean))])
 
 const filteredRows = computed(() => {
   const q = search.value.trim().toLowerCase()
@@ -203,29 +167,178 @@ const filteredRows = computed(() => {
   })
 })
 
+// Tabellen-Zeilen: Wert + gewichteter Wert in k€ (saubere Summen-Fußzeile).
+const gridRows = computed(() => filteredRows.value.map((r) => {
+  const prob = Number(r.probability) || 0
+  const val = Number(r.value) || 0
+  return {
+    id: r.name,
+    chance: r.project_name,
+    project_number: r.project_number,
+    sub: [r.type, r.country].filter(Boolean).join(' · '),
+    vertrieb: r.salesperson,
+    phase: r.phase,
+    wahrsch: prob,
+    wertk: Math.round(val / 1000),
+    gewichtetk: Math.round((val * prob / 100) / 1000),
+    beschluss: stripEmoji(r.comment) || r.next_action,
+    due: r.kw || (r.due ? formatDue(r.due) : ''),
+    due_raw: r.due,
+    is_important: r.is_important,
+  }
+}))
+
+const columns = [
+  { key: 'chance',     label: 'Chance', pin: true, width: 240 },
+  { key: 'vertrieb',   label: 'Vertrieb', width: 130 },
+  { key: 'phase',      label: 'Phase', width: 150 },
+  { key: 'wahrsch',    label: 'P(win)', align: 'right', width: 90 },
+  { key: 'wertk',      label: 'Wert (k€)', align: 'right', width: 120, agg: 'sum' },
+  { key: 'gewichtetk', label: 'Gewichtet (k€)', align: 'right', width: 150, agg: 'sum' },
+  { key: 'beschluss',  label: 'Beschluss / Notiz', width: 280 },
+  { key: 'due',        label: 'Fällig', width: 110 },
+]
+
+// KPIs reaktiv aus den gefilterten Zeilen (immer konsistent mit der Tabelle).
+const kpiTotal = computed(() => filteredRows.value.reduce((a, r) => a + (Number(r.value) || 0), 0))
+const kpiWeighted = computed(() => filteredRows.value.reduce((a, r) => a + (Number(r.value) || 0) * (Number(r.probability) || 0) / 100, 0))
+const kpiAvgProb = computed(() => filteredRows.value.length
+  ? Math.round(filteredRows.value.reduce((a, r) => a + (Number(r.probability) || 0), 0) / filteredRows.value.length) : 0)
+const kpiDueSoon = computed(() => filteredRows.value.filter((r) => {
+  if (!r.due) return false
+  const days = (new Date(String(r.due).replace(' ', 'T')).getTime() - Date.now()) / 86400000
+  return days <= 7
+}).length)
+
+const kpis = computed(() => [
+  { label: 'Pipeline (gewichtet)', value: money(kpiWeighted.value), hint: 'Σ Wert × P(win)' },
+  { label: 'Offene Chancen',       value: String(filteredRows.value.length), hint: money(kpiTotal.value) + ' Volumen' },
+  { label: 'Ø Abschlusswahrsch.',  value: kpiAvgProb.value + ' %', hint: 'über offene Phasen' },
+  { label: 'Aktionen fällig (7 T)', value: String(kpiDueSoon.value), hint: 'in den nächsten 7 Tagen', ...(kpiDueSoon.value ? { delta: 'offen', dir: 'up' } : {}) },
+])
+
+// Entitäts-übergreifende „Wichtig"-Sprünge (echte Sternflags).
+const ENTITY = {
+  project: { label: 'Projekt', route: 'LCS Project', param: 'id' },
+  lead:    { label: 'Lead',    route: 'Lead',        param: 'leadId' },
+  deal:    { label: 'Angebot', route: 'Deal',        param: 'dealId' },
+}
+function entityLabel(e) { return ENTITY[e]?.label || e }
+function openItem(it) {
+  const cfg = ENTITY[it.entity]
+  if (cfg) router.push({ name: cfg.route, params: { [cfg.param]: it.name } })
+}
+function openProject(id) {
+  router.push({ name: 'LCS Project', params: { id } })
+}
+
+// --- Formathelfer -----------------------------------------------------------
 function money(v) {
   const n = Number(v) || 0
-  if (n >= 1_000_000) return '€' + (n / 1_000_000).toFixed(1) + 'M'
+  if (n >= 1_000_000) return '€' + (n / 1_000_000).toFixed(1) + ' Mio'
   if (n >= 1_000) return '€' + Math.round(n / 1_000) + 'k'
-  return '€' + n
+  return '€' + Math.round(n)
 }
-function shortUser(u) {
-  return (u || '').split('@')[0]
-}
-function stripEmoji(s) {
-  return (s || '').replace(/📝|📋|\*\*/g, '').trim()
+function shortUser(u) { return (u || '').split('@')[0] }
+function stripEmoji(s) { return (s || '').replace(/📝|📋|🎤|🤖|\*\*/g, '').trim() }
+function formatDue(due) {
+  try {
+    return new Intl.DateTimeFormat('de-DE', { day: '2-digit', month: '2-digit' }).format(new Date(String(due).replace(' ', 'T')))
+  } catch { return String(due) }
 }
 function chanceClass(p) {
-  if (p >= 70) return 'text-green-600 font-semibold'
-  if (p >= 40) return 'text-amber-600'
-  return 'text-gray-500'
+  if (p >= 70) return 'crmm-chance crmm-chance--high'
+  if (p >= 40) return 'crmm-chance crmm-chance--mid'
+  return 'crmm-chance crmm-chance--low'
 }
 function dueClass(due) {
-  if (!due) return 'text-gray-400'
-  const d = new Date(String(due).replace(' ', 'T'))
-  const days = (d.getTime() - Date.now()) / 86400000
-  if (days < 0) return 'font-medium text-red-600'
-  if (days <= 7) return 'font-medium text-amber-600'
-  return 'text-gray-600'
+  if (!due) return 'crmm-due'
+  const days = (new Date(String(due).replace(' ', 'T')).getTime() - Date.now()) / 86400000
+  if (days < 0) return 'crmm-due crmm-due--over'
+  if (days <= 7) return 'crmm-due crmm-due--soon'
+  return 'crmm-due'
 }
 </script>
+
+<style scoped>
+.crmm { flex: 1; min-height: 0; overflow: auto; background: var(--pp-bg-base); }
+.crmm-inner { max-width: 1560px; margin: 0 auto; padding: var(--pp-space-6) var(--pp-space-6) var(--pp-space-12);
+  display: flex; flex-direction: column; gap: var(--pp-space-5); }
+
+.crmm-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--pp-space-3); }
+
+.crmm-filter { display: flex; align-items: flex-end; gap: var(--pp-space-3); flex-wrap: wrap;
+  padding: var(--pp-space-3) var(--pp-space-4); background: var(--pp-bg-surface);
+  border: 1px solid var(--pp-border-subtle); border-radius: var(--pp-radius-ui); box-shadow: var(--pp-shadow-xs); }
+.crmm-field { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.crmm-field--grow { flex: 1 1 220px; }
+.crmm-field-cap { font-size: 10px; font-weight: var(--pp-weight-bold); letter-spacing: var(--pp-tracking-wide, 0.04em);
+  text-transform: uppercase; color: var(--pp-text-tertiary); }
+.crmm-input { appearance: none; font-family: inherit; font-size: var(--pp-fs-13, 13px); color: var(--pp-text-primary);
+  padding: 6px var(--pp-space-3); border: 1px solid var(--pp-border-default); border-radius: var(--pp-radius-ui);
+  background: var(--pp-bg-base); min-width: 160px; }
+.crmm-input:focus { outline: none; border-color: var(--pp-brand-primary); box-shadow: 0 0 0 3px rgb(var(--pp-brand-primary-rgb) / 0.15); }
+.crmm-search { position: relative; display: flex; align-items: center; }
+.crmm-search-ico { position: absolute; left: 9px; width: 15px; height: 15px; color: var(--pp-text-tertiary); pointer-events: none; }
+.crmm-input--search { width: 100%; padding-left: 30px; }
+.crmm-count { margin-left: auto; font-size: var(--pp-fs-12, 12px); color: var(--pp-text-tertiary); font-variant-numeric: tabular-nums; }
+
+.crmm-important { background: var(--pp-bg-surface); border: 1px solid var(--pp-border-subtle);
+  border-radius: var(--pp-radius-ui); box-shadow: var(--pp-shadow-xs); overflow: hidden; }
+.crmm-important-head { display: flex; align-items: center; gap: 6px; padding: var(--pp-space-2) var(--pp-space-4);
+  border-bottom: 1px solid var(--pp-border-subtle); background: color-mix(in oklab, var(--pp-state-warning) 8%, transparent);
+  font-size: var(--pp-fs-12, 12px); font-weight: var(--pp-weight-bold); letter-spacing: var(--pp-tracking-wide, 0.04em);
+  text-transform: uppercase; color: var(--pp-state-warning); }
+.crmm-important-star { width: 14px; height: 14px; }
+.crmm-important-list { display: flex; flex-direction: column; }
+.crmm-important-row { appearance: none; cursor: pointer; text-align: left; font-family: inherit;
+  display: flex; align-items: center; gap: var(--pp-space-3); padding: var(--pp-space-2) var(--pp-space-4);
+  border: 0; border-top: 1px solid var(--pp-border-subtle); background: transparent; }
+.crmm-important-row:first-child { border-top: 0; }
+.crmm-important-row:hover { background: var(--pp-bg-hover); }
+.crmm-important-main { min-width: 0; flex: 1; display: flex; flex-direction: column; }
+.crmm-important-title { font-size: var(--pp-fs-13, 13px); font-weight: var(--pp-weight-medium); color: var(--pp-text-primary);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.crmm-important-sub { font-size: 11px; color: var(--pp-text-tertiary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.crmm-important-val { flex-shrink: 0; font-size: var(--pp-fs-13, 13px); font-weight: var(--pp-weight-medium);
+  color: var(--pp-text-secondary); font-variant-numeric: tabular-nums; }
+.crmm-ent { flex-shrink: 0; font-size: 10px; font-weight: var(--pp-weight-bold); text-transform: uppercase;
+  padding: 2px var(--pp-space-2); border-radius: var(--pp-radius-ui); }
+.crmm-ent[data-ent="project"] { background: color-mix(in oklab, var(--pp-state-success) 14%, transparent); color: var(--pp-state-success); }
+.crmm-ent[data-ent="lead"]    { background: color-mix(in oklab, var(--pp-state-warning) 16%, transparent); color: var(--pp-state-warning); }
+.crmm-ent[data-ent="deal"]    { background: color-mix(in oklab, var(--pp-state-info) 14%, transparent); color: var(--pp-state-info); }
+
+.crmm-card { background: var(--pp-bg-surface); border: 1px solid var(--pp-border-subtle);
+  border-radius: var(--pp-radius-ui); box-shadow: var(--pp-shadow-xs); padding: var(--pp-space-2); }
+
+.crmm-title { display: flex; align-items: center; gap: 5px; font-weight: var(--pp-weight-medium); color: var(--pp-text-primary); }
+.crmm-title-star { width: 13px; height: 13px; color: var(--pp-state-warning); flex-shrink: 0; }
+.crmm-id { display: block; font-size: 11px; color: var(--pp-text-tertiary); font-variant-numeric: tabular-nums; }
+.crmm-muted { color: var(--pp-text-tertiary); font-style: italic; }
+.crmm-beschluss { font-size: var(--pp-fs-13, 13px); color: var(--pp-text-secondary); }
+.crmm-chance { font-variant-numeric: tabular-nums; }
+.crmm-chance--high { color: var(--pp-state-success); font-weight: var(--pp-weight-semibold); }
+.crmm-chance--mid  { color: var(--pp-state-warning); }
+.crmm-chance--low  { color: var(--pp-text-tertiary); }
+.crmm-due { font-size: var(--pp-fs-12, 12px); color: var(--pp-text-secondary); white-space: nowrap; }
+.crmm-due--soon { color: var(--pp-state-warning); font-weight: var(--pp-weight-medium); }
+.crmm-due--over { color: var(--pp-state-danger); font-weight: var(--pp-weight-medium); }
+
+.crmm-pill { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: var(--pp-weight-semibold);
+  padding: 2px var(--pp-space-2); border-radius: var(--pp-radius-full); white-space: nowrap; }
+.crmm-dot { width: 6px; height: 6px; border-radius: var(--pp-radius-full); flex-shrink: 0; background: currentColor; }
+.crmm-pill[data-tone="info"]    { background: color-mix(in oklab, var(--pp-state-info) 14%, transparent); color: var(--pp-state-info); }
+.crmm-pill[data-tone="brand"]   { background: color-mix(in oklab, var(--pp-brand-primary) 14%, transparent); color: var(--pp-brand-primary); }
+.crmm-pill[data-tone="warning"] { background: color-mix(in oklab, var(--pp-state-warning) 16%, transparent); color: var(--pp-state-warning); }
+.crmm-pill[data-tone="success"] { background: color-mix(in oklab, var(--pp-state-success) 16%, transparent); color: var(--pp-state-success); }
+
+@media (max-width: 1080px) {
+  .crmm-kpis { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 560px) {
+  .crmm-inner { padding: var(--pp-space-4) var(--pp-space-4) var(--pp-space-10); }
+  .crmm-kpis { grid-template-columns: 1fr; }
+  .crmm-field--grow { flex-basis: 100%; }
+  .crmm-count { margin-left: 0; }
+}
+</style>
