@@ -1,77 +1,183 @@
 <!--
-  LCSNetwork
-  ==========
-  Relationship graph: companies as hubs, their people clustered around them
-  (who works with whom), and dashed edges for career history (where a person
-  worked before). Click a node to open the contact / customer.
+  LCSNetwork — CRM-Netzwerk (V2, Showcase #6 „Netzwerk").
+  ============================================================
+  Beziehungsgraph zwischen Firmen und den ihnen zugeordneten Personen
+  (wer arbeitet wo) plus Karriere-Historie (wo jemand vorher war).
+
+  Präsentation nach pilanda_theme-Showcase #6: PpPageHead + Legende +
+  PpNetworkGraph (Firmen-Ring) bzw. dichter Radial-Cluster (Personen) +
+  PpDrawer-Profil beim Klick auf einen Knoten. Alle Drawer-Felder stammen
+  ECHT aus der API-Antwort (get_network_graph) — keine Demodaten.
+
+  Datenlogik unverändert produktiv:
+    lcs_integrations.projects.api.get_network_graph
 -->
 
 <template>
   <div class="flex h-full flex-col">
     <LayoutHeader>
       <template #left-header>
-        <Breadcrumbs :items="[{ label: __('Network'), route: { name: 'LCS Network' } }]" />
+        <Breadcrumbs :items="[{ label: 'Netzwerk', route: { name: 'LCS Network' } }]" />
       </template>
       <template #right-header>
-        <div class="flex items-center gap-4 text-xs text-gray-500">
-          <div class="flex overflow-hidden border">
-            <button class="px-3 py-1 font-medium transition" :class="mode === 'people' ? 'bg-lcs-primary text-white' : 'bg-white text-gray-600 hover:bg-gray-50'" @click="mode = 'people'">{{ __('People') }}</button>
-            <button class="px-3 py-1 font-medium transition" :class="mode === 'companies' ? 'bg-lcs-primary text-white' : 'bg-white text-gray-600 hover:bg-gray-50'" @click="mode = 'companies'">{{ __('Companies') }}</button>
+        <div class="flex items-center gap-3">
+          <div class="flex overflow-hidden rounded-md border">
+            <button
+              class="px-3 py-1 text-xs font-medium transition"
+              :class="mode === 'people' ? 'bg-lcs-primary text-white' : 'bg-white text-gray-600 hover:bg-gray-50'"
+              @click="mode = 'people'"
+            >Personen</button>
+            <button
+              class="px-3 py-1 text-xs font-medium transition"
+              :class="mode === 'companies' ? 'bg-lcs-primary text-white' : 'bg-white text-gray-600 hover:bg-gray-50'"
+              @click="mode = 'companies'"
+            >Firmen</button>
           </div>
-          <span class="flex items-center gap-1"><span class="h-0 w-6 border-t-2 border-lcs-secondary" /> {{ __('connected') }}</span>
-          <span class="flex items-center gap-1"><span class="h-0 w-6 border-t-2 border-dashed border-amber-400" /> {{ __('worked at') }}</span>
-          <Button :label="__('Refresh')" iconLeft="refresh-cw" @click="graph.reload()" />
+          <Button label="Aktualisieren" iconLeft="refresh-cw" @click="graph.reload()" />
         </div>
       </template>
     </LayoutHeader>
 
-    <div class="min-h-0 flex-1 overflow-auto bg-gray-50/50">
-      <div v-if="!nodes.length" class="flex h-full items-center justify-center text-sm text-gray-400">
-        {{ graph.loading ? __('Loading...') : __('No network data yet.') }}
-      </div>
-      <!-- Companies mode: pilanda_theme SSOT block (ring layout, token
-           colors, light/dark). The dense people clusters stay on the
-           bespoke radial layout below — a plain ring cannot hold them. -->
-      <div v-else-if="mode === 'companies'" class="mx-auto h-full max-w-4xl p-6">
-        <PpNetworkGraph :nodes="ppNodes" :edges="ppEdges" @node-click="openCompany" />
-      </div>
-      <svg v-else :viewBox="`0 0 ${W} ${H}`" class="h-full w-full" preserveAspectRatio="xMidYMid meet">
-        <!-- company ↔ company links (Kunde X arbeitet mit Kunde Y) -->
-        <g>
-          <line
-            v-for="(e, i) in companyEdgeLines"
-            :key="'c' + i"
-            :x1="e.x1" :y1="e.y1" :x2="e.x2" :y2="e.y2"
-            style="stroke: var(--pp-brand-primary)"
-            :stroke-width="Math.min(5, 2 + e.weight)"
-            stroke-opacity="0.55"
+    <div class="crmn">
+      <div class="crmn-inner">
+        <PpPageHead
+          eyebrow="Vertrieb / CRM"
+          title="Netzwerk"
+          subtitle="Beziehungen zwischen Firmen und Personen · Klick auf einen Knoten öffnet das Profil"
+        />
+
+        <section class="crmn-legend" aria-label="Legende">
+          <span class="crmn-legend-item"><i class="crmn-legend-dot is-brand" />Firma</span>
+          <span class="crmn-legend-item"><i class="crmn-legend-dot crmn-legend-dot--ring" />Person</span>
+          <span class="crmn-legend-item"><i class="crmn-legend-line" />arbeitet bei</span>
+          <span class="crmn-legend-item"><i class="crmn-legend-line crmn-legend-line--dashed" />früher bei</span>
+        </section>
+
+        <!-- Leer-/Ladezustand -->
+        <section v-if="!nodes.length" class="crmn-graph crmn-empty">
+          <PpEmptyState
+            :title="graph.loading ? 'Netzwerk wird geladen …' : 'Noch keine Netzwerkdaten'"
+            :hint="graph.loading ? '' : 'Sobald Firmen mit zugeordneten Kontakten existieren, erscheint hier der Beziehungsgraph.'"
           />
-        </g>
-        <!-- person edges -->
-        <g>
-          <line
-            v-for="(e, i) in edgeLines"
-            :key="i"
-            :x1="e.x1" :y1="e.y1" :x2="e.x2" :y2="e.y2"
-            :stroke="e.kind === 'worked_at' ? '#fbbf24' : '#d1d5db'"
-            :stroke-width="e.kind === 'worked_at' ? 1.5 : 1"
-            :stroke-dasharray="e.kind === 'worked_at' ? '5 4' : ''"
-          />
-        </g>
-        <!-- nodes -->
-        <g v-for="n in positioned" :key="n.id" class="cursor-pointer" @click="open(n)">
-          <template v-if="n.type === 'company'">
-            <circle :cx="n.x" :cy="n.y" :r="companyR(n)" style="fill: var(--pp-brand-primary)" />
-            <text :x="n.x" :y="n.y + 4" text-anchor="middle" class="fill-white text-[13px] font-semibold" style="pointer-events:none">{{ short(n.label) }}</text>
-            <text :x="n.x" :y="n.y + companyR(n) + 14" text-anchor="middle" class="fill-gray-700 text-[11px] font-medium" style="pointer-events:none">{{ n.label }}</text>
-          </template>
-          <template v-else>
-            <circle :cx="n.x" :cy="n.y" r="6" fill="#fff" style="stroke: var(--pp-brand-primary)" stroke-width="2" />
-            <text :x="n.x" :y="n.y - 9" text-anchor="middle" class="fill-gray-600 text-[10px]" style="pointer-events:none">{{ n.label }}</text>
-          </template>
-        </g>
-      </svg>
+        </section>
+
+        <!-- Firmen-Ansicht: Theme-Baustein PpNetworkGraph (Kunde ↔ Kunde) -->
+        <section v-else-if="mode === 'companies'" class="crmn-graph">
+          <PpNetworkGraph :nodes="ppNodes" :edges="ppEdges" :selected="selId" @node-click="pick" />
+        </section>
+
+        <!-- Personen-Ansicht: dichter Radial-Cluster (ein Ring kann die
+             Personen-Wolken nicht fassen — bewusst eigenes Layout). -->
+        <section v-else class="crmn-graph crmn-graph--svg">
+          <svg :viewBox="`0 0 ${W} ${H}`" class="crmn-svg" preserveAspectRatio="xMidYMid meet">
+            <g>
+              <line
+                v-for="(e, i) in companyEdgeLines"
+                :key="'c' + i"
+                :x1="e.x1" :y1="e.y1" :x2="e.x2" :y2="e.y2"
+                class="crmn-edge crmn-edge--company"
+                :stroke-width="Math.min(5, 2 + e.weight)"
+              />
+            </g>
+            <g>
+              <line
+                v-for="(e, i) in edgeLines"
+                :key="i"
+                :x1="e.x1" :y1="e.y1" :x2="e.x2" :y2="e.y2"
+                class="crmn-edge"
+                :class="e.kind === 'worked_at' ? 'crmn-edge--prev' : 'crmn-edge--works'"
+              />
+            </g>
+            <g
+              v-for="n in positioned"
+              :key="n.id"
+              class="crmn-node"
+              :class="{ 'is-selected': selId === n.id }"
+              @click="pick(n.id)"
+            >
+              <template v-if="n.type === 'company'">
+                <circle :cx="n.x" :cy="n.y" :r="companyR(n)" class="crmn-node-company" />
+                <text :x="n.x" :y="n.y + 4" text-anchor="middle" class="crmn-node-company-abbr">{{ short(n.label) }}</text>
+                <text :x="n.x" :y="n.y + companyR(n) + 14" text-anchor="middle" class="crmn-node-company-label">{{ n.label }}</text>
+              </template>
+              <template v-else>
+                <circle :cx="n.x" :cy="n.y" r="6" class="crmn-node-person" />
+                <text :x="n.x" :y="n.y - 9" text-anchor="middle" class="crmn-node-person-label">{{ n.label }}</text>
+              </template>
+            </g>
+          </svg>
+        </section>
+      </div>
     </div>
+
+    <!-- Knoten-Profil (echte Felder aus get_network_graph) -->
+    <PpDrawer v-model:open="drawerOpen" :width="440" :title="selNode ? selNode.label : ''">
+      <template v-if="selNode" #title>
+        <span class="crmn-dh">{{ selNode.label }}</span>
+      </template>
+      <div v-if="selNode" class="crmn-detail">
+        <div class="crmn-detail-head">
+          <span class="crmn-role" :class="selNode.type === 'company' ? 'is-brand' : 'is-info'">
+            <i class="crmn-legend-dot" :class="selNode.type === 'company' ? 'is-brand' : 'is-info'" />
+            {{ selNode.type === 'company' ? 'Firma' : 'Person' }}
+          </span>
+        </div>
+
+        <!-- Firma -->
+        <template v-if="selNode.type === 'company'">
+          <dl class="crmn-meta">
+            <div><dt>Typ</dt><dd>Firma</dd></div>
+            <div><dt>Kontakte</dt><dd>{{ selNode.size || 0 }}</dd></div>
+          </dl>
+
+          <section class="crmn-sec">
+            <h4 class="crmn-sec-title">Personen</h4>
+            <ul v-if="selPeople.length" class="crmn-proj">
+              <li v-for="p in selPeople" :key="p.id">
+                {{ p.label }}<span v-if="p.role" class="crmn-muted"> · {{ p.role }}</span>
+              </li>
+            </ul>
+            <p v-else class="crmn-desc">Keine Personen im Graphen zugeordnet.</p>
+          </section>
+
+          <section class="crmn-sec">
+            <h4 class="crmn-sec-title">Verbundene Firmen</h4>
+            <ul v-if="selConnected.length" class="crmn-proj">
+              <li v-for="c in selConnected" :key="c.id">
+                {{ c.label }}<span v-if="c.weight > 1" class="crmn-muted"> · {{ c.weight }} Wechsel</span>
+              </li>
+            </ul>
+            <p v-else class="crmn-desc">Keine firmenübergreifenden Verbindungen.</p>
+          </section>
+        </template>
+
+        <!-- Person -->
+        <template v-else>
+          <dl class="crmn-meta">
+            <div><dt>Funktion</dt><dd>{{ selNode.role || '—' }}</dd></div>
+            <div><dt>Firma</dt><dd>{{ selPersonCompany || '—' }}</dd></div>
+          </dl>
+
+          <section class="crmn-sec">
+            <h4 class="crmn-sec-title">Früher tätig bei</h4>
+            <ul v-if="selPersonPrev.length" class="crmn-proj">
+              <li v-for="c in selPersonPrev" :key="c">{{ c }}</li>
+            </ul>
+            <p v-else class="crmn-desc">Keine Karriere-Historie hinterlegt.</p>
+          </section>
+        </template>
+      </div>
+
+      <template #footer>
+        <Button
+          v-if="selNode"
+          variant="solid"
+          :label="selNode.type === 'company' ? 'Organisation öffnen' : 'Kontakt öffnen'"
+          iconLeft="external-link"
+          @click="openSelected"
+        />
+      </template>
+    </PpDrawer>
   </div>
 </template>
 
@@ -81,11 +187,14 @@ import { useRouter } from 'vue-router'
 import { createResource, Breadcrumbs, Button } from 'frappe-ui'
 import LayoutHeader from '@/components/LayoutHeader.vue'
 import PpNetworkGraph from '@/components/pp/PpNetworkGraph.vue'
+import PpPageHead from '@/components/pp/PpPageHead.vue'
+import PpDrawer from '@/components/pp/PpDrawer.vue'
+import PpEmptyState from '@/components/pp/PpEmptyState.vue'
 
 const router = useRouter()
 const W = 1400
 const H = 900
-const mode = ref('people') // 'people' (detail) | 'companies' (Kunde ↔ Kunde)
+const mode = ref('people') // 'people' (Detail) | 'companies' (Kunde ↔ Kunde)
 
 const graph = createResource({
   url: 'lcs_integrations.projects.api.get_network_graph',
@@ -95,9 +204,9 @@ const nodes = computed(() => graph.data?.nodes || [])
 const edges = computed(() => graph.data?.edges || [])
 const companyEdges = computed(() => graph.data?.company_edges || [])
 
-// Deterministic radial-cluster layout: companies on a big circle, their
-// people on a small ring around each company. In 'companies' mode only the
-// company hubs are shown (Kunde ↔ Kunde links).
+// --- Radial-Cluster-Layout (Personen-Ansicht) ----------------------------
+// Firmen auf einem großen Kreis, ihre Personen auf einem kleinen Ring um die
+// jeweilige Firma. In der Firmen-Ansicht werden nur die Firmen-Hubs gezeigt.
 const positioned = computed(() => {
   const cx = W / 2
   const cy = H / 2
@@ -130,6 +239,12 @@ const positioned = computed(() => {
   return out
 })
 
+const posById = computed(() => {
+  const m = {}
+  positioned.value.forEach((n) => { m[n.id] = n })
+  return m
+})
+
 const companyEdgeLines = computed(() =>
   companyEdges.value
     .map((e) => {
@@ -140,12 +255,6 @@ const companyEdgeLines = computed(() =>
     })
     .filter(Boolean),
 )
-
-const posById = computed(() => {
-  const m = {}
-  positioned.value.forEach((n) => { m[n.id] = n })
-  return m
-})
 
 const edgeLines = computed(() =>
   edges.value
@@ -158,8 +267,9 @@ const edgeLines = computed(() =>
     .filter(Boolean),
 )
 
-// Companies mode → PpNetworkGraph props: biggest customer in the center,
-// the rest on the ring; edge label carries the shared-project weight.
+// --- Firmen-Ansicht → PpNetworkGraph-Props --------------------------------
+// Größter Kunde in die Mitte, Rest auf den Ring; Kantenlabel = Zahl gemeinsamer
+// Personalwechsel.
 const ppNodes = computed(() => {
   const companies = nodes.value.filter((n) => n.type === 'company')
   const maxSize = Math.max(...companies.map((c) => c.size || 0), 0)
@@ -177,8 +287,56 @@ const ppEdges = computed(() =>
     label: (e.weight || 1) > 1 ? `${e.weight}×` : '',
   })),
 )
-function openCompany(id) {
-  router.push({ name: 'Organization', params: { organizationId: String(id).replace('org::', '') } })
+
+// --- Auswahl / Drawer -----------------------------------------------------
+const selId = ref(null)
+const drawerOpen = ref(false)
+const selNode = computed(() => nodes.value.find((n) => n.id === selId.value) || null)
+
+function pick(id) {
+  selId.value = id
+  drawerOpen.value = true
+}
+
+// Personen einer Firma (aus dem Graphen abgeleitet).
+const selPeople = computed(() => {
+  if (!selNode.value || selNode.value.type !== 'company') return []
+  const orgName = selNode.value.id.replace('org::', '')
+  return nodes.value.filter((n) => n.type === 'person' && n.org === orgName)
+})
+
+// Verbundene Firmen (company_edges, die den Knoten berühren).
+const orgLabel = (orgId) => nodes.value.find((n) => n.id === orgId)?.label || orgId.replace('org::', '')
+const selConnected = computed(() => {
+  if (!selNode.value || selNode.value.type !== 'company') return []
+  const id = selNode.value.id
+  return companyEdges.value
+    .filter((e) => e.source === id || e.target === id)
+    .map((e) => {
+      const other = e.source === id ? e.target : e.source
+      return { id: other, label: orgLabel(other), weight: e.weight || 1 }
+    })
+})
+
+// Person → Firma / Karriere-Historie.
+const selPersonCompany = computed(() =>
+  selNode.value?.type === 'person' ? orgLabel('org::' + selNode.value.org) : '',
+)
+const selPersonPrev = computed(() => {
+  if (!selNode.value || selNode.value.type !== 'person') return []
+  return edges.value
+    .filter((e) => e.source === selNode.value.id && e.kind === 'worked_at')
+    .map((e) => orgLabel(e.target))
+})
+
+function openSelected() {
+  const n = selNode.value
+  if (!n) return
+  if (n.type === 'person' && n.contact) {
+    router.push({ name: 'Contact', params: { contactId: n.contact } })
+  } else if (n.type === 'company') {
+    router.push({ name: 'Organization', params: { organizationId: n.id.replace('org::', '') } })
+  }
 }
 
 function companyR(n) {
@@ -188,11 +346,60 @@ function short(label) {
   const w = (label || '').split(' ')
   return w.length > 1 ? (w[0][0] + w[1][0]).toUpperCase() : (label || '').slice(0, 3)
 }
-function open(n) {
-  if (n.type === 'person' && n.contact) {
-    router.push({ name: 'Contact', params: { contactId: n.contact } })
-  } else if (n.type === 'company') {
-    router.push({ name: 'Organization', params: { organizationId: n.id.replace('org::', '') } })
-  }
-}
 </script>
+
+<style scoped>
+.crmn { flex: 1; min-height: 0; overflow: auto; background: var(--pp-bg-base); }
+.crmn-inner { max-width: 1080px; margin: 0 auto; padding: var(--pp-space-6) var(--pp-space-6) var(--pp-space-12);
+  display: flex; flex-direction: column; gap: var(--pp-space-5); }
+
+.crmn-legend { display: flex; flex-wrap: wrap; gap: var(--pp-space-2) var(--pp-space-4);
+  padding: var(--pp-space-3) var(--pp-space-4); background: var(--pp-bg-surface);
+  border: 1px solid var(--pp-border-subtle); border-radius: var(--pp-radius-ui); box-shadow: var(--pp-shadow-xs); }
+.crmn-legend-item { display: inline-flex; align-items: center; gap: 6px; font-size: var(--pp-fs-13, 13px); color: var(--pp-text-secondary); }
+.crmn-legend-dot { width: 9px; height: 9px; border-radius: var(--pp-radius-full); flex-shrink: 0; }
+.crmn-legend-dot.is-brand   { background: var(--pp-brand-primary); }
+.crmn-legend-dot.is-info    { background: var(--pp-state-info); }
+.crmn-legend-dot--ring { background: var(--pp-bg-surface); border: 2px solid var(--pp-brand-primary); }
+.crmn-legend-line { width: 22px; height: 0; border-top: 2px solid var(--pp-brand-primary); flex-shrink: 0; }
+.crmn-legend-line--dashed { border-top-style: dashed; border-top-color: var(--pp-state-warning); }
+
+.crmn-graph { min-width: 0; }
+.crmn-empty { display: flex; align-items: center; justify-content: center;
+  min-height: 320px; background: var(--pp-bg-surface); border: 1px solid var(--pp-border-subtle);
+  border-radius: var(--pp-radius-ui); box-shadow: var(--pp-shadow-xs); }
+.crmn-graph--svg { background: var(--pp-bg-surface); border: 1px solid var(--pp-border-subtle);
+  border-radius: var(--pp-radius-ui); box-shadow: var(--pp-shadow-xs); padding: var(--pp-space-3); }
+.crmn-svg { display: block; width: 100%; height: auto; max-height: 68vh; }
+
+/* SVG-Kanten/Knoten (Personen-Ansicht), token-only */
+.crmn-edge { stroke: var(--pp-border-default); }
+.crmn-edge--company { stroke: var(--pp-brand-primary); stroke-opacity: 0.55; }
+.crmn-edge--works { stroke: var(--pp-border-strong); stroke-width: 1; }
+.crmn-edge--prev { stroke: var(--pp-state-warning); stroke-width: 1.5; stroke-dasharray: 5 4; }
+.crmn-node { cursor: pointer; }
+.crmn-node-company { fill: var(--pp-brand-primary); }
+.crmn-node.is-selected .crmn-node-company { stroke: var(--pp-brand-700, var(--pp-brand-primary)); stroke-width: 3; }
+.crmn-node-company-abbr { fill: var(--pp-text-on-accent); font-size: 13px; font-weight: var(--pp-weight-semibold); pointer-events: none; }
+.crmn-node-company-label { fill: var(--pp-text-secondary); font-size: 11px; font-weight: var(--pp-weight-medium); pointer-events: none; }
+.crmn-node-person { fill: var(--pp-bg-surface); stroke: var(--pp-brand-primary); stroke-width: 2; }
+.crmn-node.is-selected .crmn-node-person { stroke-width: 3.5; }
+.crmn-node-person-label { fill: var(--pp-text-tertiary); font-size: 10px; pointer-events: none; }
+
+/* Drawer-Detail */
+.crmn-dh { font-weight: var(--pp-weight-semibold); }
+.crmn-detail { display: flex; flex-direction: column; gap: var(--pp-space-4); }
+.crmn-detail-head { display: flex; }
+.crmn-role { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: var(--pp-weight-semibold);
+  padding: 2px var(--pp-space-2); border-radius: var(--pp-radius-full); background: var(--pp-bg-sunken); color: var(--pp-text-secondary); }
+.crmn-meta { display: grid; grid-template-columns: 1fr 1fr; gap: var(--pp-space-2) var(--pp-space-4); margin: 0; }
+.crmn-meta dt { font-size: var(--pp-fs-12); color: var(--pp-text-tertiary); }
+.crmn-meta dd { margin: 0; font-size: var(--pp-fs-14); color: var(--pp-text-primary); }
+.crmn-sec { display: flex; flex-direction: column; gap: var(--pp-space-2); }
+.crmn-sec-title { margin: 0; font-size: var(--pp-fs-12); font-weight: var(--pp-weight-bold);
+  letter-spacing: var(--pp-tracking-wide, 0.04em); text-transform: uppercase; color: var(--pp-text-tertiary); }
+.crmn-desc { margin: 0; font-size: var(--pp-fs-14); color: var(--pp-text-secondary); line-height: var(--pp-lh-relaxed, 1.6); }
+.crmn-proj { margin: 0; padding-left: var(--pp-space-4); font-size: var(--pp-fs-14); color: var(--pp-text-secondary);
+  display: flex; flex-direction: column; gap: 2px; }
+.crmn-muted { color: var(--pp-text-tertiary); }
+</style>
