@@ -5,7 +5,7 @@
     </template>
     <template #right-header>
       <!-- Period selector — H7: Flexibility -->
-      <div class="flex items-center gap-2">
+      <div class="lcs-fc-controls flex items-center gap-2">
         <div class="flex rounded-lg border bg-white p-0.5">
           <button
             v-for="p in periodOptions"
@@ -64,7 +64,7 @@
       </p>
     </div>
 
-    <div v-else class="space-y-6">
+    <div v-else class="lcs-fc-body flex flex-col gap-6">
       <!-- Summary row -->
       <div class="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <KpiCard :label="__('Pipeline Total')" :value="formatCurrency(summary.total)" icon="trending-up" color="blue" />
@@ -74,7 +74,7 @@
       </div>
 
       <!-- Forecast bar chart -->
-      <div class="rounded-xl border bg-white p-5">
+      <div class="lcs-fc-chart rounded-xl border bg-white p-5">
         <h3 class="mb-4 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-400">
           <FeatherIcon name="bar-chart-2" class="h-3.5 w-3.5" />
           {{ __('Weighted Revenue Forecast') }}
@@ -84,7 +84,7 @@
         </h3>
 
         <!-- Chart -->
-        <div class="relative h-64">
+        <div class="lcs-fc-chart__plot relative h-64">
           <div class="flex h-full items-end gap-2">
             <div
               v-for="(bucket, idx) in filteredBuckets"
@@ -371,3 +371,33 @@ function formatPeriod(key) {
   return new Intl.DateTimeFormat('de-DE', { month: 'short', year: 'numeric' }).format(date)
 }
 </script>
+
+<style scoped>
+/*
+ * Mobile fixes (390px), CSS-only — no logic change. Spacing via --pp tokens.
+ * 1) Header period/scope segmented controls ran off the right edge: let the
+ *    control cluster scroll horizontally with a visible affordance instead of
+ *    overflowing the viewport. Each control group keeps its size (no squish).
+ * 2) The bar chart dominated the fold while reading near-empty. Below 480px
+ *    shrink it and move it below the concrete numbers (KPIs + Top Weighted
+ *    Opportunities table) via flex order, so actionable data comes first.
+ */
+@media (max-width: 480px) {
+  .lcs-fc-controls {
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    padding-bottom: var(--pp-space-1);
+  }
+  .lcs-fc-controls > * {
+    flex: 0 0 auto;
+  }
+  .lcs-fc-chart {
+    order: 10; /* push the chart below the KPI row + opportunities table */
+  }
+  .lcs-fc-chart__plot {
+    height: 12rem; /* was h-64 (16rem) — reclaim above-the-fold space */
+  }
+}
+</style>
