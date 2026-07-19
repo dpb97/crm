@@ -1,3 +1,16 @@
+<!--
+  LCSProject — Projekt-Workspace (V2, Showcase #5 „Projekt-Workspace").
+  ============================================================================
+  Detailfläche eines Vertriebsprojekts (Deal = Projekt). Präsentation nach
+  pilanda_theme-Showcase #5: PpPageHead + PpPhaseStepper (Phasen) + KPI-Zeile
+  (PpStatTile) + PpTabs (Übersicht/Aktivitäten/Angebote/Dokumente sowie die
+  fachlichen Zusatzreiter) + PpTimeline + PpComments. Meta-/Inspector-Spalte
+  rechts (bestehendes Seitenpanel, Funktionserhalt).
+
+  Alle Daten sind ECHT (DocType „LCS Project", LCS Offer, Frappe-Comments über
+  crm.api.comment.add_comment). Bestehende Datenlogik, Offline-Sync, Voice-Input
+  und Bearbeitungsfunktionen bleiben unverändert erhalten.
+-->
 <template>
   <LayoutHeader>
     <template #left-header>
@@ -49,595 +62,286 @@
   </div>
 
   <!-- Main content -->
-  <div v-else class="flex h-full flex-col overflow-hidden">
-
-    <!-- Unified funnel flow — at the very top, above the title -->
-    <FunnelFlowBar v-if="doc.name" entity="project" :status="doc.phase" :clickable="true" doctype="LCS Project" :record="doc" @change="initiatePhaseChange" />
-
-    <!-- 🎯 STATUS HERO BAR — H1: Visibility (status always visible at top) -->
-    <div class="border-b bg-gradient-to-r from-white via-white to-gray-50 px-5 py-4">
-      <div class="flex flex-wrap items-center gap-6">
-        <!-- Project title + number -->
-        <div class="min-w-0 flex-shrink">
-          <div class="flex items-center gap-2">
-            <h1 class="truncate text-xl font-bold text-gray-900">{{ doc.project_name }}</h1>
+  <div v-else class="flex h-full min-h-0 flex-col overflow-y-auto lg:flex-row lg:overflow-hidden crmw">
+    <!-- Hauptspalte -->
+    <div class="flex min-h-0 flex-1 flex-col overflow-y-auto">
+      <div class="crmw-main">
+        <!-- Kopf -->
+        <PpPageHead
+          eyebrow="Vertrieb / CRM · Projekt"
+          :title="doc.project_name || projectId"
+          :subtitle="headSubtitle"
+        >
+          <template #actions>
             <Tooltip :text="typeFullName(doc.project_type)">
-              <span :class="typeClass(doc.project_type)" class="shrink-0 rounded-full px-2 py-0.5 text-xs font-bold">
-                {{ doc.project_type }}
-              </span>
+              <span :class="typeClass(doc.project_type)" class="shrink-0 rounded-full px-2 py-0.5 text-xs font-bold">{{ doc.project_type }}</span>
             </Tooltip>
-          </div>
-          <div class="mt-0.5 flex items-center gap-2 text-sm font-mono text-gray-500">
-            <span>{{ doc.project_number }}</span>
-            <span class="text-gray-300">•</span>
-            <span class="cursor-copy hover:text-gray-700" @click="copyId">
-              {{ projectId }}
-              <FeatherIcon v-if="justCopied" name="check" class="ml-1 inline h-3 w-3 text-green-500" />
-            </span>
-          </div>
-        </div>
-
-        <!-- Vertical divider -->
-        <div class="h-10 w-px bg-gray-200" />
-
-        <!-- PHASE — prominent -->
-        <div>
-          <div class="text-[10px] font-bold uppercase tracking-wider text-gray-400">{{ __('Phase') }}</div>
-          <div class="mt-1 flex items-center gap-1.5">
-            <span :class="phaseClass(doc.phase)" class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-semibold">
-              <span class="h-2 w-2 rounded-full" :class="phaseDotClass(doc.phase)" />
-              {{ __(doc.phase) }}
-            </span>
-          </div>
-        </div>
-
-        <!-- STATUS — prominent -->
-        <div>
-          <div class="text-[10px] font-bold uppercase tracking-wider text-gray-400">{{ __('Status') }}</div>
-          <div class="mt-1">
-            <span :class="statusClass(doc.status)" class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-semibold">
-              <span class="h-2 w-2 rounded-full" :class="statusDotClass(doc.status)" />
+            <span :class="statusClass(doc.status)" class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold">
+              <span class="h-1.5 w-1.5 rounded-full" :class="statusDotClass(doc.status)" />
               {{ __(doc.status || 'Open') }}
             </span>
-          </div>
-        </div>
+            <button class="crmw-btn" @click="activeTab = T.ACT">Aktivität</button>
+            <button class="crmw-btn crmw-btn--primary" @click="showNewOfferDialog = true">Angebot erstellen</button>
+          </template>
+        </PpPageHead>
 
-        <!-- Latest Offer Status (if exists) -->
-        <div v-if="latestOffer">
-          <div class="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-gray-400">
-            <FeatherIcon name="file-text" class="h-3 w-3" />
-            {{ __('Current Offer') }}
-          </div>
-          <div class="mt-1 flex items-center gap-2">
-            <span :class="offerStatusClass(latestOffer.status)" class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-semibold">
-              <span class="h-2 w-2 rounded-full" :class="offerStatusDotClass(latestOffer.status)" />
-              {{ __(latestOffer.status) }}
-            </span>
-            <span class="text-xs font-mono text-gray-500">v{{ latestOffer.version }}</span>
-          </div>
-        </div>
+        <!-- Phasen-Stepper -->
+        <section class="crmw-stepper">
+          <PpPhaseStepper :steps="phaseSteps" :current="currentStep" />
+          <p v-if="doc.phase === 'Lost'" class="crmw-lost">
+            <FeatherIcon name="x-circle" class="inline h-3.5 w-3.5" /> Projekt als verloren markiert
+          </p>
+        </section>
 
-        <!-- Spacer -->
-        <div class="flex-1" />
+        <!-- KPI-Zeile -->
+        <section class="crmw-kpis">
+          <PpStatTile v-for="k in kpis" :key="k.label" v-bind="k" />
+        </section>
 
-        <!-- 💰 3 Pricing stages — always visible -->
-        <div class="flex items-end gap-1">
-          <Tooltip :text="__('What the customer indicates they are willing to spend')">
-            <div class="rounded-lg border border-gray-200 bg-white px-3 py-1.5">
-              <div class="text-[9px] font-bold uppercase tracking-wider text-gray-400">{{ __('Budget') }}</div>
-              <div class="mt-0.5 text-sm font-semibold tabular-nums" :class="doc.budget_customer ? 'text-gray-700' : 'text-gray-300'">
-                {{ doc.budget_customer ? formatCurrency(doc.budget_customer) : '—' }}
+        <!-- Tabs -->
+        <section class="crmw-tabs-wrap">
+          <PpTabs v-model="activeTab" :tabs="tabs" />
+
+          <!-- Übersicht -->
+          <div v-if="activeTab === T.OV" class="crmw-tabpane space-y-5">
+            <!-- Notizen — angepinnt, immer sichtbar -->
+            <section class="rounded-xl border border-amber-200 bg-amber-50/50 p-4">
+              <div class="mb-2 flex items-center justify-between">
+                <h3 class="flex items-center gap-2 text-sm font-semibold text-amber-900">
+                  <FeatherIcon name="edit-3" class="h-4 w-4" />
+                  {{ __('Notes') }}
+                  <span v-if="doc.notes" class="rounded-full bg-amber-200 px-1.5 py-0.5 text-[10px] text-amber-800">{{ __('active') }}</span>
+                </h3>
+                <Button v-if="!editingNotes" variant="ghost" size="sm" iconLeft="edit-2" @click="startNotesEdit" :label="doc.notes ? __('Edit') : __('Add')" class="text-amber-700 hover:bg-amber-100" />
               </div>
-            </div>
-          </Tooltip>
-          <span class="mb-2 text-gray-300">→</span>
-          <Tooltip :text="__('Internal rough estimate before formal quote')">
-            <div class="rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5">
-              <div class="text-[9px] font-bold uppercase tracking-wider text-blue-600">{{ __('Richtpreis') }}</div>
-              <div class="mt-0.5 text-sm font-semibold tabular-nums" :class="doc.richtpreis ? 'text-blue-900' : 'text-blue-300'">
-                {{ doc.richtpreis ? formatCurrency(doc.richtpreis) : '—' }}
+              <div v-if="editingNotes" class="space-y-2">
+                <div class="relative">
+                  <textarea v-model="editNotesValue" class="w-full rounded-lg border border-amber-200 bg-white px-3 py-2 pr-10 text-sm text-gray-800 focus:border-amber-400 focus:ring-1 focus:ring-amber-400" rows="5" :placeholder="__('Write project notes, internal reminders, or next steps...')" ref="notesInput" />
+                  <div class="absolute right-2 top-2"><VoiceInput :hotkey="true" @transcript="onVoiceNote" /></div>
+                </div>
+                <div class="flex items-center justify-between gap-2">
+                  <div class="flex gap-2">
+                    <Button variant="solid" size="sm" @click="saveNotes" :label="__('Save')" iconLeft="check" />
+                    <Button variant="ghost" size="sm" @click="cancelNotesEdit" :label="__('Cancel')" />
+                  </div>
+                  <span class="text-[10px] text-gray-400">{{ __('Click mic for voice input') }}</span>
+                </div>
               </div>
-            </div>
-          </Tooltip>
-          <span class="mb-2 text-gray-300">→</span>
-          <Tooltip :text="__('Formal quoted total — synced from accepted offer')">
-            <div class="rounded-lg border px-3 py-1.5" :class="doc.angebot_total ? 'border-green-300 bg-green-50' : 'border-gray-200 bg-white'">
-              <div class="text-[9px] font-bold uppercase tracking-wider" :class="doc.angebot_total ? 'text-green-700' : 'text-gray-400'">{{ __('Angebot') }}</div>
-              <div class="mt-0.5 text-sm font-bold tabular-nums" :class="doc.angebot_total ? 'text-green-800' : 'text-gray-300'">
-                {{ doc.angebot_total ? formatCurrency(doc.angebot_total) : '—' }}
+              <div v-else-if="doc.notes" class="whitespace-pre-wrap text-sm text-gray-800">{{ doc.notes }}</div>
+              <div v-else class="text-sm italic text-amber-700/70">{{ __('No notes yet. Click Add to write project notes.') }}</div>
+            </section>
+
+            <!-- Beschreibung -->
+            <section>
+              <h4 class="crmw-sec-title">Projektbeschreibung</h4>
+              <div v-if="editingDescription" class="mt-2 space-y-2">
+                <div class="relative">
+                  <textarea v-model="editDescriptionValue" class="w-full rounded-lg border border-gray-200 px-3 py-2 pr-10 text-sm text-gray-800 focus:border-lcs-secondary focus:ring-1 focus:ring-lcs-secondary" rows="4" :placeholder="__('Add a project description...')" ref="descriptionInput" />
+                  <div class="absolute right-2 top-2"><VoiceInput @transcript="onDescriptionVoice" /></div>
+                </div>
+                <div class="flex items-center justify-between gap-2">
+                  <div class="flex gap-2">
+                    <Button variant="solid" size="sm" @click="saveDescription" :label="__('Save')" />
+                    <Button variant="ghost" size="sm" @click="cancelDescriptionEdit" :label="__('Cancel')" />
+                  </div>
+                  <span class="text-[10px] text-gray-400">{{ __('Click mic or press Ctrl+Shift+V for voice input') }}</span>
+                </div>
               </div>
+              <div v-else @click="startDescriptionEdit" class="group mt-2 cursor-pointer">
+                <p v-if="doc.project_description" class="crmw-desc rounded-lg p-2 -m-2 transition group-hover:bg-gray-50">{{ doc.project_description }}</p>
+                <p v-else class="rounded-lg border border-dashed border-gray-200 p-4 text-center text-sm text-gray-400 transition hover:border-gray-300 hover:text-gray-500">{{ __('Click to add a description') }}</p>
+              </div>
+            </section>
+
+            <!-- Wert-Progression (editierbar: Budget → Richtpreis → Angebot) -->
+            <section v-if="canShow('show_pricing_details')">
+              <h4 class="crmw-sec-title">
+                Wert-Progression
+                <span class="ml-2 text-[10px] font-normal normal-case text-gray-400">Kundenbudget → interne Schätzung → festes Angebot</span>
+              </h4>
+              <div class="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <PriceStageCard :label="__('Budget')" :sublabel="__('Customer indication')" :value="doc.budget_customer" color="gray" icon="user" :editable="true" :currency="doc.currency" @save="updateField('budget_customer', $event)" />
+                <PriceStageCard :label="__('Richtpreis')" :sublabel="__('Internal estimate')" :value="doc.richtpreis" color="blue" icon="clipboard" :editable="true" :currency="doc.currency" @save="updateField('richtpreis', $event)" />
+                <PriceStageCard :label="__('Angebot')" :sublabel="__('Formal quote')" :value="doc.angebot_total" color="green" icon="file-text" :editable="true" :currency="doc.currency" @save="updateField('angebot_total', $event)" />
+              </div>
+              <div class="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+                <div class="rounded-lg border bg-gray-50 p-3">
+                  <div class="text-xs text-gray-500">{{ __('Weighted Value') }}</div>
+                  <div class="mt-1 text-base font-bold text-gray-700">{{ formatCurrency((doc.estimated_value || 0) * (doc.probability || 0) / 100) }}</div>
+                  <div class="mt-0.5 text-[10px] text-gray-400">{{ __('value × probability') }}</div>
+                </div>
+                <div v-if="doc.probability != null" class="rounded-lg border bg-gray-50 p-3">
+                  <div class="text-xs text-gray-500">{{ __('Win Probability') }}</div>
+                  <div class="mt-1 text-base font-bold" :class="probabilityClass(doc.probability)">{{ Math.round(doc.probability) }}%</div>
+                </div>
+                <div v-if="budgetVsAngebot" class="rounded-lg border bg-gray-50 p-3">
+                  <div class="text-xs text-gray-500">{{ __('Budget vs. Angebot') }}</div>
+                  <div class="mt-1 text-base font-bold" :class="budgetVsAngebot >= 0 ? 'text-green-600' : 'text-amber-600'">{{ budgetVsAngebot >= 0 ? '+' : '' }}{{ Math.round(budgetVsAngebot) }}%</div>
+                  <div class="mt-0.5 text-[10px] text-gray-400">{{ budgetVsAngebot >= 0 ? __('under customer budget') : __('over customer budget') }}</div>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <!-- Aktivitäten -->
+          <div v-else-if="activeTab === T.ACT" class="crmw-tabpane space-y-4">
+            <MailActivityWidget :project="projectId" />
+
+            <h4 class="crmw-sec-title">Angebots-Versionen</h4>
+            <PpTimeline v-if="offerTimeline.length" :items="offerTimeline" />
+            <PpEmptyState v-else title="Keine Angebote" hint="Sobald ein Angebot angelegt ist, erscheint hier der Versionsverlauf." />
+
+            <h4 class="crmw-sec-title">Notizen &amp; Kommentare</h4>
+            <div v-if="activities.loading && !projectComments.length" class="flex items-center justify-center py-8">
+              <div class="h-6 w-6 animate-spin rounded-full border-2 border-gray-200 border-t-lcs-secondary" />
             </div>
-          </Tooltip>
-          <!-- Win probability — driven by the Opportunity Matrix -->
-          <button
-            type="button"
-            class="ml-2 flex flex-col items-center focus:outline-none"
-            @click="goToMatrixTab"
-            :title="matrixFilled ? __('From the Opportunity Matrix — click to edit') : __('Fill the Opportunity Matrix to compute the win probability')"
-          >
-            <span
-              v-if="matrixFilled"
-              :class="probabilityClass(doc.probability)"
-              class="rounded-md bg-gray-50 px-2 py-0.5 text-sm font-bold"
+            <PpComments v-else :comments="projectComments" :users="commentUsers" @submit="addProjectComment" />
+          </div>
+
+          <!-- Angebote -->
+          <div v-else-if="activeTab === T.OFF" class="crmw-tabpane space-y-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <h3 class="text-sm font-semibold text-gray-900">{{ __('Offers') }}</h3>
+                <p class="mt-0.5 text-xs text-gray-500">
+                  {{ offers.length }} {{ __('offer(s)') }}
+                  <span v-if="activeOffersCount > 0"> • {{ activeOffersCount }} {{ __('active') }}</span>
+                </p>
+              </div>
+              <Button variant="solid" size="sm" iconLeft="plus" @click="showNewOfferDialog = true" :label="__('New Offer')" />
+            </div>
+
+            <div v-if="offersResource.loading && !offers.length" class="flex items-center justify-center py-8">
+              <div class="h-6 w-6 animate-spin rounded-full border-2 border-gray-200 border-t-lcs-secondary" />
+            </div>
+            <PpEmptyState
+              v-else-if="!offers.length"
+              title="Noch keine Angebote"
+              hint="Lege ein Angebot an, um Versionen und Ausgänge zu verfolgen."
             >
-              {{ Math.round(doc.probability || 0) }}%
-            </span>
-            <span
-              v-else
-              class="flex items-center gap-1 rounded-md bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700 hover:bg-amber-100"
-            >
-              <FeatherIcon name="grid" class="h-3 w-3" /> {{ __('Fill matrix') }}
-            </span>
-            <span class="mt-0.5 text-[9px] uppercase text-gray-400">{{ __('Opportunity Matrix') }}</span>
-          </button>
-        </div>
+              <template #action>
+                <Button variant="outline" size="sm" iconLeft="plus" @click="showNewOfferDialog = true" :label="__('Create first offer')" />
+              </template>
+            </PpEmptyState>
+            <PpDataGrid v-else :columns="offerCols" :rows="offerRows" @row-click="openOffer">
+              <template #cell-wert="{ row }">
+                <MoneyDual v-if="row._offer.value" class="items-end text-right" :amount="row._offer.value" :currency="row._offer.currency" :value-eur="row._offer.value_eur" :rate="row._offer.exchange_rate_to_eur" :frozen-at="row._offer.rate_frozen_at" size="sm" />
+                <span v-else class="text-gray-300">—</span>
+              </template>
+              <template #cell-status="{ value }">
+                <span class="crmw-pill" :data-tone="offerTone(value)"><i class="crmw-dot" />{{ __(value) }}</span>
+              </template>
+            </PpDataGrid>
+            <p class="text-[11px] text-gray-400">{{ __('Open an offer to change its status, versions and outcome.') }}</p>
+          </div>
+
+          <!-- Dokumente -->
+          <div v-else-if="activeTab === T.DOC" class="crmw-tabpane">
+            <PpDocList v-if="docItems.length" :docs="docItems" />
+            <PpEmptyState v-else title="Keine Dokumente verknüpft" hint="Verknüpfe einen SharePoint-Ordner, Teams-Kanal oder Dokument-Link im Projekt, um ihn hier zu öffnen." />
+          </div>
+
+          <!-- Aufgaben & Zeit -->
+          <div v-else-if="activeTab === T.EXE" class="crmw-tabpane">
+            <ExecutionPanel :project="projectId" />
+          </div>
+
+          <!-- Kontakte -->
+          <div v-else-if="activeTab === T.CON" class="crmw-tabpane space-y-3">
+            <div v-if="project.loading && !doc.contacts" class="flex items-center justify-center py-12">
+              <div class="h-6 w-6 animate-spin rounded-full border-2 border-gray-200 border-t-lcs-secondary" />
+            </div>
+            <div v-else-if="contactsData.length" class="rounded-lg border px-3">
+              <ContactRow v-for="c in contactsData" :key="c.name" :contact="c.name" />
+            </div>
+            <PpEmptyState v-else title="Keine Kontakte verknüpft" hint="Diesem Projekt sind noch keine Kontakte zugeordnet." />
+          </div>
+
+          <!-- PLM / BOM -->
+          <div v-else-if="activeTab === T.PLM" class="crmw-tabpane space-y-4">
+            <FusionItemPicker
+              :project-name="projectId"
+              :fusion-workspace="doc.fusion_workspace"
+              :fusion-item-id="doc.fusion_item_id"
+              :fusion-number="doc.fusion_item_number"
+              :fusion-description="doc.fusion_item_description"
+              :fusion-state="doc.fusion_item_state"
+              @linked="onFusionLinked"
+              @unlinked="onFusionUnlinked"
+            />
+            <div v-if="doc.fusion_item_id">
+              <div v-if="bomLoading" class="flex items-center justify-center py-8">
+                <div class="h-6 w-6 animate-spin rounded-full border-2 border-gray-200 border-t-lcs-secondary" />
+              </div>
+              <div v-else-if="bomError" class="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                <FeatherIcon name="alert-circle" class="mr-1 inline h-3.5 w-3.5" />{{ bomError }}
+              </div>
+              <BomTree v-else :rows="bomRows" />
+            </div>
+          </div>
+
+          <!-- Chancen-Matrix -->
+          <div v-else-if="activeTab === T.MTX" class="crmw-tabpane">
+            <OpportunityMatrix
+              :technical-fit="matrixValues.technical_fit"
+              :commercial-fit="matrixValues.commercial_fit"
+              :relationship="matrixValues.relationship_strength"
+              :competition="matrixValues.competition_level"
+              :strategic-importance="matrixValues.strategic_importance"
+              @update="onMatrixUpdate"
+            />
+          </div>
+        </section>
       </div>
     </div>
 
-    <!-- Main layout: tabs + side panel -->
-    <!-- Below lg the side panel stacks under the tabs and the page scrolls
-         as a whole; on desktop it stays a resizable right column. -->
-    <div class="flex min-h-0 flex-1 flex-col overflow-y-auto lg:flex-row lg:overflow-hidden">
-      <Tabs
-        v-model="tabIndex"
-        as="div"
-        :tabs="tabs"
-        class="flex min-h-[70vh] flex-1 shrink-0 overflow-hidden flex-col lg:min-h-0 lg:shrink [&_[role='tab']]:px-0 [&_[role='tab']]:shrink-0 [&_[role='tablist']]:px-5 [&_[role='tablist']::-webkit-scrollbar]:h-0 [&_[role='tablist']]:min-h-[45px] [&_[role='tablist']]:gap-7.5 [&_[role='tabpanel']:not([hidden])]:flex [&_[role='tabpanel']:not([hidden])]:grow"
-      >
-        <template #tab-panel>
-          <div class="flex-1 overflow-y-auto p-5">
-            <!-- Overview Tab -->
-            <div v-if="activeTab === 'Overview'" class="space-y-5">
-              <!-- 📝 NOTES — PINNED AT TOP, ALWAYS VISIBLE -->
-              <section class="rounded-xl border border-amber-200 bg-amber-50/50 p-4">
-                <div class="mb-2 flex items-center justify-between">
-                  <h3 class="flex items-center gap-2 text-sm font-semibold text-amber-900">
-                    <FeatherIcon name="edit-3" class="h-4 w-4" />
-                    {{ __('Notes') }}
-                    <span v-if="doc.notes" class="rounded-full bg-amber-200 px-1.5 py-0.5 text-[10px] text-amber-800">
-                      {{ __('active') }}
-                    </span>
-                  </h3>
-                  <Button
-                    v-if="!editingNotes"
-                    variant="ghost"
-                    size="sm"
-                    iconLeft="edit-2"
-                    @click="startNotesEdit"
-                    :label="doc.notes ? __('Edit') : __('Add')"
-                    class="text-amber-700 hover:bg-amber-100"
-                  />
-                </div>
-                <div v-if="editingNotes" class="space-y-2">
-                  <div class="relative">
-                    <textarea
-                      v-model="editNotesValue"
-                      class="w-full rounded-lg border border-amber-200 bg-white px-3 py-2 pr-10 text-sm text-gray-800 focus:border-amber-400 focus:ring-1 focus:ring-amber-400"
-                      rows="5"
-                      :placeholder="__('Write project notes, internal reminders, or next steps...')"
-                      ref="notesInput"
-                    />
-                    <div class="absolute right-2 top-2">
-                      <VoiceInput :hotkey="true" @transcript="onVoiceNote" />
-                    </div>
-                  </div>
-                  <div class="flex items-center justify-between gap-2">
-                    <div class="flex gap-2">
-                      <Button variant="solid" size="sm" @click="saveNotes" :label="__('Save')" iconLeft="check" />
-                      <Button variant="ghost" size="sm" @click="cancelNotesEdit" :label="__('Cancel')" />
-                    </div>
-                    <span class="text-[10px] text-gray-400">{{ __('Click mic for voice input') }}</span>
-                  </div>
-                </div>
-                <div v-else-if="doc.notes" class="whitespace-pre-wrap text-sm text-gray-800">
-                  {{ doc.notes }}
-                </div>
-                <div v-else class="text-sm italic text-amber-700/70">
-                  {{ __('No notes yet. Click Add to write project notes.') }}
-                </div>
-              </section>
+    <!-- Meta-/Inspector-Spalte (bestehendes Seitenpanel, Funktionserhalt) -->
+    <Resizer side="right" class="flex !w-full shrink-0 flex-col justify-between border-t bg-white lg:!w-auto lg:border-l lg:border-t-0">
+      <div v-if="doc.name && canShow('show_integration_panel')" class="border-b px-5 py-4">
+        <IntegrationStatusPanel :project="projectId" />
+      </div>
 
-              <!-- Description -->
-              <section>
-                <h3 class="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-400">
-                  <FeatherIcon name="file-text" class="h-3.5 w-3.5" />
-                  {{ __('Description') }}
-                </h3>
-                <div v-if="editingDescription" class="space-y-2">
-                  <div class="relative">
-                    <textarea
-                      v-model="editDescriptionValue"
-                      class="w-full rounded-lg border border-gray-200 px-3 py-2 pr-10 text-sm text-gray-800 focus:border-lcs-secondary focus:ring-1 focus:ring-lcs-secondary"
-                      rows="4"
-                      :placeholder="__('Add a project description...')"
-                      ref="descriptionInput"
-                    />
-                    <div class="absolute right-2 top-2">
-                      <VoiceInput @transcript="onDescriptionVoice" />
-                    </div>
-                  </div>
-                  <div class="flex items-center justify-between gap-2">
-                    <div class="flex gap-2">
-                      <Button variant="solid" size="sm" @click="saveDescription" :label="__('Save')" />
-                      <Button variant="ghost" size="sm" @click="cancelDescriptionEdit" :label="__('Cancel')" />
-                    </div>
-                    <span class="text-[10px] text-gray-400">{{ __('Click mic or press Ctrl+Shift+V for voice input') }}</span>
-                  </div>
-                </div>
-                <div v-else @click="startDescriptionEdit" class="group cursor-pointer">
-                  <p v-if="doc.project_description" class="whitespace-pre-wrap text-sm text-gray-800 group-hover:bg-gray-50 rounded-lg p-2 -m-2 transition">
-                    {{ doc.project_description }}
-                  </p>
-                  <p v-else class="rounded-lg border border-dashed border-gray-200 p-4 text-center text-sm text-gray-400 hover:border-gray-300 hover:text-gray-500 transition">
-                    {{ __('Click to add a description') }}
-                  </p>
-                </div>
-              </section>
-
-              <!-- Pricing stages — editable cards showing Budget → Richtpreis → Angebot progression -->
-              <section v-if="canShow('show_pricing_details')">
-                <h3 class="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-400">
-                  <FeatherIcon name="trending-up" class="h-3.5 w-3.5" />
-                  {{ __('Pricing Stages') }}
-                  <span class="ml-2 text-[10px] font-normal normal-case text-gray-400">
-                    {{ __('Customer budget → internal estimate → formal quote') }}
-                  </span>
-                </h3>
-                <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                  <PriceStageCard
-                    :label="__('Budget')"
-                    :sublabel="__('Customer indication')"
-                    :value="doc.budget_customer"
-                    color="gray"
-                    icon="user"
-                    :editable="true"
-                    :currency="doc.currency"
-                    @save="updateField('budget_customer', $event)"
-                  />
-                  <PriceStageCard
-                    :label="__('Richtpreis')"
-                    :sublabel="__('Internal estimate')"
-                    :value="doc.richtpreis"
-                    color="blue"
-                    icon="clipboard"
-                    :editable="true"
-                    :currency="doc.currency"
-                    @save="updateField('richtpreis', $event)"
-                  />
-                  <PriceStageCard
-                    :label="__('Angebot')"
-                    :sublabel="__('Formal quote')"
-                    :value="doc.angebot_total"
-                    color="green"
-                    icon="file-text"
-                    :editable="true"
-                    :currency="doc.currency"
-                    @save="updateField('angebot_total', $event)"
-                  />
-                </div>
-                <!-- Forecasting row: weighted value and variance -->
-                <div class="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
-                  <div class="rounded-lg border bg-gray-50 p-3">
-                    <div class="text-xs text-gray-500">{{ __('Weighted Value') }}</div>
-                    <div class="mt-1 text-base font-bold text-gray-700">
-                      {{ formatCurrency((doc.estimated_value || 0) * (doc.probability || 0) / 100) }}
-                    </div>
-                    <div class="mt-0.5 text-[10px] text-gray-400">{{ __('value × probability') }}</div>
-                  </div>
-                  <div v-if="doc.probability != null" class="rounded-lg border bg-gray-50 p-3">
-                    <div class="text-xs text-gray-500">{{ __('Win Probability') }}</div>
-                    <div class="mt-1 text-base font-bold" :class="probabilityClass(doc.probability)">
-                      {{ Math.round(doc.probability) }}%
-                    </div>
-                  </div>
-                  <div v-if="budgetVsAngebot" class="rounded-lg border bg-gray-50 p-3">
-                    <div class="text-xs text-gray-500">{{ __('Budget vs. Angebot') }}</div>
-                    <div class="mt-1 text-base font-bold" :class="budgetVsAngebot >= 0 ? 'text-green-600' : 'text-amber-600'">
-                      {{ budgetVsAngebot >= 0 ? '+' : '' }}{{ Math.round(budgetVsAngebot) }}%
-                    </div>
-                    <div class="mt-0.5 text-[10px] text-gray-400">
-                      {{ budgetVsAngebot >= 0 ? __('under customer budget') : __('over customer budget') }}
-                    </div>
-                  </div>
-                </div>
-              </section>
-            </div>
-
-            <!-- 💼 OFFERS TAB — H1: Offer status prominently visible -->
-            <div v-if="activeTab === 'Offers'" class="space-y-4">
-              <!-- Header with add button -->
-              <div class="flex items-center justify-between">
-                <div>
-                  <h3 class="text-sm font-semibold text-gray-900">{{ __('Offers') }}</h3>
-                  <p class="mt-0.5 text-xs text-gray-500">
-                    {{ offers.length }} {{ __('offer(s)') }}
-                    <span v-if="activeOffersCount > 0"> • {{ activeOffersCount }} {{ __('active') }}</span>
-                  </p>
-                </div>
-                <Button variant="solid" size="sm" iconLeft="plus" @click="showNewOfferDialog = true" :label="__('New Offer')" />
-              </div>
-
-              <!-- Status summary bar — at-a-glance view -->
-              <div v-if="offers.length" class="flex flex-wrap gap-2">
-                <div
-                  v-for="(count, status) in offerStatusCounts"
-                  :key="status"
-                  class="flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs"
-                  :class="offerStatusClass(status)"
-                >
-                  <span class="h-1.5 w-1.5 rounded-full" :class="offerStatusDotClass(status)" />
-                  <span class="font-semibold">{{ count }}</span>
-                  <span>{{ __(status) }}</span>
-                </div>
-              </div>
-
-              <!-- Offers list — skeleton prevents layout shift on slow network -->
-              <div v-if="offersResource.loading && !offers.length" class="space-y-2">
-                <div v-for="i in 3" :key="i" class="animate-pulse rounded-xl border bg-white p-4">
-                  <div class="flex items-start justify-between gap-4">
-                    <div class="flex-1 space-y-2">
-                      <div class="h-4 w-48 rounded bg-gray-200" />
-                      <div class="h-3 w-36 rounded bg-gray-100" />
-                    </div>
-                    <div class="space-y-2">
-                      <div class="h-5 w-20 rounded-full bg-gray-200" />
-                      <div class="h-5 w-24 rounded bg-gray-100" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div v-else-if="!offers.length" class="flex flex-col items-center rounded-xl border border-dashed border-gray-200 py-12">
-                <FeatherIcon name="file-text" class="h-8 w-8 text-gray-300" />
-                <p class="mt-3 text-sm text-gray-500">{{ __('No offers yet.') }}</p>
-                <p class="mt-1 text-xs text-gray-400">{{ __('Create an offer to track versions and outcomes.') }}</p>
-                <Button class="mt-3" variant="outline" size="sm" iconLeft="plus" @click="showNewOfferDialog = true" :label="__('Create first offer')" />
-              </div>
-              <div v-else class="space-y-2">
-                <div
-                  v-for="offer in offers"
-                  :key="offer.name"
-                  class="rounded-xl border bg-white p-4 transition hover:shadow-sm cursor-pointer hover:border-lcs-secondary"
-                  :class="{ 'ring-2 ring-green-200': offer.status === 'Accepted', 'opacity-60': offer.status === 'Expired' }"
-                  @click="$router.push({ name: 'LCS Offer', params: { id: offer.name } })"
-                >
-                  <div class="flex items-start justify-between gap-4">
-                    <div class="min-w-0 flex-1">
-                      <div class="flex items-center gap-2">
-                        <span class="font-medium text-gray-900">{{ offer.offer_title }}</span>
-                        <span class="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-mono font-semibold text-gray-600">
-                          v{{ offer.version }}
-                        </span>
-                        <FeatherIcon name="external-link" class="ml-auto h-3 w-3 text-gray-300" />
-                      </div>
-                      <div class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500">
-                        <span v-if="offer.offer_date">📅 {{ formatDate(offer.offer_date) }}</span>
-                        <span v-if="offer.valid_until" :class="{ 'text-red-500': isExpired(offer.valid_until) }">
-                          ⏰ {{ __('until') }} {{ formatDate(offer.valid_until) }}
-                        </span>
-                        <span v-if="offer.probability">🎯 {{ Math.round(offer.probability) }}%</span>
-                      </div>
-                      <p v-if="offer.lost_reason" class="mt-2 rounded-md bg-red-50 px-2 py-1 text-xs italic text-red-700">
-                        <FeatherIcon name="x-circle" class="mr-1 inline h-3 w-3" />
-                        {{ __('Lost') }}: {{ offer.lost_reason }}
-                      </p>
-                      <p v-else-if="offer.won_notes" class="mt-2 rounded-md bg-green-50 px-2 py-1 text-xs italic text-green-700">
-                        <FeatherIcon name="check-circle" class="mr-1 inline h-3 w-3" />
-                        {{ offer.won_notes }}
-                      </p>
-                    </div>
-                    <div class="flex flex-col items-end gap-2">
-                      <!-- Status badge — prominent -->
-                      <span :class="offerStatusClass(offer.status)" class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold">
-                        <span class="h-1.5 w-1.5 rounded-full" :class="offerStatusDotClass(offer.status)" />
-                        {{ __(offer.status) }}
-                      </span>
-                      <MoneyDual
-                        v-if="offer.value"
-                        class="items-end text-right"
-                        :amount="offer.value"
-                        :currency="offer.currency"
-                        :value-eur="offer.value_eur"
-                        :rate="offer.exchange_rate_to_eur"
-                        :frozen-at="offer.rate_frozen_at"
-                        size="lg"
-                      />
-                    </div>
-                  </div>
-                  <!-- Status change dropdown -->
-                  <div class="mt-3 flex items-center justify-between border-t pt-3" @click.stop>
-                    <Dropdown
-                      :options="offerStatusOptions(offer)"
-                      placement="bottom-start"
-                    >
-                      <template #default="{ open }">
-                        <Button variant="ghost" size="sm" :iconRight="open ? 'chevron-up' : 'chevron-down'" :label="__('Change status')" />
-                      </template>
-                    </Dropdown>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Contacts Tab -->
-            <div v-if="activeTab === 'Contacts'" class="space-y-3">
-              <div v-if="project.loading && !doc.contacts" class="flex items-center justify-center py-12">
-                <div class="h-6 w-6 animate-spin rounded-full border-2 border-gray-200 border-t-lcs-secondary" />
-              </div>
-              <div v-else-if="contactsData.length" class="rounded-lg border px-3">
-                <ContactRow v-for="c in contactsData" :key="c.name" :contact="c.name" />
-              </div>
-              <div v-else class="flex flex-col items-center py-12">
-                <FeatherIcon name="users" class="h-8 w-8 text-gray-300" />
-                <p class="mt-3 text-sm text-gray-500">{{ __('No contacts linked to this project yet.') }}</p>
-              </div>
-            </div>
-
-            <!-- Execution Tab — Tasks + Time Logs + Costing aus ERPNext Project -->
-            <div v-if="activeTab === 'Execution'">
-              <ExecutionPanel :project="projectId" />
-            </div>
-
-            <!-- PLM / BOM Tab -->
-            <div v-if="activeTab === 'PLM'" class="space-y-4">
-              <FusionItemPicker
-                :project-name="projectId"
-                :fusion-workspace="doc.fusion_workspace"
-                :fusion-item-id="doc.fusion_item_id"
-                :fusion-number="doc.fusion_item_number"
-                :fusion-description="doc.fusion_item_description"
-                :fusion-state="doc.fusion_item_state"
-                @linked="onFusionLinked"
-                @unlinked="onFusionUnlinked"
-              />
-
-              <!-- BOM view — only when linked -->
-              <div v-if="doc.fusion_item_id">
-                <div v-if="bomLoading" class="flex items-center justify-center py-8">
-                  <div class="h-6 w-6 animate-spin rounded-full border-2 border-gray-200 border-t-lcs-secondary" />
-                </div>
-                <div v-else-if="bomError" class="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-                  <FeatherIcon name="alert-circle" class="mr-1 inline h-3.5 w-3.5" />
-                  {{ bomError }}
-                </div>
-                <BomTree v-else :rows="bomRows" />
-              </div>
-            </div>
-
-            <!-- Matrix Tab -->
-            <div v-if="activeTab === 'Matrix'">
-              <OpportunityMatrix
-                :technical-fit="matrixValues.technical_fit"
-                :commercial-fit="matrixValues.commercial_fit"
-                :relationship="matrixValues.relationship_strength"
-                :competition="matrixValues.competition_level"
-                :strategic-importance="matrixValues.strategic_importance"
-                @update="onMatrixUpdate"
-              />
-            </div>
-
-            <!-- Activity Tab -->
-            <div v-if="activeTab === 'Activity'" class="space-y-3">
-              <!-- Customer emails auto-linked by domain or logged from Outlook -->
-              <MailActivityWidget :project="projectId" />
-              <div v-if="activities.loading" class="flex items-center justify-center py-12">
-                <div class="h-6 w-6 animate-spin rounded-full border-2 border-gray-200 border-t-lcs-secondary" />
-              </div>
-              <div v-else-if="!activities.data?.length" class="flex flex-col items-center py-12">
-                <FeatherIcon name="clock" class="h-8 w-8 text-gray-300" />
-                <p class="mt-3 text-sm text-gray-500">{{ __('No activities recorded yet.') }}</p>
-              </div>
-              <div v-else class="relative pl-6">
-                <div class="absolute bottom-0 left-2.5 top-0 w-px bg-gray-200" />
-                <div v-for="a in activities.data" :key="a.name" class="relative mb-4">
-                  <div class="absolute -left-3.5 top-1.5 h-2 w-2 rounded-full border-2 border-white bg-lcs-secondary" />
-                  <div class="rounded-lg border bg-white p-3 shadow-sm">
-                    <div class="flex items-center justify-between">
-                      <span class="text-sm font-medium text-gray-900">{{ a.subject || a.content }}</span>
-                      <span class="text-xs text-gray-400">{{ formatRelativeTime(a.creation) }}</span>
-                    </div>
-                    <p v-if="a.content && a.subject" class="mt-1 text-sm text-gray-600">{{ a.content }}</p>
-                    <p class="mt-1 text-xs text-gray-400">{{ a.owner }}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
+      <div class="flex-1 overflow-y-auto">
+        <div class="divide-y">
+          <div class="space-y-3 px-5 py-4">
+            <h4 class="text-[10px] font-bold uppercase tracking-wider text-gray-400">{{ __('Classification') }}</h4>
+            <SideField :label="__('Country')"><span class="text-sm text-gray-800">{{ doc.country || '—' }}</span></SideField>
+            <SideField :label="__('GU')">
+              <span v-if="doc.is_gu" class="flex items-center gap-1 text-sm text-green-600"><FeatherIcon name="check-circle" class="h-3.5 w-3.5" /> {{ __('Yes') }}</span>
+              <span v-else class="text-sm text-gray-400">{{ __('No') }}</span>
+            </SideField>
           </div>
-        </template>
-      </Tabs>
 
-      <!-- Side panel -->
-      <Resizer side="right" class="flex !w-full shrink-0 flex-col justify-between border-t bg-white lg:!w-auto lg:border-l lg:border-t-0">
-        <!-- Integrated systems: CRM · ERPNext · BSM · HRMS · LMS · Fusion Manage
-           Hidden if user disabled this panel in preferences OR profile hides it. -->
-        <div v-if="doc.name && canShow('show_integration_panel')" class="border-b px-5 py-4">
-          <IntegrationStatusPanel :project="projectId" />
-        </div>
+          <div class="space-y-3 px-5 py-4">
+            <h4 class="text-[10px] font-bold uppercase tracking-wider text-gray-400">{{ __('People') }}</h4>
+            <SideField :label="__('Salesperson')"><UserPicker :value="doc.salesperson" :placeholder="__('Assign…')" @save="v => updateField('salesperson', v)" /></SideField>
+            <SideField :label="__('Sales Manager')"><UserPicker :value="doc.sales_manager" :placeholder="__('Assign…')" @save="v => updateField('sales_manager', v)" /></SideField>
+            <SideField :label="__('Organization')"><span class="text-sm text-gray-800">{{ doc.organization || '—' }}</span></SideField>
+          </div>
 
-        <div class="flex-1 overflow-y-auto">
-          <div class="divide-y">
-            <div class="space-y-3 px-5 py-4">
-              <h4 class="text-[10px] font-bold uppercase tracking-wider text-gray-400">{{ __('Classification') }}</h4>
-              <SideField :label="__('Country')">
-                <span class="text-sm text-gray-800">{{ doc.country || '—' }}</span>
-              </SideField>
-              <SideField :label="__('GU')">
-                <span v-if="doc.is_gu" class="flex items-center gap-1 text-sm text-green-600">
-                  <FeatherIcon name="check-circle" class="h-3.5 w-3.5" /> {{ __('Yes') }}
-                </span>
-                <span v-else class="text-sm text-gray-400">{{ __('No') }}</span>
-              </SideField>
-            </div>
+          <div v-if="canShow('show_pricing_details')" class="space-y-2 px-5 py-4">
+            <h4 class="text-[10px] font-bold uppercase tracking-wider text-gray-400">{{ __('Pricing') }}</h4>
+            <SideField :label="__('Budget')"><span class="text-sm tabular-nums" :class="doc.budget_customer ? 'text-gray-800' : 'text-gray-400'">{{ doc.budget_customer ? formatCurrency(doc.budget_customer) : '—' }}</span></SideField>
+            <SideField :label="__('Richtpreis')"><span class="text-sm tabular-nums" :class="doc.richtpreis ? 'text-blue-700 font-medium' : 'text-gray-400'">{{ doc.richtpreis ? formatCurrency(doc.richtpreis) : '—' }}</span></SideField>
+            <SideField :label="__('Angebot')"><span class="text-sm tabular-nums" :class="doc.angebot_total ? 'text-green-700 font-semibold' : 'text-gray-400'">{{ doc.angebot_total ? formatCurrency(doc.angebot_total) : '—' }}</span></SideField>
+          </div>
 
-            <div class="space-y-3 px-5 py-4">
-              <h4 class="text-[10px] font-bold uppercase tracking-wider text-gray-400">{{ __('People') }}</h4>
-              <SideField :label="__('Salesperson')">
-                <UserPicker
-                  :value="doc.salesperson"
-                  :placeholder="__('Assign…')"
-                  @save="v => updateField('salesperson', v)"
-                />
-              </SideField>
-              <SideField :label="__('Sales Manager')">
-                <UserPicker
-                  :value="doc.sales_manager"
-                  :placeholder="__('Assign…')"
-                  @save="v => updateField('sales_manager', v)"
-                />
-              </SideField>
-              <SideField :label="__('Organization')">
-                <span class="text-sm text-gray-800">{{ doc.organization || '—' }}</span>
-              </SideField>
-            </div>
+          <div v-if="doc.notes" class="space-y-2 bg-amber-50/30 px-5 py-4">
+            <h4 class="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-amber-700"><FeatherIcon name="edit-3" class="h-3 w-3" />{{ __('Notes Preview') }}</h4>
+            <p class="line-clamp-4 whitespace-pre-wrap text-xs text-gray-700">{{ doc.notes }}</p>
+            <button class="text-xs font-medium text-amber-700 hover:underline" @click="activeTab = T.OV">{{ __('View full notes →') }}</button>
+          </div>
 
-            <!-- Pricing quick reference in side panel — respects prefs + access profile -->
-            <div v-if="canShow('show_pricing_details')" class="space-y-2 px-5 py-4">
-              <h4 class="text-[10px] font-bold uppercase tracking-wider text-gray-400">{{ __('Pricing') }}</h4>
-              <SideField :label="__('Budget')">
-                <span class="text-sm tabular-nums" :class="doc.budget_customer ? 'text-gray-800' : 'text-gray-400'">
-                  {{ doc.budget_customer ? formatCurrency(doc.budget_customer) : '—' }}
-                </span>
-              </SideField>
-              <SideField :label="__('Richtpreis')">
-                <span class="text-sm tabular-nums" :class="doc.richtpreis ? 'text-blue-700 font-medium' : 'text-gray-400'">
-                  {{ doc.richtpreis ? formatCurrency(doc.richtpreis) : '—' }}
-                </span>
-              </SideField>
-              <SideField :label="__('Angebot')">
-                <span class="text-sm tabular-nums" :class="doc.angebot_total ? 'text-green-700 font-semibold' : 'text-gray-400'">
-                  {{ doc.angebot_total ? formatCurrency(doc.angebot_total) : '—' }}
-                </span>
-              </SideField>
-            </div>
-
-            <!-- Quick Notes shortcut in sidepanel -->
-            <div v-if="doc.notes" class="space-y-2 bg-amber-50/30 px-5 py-4">
-              <h4 class="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-amber-700">
-                <FeatherIcon name="edit-3" class="h-3 w-3" />
-                {{ __('Notes Preview') }}
-              </h4>
-              <p class="line-clamp-4 whitespace-pre-wrap text-xs text-gray-700">{{ doc.notes }}</p>
-              <button class="text-xs font-medium text-amber-700 hover:underline" @click="tabIndex = 0">
-                {{ __('View full notes →') }}
-              </button>
-            </div>
-
-            <div v-if="doc.team_link || doc.sharepoint_link" class="space-y-3 px-5 py-4">
-              <h4 class="text-[10px] font-bold uppercase tracking-wider text-gray-400">{{ __('External Links') }}</h4>
-              <div class="flex flex-col gap-2">
-                <a v-if="doc.team_link" :href="doc.team_link" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 text-sm text-lcs-secondary hover:text-lcs-primary hover:underline">
-                  <FeatherIcon name="message-square" class="h-3.5 w-3.5" />
-                  {{ __('Teams Channel') }}
-                </a>
-                <a v-if="doc.sharepoint_link" :href="doc.sharepoint_link" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 text-sm text-lcs-secondary hover:text-lcs-primary hover:underline">
-                  <FeatherIcon name="folder" class="h-3.5 w-3.5" />
-                  {{ __('SharePoint Folder') }}
-                </a>
-              </div>
+          <div v-if="doc.team_link || doc.sharepoint_link" class="space-y-3 px-5 py-4">
+            <h4 class="text-[10px] font-bold uppercase tracking-wider text-gray-400">{{ __('External Links') }}</h4>
+            <div class="flex flex-col gap-2">
+              <a v-if="doc.team_link" :href="doc.team_link" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 text-sm text-lcs-secondary hover:text-lcs-primary hover:underline"><FeatherIcon name="message-square" class="h-3.5 w-3.5" />{{ __('Teams Channel') }}</a>
+              <a v-if="doc.sharepoint_link" :href="doc.sharepoint_link" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 text-sm text-lcs-secondary hover:text-lcs-primary hover:underline"><FeatherIcon name="folder" class="h-3.5 w-3.5" />{{ __('SharePoint Folder') }}</a>
             </div>
           </div>
         </div>
-      </Resizer>
-    </div>
+      </div>
+    </Resizer>
   </div>
 
   <!-- Phase change confirmation -->
@@ -664,16 +368,10 @@
   <Dialog v-model="showNewOfferDialog" :options="{ title: __('New Offer'), size: 'md' }">
     <template #body-content>
       <div class="space-y-4">
-        <!-- Template selector — quick-start from predefined template -->
         <div v-if="offerTemplates.length" class="rounded-lg border border-lcs-secondary/20 bg-lcs-secondary/5 p-3">
           <label class="text-xs font-semibold uppercase tracking-wide text-lcs-primary">{{ __('Start from Template') }}</label>
           <div class="mt-2 flex flex-wrap gap-2">
-            <button
-              v-for="t in offerTemplates"
-              :key="t.name"
-              class="rounded-lg border bg-white px-3 py-1.5 text-xs font-medium text-gray-700 transition hover:border-lcs-secondary hover:bg-lcs-secondary/10"
-              @click="applyTemplate(t)"
-            >
+            <button v-for="t in offerTemplates" :key="t.name" class="rounded-lg border bg-white px-3 py-1.5 text-xs font-medium text-gray-700 transition hover:border-lcs-secondary hover:bg-lcs-secondary/10" @click="applyTemplate(t)">
               <span class="flex items-center gap-1">
                 <FeatherIcon name="file-plus" class="h-3 w-3" />
                 {{ t.template_name }}
@@ -694,15 +392,8 @@
         <FormControl :label="__('Status')" v-model="newOffer.status" type="select" :options="['Draft', 'Sent', 'In Review', 'Accepted', 'Rejected', 'Expired', 'Revised']" />
         <div class="relative">
           <label class="mb-1 block text-xs text-gray-700">{{ __('Notes') }}</label>
-          <textarea
-            v-model="newOffer.notes"
-            class="w-full rounded-lg border border-gray-300 px-3 py-2 pr-10 text-sm focus:border-lcs-secondary focus:ring-1 focus:ring-lcs-secondary"
-            rows="3"
-            :placeholder="__('Offer notes, terms, reminders...')"
-          />
-          <div class="absolute right-2 top-7">
-            <VoiceInput @transcript="onOfferNotesVoice" />
-          </div>
+          <textarea v-model="newOffer.notes" class="w-full rounded-lg border border-gray-300 px-3 py-2 pr-10 text-sm focus:border-lcs-secondary focus:ring-1 focus:ring-lcs-secondary" rows="3" :placeholder="__('Offer notes, terms, reminders...')" />
+          <div class="absolute right-2 top-7"><VoiceInput @transcript="onOfferNotesVoice" /></div>
         </div>
       </div>
     </template>
@@ -720,16 +411,12 @@ import { ref, computed, watch, nextTick, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   createDocumentResource, createListResource, createResource,
-  Breadcrumbs, Button, Dropdown, Dialog, Tabs, Tooltip, FeatherIcon, FormControl,
+  Breadcrumbs, Button, Dropdown, Dialog, Tooltip, FeatherIcon, FormControl,
   toast, usePageMeta, call,
 } from 'frappe-ui'
 import LayoutHeader from '@/components/LayoutHeader.vue'
-import FunnelFlowBar from '@/components/lcs/FunnelFlowBar.vue'
 import MoneyDual from '@/components/lcs/MoneyDual.vue'
 import Resizer from '@/components/Resizer.vue'
-import SyncStatusBadge from '@/components/lcs/SyncStatusBadge.vue'
-import ErpNextDeepLink from '@/components/lcs/ErpNextDeepLink.vue'
-import FusionManageDeepLink from '@/components/lcs/FusionManageDeepLink.vue'
 import IntegrationStatusPanel from '@/components/lcs/IntegrationStatusPanel.vue'
 import FusionItemPicker from '@/components/lcs/FusionItemPicker.vue'
 import BomTree from '@/components/lcs/BomTree.vue'
@@ -740,8 +427,17 @@ import MailActivityWidget from '@/components/lcs/MailActivityWidget.vue'
 import ContactRow from '@/components/lcs/ContactRow.vue'
 import PriceStageCard from '@/components/lcs/PriceStageCard.vue'
 import VoiceInput from '@/components/lcs/VoiceInput.vue'
+// pilanda_theme-Bausteine (Copy-Modell, PP_REV in Datei-Kopf)
+import PpPageHead from '@/components/pp/PpPageHead.vue'
+import PpPhaseStepper from '@/components/pp/PpPhaseStepper.vue'
+import PpStatTile from '@/components/pp/PpStatTile.vue'
+import PpTabs from '@/components/pp/PpTabs.vue'
+import PpTimeline from '@/components/pp/PpTimeline.vue'
+import PpComments from '@/components/pp/PpComments.vue'
+import PpDataGrid from '@/components/pp/PpDataGrid.vue'
+import PpDocList from '@/components/pp/PpDocList.vue'
+import PpEmptyState from '@/components/pp/PpEmptyState.vue'
 import { queueMutation, cachePut, listMutations, onQueueChange } from '@/utils/offlineDB'
-import { drain } from '@/utils/syncEngine'
 import { copyToClipboard, timeAgo } from '@/utils'
 import { useUserPreferences } from '@/composables/useUserPreferences'
 
@@ -775,6 +471,14 @@ const breadcrumbs = computed(() => [
   { label: doc.value.project_name || projectId.value, route: { name: 'LCS Project', params: { id: projectId.value } } },
 ])
 
+const headSubtitle = computed(() => {
+  const parts = []
+  if (doc.value.project_number) parts.push(doc.value.project_number)
+  if (doc.value.organization) parts.push(doc.value.organization + (doc.value.country ? ` (${doc.value.country})` : ''))
+  else if (doc.value.country) parts.push(doc.value.country)
+  return parts.join(' · ')
+})
+
 const lastSaved = computed(() => doc.value.modified ? (timeAgo ? timeAgo(doc.value.modified) : '') : '')
 
 // Pending mutations for this project
@@ -797,26 +501,47 @@ const budgetVsAngebot = computed(() => {
   return ((budget - angebot) / budget) * 100
 })
 
-// Tabs — Offers tab added prominently
-const tabIndex = ref(0)
-// Offer count stored in a dedicated ref so tabs computed doesn't touch
-// `offers` (which is declared further down in this file — referring to
-// it here causes a TDZ error when the minifier inlines the getter).
-const tabOfferCount = ref(0)
-
+// ---- Tabs (String-basiert für PpTabs) ----
+const T = {
+  OV: 'Übersicht', ACT: 'Aktivitäten', OFF: 'Angebote', DOC: 'Dokumente',
+  EXE: 'Aufgaben & Zeit', CON: 'Kontakte', PLM: 'PLM / BOM', MTX: 'Chancen-Matrix',
+}
+const activeTab = ref(T.OV)
 const tabs = computed(() => {
-  const all = [
-    { name: 'Overview', label: __('Overview'), show: true },
-    { name: 'Offers', label: __('Offers') + (tabOfferCount.value ? ` (${tabOfferCount.value})` : ''), show: true },
-    { name: 'Execution', label: __('Tasks & Time'), show: true },
-    { name: 'Contacts', label: __('Contacts'), show: true },
-    { name: 'PLM', label: __('PLM / BOM'), show: canShow('show_fusion_section') },
-    { name: 'Matrix', label: __('Opportunity Matrix'), show: canShow('show_opportunity_matrix') },
-    { name: 'Activity', label: __('Activity'), show: true },
-  ]
-  return all.filter(t => t.show)
+  const list = [T.OV, T.ACT, T.OFF, T.DOC, T.EXE, T.CON]
+  if (canShow('show_fusion_section')) list.push(T.PLM)
+  if (canShow('show_opportunity_matrix')) list.push(T.MTX)
+  return list
 })
-const activeTab = computed(() => tabs.value[tabIndex.value]?.name || 'Overview')
+
+// ---- Phasen-Stepper (echte LCS-Phasen → Oberstufen) ----
+const PHASES = ['Qualified', 'Budget', 'Richtpreis', 'Offer', 'Negotiation', 'Won', 'Execution', 'Completed', 'Lost']
+const PHASE_STEPS = [
+  { key: 'Qualified',   idx: 1, group: 'Interessent', label: 'Qualifiziert' },
+  { key: 'Budget',      idx: 2, group: 'Angebot',     label: 'Budget' },
+  { key: 'Richtpreis',  idx: 3, group: 'Angebot',     label: 'Richtpreis' },
+  { key: 'Offer',       idx: 4, group: 'Angebot',     label: 'Angebot' },
+  { key: 'Negotiation', idx: 5, group: 'Angebot',     label: 'Verhandlung' },
+  { key: 'Won',         idx: 6, group: 'Projekt',     label: 'Auftrag' },
+  { key: 'Execution',   idx: 7, group: 'Projekt',     label: 'Ausführung' },
+  { key: 'Completed',   idx: 8, group: 'Projekt',     label: 'Abgeschlossen' },
+]
+const phaseSteps = PHASE_STEPS.map(({ idx, group, label }) => ({ idx, group, label }))
+const currentStep = computed(() => {
+  const s = PHASE_STEPS.find((p) => p.key === doc.value.phase)
+  return s ? s.idx : 0 // 0 = keine aktive Stufe (z. B. „Lost")
+})
+
+// ---- KPI-Zeile (echte Felder) ----
+const kpis = computed(() => {
+  const val = doc.value.estimated_value || doc.value.angebot_total || doc.value.richtpreis || doc.value.budget_customer || 0
+  return [
+    { label: 'Auftragswert', value: formatCurrency(val), hint: 'Geschätzter Auftragswert' },
+    { label: 'Abschlusswahrsch.', value: `${Math.round(doc.value.probability || 0)} %`, hint: __(doc.value.phase || 'Open') },
+    { label: 'Erw. Abschluss', value: doc.value.expected_close_date ? formatDate(doc.value.expected_close_date) : '—', hint: 'laut Planung' },
+    { label: 'Angebote', value: String(offers.value.length), hint: activeOffersCount.value ? `${activeOffersCount.value} aktiv` : 'keine aktiven' },
+  ]
+})
 
 // ---- Fusion BOM loading ----
 const bomRows = ref([])
@@ -846,11 +571,10 @@ async function loadBom() {
 }
 
 // Reload BOM whenever the user enters the PLM tab or the link changes
-watch(activeTab, (t) => { if (t === 'PLM') loadBom() })
+watch(activeTab, (t) => { if (t === T.PLM) loadBom() })
 watch(() => doc.value.fusion_item_id, () => loadBom())
 
 function onFusionLinked(info) {
-  // Optimistically update the cached doc so the BOM section renders immediately
   if (project.doc) {
     project.doc.fusion_workspace = info.workspace
     project.doc.fusion_item_id = info.item_id
@@ -875,16 +599,15 @@ function onFusionUnlinked() {
 }
 
 // Phase change
-const phases = ['Qualified', 'Budget', 'Richtpreis', 'Offer', 'Negotiation', 'Won', 'Execution', 'Completed', 'Lost']
 const showPhaseConfirm = ref(false)
 const pendingPhase = ref('')
 const isBackwardPhaseMove = computed(() => {
-  const currentIdx = phases.indexOf(doc.value.phase)
-  const newIdx = phases.indexOf(pendingPhase.value)
+  const currentIdx = PHASES.indexOf(doc.value.phase)
+  const newIdx = PHASES.indexOf(pendingPhase.value)
   return newIdx < currentIdx && pendingPhase.value !== 'Lost'
 })
 const phaseDropdownOptions = computed(() =>
-  phases.map((phase) => ({
+  PHASES.map((phase) => ({
     label: __(phase),
     icon: doc.value.phase === phase ? 'check' : undefined,
     onClick: () => initiatePhaseChange(phase),
@@ -895,8 +618,6 @@ const MATRIX_REQUIRED_PHASES = ['Offer', 'Negotiation', 'Won']
 function initiatePhaseChange(phase) {
   if (phase === doc.value.phase) return
   pendingPhase.value = phase
-  // Gate: the Opportunity Matrix must be filled before moving forward into the
-  // offer / negotiation / order phases. Backward moves are not gated.
   if (!isBackwardPhaseMove.value && MATRIX_REQUIRED_PHASES.includes(phase)
       && !matrixFilled.value && canShow('show_opportunity_matrix')) {
     pendingPhase.value = null
@@ -971,32 +692,53 @@ function saveDescription() {
   editingDescription.value = false
 }
 
-// Copy feedback
-const justCopied = ref(false)
-function copyId() {
-  copyToClipboard(projectId.value)
-  justCopied.value = true
-  setTimeout(() => { justCopied.value = false }, 3500)
-  toast({ title: __('Copied'), icon: 'check', iconClasses: 'text-green-500' })
-}
-
-// 💼 Offers — NEW
+// 💼 Offers
 const offersResource = createResource({
   url: 'lcs_integrations.projects.api.get_project_offers',
   params: { project: projectId.value },
   auto: true,
 })
 const offers = computed(() => offersResource.data || [])
-// Keep the tabs count in sync — lives in a separate ref above because
-// `tabs` must not reference `offers` directly (TDZ in setup order).
-watch(offers, (v) => { tabOfferCount.value = (v || []).length }, { immediate: true })
-const latestOffer = computed(() => offers.value[0] || null)
 const activeOffersCount = computed(() => offers.value.filter(o => ['Draft', 'Sent', 'In Review'].includes(o.status)).length)
-const offerStatusCounts = computed(() => {
-  const counts = {}
-  offers.value.forEach(o => { counts[o.status] = (counts[o.status] || 0) + 1 })
-  return counts
-})
+
+// Angebote → PpDataGrid
+const offerCols = [
+  { key: 'nr',      label: 'Angebot', pin: true, width: 220 },
+  { key: 'datum',   label: 'Datum', width: 120 },
+  { key: 'version', label: 'Version', align: 'center', width: 90 },
+  { key: 'wert',    label: 'Wert', align: 'right', width: 170 },
+  { key: 'status',  label: 'Status', width: 150 },
+]
+const offerRows = computed(() =>
+  offers.value.map((o) => ({
+    id: o.name,
+    nr: o.offer_title || o.name,
+    datum: o.offer_date ? formatDate(o.offer_date) : '—',
+    version: `v${o.version}`,
+    wert: o.value,
+    status: o.status,
+    _offer: o,
+  })),
+)
+function openOffer(id) {
+  router.push({ name: 'LCS Offer', params: { id } })
+}
+const OFFER_TONE = {
+  Draft: 'neutral', Sent: 'info', 'In Review': 'warning', Accepted: 'success',
+  Rejected: 'danger', Expired: 'neutral', Revised: 'brand',
+}
+function offerTone(status) { return OFFER_TONE[status] || 'neutral' }
+
+// Angebots-Versionen → PpTimeline
+const offerTimeline = computed(() =>
+  offers.value.map((o) => ({
+    kind: 'task',
+    dir: null,
+    subject: `${o.offer_title || 'Angebot'} · v${o.version} — ${__(o.status)}`,
+    who: doc.value.salesperson || 'Vertrieb',
+    ago: o.offer_date ? formatDate(o.offer_date) : '',
+  })),
+)
 
 const showNewOfferDialog = ref(false)
 const creatingOffer = ref(false)
@@ -1038,7 +780,7 @@ const newOffer = ref({
 })
 
 async function createOffer() {
-  if (creatingOffer.value) return  // guard against double-submit
+  if (creatingOffer.value) return
   creatingOffer.value = true
   try {
     const res = createResource({
@@ -1068,34 +810,7 @@ async function createOffer() {
   }
 }
 
-function offerStatusOptions(offer) {
-  const statuses = ['Draft', 'Sent', 'In Review', 'Accepted', 'Rejected', 'Expired', 'Revised']
-  return statuses.map(s => ({
-    label: __(s),
-    icon: offer.status === s ? 'check' : undefined,
-    onClick: () => changeOfferStatus(offer, s),
-  }))
-}
-
-async function changeOfferStatus(offer, newStatus) {
-  if (offer.status === newStatus) return
-  try {
-    const res = createResource({
-      url: 'frappe.client.set_value',
-      params: { doctype: 'LCS Offer', name: offer.name, fieldname: 'status', value: newStatus },
-    })
-    await res.submit()
-    offersResource.reload()
-    project.reload()
-    toast({ title: __('Offer status updated'), text: __(newStatus), icon: 'check-circle', iconClasses: 'text-green-500' })
-  } catch (err) {
-    toast({ title: __('Update failed'), text: err.messages?.[0], icon: 'alert-circle', iconClasses: 'text-red-500' })
-  }
-}
-
 // Contacts, Matrix, Activities
-// Authoritative source = the project's own contact table (LCS Project
-// Contact), where both manual adds and domain-binding write their rows.
 const contactsData = computed(() =>
   (doc.value.contacts || []).map((r) => ({ name: r.contact, role: r.role })),
 )
@@ -1121,7 +836,6 @@ createResource({
 let matrixSaveTimer = null
 function onMatrixUpdate({ field, value }) {
   matrixValues.value[field] = value
-  // Debounce — the slider fires many @input events while dragging.
   clearTimeout(matrixSaveTimer)
   matrixSaveTimer = setTimeout(saveMatrix, 500)
 }
@@ -1136,31 +850,63 @@ async function saveMatrix() {
     toast({ title: __('Could not save matrix'), text: err.messages?.[0], icon: 'alert-circle', iconClasses: 'text-red-500' })
   }
 }
-// Matrix is "filled" once any dimension has been scored above zero.
 const matrixFilled = computed(() =>
   Object.values(matrixValues.value).some((v) => (Number(v) || 0) > 0),
 )
 function goToMatrixTab() {
-  const i = tabs.value.findIndex((t) => t.name === 'Matrix')
-  if (i >= 0) tabIndex.value = i
+  if (canShow('show_opportunity_matrix')) activeTab.value = T.MTX
 }
 
+// Aktivitäten / Kommentare (echtes Frappe-Comment-System)
 const activities = createListResource({
   doctype: 'Comment',
   fields: ['name', 'subject', 'content', 'creation', 'owner'],
-  filters: { reference_doctype: 'LCS Project', reference_name: projectId.value },
+  filters: { reference_doctype: 'LCS Project', reference_name: projectId.value, comment_type: ['in', ['Comment', 'Info']] },
   orderBy: 'creation desc',
-  pageLength: 20,
+  pageLength: 50,
   auto: true,
+})
+const stripHtml = (h) => String(h || '').replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim()
+const projectComments = computed(() =>
+  (activities.data || []).map((c) => ({
+    id: c.name,
+    author: c.owner || 'System',
+    time: formatRelativeTime(c.creation),
+    text: stripHtml(c.content) || c.subject || '',
+  })),
+)
+const commentUsers = computed(() =>
+  [...new Set([doc.value.salesperson, doc.value.sales_manager, doc.value.project_manager].filter(Boolean))],
+)
+async function addProjectComment(text) {
+  if (!text || !text.trim()) return
+  try {
+    await call('crm.api.comment.add_comment', {
+      reference_doctype: 'LCS Project',
+      reference_name: projectId.value,
+      content: text,
+      attachments: [],
+    })
+    activities.reload()
+    toast({ title: __('Comment added'), icon: 'check-circle', iconClasses: 'text-green-500' })
+  } catch (err) {
+    toast({ title: __('Could not add comment'), text: err.messages?.[0], icon: 'alert-circle', iconClasses: 'text-red-500' })
+  }
+}
+
+// Dokumente → PpDocList (echte Link-Felder des Projekts)
+const docItems = computed(() => {
+  const out = []
+  if (doc.value.document_link) out.push({ id: 'doc', title: 'Projektdokument', kind: 'doc', href: doc.value.document_link, meta: ['Dokument-Link'] })
+  if (doc.value.sharepoint_link) out.push({ id: 'sp', title: 'SharePoint-Ordner', kind: 'doc', href: doc.value.sharepoint_link, meta: ['SharePoint'] })
+  if (doc.value.team_link) out.push({ id: 'teams', title: 'Teams-Kanal', kind: 'doc', href: doc.value.team_link, meta: ['Microsoft Teams'] })
+  return out
 })
 
 async function updateField(fieldname, value) {
-  // Capture the value we *think* is currently on the server so the sync
-  // engine can detect conflicts when replaying this mutation.
   const baseValues = project.doc ? { [fieldname]: project.doc[fieldname] } : {}
   const baseModified = project.doc?.modified || null
 
-  // Optimistic: cache the updated doc immediately so offline reads see it
   if (project.doc) {
     const updated = { ...project.doc, [fieldname]: value }
     await cachePut('LCS Project', projectId.value, updated)
@@ -1219,10 +965,6 @@ function typeFullName(type) {
   const map = { SB: 'Seilbahn (Cable Car)', WI: 'Winde (Winch)', LL: 'Liftanlage (Lift)', SK: 'Sonderkonstruktion (Special)' }
   return map[type] || type
 }
-function phaseClass(phase) {
-  const map = { Qualified: 'bg-sky-50 text-sky-700 border border-sky-200', Budget: 'bg-teal-50 text-teal-700 border border-teal-200', Richtpreis: 'bg-violet-50 text-violet-700 border border-violet-200', Offer: 'bg-amber-50 text-amber-700 border border-amber-200', Negotiation: 'bg-orange-50 text-orange-700 border border-orange-200', Won: 'bg-green-50 text-green-700 border border-green-200', Execution: 'bg-lcs-primary/5 text-lcs-primary border border-lcs-primary/20', Completed: 'bg-gray-50 text-gray-600 border border-gray-200', Lost: 'bg-red-50 text-red-700 border border-red-200' }
-  return map[phase] || 'bg-gray-50 text-gray-600 border border-gray-200'
-}
 function phaseDotClass(phase) {
   const map = { Qualified: 'bg-sky-500', Budget: 'bg-teal-500', Richtpreis: 'bg-violet-500', Offer: 'bg-amber-500', Negotiation: 'bg-orange-500', Won: 'bg-green-500', Execution: 'bg-lcs-primary', Completed: 'bg-gray-400', Lost: 'bg-red-500' }
   return map[phase] || 'bg-gray-400'
@@ -1233,23 +975,6 @@ function statusClass(status) {
 }
 function statusDotClass(status) {
   const map = { Open: 'bg-blue-500', Active: 'bg-green-500', 'On Hold': 'bg-amber-500', Completed: 'bg-gray-400', Cancelled: 'bg-red-500' }
-  return map[status] || 'bg-gray-400'
-}
-// Offer status — H6: Recognition via distinct colors
-function offerStatusClass(status) {
-  const map = {
-    Draft: 'bg-gray-50 text-gray-700 border border-gray-200',
-    Sent: 'bg-blue-50 text-blue-700 border border-blue-200',
-    'In Review': 'bg-purple-50 text-purple-700 border border-purple-200',
-    Accepted: 'bg-green-50 text-green-700 border border-green-200',
-    Rejected: 'bg-red-50 text-red-700 border border-red-200',
-    Expired: 'bg-gray-50 text-gray-500 border border-gray-200',
-    Revised: 'bg-amber-50 text-amber-700 border border-amber-200',
-  }
-  return map[status] || 'bg-gray-50 text-gray-600 border border-gray-200'
-}
-function offerStatusDotClass(status) {
-  const map = { Draft: 'bg-gray-400', Sent: 'bg-blue-500', 'In Review': 'bg-purple-500', Accepted: 'bg-green-500', Rejected: 'bg-red-500', Expired: 'bg-gray-300', Revised: 'bg-amber-500' }
   return map[status] || 'bg-gray-400'
 }
 function probabilityClass(val) {
@@ -1269,8 +994,46 @@ function formatRelativeTime(dateStr) {
   if (timeAgo) return timeAgo(dateStr)
   return dateStr
 }
-function isExpired(dateStr) {
-  if (!dateStr) return false
-  return new Date(dateStr) < new Date()
-}
 </script>
+
+<style scoped>
+.crmw { background: var(--pp-bg-base); }
+.crmw-main { max-width: 1180px; margin: 0 auto; width: 100%; padding: var(--pp-space-6) var(--pp-space-6) var(--pp-space-12);
+  display: flex; flex-direction: column; gap: var(--pp-space-5); }
+
+.crmw-btn { appearance: none; cursor: pointer; font-family: inherit; font-size: var(--pp-fs-13, 13px);
+  padding: 6px var(--pp-space-3); border-radius: var(--pp-radius-ui);
+  border: 1px solid var(--pp-border-default); background: var(--pp-bg-surface); color: var(--pp-text-primary); }
+.crmw-btn:hover { background: var(--pp-bg-hover); border-color: var(--pp-brand-primary); color: var(--pp-brand-primary); }
+.crmw-btn--primary { background: var(--pp-brand-primary); border-color: var(--pp-brand-primary); color: var(--pp-text-on-accent); }
+.crmw-btn--primary:hover { filter: brightness(1.05); color: var(--pp-text-on-accent); }
+
+.crmw-stepper { background: var(--pp-bg-surface); border: 1px solid var(--pp-border-subtle);
+  border-radius: var(--pp-radius-ui); box-shadow: var(--pp-shadow-xs); padding: var(--pp-space-4); }
+.crmw-lost { margin: var(--pp-space-3) 0 0; font-size: var(--pp-fs-13, 13px); color: var(--pp-state-danger);
+  display: flex; align-items: center; gap: 6px; }
+
+.crmw-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--pp-space-3); }
+
+.crmw-tabs-wrap { background: var(--pp-bg-surface); border: 1px solid var(--pp-border-subtle);
+  border-radius: var(--pp-radius-ui); box-shadow: var(--pp-shadow-xs); padding: var(--pp-space-4); }
+.crmw-tabpane { padding-top: var(--pp-space-4); }
+.crmw-sec-title { margin: var(--pp-space-2) 0 0; font-size: var(--pp-fs-12); font-weight: var(--pp-weight-bold);
+  letter-spacing: var(--pp-tracking-wide, 0.04em); text-transform: uppercase; color: var(--pp-text-tertiary); }
+.crmw-sec-title:first-child { margin-top: 0; }
+.crmw-desc { margin: 0; font-size: var(--pp-fs-14); color: var(--pp-text-secondary); line-height: var(--pp-lh-relaxed, 1.6); white-space: pre-wrap; }
+
+.crmw-pill { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: var(--pp-weight-semibold);
+  padding: 2px var(--pp-space-2); border-radius: var(--pp-radius-full); white-space: nowrap; }
+.crmw-dot { width: 6px; height: 6px; border-radius: var(--pp-radius-full); flex-shrink: 0; background: currentColor; }
+.crmw-pill[data-tone="brand"]   { background: color-mix(in oklab, var(--pp-brand-primary) 14%, transparent); color: var(--pp-brand-primary); }
+.crmw-pill[data-tone="info"]    { background: color-mix(in oklab, var(--pp-state-info) 14%, transparent); color: var(--pp-state-info); }
+.crmw-pill[data-tone="success"] { background: color-mix(in oklab, var(--pp-state-success) 14%, transparent); color: var(--pp-state-success); }
+.crmw-pill[data-tone="warning"] { background: color-mix(in oklab, var(--pp-state-warning) 16%, transparent); color: var(--pp-state-warning); }
+.crmw-pill[data-tone="danger"]  { background: color-mix(in oklab, var(--pp-state-danger) 14%, transparent); color: var(--pp-state-danger); }
+.crmw-pill[data-tone="neutral"] { background: var(--pp-bg-sunken); color: var(--pp-text-secondary); }
+
+@media (max-width: 1080px) {
+  .crmw-kpis { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
