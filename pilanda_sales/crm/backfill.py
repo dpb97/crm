@@ -92,11 +92,53 @@ def execute() -> dict:
             stats["fehler"].append(f"Lead {lead.name}: {e}")
 
     stats.update(backfill_opportunities())
+    stats.update(backfill_contact_org_links())
 
     frappe.db.commit()
     # Fail-loud: Fehler nicht verschlucken, aber die restlichen Datensätze
     # trotzdem übernehmen — am Ende vollständige Bilanz ausgeben.
     print("BACKFILL:", stats)
+    return stats
+
+
+def backfill_contact_org_links() -> dict:
+    """Kontakt→Firma-Verknüpfung in der CRM-Welt nachziehen.
+
+    Die übernommenen Contacts verlinken (Dynamic Link) auf ERPNext-Customer;
+    Dominiks CRM (u. a. get_network_graph, Firmen-Zuordnung) liest aber Links
+    auf CRM Organization UND das Feld Contact.company_name (Graph/Quick-
+    Filter). Für jeden Customer-Link mit namensgleicher CRM Organization
+    werden Organization-Link + company_name ergänzt (idempotent) — der
+    Customer-Link bleibt (ERPNext-Downstream braucht ihn weiter).
+    """
+    stats = {"kontakt_links_neu": 0, "kontakt_links_vorhanden": 0,
+             "company_name_gesetzt": 0}
+    rows = frappe.get_all(
+        "Dynamic Link",
+        filters={"parenttype": "Contact", "link_doctype": "Customer"},
+        fields=["parent", "link_name"],
+    )
+    for row in rows:
+        if not frappe.db.exists("CRM Organization", row.link_name):
+            continue
+        has_link = frappe.db.exists("Dynamic Link", {
+            "parenttype": "Contact", "parent": row.parent,
+            "link_doctype": "CRM Organization", "link_name": row.link_name,
+        })
+        needs_company = not frappe.db.get_value("Contact", row.parent, "company_name")
+        if has_link and not needs_company:
+            stats["kontakt_links_vorhanden"] += 1
+            continue
+        contact = frappe.get_doc("Contact", row.parent)
+        if not has_link:
+            contact.append("links", {
+                "link_doctype": "CRM Organization", "link_name": row.link_name,
+            })
+            stats["kontakt_links_neu"] += 1
+        if needs_company:
+            contact.company_name = row.link_name
+            stats["company_name_gesetzt"] += 1
+        contact.save(ignore_permissions=True)
     return stats
 
 
