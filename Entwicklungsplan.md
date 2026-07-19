@@ -125,13 +125,38 @@ Rolle: baut aus Oswalds Prototyp (read-only Referenz, **kein Code-Port**) das ka
     - [x] V0 Token-Konformität: nackte Hex/Alt-Navy in Dominiks
       LCS-Komponenten → `var(--pp-*)` (Entscheid #4; Umsetzung 16.07.,
       Verifikation s. u.).
-    - [ ] V1 Showcase im Theme (SSOT-Regel „CRM-Optik bauen WIR im
-      Theme"): A-Liga-Anlagenbau-CRM-Ansichten als Pp*-Showcases in
-      pilanda_theme (Lead-Liste, Deal-Kanban, Projekt-Workspace,
-      Netzwerk-Graph, Forecast) — Katalog + Abnahme Marco.
-    - [ ] V2 Adoption: abgenommene Showcases per Copy-Modell (PP_REV) in
-      die SPA/eigene Pages verdrahten — schrittweise je Ansicht, mit
-      Dominik synchronisiert (sein Fork-Kern bleibt merge-billig).
+    - [x] V1 Showcase-Serie KOMPLETT (17.–19.07., theme `75a520e`):
+      #3 Lead-Liste, #4 Deal-Kanban, #5 Projekt-Workspace, #6 Netzwerk,
+      #7 Sales Meeting, #8 Marktaufteilung+Karte, #9 Schnellnotizen mit
+      NEUEM Baustein PpSpeakOrType@1 (echte MediaRecorder-Aufnahme).
+    - [x] **V2 Adoption Wellen 1+2 (19.07., produktiv + E2E-bewiesen):**
+      W1 `0789d47d`/`e57bac88`/`c750efea` — Netzwerk (PpNetworkGraph/
+      Drawer-Profile an get_network_graph) + Projekt-Workspace
+      (PhasenStepper/KPI/Tabs/echte Frappe-Comments an LCS Project);
+      Datenlücken-Fix `c01e7004` (Contact→CRM-Org-Links + company_name,
+      erst dadurch Graph gefüllt: 20 Knoten/10 Kanten). W2 `d15a561a`/
+      `77632e86`/`a9d0b866`/`7a35f682` — Sales Meeting (KPI+Grid+
+      Summenfußzeile), Marktaufteilung (PpMap-Marker aus echten Länder-
+      Zentroiden + Territorien-Grids, Umverteilung erhalten),
+      Schnellnotiz (PpSpeakOrType → dispatch_note/Audio-Upload+
+      Transkriptions-Job, komplett deutsch; Browser-Live-Transkription
+      bewusst durch serverseitige ersetzt). 10 neue Pp*-Kopien, Drift 0.
+      E2E: Alle Seiten Desktop 0 Fehler; Mobil (iPhone 13) 0 Overflow,
+      0 geclippte Controls (PpTabs-„Clip" war Mess-Artefakt — Leiste
+      scrollt, SSOT-CSS hatte overflow-x längst).
+    - [x] **Mobile-Fix-Welle (19.07., `4a07d43c`/`a7398e61` + portfolio
+      `ac9edd9`):** Forecasting mobil (Controls scrollen, Chart unter
+      KPIs), geteilter LayoutHeader (Root-Cause des Dashboard-Clips),
+      Produktportfolio-Tabelle scrollt statt kollabiert (E2E iPhone).
+      **PWA:** Manifest/Icons/theme_color #008B8B korrekt; SW-Scope-Hook
+      `lcs_integrations/pwa/sw_scope.py` (Service-Worker-Allowed: /crm)
+      — WIRKT NUR HINTER NGINX/PROD (Dev-Bench: werkzeug
+      SharedDataMiddleware liefert /assets VOR der App aus, Hook feuert
+      dort nicht; nginx.conf setzt den Header bereits). EHRLICHE GRENZE:
+      /crm-Offline-Scope ist auf der Dev-Bench nicht beobachtbar.
+    - [ ] V2 Rest (mit Dominik): Upstream-Flächen Leads/Deals-Listen +
+      CRM-Dashboard/Prognose-Umbau (Merge-Billigkeit!), Capacitor-Builds
+      (mobile/, braucht native Toolchain + Stores).
 - [x] **#3 Repo-Schnitt FESTGESCHRIEBEN (Marco 16.07., „wie empfohlen"):**
   EIN Repo `pilanda_sales` mit drei Paketen (pilanda_sales, crm,
   lcs_integrations); Bench-Einspielung/Persistenz = `pilanda/_devenv/
