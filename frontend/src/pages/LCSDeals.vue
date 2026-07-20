@@ -71,7 +71,7 @@
         <div class="lcsd-figures">
           <div class="lcsd-figure">
             <span class="lcsd-figure-cap">{{ __('Value') }}</span>
-            <span class="lcsd-figure-val">{{ eur(sel.annual_revenue, sel.currency) }}</span>
+            <span class="lcsd-figure-val">{{ eur(sel.deal_value, sel.currency) }}</span>
           </div>
           <div class="lcsd-figure">
             <span class="lcsd-figure-cap">{{ __('Phase') }}</span>
@@ -167,7 +167,7 @@ function statusLabel(name) {
 /* ---- Deals LIVE laden (dieselben Felder wie Dominiks Deal-Liste) ---- */
 const dealsRes = createListResource({
   doctype: 'CRM Deal',
-  fields: ['name', 'organization', 'annual_revenue', 'currency', 'probability', 'status', 'deal_owner', 'modified'],
+  fields: ['name', 'organization', 'deal_value', 'currency', 'probability', 'status', 'deal_owner', 'modified'],
   orderBy: 'modified desc',
   pageLength: 500,
   cache: 'lcs-deals-board',
@@ -197,7 +197,7 @@ const perColumn = computed(() => {
   for (const d of boardDeals.value) {
     const c = map[d.status] || (map[d.status] = { count: 0, sum: 0 })
     c.count += 1
-    c.sum += Number(d.annual_revenue) || 0
+    c.sum += Number(d.deal_value) || 0
   }
   return map
 })
@@ -222,7 +222,7 @@ const cards = computed(() =>
       col: d.status,
       title: d.organization || d.name,
       badges: [
-        { label: eurShort(d.annual_revenue), tone },
+        { label: eurShort(d.deal_value), tone },
         { label: dealProbability(d) + ' %', tone: 'neutral' },
       ],
       assignee: d.deal_owner ? ownerName(d.deal_owner) : null,
@@ -235,13 +235,13 @@ const openDeals = computed(() =>
   boardDeals.value.filter((d) => !['Won', 'Lost'].includes(statusType(d.status))),
 )
 const weighted = computed(() =>
-  openDeals.value.reduce((a, d) => a + (Number(d.annual_revenue) || 0) * dealProbability(d) / 100, 0),
+  openDeals.value.reduce((a, d) => a + (Number(d.deal_value) || 0) * dealProbability(d) / 100, 0),
 )
 const openTotal = computed(() =>
-  openDeals.value.reduce((a, d) => a + (Number(d.annual_revenue) || 0), 0),
+  openDeals.value.reduce((a, d) => a + (Number(d.deal_value) || 0), 0),
 )
 const wonTotal = computed(() =>
-  boardDeals.value.filter((d) => statusType(d.status) === 'Won').reduce((a, d) => a + (Number(d.annual_revenue) || 0), 0),
+  boardDeals.value.filter((d) => statusType(d.status) === 'Won').reduce((a, d) => a + (Number(d.deal_value) || 0), 0),
 )
 const openCount = computed(() => openDeals.value.length)
 

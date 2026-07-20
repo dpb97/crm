@@ -69,7 +69,7 @@
               <div class="lcsdl-figures">
                 <div class="lcsdl-figure">
                   <span class="lcsdl-figure-cap">{{ __('Value') }}</span>
-                  <span class="lcsdl-figure-val">{{ eur(deal.annual_revenue, deal.currency) }}</span>
+                  <span class="lcsdl-figure-val">{{ eur(deal.deal_value, deal.currency) }}</span>
                 </div>
                 <div class="lcsdl-figure">
                   <span class="lcsdl-figure-cap">{{ __('Win probability') }}</span>
@@ -258,10 +258,10 @@ const probability = computed(() => {
     : statusProb(deal.value.status)
   return Math.round(p || 0)
 })
-const weighted = computed(() => (Number(deal.value.annual_revenue) || 0) * probability.value / 100)
+const weighted = computed(() => (Number(deal.value.deal_value) || 0) * probability.value / 100)
 
 const subtitle = computed(() => {
-  const parts = [statusLabel(deal.value.status), `${eur(deal.value.annual_revenue, deal.value.currency)}`, `${probability.value} %`]
+  const parts = [statusLabel(deal.value.status), `${eur(deal.value.deal_value, deal.value.currency)}`, `${probability.value} %`]
   return parts.filter(Boolean).join(' · ')
 })
 
