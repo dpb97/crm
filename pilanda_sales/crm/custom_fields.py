@@ -34,6 +34,25 @@ CRM_CUSTOM_FIELDS = {
             ),
         },
     ],
+    # deal_name (BEWUSST ohne custom_-Praefix, Marco-GO 20.07.2026):
+    # Dominiks deal_to_project._safe_name liest EXAKT `deal_name` am CRM Deal —
+    # das Feld fehlte im Fork-Doctype (Projektname fiel auf die Deal-ID
+    # zurueck). Dieses Custom Field schliesst die Luecke, bis Dominik es in
+    # den Doctype uebernimmt; pilot.api.start_project befuellt es bei der
+    # Konvertierung (sprechender Name des Leads). Eigentuemer: CRM-Domaene.
+    "CRM Deal": [
+        {
+            "fieldname": "deal_name",
+            "label": "Deal-Name (sprechend)",
+            "fieldtype": "Data",
+            "insert_after": "organization",
+            "description": (
+                "Sprechender Name der Verkaufschance (GF-Entscheid 20.07.2026: "
+                "Namen tragen die Objekte, Nummern erst das Projekt). Wird vom "
+                "Projekt-Namensgeber (deal_to_project) gelesen."
+            ),
+        },
+    ],
 }
 
 
