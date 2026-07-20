@@ -1,4 +1,4 @@
-<!-- PP_REV: PpKanban@2 -->
+<!-- PP_REV: PpKanban@3 -->
 <!--
   PpKanban.vue — Karten-Board mit ECHTEM Drag & Drop (SSOT-Baustein).
 
@@ -25,6 +25,14 @@
   Emits:
     move        ({ cardId, fromCol, toCol, index })  nach erfolgreichem Ablegen
     card-click  (cardId)                             Klick ohne Ziehen
+
+  Slots (@3):
+    #column-meta   Optionaler Zusatz je Spaltenkopf, gerendert UNTER dem
+                   bestehenden Label + Zähler-Badge. Slot-Props { column }
+                   (= das columns-Element). OHNE Slot rendert NICHTS — kein
+                   Wrapper, keine Layout-Verschiebung; Default-Rendering exakt
+                   wie bisher (voll rückwärtskompatibel). Für dezente
+                   Kopf-Kennzahlen wie Phasen-Summen o. Ä.
 
   Basis-Look über zentrale .pp-kanban*-Klassen (components.css, SSOT); Drag-
   Zustände / WIP / Badges scoped mit --pp-*-Tokens. Hell + dunkel.
@@ -201,6 +209,11 @@ onBeforeUnmount(() => {
         >{{ colCount(col.key) }}<template v-if="col.wip != null"> / {{ col.wip }}</template></span>
       </div>
 
+      <!-- Optionaler Kopf-Zusatz je Spalte (@3): rendert nur, wenn befüllt -->
+      <div v-if="$slots['column-meta']" class="pp-kanban__col-meta">
+        <slot name="column-meta" :column="col" />
+      </div>
+
       <div class="pp-kanban__body">
         <template v-for="(card, i) in byCol[col.key]" :key="card.id">
           <!-- Einfüge-Markierung vor dieser Karte -->
@@ -266,6 +279,14 @@ onBeforeUnmount(() => {
   background: rgb(var(--pp-brand-primary-rgb) / 0.05);
 }
 .pp-kanban__body { min-height: 24px; }
+
+/* Kopf-Zusatz (@3): nur vorhanden, wenn der #column-meta-Slot befüllt ist.
+   Dezente Default-Typo; das eigentliche Element gestaltet der Verbraucher. */
+.pp-kanban__col-meta {
+  margin-top: 2px;
+  font-size: var(--pp-fs-12);
+  color: var(--pp-text-secondary);
+}
 
 .pp-kanban__count--wip {
   color: var(--pp-text-on-accent);

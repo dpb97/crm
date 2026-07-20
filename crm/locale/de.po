@@ -3735,7 +3735,7 @@ msgstr "Branchen"
 #: crm/fcrm/doctype/crm_lead/crm_lead.json
 #: crm/fcrm/doctype/crm_organization/crm_organization.json
 msgid "Industry"
-msgstr "Industrie"
+msgstr "Branche"
 
 #. Option for the 'Status' (Select) field in DocType 'CRM Call Log'
 #: crm/fcrm/doctype/crm_call_log/crm_call_log.json
@@ -7902,7 +7902,7 @@ msgstr "türkis"
 #: frontend/src/components/Settings/CalendarSettings.vue:120
 #: frontend/src/components/Settings/CalendarSettings.vue:209
 msgid "day"
-msgstr "tag"
+msgstr "Tag"
 
 #: frontend/src/components/Calendar/EventNotifications.vue:175
 #: frontend/src/components/Calendar/EventNotifications.vue:194
@@ -7913,7 +7913,7 @@ msgstr "Tag vorher"
 #: frontend/src/components/Settings/CalendarSettings.vue:120
 #: frontend/src/components/Settings/CalendarSettings.vue:209
 msgid "days"
-msgstr "tage"
+msgstr "Tage"
 
 #: frontend/src/components/Calendar/EventNotifications.vue:175
 #: frontend/src/components/Calendar/EventNotifications.vue:194

@@ -152,8 +152,45 @@ const dashboard = createResource({
 const items = computed(() => (Array.isArray(dashboard.data) ? dashboard.data : []))
 const hasData = computed(() => dashboard.data != null)
 const numberItems = computed(() => items.value.filter((i) => i?.type === 'number_chart' && i.data))
+
+// frappe-ui-AxisChart nutzt series[].name gleichzeitig als Legenden-Label UND
+// als Daten-Key (row[s.name]) — ein Label-Feld gibt es nicht. Für übersetzte
+// Legenden müssen daher Serien-Name UND Row-Keys gemeinsam umgeschlüsselt
+// werden (Fork bleibt unangetastet; Keys = Stand crm/api/dashboard.py).
+const SERIES_LABELS = {
+  leads: () => __('Leads'),
+  deals: () => __('Deals'),
+  won_deals: () => __('Won deals'),
+  forecasted: () => __('Forecasted'),
+  actual: () => __('Actual'),
+  count: () => __('Count'),
+  value: () => __('Value'),
+}
+
+function localizeAxisChart(cfg) {
+  const names = (cfg?.series || []).map((s) => s?.name).filter((n) => SERIES_LABELS[n])
+  if (!names.length) return cfg
+  const rename = Object.fromEntries(names.map((n) => [n, SERIES_LABELS[n]()]))
+  return {
+    ...cfg,
+    series: cfg.series.map((s) => (rename[s.name] ? { ...s, name: rename[s.name] } : s)),
+    data: (cfg.data || []).map((row) => {
+      const out = { ...row }
+      for (const [key, label] of Object.entries(rename)) {
+        if (key in out) {
+          out[label] = out[key]
+          delete out[key]
+        }
+      }
+      return out
+    }),
+  }
+}
+
 const chartItems = computed(() =>
-  items.value.filter((i) => ['axis_chart', 'donut_chart', 'funnel_chart'].includes(i?.type) && i.data),
+  items.value
+    .filter((i) => ['axis_chart', 'donut_chart', 'funnel_chart'].includes(i?.type) && i.data)
+    .map((i) => (i.type === 'axis_chart' ? { ...i, data: localizeAxisChart(i.data) } : i)),
 )
 
 const errorText = computed(() => {
@@ -181,18 +218,26 @@ function fmtNumber(n) {
 function isMoney(cfg) {
   return !!(cfg.prefix && String(cfg.prefix).trim())
 }
+// Server-Suffixe kommen roh aus dashboard.py (kein _()); bekannte
+// Einheiten hier übersetzen statt den Fork anzufassen.
+function translateSuffix(raw) {
+  const SUFFIX_LABELS = { days: __('days'), day: __('day') }
+  const suffix = String(raw || '').trim()
+  return SUFFIX_LABELS[suffix.toLowerCase()] || suffix
+}
 function kpiValue(cfg) {
   const num = fmtNumber(cfg.value)
   if (isMoney(cfg)) return `${num} €`
-  const suffix = String(cfg.suffix || '').trim()
-  return suffix ? `${num} ${suffix}` : num
+  const translated = translateSuffix(cfg.suffix)
+  return translated ? `${num} ${translated}` : num
 }
 // Delta neutral als Hinweis (kein falsches Grün/Rot bei „weniger ist besser").
 function kpiHint(cfg) {
   if (cfg.delta == null || cfg.delta === '') return cfg.tooltip || ''
   const d = Number(cfg.delta) || 0
   const arrow = d >= 0 ? '▲' : '▼'
-  return `${arrow} ${cfg.deltaPrefix || ''}${fmtNumber(Math.abs(d))}${cfg.deltaSuffix || ''}`.trim()
+  const suffix = translateSuffix(cfg.deltaSuffix)
+  return `${arrow} ${cfg.deltaPrefix || ''}${fmtNumber(Math.abs(d))}${suffix ? ' ' + suffix : ''}`.trim()
 }
 
 function slugify(s) {

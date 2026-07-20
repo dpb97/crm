@@ -51,7 +51,12 @@
             :cards="cards"
             @card-click="openDeal"
             @move="onMove"
-          />
+          >
+            <!-- Phasen-Summe dezent im Spaltenkopf (statt im Label gequetscht) -->
+            <template #column-meta="{ column }">
+              <span v-if="columnSum(column.key)" class="lcsd-col-sum">{{ eurShort(columnSum(column.key)) }}</span>
+            </template>
+          </PpKanban>
         </section>
       </div>
     </div>
@@ -197,14 +202,15 @@ const perColumn = computed(() => {
   return map
 })
 
-// PpKanban-Spalten: Label trägt Phase + Summe (Anzahl liefert der Zähler-Badge).
+// PpKanban-Spalten: Label = reiner Phasenname (Anzahl liefert der Zähler-Badge,
+// die Phasen-Summe kommt als eigenes Element über den #column-meta-Slot, @3).
 const columns = computed(() =>
-  statuses.value.map((s) => {
-    const agg = perColumn.value[s.name] || { sum: 0 }
-    const label = agg.sum ? `${__(s.name)} · ${eurShort(agg.sum)}` : __(s.name)
-    return { key: s.name, label }
-  }),
+  statuses.value.map((s) => ({ key: s.name, label: __(s.name) })),
 )
+// Phasen-Summe je Spalte (für den #column-meta-Slot).
+function columnSum(key) {
+  return perColumn.value[key]?.sum || 0
+}
 
 // PpKanban-Karten aus den echten Deals abgeleitet.
 const cards = computed(() =>
@@ -355,6 +361,13 @@ function openDeal(id) {
   gap: var(--pp-space-3);
 }
 .lcsd-board { min-width: 0; }
+/* Phasen-Summe im Spaltenkopf (#column-meta-Slot) — dezent, token-only. */
+.lcsd-col-sum {
+  font-size: var(--pp-fs-12);
+  font-weight: var(--pp-weight-semibold);
+  color: var(--pp-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
 .lcsd-empty {
   padding: var(--pp-space-8);
   text-align: center;

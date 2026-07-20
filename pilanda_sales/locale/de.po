@@ -935,3 +935,12 @@ msgstr "Gewichteter Wert"
 
 msgid "Win probability"
 msgstr "Abschlusswahrscheinlichkeit"
+
+
+#: frontend/src/pages/LCSCRMDashboard.vue (Chart-Serien)
+msgid "Forecasted"
+msgstr "Prognostiziert"
+
+#: frontend/src/pages/LCSCRMDashboard.vue (Chart-Serien)
+msgid "Actual"
+msgstr "Ist"
