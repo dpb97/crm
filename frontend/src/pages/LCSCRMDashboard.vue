@@ -289,8 +289,15 @@ const market = createResource({
 })
 const allTerritories = computed(() =>
   Array.isArray(market.data?.territories) ? market.data.territories : [])
+// get_market_assignment liefert sales_manager + deputy_sales_manager
+// (Link User) — „meine" Märkte sind beide Rollen (Verkäufer ist oft
+// nur Stellvertreter, R03-Hauptzuordnung bleibt Dominiks Hoheit).
 const myTerritories = computed(() =>
-  allTerritories.value.filter((t) => t.user && t.user === currentUser.value))
+  allTerritories.value.filter(
+    (t) =>
+      (t.sales_manager && t.sales_manager === currentUser.value) ||
+      (t.deputy_sales_manager && t.deputy_sales_manager === currentUser.value),
+  ))
 const marketsShowingAll = computed(
   () => myTerritories.value.length === 0 && allTerritories.value.length > 0)
 const marketRows = computed(() =>

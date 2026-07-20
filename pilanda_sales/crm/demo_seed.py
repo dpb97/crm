@@ -58,6 +58,75 @@ def _territory(name: str) -> str | None:
     return name if frappe.db.exists("CRM Territory", name) else None
 
 
+# Verkäufer-Demo-Konto (Marco 20.07.: Sichttests als Verkäufer, nie als
+# Administrator) + Vervollständigung der Marktaufteilungs-User-Links.
+_SELLER = {
+    "email": "max.mustermann@lcs-test.local",
+    "first_name": "Max", "last_name": "Mustermann",
+    "roles": ["Sales User"],
+}
+# Dominiks R03-Kürzel → LCS-Demo-Konten (nur User-LINK vervollständigen,
+# die Code-Zuordnung selbst bleibt unangetastet — seine Hoheit).
+_CODE_TO_USER = {
+    "JFA": "jfa@lcs-test.local",
+    "PKO": "patrick.koch@lcs-test.local",
+    "CLU": "clu@lcs-test.local",
+    "DRO": "daniel.rohrer@lcs-test.local",
+}
+# Max als STELLVERTRETER dieser Territorien (deputy war überall leer —
+# keine Umverteilung von Dominiks Marktaufteilung).
+_SELLER_DEPUTY_TERRITORIES = ["Europa", "GUS"]
+
+
+def ensure_sales_team() -> dict:
+    stats = {"seller": "vorhanden", "links_gesetzt": 0, "deputy_gesetzt": 0,
+             "deals_uebertragen": 0}
+
+    if not frappe.db.exists("User", _SELLER["email"]):
+        user = frappe.new_doc("User")
+        user.email = _SELLER["email"]
+        user.first_name = _SELLER["first_name"]
+        user.last_name = _SELLER["last_name"]
+        user.language = "de"
+        user.send_welcome_email = 0
+        for role in _SELLER["roles"]:
+            user.append("roles", {"role": role})
+        user.insert(ignore_permissions=True)
+        stats["seller"] = "angelegt"
+
+    for code, email in _CODE_TO_USER.items():
+        if not frappe.db.exists("User", email):
+            continue
+        for t in frappe.get_all(
+            "LCS Sales Territory",
+            filters={"sales_manager_code": code, "sales_manager": ["in", ["", None]]},
+            pluck="name",
+        ):
+            frappe.db.set_value("LCS Sales Territory", t, "sales_manager", email,
+                                update_modified=False)
+            stats["links_gesetzt"] += 1
+
+    for t in _SELLER_DEPUTY_TERRITORIES:
+        if frappe.db.exists("LCS Sales Territory", t) and not frappe.db.get_value(
+            "LCS Sales Territory", t, "deputy_sales_manager"
+        ):
+            frappe.db.set_value("LCS Sales Territory", t, "deputy_sales_manager",
+                                _SELLER["email"], update_modified=False)
+            stats["deputy_gesetzt"] += 1
+
+    # Die drei LCS-Anlagenbau-Deals + ownerlose Deals → Max (Demo-Sicht).
+    for d in frappe.get_all(
+        "CRM Deal",
+        filters={"deal_owner": ["in", ["", None, "Administrator"]]},
+        pluck="name", limit_page_length=0,
+    ):
+        frappe.db.set_value("CRM Deal", d, "deal_owner", _SELLER["email"],
+                            update_modified=False)
+        stats["deals_uebertragen"] += 1
+
+    return stats
+
+
 def execute() -> dict:
     stats = {"dominik_seed": "übersprungen", "angereichert": 0, "neu": 0, "fehler": []}
 
@@ -119,6 +188,12 @@ def execute() -> dict:
             except Exception as e:
                 stats["fehler"].append(f"{firma}: {e}")
         frappe.db.set_default(STATE_KEY, "1")
+
+    stats.update(ensure_sales_team())
+
+    from pilanda_sales.crm.backfill import ensure_german_ux
+
+    ensure_german_ux()
 
     frappe.db.commit()
     print("LCS_DEMO_SEED:", stats)
