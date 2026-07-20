@@ -216,17 +216,47 @@ Config fehlen), `calculation/engine.py` (Angebotswesen-Roadmap), alle
     verdrahteter lokaler Demo-State, nur Pp*-Bausteine. **Marco-Sichtung/
     Freigabe OFFEN** (3 Fragen: Reiter-Aufbau, Button-Texte,
     Sidebar-Konsolidierung).
-  - [ ] Tender→Lead-Brücke: Link-Feld + idempotente Lead-Anlage per
-    Button (Muster news_ref, pilot/api.py).
-  - [ ] „Projekt starten"-Button am Lead = bestehende Lead→Deal-
-    Konvertierung (erzeugt Projekt+Nummer), UX/Benennung anpassen;
-    keine neue Mechanik bauen.
+  - [x] Tender→Lead-Brücke GEBAUT (20.07., salesbot-Repo, Marco-GO nach
+    Klickdummy): Feld `Pilot Tender.crm_lead` + `pilot.api.contact_taken`
+    (idempotent, Muster news_ref: CRM Lead mit sprechendem Namen =
+    Tender-Titel, Firma = Auftraggeber, Verkäufer = Session-User,
+    Quelle „Pilot"; Tender→„In Bearbeitung").
+  - [x] „Projekt starten" GEBAUT (20.07.): `pilot.api.start_project`
+    ruft Dominiks `convert_to_deal` (KEINE neue Mechanik) → Deal-Hook
+    erzeugt LCS Project + Projektnummer. E2E als Max: Chance→Lead
+    (CRM-LEAD-2026-00030) → Projekt LCS-Other-2026-020, sprechender
+    Name, 0 JS-Fehler.
+  - [x] Pilot-Workbench = Pipeline-Sicht (Reiter Chancen | Leads |
+    Projekte aus CRM-Livedaten via `pilot.api.pipeline`; Projekte-Klick
+    springt auf `/crm/projects/<id>`).
+  - [x] Nav-Konsolidierung (pilanda-Repo): Interessent/Verkaufschance
+    raus, Pilot = Pipeline (volle Kette Spec+SSOT+Übersetzungen+Tests,
+    140→138, 35/35 grün). Flächen /crm/leads + /crm/deals bleiben als
+    Deep-Link-Ziele erreichbar.
   - [ ] Notiz-Vereinheitlichung (Entscheid 4): Schnellnotiz legt eine
     echte Notiz in der EINEN Ablage an (statt Projekt-Kommentar);
     Notiz hängt am Projekt-Objekt, vor Projekt-Start am Lead und
     wandert mit. Eingriff in lcs_integrations → mit Dominik abstimmen.
-  - [ ] Nav-Konsolidierung: Interessent/Verkaufschance raus aus der
-    Sidebar, rein als Pilot-Reiter (SSOT modules_data, volle Kette).
+  - [ ] **Fork-Lücke [Dominik]:** `deal_to_project._safe_name` liest
+    `CRM Deal.deal_name` — das Feld existiert am Doctype NICHT →
+    Projektname fällt auf die Deal-ID zurück. Übergangsweise setzt
+    `pilot.api.start_project` den sprechenden Namen nach (dokumentiert
+    im Code); die **18 Bestandsprojekte** aus der Seed-Runde heißen
+    noch `CRM-DEAL-…` → Namens-Backfill-AP (Entscheid: Name aus Deal-
+    Organisation/Lead ableiten).
+  - [ ] **Demo-Daten-Wahrheit:** In LCS Project/CRM Deal mischen sich
+    Dominiks generische Demo-Firmen (Acme, TechStart, sarah.demo@…)
+    mit der LCS-Seilkran-Welt → bereinigen oder in die LCS-Demo-Welt
+    überführen (Marco-Entscheid, Dev-Datenbank).
+  - [ ] **Vertriebs-Dashboard-Ausbau (Marco 20.07. spät):** Aufbau
+    weiter verbessern; fehlen Theme-Elemente, wird ZUERST
+    pilanda_theme ergänzt (A-Liga, Vollständigkeit), dann Kopie —
+    Reihenfolge neu: Design im Klickdummy-HTML → Abnahme → Vue
+    (Prozess-SSOT Master §3).
+  - [ ] **UX stackweit [Theme]:** Zurück-Button (vorherige Seite) in
+    der Topbar existiert NICHT (verifiziert 20.07.); Logo→Home
+    funktioniert stackweit (Desk + SPA, verifiziert). Entscheid+Bau =
+    PpAppbar-Erweiterung im Theme (erst Klickdummy-HTML).
 - [ ] **Angebotswesen-KPIs ins EINE Dashboard** (Folge Insel-Rückbau 20.07.):
   wenn das Angebotswesen (Lastenheft/Kalkulation/Angebote) kommt, entstehen
   die Zähler Angebote/Aufträge/Kunden im `/crm/dashboard` neu (Quellen wie
