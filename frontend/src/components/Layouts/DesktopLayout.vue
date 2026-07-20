@@ -15,14 +15,9 @@
       <slot />
     </div>
     <GlobalModals />
-    <!-- Mode switch: CRM-only <-> Pilanda shell -->
-    <button
-      class="fixed right-3 top-1.5 z-[60] rounded-md border bg-white/90 px-2 py-1 text-[11px] font-medium text-ink-gray-6 shadow-sm hover:bg-surface-gray-2"
-      :title="pilandaMode ? 'Zur CRM-Only-Ansicht' : 'In den Pilanda-Modus wechseln'"
-      @click="toggle"
-    >
-      {{ pilandaMode ? 'CRM-Only' : 'Pilanda-Modus' }}
-    </button>
+    <!-- Kein Modus-Umschalt-Button mehr (Marco 20.07.2026: EINE Shell).
+         CRM-only (Dominiks Standalone-Ansicht) bleibt via ?mode=crm
+         erreichbar — usePilandaMode. -->
   </div>
 </template>
 <script setup>
@@ -32,6 +27,23 @@ import GlobalModals from '@/components/Modals/GlobalModals.vue'
 import LCSBrandHeader from '@/components/lcs/LCSBrandHeader.vue'
 import PilandaSidebar from '@/components/lcs/PilandaSidebar.vue'
 import { usePilandaMode } from '@/composables/usePilandaMode'
+import { useOnboarding } from 'frappe-ui/frappe'
 
-const { pilandaMode, toggle } = usePilandaMode()
+const { pilandaMode } = usePilandaMode()
+
+// LCS (20.07.2026): Im Pilanda-Modus rendert die PilandaSidebar — Dominiks
+// AppSidebar (die einzige Stelle mit vollem Onboarding-setUp) wird nie
+// gemountet, aber Pages/Modals fetchen den Server-Onboarding-Status →
+// frappe-ui syncStatus crasht auf onboardings[app] === undefined.
+// Minimal-Registrierung wie in MobileLayout (setUp ist idempotent; im
+// CRM-only-Escape registriert AppSidebar danach nicht erneut — bekannter,
+// akzeptierter Randfall: Panel dort ohne Icons).
+const { setUp } = useOnboarding('frappecrm')
+setUp(
+  [
+    'setup_your_password', 'create_first_lead', 'invite_your_team',
+    'convert_lead_to_deal', 'create_first_task', 'create_first_note',
+    'add_first_comment', 'send_first_email', 'change_deal_status',
+  ].map((name) => ({ name, completed: false })),
+)
 </script>

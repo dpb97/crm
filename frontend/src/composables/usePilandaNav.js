@@ -1,6 +1,8 @@
-// Pull the Pilanda shell navigation (SSOT: pilanda.api.get_modules) and map it
-// to the shape PpSidebar expects. Only used in Pilanda mode; fails soft when
-// the pilanda app isn't installed.
+// Pull the Pilanda shell navigation and map it to the shape PpSidebar@5
+// expects. SSOT: pilanda.api.get_nav_v2 — EXAKT dasselbe Modell wie
+// frappe.boot.pilanda_nav['v2'] im Desk (Module mit groups-Baum; das
+// frühere get_modules()-Landing-Format hatte keine Menüpunkte → die
+// Sidebar blieb leer, 20.07.2026). Fails soft when pilanda isn't installed.
 import { ref } from 'vue'
 import { call } from 'frappe-ui'
 
@@ -13,22 +15,23 @@ export function usePilandaNav() {
   async function load() {
     if (loaded.value) return
     try {
-      const data = await call('pilanda.api.get_modules')
-      zones.value = (data?.zones || []).map((z) => ({
+      const data = await call('pilanda.api.get_nav_v2')
+      zones.value = (data?.zonen || []).map((z) => ({
         code: z.code,
-        key: z.key,
+        key: z.key ?? z.code,
         label: z.label,
         subtitle: z.subtitle,
       }))
-      modules.value = (data?.modules || []).map((m) => ({
-        id: m.slug,
-        name: m.label,
-        icon: m.icon, // string name; PpSidebar falls back to a dot without a resolver
+      // PpSidebar-Vertrag: { id, name, icon, zone, g: [{ sec, items }] }
+      modules.value = (data?.module || []).map((m) => ({
+        ...m,
+        id: m.slug ?? m.id,
+        name: m.label ?? m.name,
+        icon: m.icon,
         zone: m.zone,
         status: m.status,
         target: m.target || m.path,
-        path: m.path,
-        accessible: m.accessible,
+        g: m.groups || m.g || [],
       }))
       loaded.value = true
     } catch (e) {

@@ -16,13 +16,8 @@
       @update:collapsed="collapsed = $event"
       @navigate="onNavigate"
     />
-    <button
-      class="shrink-0 border-t px-3 py-2 text-left text-xs text-ink-gray-5 hover:bg-surface-gray-2"
-      title="Zur CRM-Only-Ansicht"
-      @click="setMode(false)"
-    >
-      ← CRM-Only
-    </button>
+    <!-- Kein CRM-Only-Button mehr (Marco 20.07.2026: EINE Shell;
+         Standalone-Ansicht nur noch via ?mode=crm). -->
   </div>
 </template>
 
@@ -31,11 +26,9 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import PpSidebar from '@/components/pp/PpSidebar.vue'
 import { usePilandaNav } from '@/composables/usePilandaNav'
-import { usePilandaMode } from '@/composables/usePilandaMode'
 
 const router = useRouter()
 const { modules, zones, load } = usePilandaNav()
-const { setMode } = usePilandaMode()
 const collapsed = ref(false)
 
 onMounted(load)
