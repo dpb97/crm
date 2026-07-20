@@ -5,6 +5,32 @@
 Rolle: baut aus Oswalds Prototyp (read-only Referenz, **kein Code-Port**) das kaufmännische Angebotswesen für Seilkran-Projekte nach: Questionnaire/Lastenheft → Kalkulation → Angebot (+ Pricing Sheet/LV, Pflichtenheft). Im Vertriebsschnitt der Nav (Master §6) liefert die App vor allem **„Projekte ▸ Lastenheft" + „Angebote ▸ Varianten"**; der CRM-Teil erscheint dort als eigener Bereich **„Netzwerk"** (Kunden/Kontakte/Agenten/Partner). **CRM-SPA = Frappe CRM App `/crm`** (Owner Dominik; sein CRM-Fork liegt seit **PR #13 (16.07.2026) GEMERGT auf `develop`** — s. Entscheid unten); die LCS-Rücklink-Logik liegt im Python-Subpackage `pilanda_sales/crm/` (nicht zu verwechseln mit dem Top-Level-Fork-Paket `crm/`) — Optik/UX baut das Theme.
 
 ## Bindende Entscheide
+- **VERTRIEBSFLUSS + NOTIZEN (Marco 20.07.2026, GF-Entscheid — wörtlich
+  verankert, ersetzt frühere offene Fragen dazu):**
+  1. **Pilot listet Chancen:** Vorschläge aus Recherchen, Vergleichen,
+     Kontakten, Notizen usw. Der Pilot ist die Chancen-Liste des Vertriebs.
+  2. **Chance → Lead NUR durch Kontaktaufnahme eines Verkäufers** (manuell,
+     Button) — sonst ist die Chance tot. Keine Automatik.
+  3. **Lead → Projekt NUR manuell per Button** („Projekt starten", am
+     Lead-Status; Entscheid trifft der Verkäufer oder das Sales Meeting).
+     **Erst dieser Klick löst die Projektnummer** und erstellt damit das
+     Vertriebsprojekt. Vorher tragen Chance und Lead nur einen sprechenden
+     Namen, nie eine Nummer.
+  4. **Notizen: EIN Notiz-Objekt, EINE Ablage** — die Notiz hängt am
+     Projekt-Objekt (vor Projekt-Start am Lead und wandert beim Start mit).
+     Schnellnotiz ist NUR ein Erfassungsweg (mobil/Sprache), niemals eine
+     eigene Ablage oder ein eigener Anzeigepunkt.
+  **Ist-Abweichungen (ehrlich, Stand 20.07.) → Umbau-APs unter „Offen":**
+  (a) Tender→Lead-Brücke fehlt komplett (Pilot Tender hat keinen
+  CRM-Lead-Link, kein Übernahme-Button); (b) der „Projekt starten"-Moment
+  existiert technisch bereits als Lead→Deal-Konvertierung (Deal-after_insert
+  erzeugt LCS Project, project_number wird dort automatisch generiert —
+  deal_to_project.py + lcs_project.py) — es fehlt Benennung/UX als
+  „Projekt starten" am Lead; (c) Schnellnotiz schreibt heute einen
+  Projekt-KOMMENTAR (notes/api.py::_log_as_comment), die Notizen-Liste
+  zeigt FCRM Note → zwei Ablagen, verletzt Entscheid 4; (d) Nav-Punkte
+  Interessent/Verkaufschance noch eigenständig statt im Pilot (Entscheid
+  VIII/20.07.: zusammenführen, Pilot = zentrale Pipeline-Sicht).
 - **VERTRIEB-INTEGRATION (Marco 16.07.2026, nach PR #13) — Zielbild:**
   EIN Modul Vertrieb in der Pilanda-Shell, EINE App `pilanda_sales` — keine
   zwei App-Welten. (1) **Backend = Dominiks CRM-Funktionen** (Deal=Projekt,
@@ -102,6 +128,62 @@ Rolle: baut aus Oswalds Prototyp (read-only Referenz, **kein Code-Port**) das ka
 - **Liest, definiert NICHT:** freigegebene Anlagenkonfiguration (projeng), Phasen/Dauern (pm). Konfliktregel der Specs: 99 (E-/K) > 02/03 > Dossiers 10–15 > 04.
 
 ## Erledigt
+
+### Änderungsprotokoll 20.07.2026 — Aufräum-Runde Vertrieb (Marco-Audit-Auftrag): warum / was / wie
+
+**Anlass (WARUM):** Marco-Auftrag „Gesamt-Audit + ungenutzte Fragmente aus
+Entwicklungsversuchen entfernen (nur nach Erklärung + Freigabe)". Drei
+Audit-Stränge (Vertrieb-Redundanz, Dead-Code, Architektur) fanden in dieser
+App eine abgelöste Parallel-Implementierung (zweites Dashboard) und eine nie
+eingebaute Doppel-Implementierung (Projekt-Plakette). Grundregeln: SSOT,
+keine Redundanz, keine Schattenwelten.
+
+1. **sales-dashboard-Insel entfernt** (`c64edd29`, −1518 Zeilen;
+   Marco-Freigabe nach Bildvergleich beider Dashboards).
+   - *Warum:* Abgelöst durch den Ein-Dashboard-Entscheid (Marco 20.07.,
+     pilanda `e153ab2`): Modul-Dashboard = `/crm/dashboard`
+     (`LCSCRMDashboard.vue`). Die Insel hing an keinem Nav-Punkt mehr,
+     zählte die alte ERPNext-Datenwelt (32 Kunden/6 Angebote) statt der
+     CRM-Welt (Schatten-Wahrheit) und schleppte Doppel-Kopien zweier
+     Theme-Bausteine + eigene Build-Toolchain mit (Drift-Gefahr).
+   - *Was:* `frontend/src/dashboard/*` (DashboardApp, main.js, Doppel-
+     Kopien PpDashboard/PpDataGrid), `vite.dashboard.config.js`,
+     package.json-Scripts `build:dashboard`/`dev:dashboard`, Page-Ordner
+     `vertrieb/page/sales_dashboard/` (Route `/app/sales-dashboard`),
+     `pilanda_sales/api.py` (`get_sales_dashboard`, einziger Konsument
+     war die Insel — stack-weit gegengeprüft), dist-Artefakte.
+   - *Wie:* Dateien aus Git entfernt + NEU Patch-Gerüst
+     `pilanda_sales/patches/` mit `v0_1.remove_sales_dashboard_page`
+     (löscht den Page-DB-Eintrag idempotent; `bench migrate` gelaufen,
+     Record weg). Verifiziert: Alt-URL tot (Frappe-Standardmeldung),
+     `/crm/dashboard` rendert KPIs+Pilot-Feed, 0 JS-Fehler.
+   - *Nicht verloren:* Pilot-Feed lebt im CRM-Dashboard weiter; Alt-KPIs
+     Angebote/Aufträge/Kunden = AP „Angebotswesen-KPIs ins EINE Dashboard".
+
+2. **`LinkedProjectChip.vue` entfernt** (Marco-Freigabe „wie in 5a
+   rückbauen", 20.07. abends).
+   - *Warum:* Nie eingebaute Zweit-Implementierung — dieselbe Funktion
+     (verknüpftes LCS-Projekt am Deal anzeigen/öffnen, via
+     `find_project_for`) existiert produktiv als Projekt-Button in
+     `LCSDeal.vue` (20.07., `2ba70512`). Zusätzlich Theme-Verstoß
+     (hartkodierte Farbklassen). Null Referenzen (Voll-Grep PascalCase+
+     kebab über frontend/src inkl. Tests).
+   - *Was/Wie:* 1 SFC gelöscht + stale Zeile im Auto-Index
+     `components.d.ts` bereinigt.
+
+3. **Schwester-Rückbau im Master-Repo pilanda** (gehört zur selben
+   Freigabe, dort committet): `api.py::get_workspace_items` + 3 exklusive
+   Helfer — Endpoint der Vor-Shell-2.0-Sidebar, seit Nav-Umbau 14.07.
+   stack-weit ohne Aufrufer (über alle 22 Repos verifiziert; offener
+   Whitelist-Endpoint = unnötige Angriffs-/Wartungsfläche). Bench-Tests
+   pilanda 7/7 grün nach Entfernung.
+
+**Bewusst NICHT entfernt (kein Schutt, sondern unfertig mit Plan → APs
+unter „Offen"):** Bizcard-Scanner-UI (Backend+Docker existieren; Marco:
+Feature gewollt — mobil scannen → Kontakt-Vorschlag), Outlook-/Teams-/
+WhatsApp-Widgets (Dominiks Backends komplett, nur Seiten-Einbau + Azure-
+Config fehlen), `calculation/engine.py` (Angebotswesen-Roadmap), alle
+`*-upstream`-Fallbacks (Dominiks Merge-Hoheit).
 - [x] Phase 1 Datenmodell-Fundament (14.06., `576b84b` u.a.): `custom_sales_*` an Project + Item; DocType `Project Variant` (Kran-Child, Vertragsart, `is_winner`); K-Artikel (K-Präfix, nicht dispofähig, Preis-Zusammensetzung); Feldkatalog (106 Felder / 9+1 Sektionen als Seed `field_catalog_v1.py`); Rollen-Grundgerüst (`seed/roles.py`) — live auf `lcs.local` + DB-verifiziert
 - [x] Phase 3.1: DocTypes `Requirement Spec` (Lastenheft) + `Requirement Spec Answer`/`… File` + `derive_to_project()` (leer überschreibt nie) — 14.06., `576b84b`
 - [x] Phase 5 Start: Rechenkern-Kern-Primitive `calculation/engine.py` + `test_engine.py` — 14.06., `ef2c9ab`
@@ -126,6 +208,22 @@ Rolle: baut aus Oswalds Prototyp (read-only Referenz, **kein Code-Port**) das ka
   Theme-SSOT, Diff leer) — dort aber Dominiks Pflege.
 
 ## Offen — wird wirklich gebaut
+- [ ] **Vertriebsfluss-Umbau (GF-Entscheid 20.07., s. Bindende Entscheide):**
+  - [ ] Klickdummy ZUERST (Theme-Showcase, Marco-Sichtung vor Umbau):
+    Pilot-Seite mit Reitern Chancen | Leads | Projekte + Buttons
+    „Kontakt aufgenommen → Lead" (am Tender) und „Projekt starten"
+    (am Lead).
+  - [ ] Tender→Lead-Brücke: Link-Feld + idempotente Lead-Anlage per
+    Button (Muster news_ref, pilot/api.py).
+  - [ ] „Projekt starten"-Button am Lead = bestehende Lead→Deal-
+    Konvertierung (erzeugt Projekt+Nummer), UX/Benennung anpassen;
+    keine neue Mechanik bauen.
+  - [ ] Notiz-Vereinheitlichung (Entscheid 4): Schnellnotiz legt eine
+    echte Notiz in der EINEN Ablage an (statt Projekt-Kommentar);
+    Notiz hängt am Projekt-Objekt, vor Projekt-Start am Lead und
+    wandert mit. Eingriff in lcs_integrations → mit Dominik abstimmen.
+  - [ ] Nav-Konsolidierung: Interessent/Verkaufschance raus aus der
+    Sidebar, rein als Pilot-Reiter (SSOT modules_data, volle Kette).
 - [ ] **Angebotswesen-KPIs ins EINE Dashboard** (Folge Insel-Rückbau 20.07.):
   wenn das Angebotswesen (Lastenheft/Kalkulation/Angebote) kommt, entstehen
   die Zähler Angebote/Aufträge/Kunden im `/crm/dashboard` neu (Quellen wie
@@ -137,10 +235,10 @@ Rolle: baut aus Oswalds Prototyp (read-only Referenz, **kein Code-Port**) das ka
 - [ ] **Test-only-Widgets entscheiden:** Outlook-/Teams-/WhatsApp-Widgets +
   SyncStatusBadge haben je nur ihre Spec, keinen Einbau — verdrahten oder
   samt Spec entfernen (Marco/Dominik).
-- [ ] Dokumentierte Rückbau-Kandidaten (liegen gelassen, Marco 20.07. nur
-  Dashboard-Insel freigegeben): `LinkedProjectChip.vue` (Funktion lebt als
-  Projekt-Button in `LCSDeal.vue`), `pilanda/api.py::get_workspace_items`
-  (+3 Helfer, stack-weit 0 Aufrufer).
+- [x] Rückbau-Kandidaten `LinkedProjectChip.vue` +
+  `pilanda/api.py::get_workspace_items` — Marco-Freigabe 20.07. abends
+  („wie in 5a rückbauen"), umgesetzt; Details im Änderungsprotokoll
+  unter „Erledigt".
 - [ ] **Vertrieb-Integration (Entscheid oben) — Wellenplan:**
   - [x] Welle 1 (16.07., pilanda `33e628f`): erste 4 Punkte auf CRM-Seiten.
   - [x] Welle 2 ERLEDIGT durch die VOLLSTÄNDIGE CRM-Übernahme (16.07.,

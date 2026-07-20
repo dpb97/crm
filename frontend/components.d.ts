@@ -223,7 +223,6 @@ declare module 'vue' {
     LightningIcon: typeof import('./src/components/Icons/LightningIcon.vue')['default']
     Link: typeof import('./src/components/Controls/Link.vue')['default']
     LinkedDocsListView: typeof import('./src/components/ListViews/LinkedDocsListView.vue')['default']
-    LinkedProjectChip: typeof import('./src/components/lcs/LinkedProjectChip.vue')['default']
     LinkIcon: typeof import('./src/components/Icons/LinkIcon.vue')['default']
     ListBulkActions: typeof import('./src/components/ListBulkActions.vue')['default']
     ListIcon: typeof import('./src/components/Icons/ListIcon.vue')['default']
