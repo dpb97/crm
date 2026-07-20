@@ -1,4 +1,4 @@
-<!-- PP_REV: PpMap@1 -->
+<!-- PP_REV: PpMap@2 -->
 <!--
   PpMap.vue — Marker-Weltkarte (Token-SVG, SSOT-Baustein).
 
@@ -20,6 +20,9 @@
              kind ∈ "brand"|"success"|"warning"|"danger"|"info"|"neutral" (Default "brand")
     activeId für gesteuerte Auswahl (v-model-fähig über :active-id + @marker-click)
     graticule Boolean — Gradnetz zeigen (Default true)
+    markerScale Number — Marker-Vergrößerungsfaktor (Default 1; additiv, ändert
+             bestehende Verbraucher nicht). Skaliert Pin- und Halo-Radius linear —
+             für Karten mit wenigen, prominenten Markern (z. B. Territorien).
   Emits:
     marker-click(id)   Klick/Enter/Space auf einen Marker
 -->
@@ -27,9 +30,10 @@
 import { ref, computed } from "vue";
 
 const props = defineProps({
-  markers:   { type: Array,  default: () => [] },
-  activeId:  { type: [String, Number], default: null },
-  graticule: { type: Boolean, default: true },
+  markers:     { type: Array,  default: () => [] },
+  activeId:    { type: [String, Number], default: null },
+  graticule:   { type: Boolean, default: true },
+  markerScale: { type: Number, default: 1 },
 });
 const emit = defineEmits(["marker-click"]);
 
@@ -53,6 +57,14 @@ const LAND = [
 ];
 
 const hoverId = ref(null);
+
+// Marker-Radien (viewBox-Einheiten). Basiswerte × markerScale — Default 1 hält
+// bestehende Verbraucher pixelgleich. Aktiv-Radius wird per Attribut gebunden
+// (nicht via CSS `r`), damit die Vergrößerung auch ohne CSS-Geometrie-Support greift.
+const R_PIN = computed(() => 3.4 * props.markerScale);
+const R_PIN_ACTIVE = computed(() => 4.4 * props.markerScale);
+const R_HALO = computed(() => 7.5 * props.markerScale);
+const isActiveMarker = (id) => (hoverId.value ?? props.activeId) === id;
 
 const tone = (k) =>
   ["brand", "success", "warning", "danger", "info", "neutral"].includes(k) ? k : "brand";
@@ -105,8 +117,9 @@ function pick(id) {
              @click="pick(p.m.id)"
              @keydown.enter.prevent="pick(p.m.id)"
              @keydown.space.prevent="pick(p.m.id)">
-            <circle class="pp-map__halo" :cx="p.cx" :cy="p.cy" r="7.5" />
-            <circle class="pp-map__pin" :class="'is-' + p.tone" :cx="p.cx" :cy="p.cy" r="3.4" />
+            <circle class="pp-map__halo" :cx="p.cx" :cy="p.cy" :r="R_HALO" />
+            <circle class="pp-map__pin" :class="'is-' + p.tone" :cx="p.cx" :cy="p.cy"
+                    :r="isActiveMarker(p.m.id) ? R_PIN_ACTIVE : R_PIN" />
           </g>
         </g>
       </svg>
@@ -138,7 +151,6 @@ function pick(id) {
 .pp-map__marker.is-active .pp-map__halo,
 .pp-map__marker:focus-visible .pp-map__halo { fill: color-mix(in oklab, var(--pp-brand-primary) 22%, transparent); opacity: 1; }
 .pp-map__pin { stroke: var(--pp-bg-surface); stroke-width: 0.8; transition: r var(--pp-duration-fast, 120ms) ease; }
-.pp-map__marker.is-active .pp-map__pin { r: 4.4; }
 .pp-map__pin.is-brand   { fill: var(--pp-brand-primary); }
 .pp-map__pin.is-success { fill: var(--pp-state-success); }
 .pp-map__pin.is-warning { fill: var(--pp-state-warning); }

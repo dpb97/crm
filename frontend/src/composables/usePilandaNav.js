@@ -8,6 +8,11 @@ import { call } from 'frappe-ui'
 
 const zones = ref([])
 const modules = ref([])
+// Rohe SSOT-Blöcke „Allgemein" + „Wissen" (wie im Desk): der Host baut daraus
+// die ANZEIGE-Struktur (allgemeinDisplay/wissenDisplay) — get_nav_v2 liefert
+// beide (allgemein = flache ALLGEMEIN-Liste, wissen = {id,sub}-Verweise).
+const allgemein = ref([])
+const wissen = ref([])
 const loaded = ref(false)
 const available = ref(true)
 
@@ -33,10 +38,12 @@ export function usePilandaNav() {
         target: m.target || m.path,
         g: m.groups || m.g || [],
       }))
+      allgemein.value = data?.allgemein || []
+      wissen.value = data?.wissen || []
       loaded.value = true
     } catch (e) {
       available.value = false
     }
   }
-  return { zones, modules, loaded, available, load }
+  return { zones, modules, allgemein, wissen, loaded, available, load }
 }

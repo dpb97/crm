@@ -1,4 +1,6 @@
-<!-- PP_REV: PpDashboard@2 -->
+<!-- PP_REV: PpDashboard@3 -->
+<!-- @3 (20.07.2026): selbst-tragendes Karten-Chrome in .ppd-card (identisch zur
+     .pp-card-Utility). SSOT: pilanda_theme/frontend/src/PpDashboard.vue. -->
 <!--
   PpDashboard.vue — komponierbares Dashboard-LAYOUT (SSOT-Baustein, N9/§6.2).
 
@@ -190,7 +192,10 @@ function onKpi(k) {
 .ppd__grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr));
   gap: var(--pp-space-4); align-items: start; }
 .ppd-card { grid-column: span var(--span, 6); display: flex; flex-direction: column;
-  gap: var(--pp-space-3); min-width: 0; padding: var(--pp-space-4); }
+  gap: var(--pp-space-3); min-width: 0; padding: var(--pp-space-4);
+  /* @3: selbst-tragendes Karten-Chrome (identisch zur .pp-card-Utility) */
+  background: var(--pp-bg-surface); border: 1px solid var(--pp-border-subtle);
+  border-radius: var(--pp-radius-ui); box-shadow: var(--pp-shadow-xs); }
 .ppd-card__head { display: flex; align-items: baseline; gap: var(--pp-space-3); }
 .ppd-card__title { flex: 1; min-width: 0; margin: 0; font-size: var(--pp-fs-16);
   font-weight: var(--pp-weight-semibold); color: var(--pp-text-primary);

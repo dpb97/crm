@@ -28,8 +28,23 @@
 
   Charts: die im Bestand etablierte frappe-ui-Chart-Lösung (AxisChart/
   DonutChart) — dieselbe, die Dominiks DashboardItem verwendet. Keine neue
-  Chart-Bibliothek. Bausteine: PpDashboard@2 (Kopie in components/pp/).
+  Chart-Bibliothek. Bausteine: PpDashboard@3 (Kopie in components/pp/).
   VOLLE Canvas-Breite (Marco: „ERP, kein zentrierter Blog" → maxWidth=0).
+
+  ZWEI zusätzliche Inhaltskarten mit echten Quellen (Marco-Sichttest 20.07.):
+    · „Pilot — neueste Ausschreibungen": Top-5 aus pilot.api.workbench
+      (Dominiks whitelisted Scout-Senke), sortiert nach published_am; Titel als
+      klickbare Headline → Desk-Handoff /app/pilot-workbench.
+    · „Meine Märkte": Territorien des angemeldeten Nutzers aus
+      lcs_integrations.projects.api.get_market_assignment (gleiche Quelle wie
+      LCSMarketAssignment); ohne eigene Zuordnung alle mit Hinweis.
+
+  Karten-POLISH (Marco-Sichttest 20.07.): jede Karte trägt jetzt das echte
+  PpDashboard-Karten-Chrome (Fläche/Radius/Titelzeile — @3, selbst-tragend);
+  leere Charts zeigen einen ehrlichen Empty-State im Chrome; der Server-Titel
+  erscheint nur EINMAL (Kartenkopf; chartCfg strippt config.title); das
+  12-Spalten-Raster füllt die Canvas (Hero-Umsatztrend breit, kleinere Charts
+  nebeneinander).
 -->
 
 <template>
@@ -59,6 +74,7 @@
         :title="__('CRM Dashboard')"
         :kpis="kpis"
         :cards="cards"
+        @card-action="onCardAction"
       >
         <!-- Kopf-Aktionen: Zeitraum-Filter + (nur Manager) Nutzer-Filter + Refresh -->
         <template #actions>
@@ -93,14 +109,64 @@
           </div>
         </template>
 
-        <!-- Charts: Dominiks Server-Config unverändert in die frappe-ui-Charts -->
+        <!-- Charts: Dominiks Server-Config in die frappe-ui-Charts. Titel wird
+             hier NICHT doppelt gerendert (Kartenkopf zeigt ihn bereits →
+             chartCfg() strippt config.title). Ohne echte Datenpunkte ein
+             ehrlicher Empty-State IM Karten-Chrome statt einsamer Legende. -->
         <template v-for="c in chartCards" :key="c.id" #[c.slot]>
           <div class="cd-chart">
-            <AxisChart v-if="c.type === 'axis_chart'" :config="c.data" />
-            <DonutChart v-else-if="c.type === 'donut_chart'" :config="c.data" />
-            <FunnelChart v-else-if="c.type === 'funnel_chart'" :config="c.data" />
-            <p v-else class="cd-empty">{{ __('No data for the selected period.') }}</p>
+            <template v-if="chartHasData(c)">
+              <AxisChart v-if="c.type === 'axis_chart'" :config="chartCfg(c)" />
+              <DonutChart v-else-if="c.type === 'donut_chart'" :config="chartCfg(c)" />
+              <FunnelChart v-else-if="c.type === 'funnel_chart'" :config="chartCfg(c)" />
+              <p v-else class="cd-empty">{{ __('No data for the selected period.') }}</p>
+            </template>
+            <div v-else class="cd-chart-empty">
+              <FeatherIcon name="bar-chart-2" class="cd-chart-empty__ico" />
+              <p class="cd-empty">{{ __('No data for the selected period.') }}</p>
+            </div>
           </div>
+        </template>
+
+        <!-- Pilot — neueste Ausschreibungen (Top-5, echte Quelle pilot.api.workbench).
+             Titel = Headline, klickbar → Desk-Handoff /app/pilot-workbench. -->
+        <template #card-pilot>
+          <p v-if="pilot.loading && !tenders.length" class="cd-empty">{{ __('Loading tenders …') }}</p>
+          <p v-else-if="pilot.error" class="cd-empty cd-empty--err">{{ __('Tenders could not be loaded.') }}</p>
+          <p v-else-if="!tenders.length" class="cd-empty">{{ __('No tenders available yet.') }}</p>
+          <ul v-else class="cd-tenders">
+            <li v-for="t in tenders" :key="t.name" class="cd-tender">
+              <a class="cd-tender__title" href="/app/pilot-workbench">{{ t.titel }}</a>
+              <span class="cd-tender__meta">
+                <span v-if="t.land" class="cd-tender__country">{{ t.land }}</span>
+                <span v-if="t.score" class="cd-chip">{{ __('Score') }} {{ fmtScore(t.score) }}</span>
+                <span class="cd-tender__deadline">
+                  <FeatherIcon name="calendar" class="cd-ico" />
+                  {{ t.deadline ? fmtDate(t.deadline) : __('No deadline') }}
+                </span>
+              </span>
+            </li>
+          </ul>
+        </template>
+
+        <!-- Meine Märkte — Territorien des angemeldeten Nutzers (Quelle wie
+             LCSMarketAssignment). Ohne eigene Zuordnung: alle mit Hinweis. -->
+        <template #card-markets>
+          <p v-if="market.loading && !marketRows.length" class="cd-empty">{{ __('Loading markets …') }}</p>
+          <p v-else-if="market.error" class="cd-empty cd-empty--err">{{ __('Markets could not be loaded.') }}</p>
+          <p v-else-if="!marketRows.length" class="cd-empty">{{ __('No territories found.') }}</p>
+          <template v-else>
+            <p v-if="marketsShowingAll" class="cd-note">{{ __('No markets assigned to you — showing all territories.') }}</p>
+            <ul class="cd-markets">
+              <li v-for="m in marketRows" :key="m.territory" class="cd-market">
+                <span class="cd-market__name">{{ m.territory }}</span>
+                <span class="cd-market__meta">
+                  <span v-if="m.region" class="cd-market__region">{{ m.region }}</span>
+                  <span class="cd-market__stat">{{ m.projects || 0 }} {{ __('Projects') }}</span>
+                </span>
+              </li>
+            </ul>
+          </template>
         </template>
       </PpDashboard>
 
@@ -121,9 +187,13 @@ import { createResource, usePageMeta, AxisChart, DonutChart, FunnelChart, Breadc
 import LayoutHeader from '@/components/LayoutHeader.vue'
 import PpDashboard from '@/components/pp/PpDashboard.vue'
 import { usersStore } from '@/stores/users'
+import { sessionStore } from '@/stores/session'
+import router from '@/router'
 import { getLastXDays } from '@/utils/dashboard'
 
 const { users, getUser, isManager, isAdmin } = usersStore()
+const session = sessionStore()
+const currentUser = computed(() => session.user)
 const canFilterUser = computed(() => isManager() || isAdmin())
 const crmUsers = computed(() => users.data?.crmUsers || [])
 
@@ -199,6 +269,33 @@ const errorText = computed(() => {
   return e.messages?.join(' ') || e.message || String(e)
 })
 
+// --- Karte „Pilot — neueste Ausschreibungen" --------------------------------
+// Echte Quelle: Dominiks whitelisted Workbench-API. „Neueste" = zuletzt
+// veröffentlicht (published_am absteigend, ISO → lexikografisch); Top 5.
+const pilot = createResource({ url: 'pilot.api.workbench', auto: true })
+const tenders = computed(() => {
+  const rows = Array.isArray(pilot.data?.tenders) ? pilot.data.tenders : []
+  return [...rows]
+    .sort((a, b) => String(b.published_am || '').localeCompare(String(a.published_am || '')))
+    .slice(0, 5)
+})
+
+// --- Karte „Meine Märkte" ----------------------------------------------------
+// Gleiche Quelle wie LCSMarketAssignment. Territorien des angemeldeten Nutzers
+// (territory.user = zugeordneter Sales-Manager); ohne eigene Zuordnung: alle.
+const market = createResource({
+  url: 'lcs_integrations.projects.api.get_market_assignment',
+  auto: true,
+})
+const allTerritories = computed(() =>
+  Array.isArray(market.data?.territories) ? market.data.territories : [])
+const myTerritories = computed(() =>
+  allTerritories.value.filter((t) => t.user && t.user === currentUser.value))
+const marketsShowingAll = computed(
+  () => myTerritories.value.length === 0 && allTerritories.value.length > 0)
+const marketRows = computed(() =>
+  (myTerritories.value.length ? myTerritories.value : allTerritories.value).slice(0, 6))
+
 // --- Locale/Formatierung -----------------------------------------------------
 function currentLocale() {
   const lang =
@@ -240,8 +337,39 @@ function kpiHint(cfg) {
   return `${arrow} ${cfg.deltaPrefix || ''}${fmtNumber(Math.abs(d))}${suffix ? ' ' + suffix : ''}`.trim()
 }
 
+const dateFmt = new Intl.DateTimeFormat(locale, { day: '2-digit', month: '2-digit', year: 'numeric' })
+function fmtDate(d) {
+  if (!d) return ''
+  const dt = new Date(d)
+  return Number.isNaN(dt.getTime()) ? String(d) : dateFmt.format(dt)
+}
+function fmtScore(s) {
+  return fmtNumber(Math.round(Number(s) || 0))
+}
+
 function slugify(s) {
   return String(s || 'item').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'item'
+}
+
+// --- Chart-Aufbereitung (Karten-Chrome liefert PpDashboard) ------------------
+// Der Kartenkopf zeigt den (Server-)Titel bereits → aus der Chart-Config
+// entfernen, damit die frappe-ui-Charts ihn nicht ein zweites Mal rendern.
+function chartCfg(c) {
+  const { title, ...rest } = c.data || {}
+  return rest
+}
+// Echte Datenpunkte vorhanden? (leere/rein-null Reihen → ehrlicher Empty-State
+// statt einer Fläche mit einsamer Legende.)
+function chartHasData(c) {
+  const cfg = c.data || {}
+  const rows = Array.isArray(cfg.data) ? cfg.data : Array.isArray(cfg.values) ? cfg.values : []
+  if (!rows.length) return false
+  return rows.some((r) => {
+    if (r == null) return false
+    if (typeof r === 'number') return r !== 0
+    if (typeof r === 'object') return Object.values(r).some((v) => typeof v === 'number' && v !== 0)
+    return false
+  })
 }
 
 // --- KPI-Zeile (number_charts, Reihenfolge = Server-Layout) ------------------
@@ -262,14 +390,34 @@ const chartCards = computed(() =>
     return { id, slot: 'card-' + id, type: it.type, data: it.data, title: it.data.title || it.name }
   }),
 )
-const cards = computed(() =>
-  chartCards.value.map((c) => ({
-    id: c.id,
-    title: c.title,
-    // Umsatzreihen (axis) breiter, Verteilungen (donut) schmaler
-    span: c.type === 'axis_chart' ? 8 : 4,
-  })),
-)
+// Volle 12-Spalten-Canvas ausnutzen (Marco 20.07.: „kein riesiger Leerraum
+// rechts"): oben die beiden Inhaltskarten (Pilot 8 + Meine Märkte 4 = volle
+// Reihe), dann das erste Achsen-Chart als breiter Umsatztrend-Hero (12), die
+// übrigen Charts paarweise nebeneinander (6+6).
+const cards = computed(() => {
+  const list = [
+    { id: 'pilot', title: __('Pilot — Latest tenders'),
+      meta: tenders.value.length ? String(tenders.value.length) : '',
+      span: 8, action: { label: __('Open Pilot Workbench') } },
+    { id: 'markets', title: __('My markets'),
+      span: 4, action: { label: __('Market Assignment') } },
+  ]
+  let heroUsed = false
+  for (const c of chartCards.value) {
+    let span = 6
+    if (c.type === 'axis_chart' && !heroUsed) { span = 12; heroUsed = true }
+    list.push({ id: c.id, title: c.title, span })
+  }
+  return list
+})
+
+function onCardAction(card) {
+  if (card.id === 'pilot') {
+    window.location.href = '/app/pilot-workbench' // Desk-Handoff (verlässt die SPA)
+  } else if (card.id === 'markets') {
+    router.push({ name: 'LCS Market Assignment' })
+  }
+}
 
 usePageMeta(() => ({ title: __('CRM Dashboard') }))
 </script>
@@ -309,8 +457,45 @@ usePageMeta(() => ({ title: __('CRM Dashboard') }))
 /* Chart-Bühne je Karte — feste Höhe, damit die frappe-ui-Charts Raum haben */
 .cd-chart { height: clamp(240px, 32vh, 340px); width: 100%; min-width: 0; }
 .cd-chart :deep(svg) { max-width: 100%; }
+.cd-chart-empty { height: 100%; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: var(--pp-space-2); color: var(--pp-text-tertiary); }
+.cd-chart-empty__ico { width: 26px; height: 26px; opacity: 0.5; }
+
+/* Karte „Pilot — neueste Ausschreibungen" */
+.cd-tenders { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.cd-tender { display: flex; flex-direction: column; gap: 3px; padding: var(--pp-space-3) 0;
+  border-bottom: 1px solid var(--pp-border-subtle); }
+.cd-tender:first-child { padding-top: 0; }
+.cd-tender:last-child { border-bottom: 0; padding-bottom: 0; }
+.cd-tender__title { font-size: var(--pp-fs-14, 14px); font-weight: var(--pp-weight-semibold, 600);
+  color: var(--pp-text-primary); text-decoration: none; line-height: 1.3;
+  overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.cd-tender__title:hover { color: var(--pp-brand-primary); text-decoration: underline; }
+.cd-tender__meta { display: inline-flex; align-items: center; flex-wrap: wrap; gap: var(--pp-space-2);
+  font-size: var(--pp-fs-12, 12px); color: var(--pp-text-tertiary); }
+.cd-tender__country { font-weight: var(--pp-weight-medium, 500); color: var(--pp-text-secondary); }
+.cd-chip { display: inline-flex; align-items: center; padding: 1px var(--pp-space-2);
+  border-radius: var(--pp-radius-full, 999px); font-weight: var(--pp-weight-semibold, 600);
+  font-variant-numeric: tabular-nums; color: var(--pp-brand-primary);
+  background: color-mix(in oklab, var(--pp-brand-primary) 12%, transparent); }
+.cd-tender__deadline { display: inline-flex; align-items: center; gap: 3px; font-variant-numeric: tabular-nums; }
+.cd-ico { width: 13px; height: 13px; }
+
+/* Karte „Meine Märkte" */
+.cd-note { margin: 0 0 var(--pp-space-2); font-size: var(--pp-fs-12, 12px); color: var(--pp-text-tertiary); }
+.cd-markets { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.cd-market { display: flex; align-items: baseline; justify-content: space-between; gap: var(--pp-space-3);
+  padding: var(--pp-space-2) 0; border-bottom: 1px solid var(--pp-border-subtle); }
+.cd-market:first-child { padding-top: 0; }
+.cd-market:last-child { border-bottom: 0; padding-bottom: 0; }
+.cd-market__name { font-size: var(--pp-fs-13, 13px); font-weight: var(--pp-weight-medium, 500);
+  color: var(--pp-text-primary); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cd-market__meta { display: inline-flex; align-items: baseline; gap: var(--pp-space-2); flex-shrink: 0;
+  font-size: var(--pp-fs-12, 12px); color: var(--pp-text-tertiary); }
+.cd-market__stat { font-variant-numeric: tabular-nums; color: var(--pp-text-secondary); }
 
 .cd-empty { margin: 0; font-size: var(--pp-fs-13, 13px); color: var(--pp-text-secondary); }
+.cd-empty--err { color: var(--pp-state-danger); }
 .cd-empty--page { padding: var(--pp-space-6); }
 .cd-loading { padding: var(--pp-space-6); margin: 0; font-size: var(--pp-fs-13, 13px); color: var(--pp-text-tertiary); }
 

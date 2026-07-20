@@ -147,8 +147,8 @@ function renderMarkers(L) {
 
     const icon = L.divIcon({
       className: 'lcs-map-marker',
-      html: `<div style="background:${color};width:14px;height:14px;border-radius:50%;border:2.5px solid white;box-shadow:0 1px 4px rgba(0,0,0,.25);transition:transform 0.15s" onmouseover="this.style.transform='scale(1.3)'" onmouseout="this.style.transform='scale(1)'"></div>`,
-      iconSize: [14, 14],
+      html: `<div style="background:${color};width:22px;height:22px;border-radius:50%;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,.3);transition:transform 0.15s" onmouseover="this.style.transform='scale(1.45)'" onmouseout="this.style.transform='scale(1)'"></div>`,
+      iconSize: [22, 22],
     })
 
     const marker = L.marker([lat, lng], { icon })

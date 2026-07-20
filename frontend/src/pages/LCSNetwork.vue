@@ -46,11 +46,17 @@
           :subtitle="__('Relationships between organizations and people · click a node to open the profile')"
         />
 
+        <!-- Legende spiegelt, was der jeweilige Modus tatsächlich rendert -->
         <section class="crmn-legend" :aria-label="__('Legend')">
           <span class="crmn-legend-item"><i class="crmn-legend-dot is-brand" />{{ __('Organization') }}</span>
-          <span class="crmn-legend-item"><i class="crmn-legend-dot crmn-legend-dot--ring" />{{ __('Person') }}</span>
-          <span class="crmn-legend-item"><i class="crmn-legend-line" />{{ __('works at') }}</span>
-          <span class="crmn-legend-item"><i class="crmn-legend-line crmn-legend-line--dashed" />{{ __('previously at') }}</span>
+          <template v-if="mode === 'companies'">
+            <span class="crmn-legend-item"><i class="crmn-legend-line" />{{ __('Shared staff') }}</span>
+          </template>
+          <template v-else>
+            <span class="crmn-legend-item"><i class="crmn-legend-dot crmn-legend-dot--ring" />{{ __('Person') }}</span>
+            <span class="crmn-legend-item"><i class="crmn-legend-line" />{{ __('works at') }}</span>
+            <span class="crmn-legend-item"><i class="crmn-legend-line crmn-legend-line--dashed" />{{ __('previously at') }}</span>
+          </template>
         </section>
 
         <!-- Leer-/Ladezustand -->
@@ -194,7 +200,9 @@ import PpEmptyState from '@/components/pp/PpEmptyState.vue'
 const router = useRouter()
 const W = 1400
 const H = 900
-const mode = ref('people') // 'people' (Detail) | 'companies' (Kunde ↔ Kunde)
+// Standard = 'companies': landet direkt auf dem Theme-Baustein PpNetworkGraph
+// (Showcase #6). 'people' ist die detaillierte Radial-Cluster-Alternative.
+const mode = ref('companies') // 'companies' (Kunde ↔ Kunde, Baustein) | 'people' (Detail)
 
 const graph = createResource({
   url: 'lcs_integrations.projects.api.get_network_graph',

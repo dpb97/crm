@@ -81,7 +81,7 @@
             <h3 class="crmt-section-title">{{ __('Project Map') }}</h3>
             <span class="crmt-hint">{{ markers.length }} {{ __('of') }} {{ territories.length }} {{ __('territories located') }}</span>
           </div>
-          <PpMap v-if="markers.length" :markers="markers" :active-id="activeId" @marker-click="pickMarker" />
+          <PpMap v-if="markers.length" :markers="markers" :active-id="activeId" :marker-scale="1.6" @marker-click="pickMarker" />
           <div v-else class="crmt-card crmt-map-empty">
             <PpEmptyState
               :icon="IconMapPin"

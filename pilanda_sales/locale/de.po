@@ -539,6 +539,9 @@ msgstr "Ausgewählt"
 msgid "SharePoint Folder"
 msgstr "SharePoint-Ordner"
 
+msgid "Shared staff"
+msgstr "Gemeinsames Personal"
+
 msgid "Shortcuts"
 msgstr "Absprünge"
 
@@ -944,3 +947,40 @@ msgstr "Prognostiziert"
 #: frontend/src/pages/LCSCRMDashboard.vue (Chart-Serien)
 msgid "Actual"
 msgstr "Ist"
+#: frontend/src/components/Layouts/DesktopLayout.vue (Pilanda-Topbar User-Menü)
+msgid "Log out"
+msgstr "Abmelden"
+
+#: frontend/src/pages/LCSCRMDashboard.vue (Karten Pilot + Meine Märkte, Sichttest 20.07.)
+msgid "Open Pilot Workbench"
+msgstr "Pilot-Workbench öffnen"
+
+msgid "Score"
+msgstr "Score"
+
+msgid "No deadline"
+msgstr "Keine Frist"
+
+msgid "Loading tenders …"
+msgstr "Ausschreibungen werden geladen …"
+
+msgid "No tenders available yet."
+msgstr "Noch keine Ausschreibungen vorhanden."
+
+msgid "Tenders could not be loaded."
+msgstr "Ausschreibungen konnten nicht geladen werden."
+
+msgid "My markets"
+msgstr "Meine Märkte"
+
+msgid "No markets assigned to you — showing all territories."
+msgstr "Dir sind keine Märkte zugewiesen — es werden alle Territorien angezeigt."
+
+msgid "Loading markets …"
+msgstr "Märkte werden geladen …"
+
+msgid "No territories found."
+msgstr "Keine Territorien gefunden."
+
+msgid "Markets could not be loaded."
+msgstr "Märkte konnten nicht geladen werden."
