@@ -48,8 +48,21 @@ const routes = [
     component: () => import('@/pages/Leads.vue'),
   },
   {
+    // CRM-Integration (Detail-Welle): die Interessenten-DETAILSEITE bekommt die
+    // Pilanda-UX (LCSLead, Pp*-Bausteine). Route-Shape unverändert
+    // (path/name 'Lead'), damit der „Im CRM öffnen"-Link der Liste und der
+    // beforeEach-Hash-Guard weiter greifen.
     path: '/leads/:leadId',
     name: 'Lead',
+    component: () => import('@/pages/LCSLead.vue'),
+    props: true,
+  },
+  {
+    // Dominiks Original-Detailseite bleibt als Fallback erreichbar (nicht in der
+    // Sidebar) — Ziel von „Vollansicht öffnen" (E-Mail-Composer, Telefonie,
+    // WhatsApp, Tabs), die die Pilanda-Seite bewusst nicht nachbaut.
+    path: '/leads-upstream/:leadId',
+    name: 'Lead Upstream',
     component: () => import(`@/pages/${handleMobileView('Lead')}.vue`),
     props: true,
   },
@@ -78,13 +91,18 @@ const routes = [
     component: () => import('@/pages/Deals.vue'),
   },
   {
+    // CRM-Integration (Detail-Welle): die Verkaufschancen-DETAILSEITE bekommt die
+    // Pilanda-UX (LCSDeal, Pp*-Bausteine). Route-Shape unverändert
+    // (path/name 'Deal'), damit der „Im CRM öffnen"-Link der Liste und der
+    // beforeEach-Hash-Guard weiter greifen.
     path: '/deals/:dealId',
     name: 'Deal',
-    component: () => import(`@/pages/${handleMobileView('Deal')}.vue`),
+    component: () => import('@/pages/LCSDeal.vue'),
     props: true,
     // Unified Deal/Project: open the LCS Project workspace instead of the bare
     // deal page. Falls through to the deal page if no project exists yet, or
     // when ?noredirect=1 is set (escape hatch for debugging the raw deal).
+    // Guard UNVERÄNDERT (Deal=Projekt-Logik von Dominik/lcs_integrations).
     beforeEnter: async (to) => {
       if (to.query.noredirect) return true
       try {
@@ -100,6 +118,15 @@ const routes = [
       }
       return true
     },
+  },
+  {
+    // Dominiks Original-Detailseite bleibt als Fallback erreichbar (nicht in der
+    // Sidebar) — Ziel von „Vollansicht öffnen" (E-Mail-Composer, Telefonie,
+    // WhatsApp, Tabs), die die Pilanda-Seite bewusst nicht nachbaut.
+    path: '/deals-upstream/:dealId',
+    name: 'Deal Upstream',
+    component: () => import(`@/pages/${handleMobileView('Deal')}.vue`),
+    props: true,
   },
   {
     path: '/projects',

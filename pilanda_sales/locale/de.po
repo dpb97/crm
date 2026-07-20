@@ -808,3 +808,130 @@ msgstr "Keine Daten für den gewählten Zeitraum."
 
 msgid "No charts configured for this dashboard."
 msgstr "Für dieses Dashboard sind keine Diagramme konfiguriert."
+
+# --- Interessenten-Detailseite (LCSLead, CRM-Integration Detail-Welle) ---
+msgid "Document not found"
+msgstr "Dokument nicht gefunden"
+
+msgid "An error occurred"
+msgstr "Ein Fehler ist aufgetreten"
+
+msgid "Convert to deal"
+msgstr "In Verkaufschance umwandeln"
+
+msgid "Open full view"
+msgstr "Vollansicht öffnen"
+
+msgid "Person"
+msgstr "Person"
+
+msgid "Company"
+msgstr "Firma"
+
+msgid "Assignment"
+msgstr "Zuordnung"
+
+msgid "First name"
+msgstr "Vorname"
+
+msgid "Last name"
+msgstr "Nachname"
+
+msgid "Position"
+msgstr "Position"
+
+msgid "Mobile"
+msgstr "Mobil"
+
+msgid "Website"
+msgstr "Website"
+
+msgid "Industry"
+msgstr "Branche"
+
+msgid "Source"
+msgstr "Quelle"
+
+msgid "Created"
+msgstr "Erstellt"
+
+msgid "Click to edit"
+msgstr "Zum Bearbeiten klicken"
+
+msgid "Saved"
+msgstr "Gespeichert"
+
+msgid "Error updating field"
+msgstr "Feld konnte nicht aktualisiert werden"
+
+msgid "No activities yet"
+msgstr "Noch keine Aktivitäten"
+
+msgid "Emails, calls and tasks are shown in the full view."
+msgstr "E-Mails, Anrufe und Aufgaben stehen in der Vollansicht."
+
+msgid "Write a comment …"
+msgstr "Kommentar schreiben …"
+
+msgid "Sending comment..."
+msgstr "Kommentar wird gesendet …"
+
+msgid "Add comment"
+msgstr "Kommentar hinzufügen"
+
+msgid "Comment"
+msgstr "Kommentar"
+
+msgid "created this lead"
+msgstr "hat diesen Interessenten angelegt"
+
+msgid "Note"
+msgstr "Notiz"
+
+msgid "removed"
+msgstr "entfernt"
+
+msgid "just now"
+msgstr "gerade eben"
+
+msgid "{0} min ago"
+msgstr "vor {0} min"
+
+msgid "{0} h ago"
+msgstr "vor {0} h"
+
+msgid "{0} d ago"
+msgstr "vor {0} d"
+
+msgid "Comment sent"
+msgstr "Kommentar gesendet"
+
+msgid "Failed to send comment!"
+msgstr "Kommentar konnte nicht gesendet werden!"
+
+msgid "Call"
+msgstr "Anruf"
+
+msgid "Change phase"
+msgstr "Phase wechseln"
+
+msgid "Document Not Found"
+msgstr "Dokument nicht gefunden"
+
+msgid "No contacts added"
+msgstr "Keine Kontakte hinterlegt"
+
+msgid "Open sales project"
+msgstr "Vertriebsprojekt öffnen"
+
+msgid "Primary"
+msgstr "Primär"
+
+msgid "Task"
+msgstr "Aufgabe"
+
+msgid "Weighted value"
+msgstr "Gewichteter Wert"
+
+msgid "Win probability"
+msgstr "Abschlusswahrscheinlichkeit"

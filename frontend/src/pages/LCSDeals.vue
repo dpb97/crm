@@ -97,47 +97,20 @@
       </div>
     </PpDrawer>
 
-    <!-- Lost: Pflicht-Verlustgrund NIE stumm überspringen -->
-    <Dialog
-      v-model="lostOpen"
-      :options="{ title: __('Mark opportunity as lost') }"
-    >
-      <template #body-content>
-        <div class="space-y-4">
-          <FormControl
-            type="select"
-            :label="__('Reason for loss')"
-            v-model="lostReason"
-            :options="lostReasonOptions"
-            required
-          />
-          <FormControl
-            v-if="lostReason === 'Other'"
-            type="textarea"
-            :label="__('Additional notes')"
-            v-model="lostNotes"
-            rows="3"
-          />
-        </div>
-      </template>
-      <template #actions>
-        <div class="flex items-center justify-end gap-2">
-          <Button variant="ghost" :label="__('Cancel')" @click="cancelLost" />
-          <Button variant="solid" theme="red" :label="__('Save')" :loading="saving" @click="confirmLost" />
-        </div>
-      </template>
-    </Dialog>
+    <!-- Lost: Pflicht-Verlustgrund NIE stumm überspringen (geteilter Baustein) -->
+    <LostReasonDialog v-model="lostOpen" :saving="saving" @confirm="onLostConfirm" />
   </div>
 </template>
 
 <script setup>
 import { ref, computed, watch } from 'vue'
-import { call, createListResource, toast, Breadcrumbs, Button, FormControl, Dialog, FeatherIcon } from 'frappe-ui'
+import { call, createListResource, toast, Breadcrumbs, Button, FeatherIcon } from 'frappe-ui'
 import LayoutHeader from '@/components/LayoutHeader.vue'
 import PpPageHead from '@/components/pp/PpPageHead.vue'
 import PpStatTile from '@/components/pp/PpStatTile.vue'
 import PpKanban from '@/components/pp/PpKanban.vue'
 import PpDrawer from '@/components/pp/PpDrawer.vue'
+import LostReasonDialog from '@/components/lcs/LostReasonDialog.vue'
 import { statusesStore } from '@/stores/statuses'
 import { usersStore } from '@/stores/users'
 
@@ -322,56 +295,29 @@ function onMove({ cardId, fromCol, toCol }) {
   persistStatus(deal, { status: toCol }, oldStatus)
 }
 
-/* ---- Lost-Dialog (Pflicht-Verlustgrund) ----------------------------- */
-const lostReasonsRes = createListResource({
-  doctype: 'CRM Lost Reason',
-  fields: ['name'],
-  pageLength: 100,
-  cache: 'lcs-lost-reasons',
-  auto: true,
-})
-const lostReasonOptions = computed(() =>
-  (lostReasonsRes.data || []).map((r) => ({ label: __(r.name), value: r.name })),
-)
-
+/* ---- Lost-Dialog (Pflicht-Verlustgrund, geteilter Baustein) --------- */
+// Reason-Auswahl + Validierung lebt in LostReasonDialog; hier bleibt nur die
+// Orchestrierung (welche Chance, Optimistik, Persistenz, Rollback).
 const lostOpen = ref(false)
 const lostDeal = ref(null)
 const lostOldStatus = ref(null)
-const lostReason = ref('')
-const lostNotes = ref('')
 let lostResolved = false
 
 function openLostDialog(deal, oldStatus) {
   lostDeal.value = deal
   lostOldStatus.value = oldStatus
-  lostReason.value = ''
-  lostNotes.value = ''
   lostResolved = false
   lostOpen.value = true
 }
 
-async function confirmLost() {
-  if (!lostReason.value) {
-    toast({ title: __('Please select a reason for the loss.'), icon: 'alert-circle', iconClasses: 'text-red-500' })
-    return
-  }
-  if (lostReason.value === 'Other' && !lostNotes.value) {
-    toast({ title: __('Please add a note for the selected reason.'), icon: 'alert-circle', iconClasses: 'text-red-500' })
-    return
-  }
-  const fields = { status: lostDeal.value.status, lost_reason: lostReason.value }
-  if (lostNotes.value) fields.lost_notes = lostNotes.value
+async function onLostConfirm({ reason, notes }) {
+  const fields = { status: lostDeal.value.status, lost_reason: reason }
+  if (notes) fields.lost_notes = notes
   const ok = await persistStatus(lostDeal.value, fields, lostOldStatus.value)
   if (ok) {
     lostResolved = true
     lostOpen.value = false
   }
-}
-
-function cancelLost() {
-  // Schließt den Dialog; der Rollback läuft über den lostOpen-Watcher,
-  // damit ER auch bei Backdrop-/ESC-Abbruch greift (nie stumme Ablage).
-  lostOpen.value = false
 }
 
 // Jeder Schließweg ohne erfolgreiche Persistenz → Karte zurück in die
