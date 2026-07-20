@@ -36,9 +36,9 @@ Rolle: baut aus Oswalds Prototyp (read-only Referenz, **kein Code-Port**) das ka
   Dominik selbst benannt):** (a) ein Repo installiert nur EINE Frappe-App —
   pyproject zeigt auf `pilanda_sales`, `[tool.bench.assets]` weiter auf
   `crm/` (inkonsistent; die Repo-Schnitt-Frage ist damit faktisch wieder
-  offen [Marco/Dominik]); (b) `frontend/` trägt zwei Frontends — unser
-  sales_dashboard-Build läuft dort jetzt auf **vite 5 statt 7**
-  (`yarn build:dashboard`), vom Merge UNGETESTET; (c) kein Build/Install
+  offen [Marco/Dominik]); (b) `frontend/` trug zwei Frontends — der
+  sales_dashboard-Build ist mit dem Insel-Rückbau 20.07. entfallen
+  (nur noch CRM-SPA-Build); (c) kein Build/Install
   aus dem gemergten Stand verifiziert. → Abarbeitung s. „Offen".
 - **README-Auflösung (Dominik, Merge `9150ff62`):** Root-`README.md` = Upstream-
   Frappe-CRM-README (bleibt unberührt für billige Upstream-Merges); das frühere
@@ -107,7 +107,18 @@ Rolle: baut aus Oswalds Prototyp (read-only Referenz, **kein Code-Port**) das ka
 - [x] Phase 5 Start: Rechenkern-Kern-Primitive `calculation/engine.py` + `test_engine.py` — 14.06., `ef2c9ab`
 - [x] Übergabe-Feld `Project.custom_sales_phase` (Lead → Projektierung → Kalkulation → Angebot → Verhandlung → Entscheidung Kunde) — 03.07., `43c6ddb`
 - [x] CRM-Rücklink `Project.custom_sales_crm_deal` (Link → `CRM Deal`, nur wenn Frappe CRM installiert) in der CRM-Domäne `crm/custom_fields.py`, Owner Dominik — 02.07., `54077b7`
-- [x] **Vertrieb-Modul-Dashboard (N10 Welle 2, Master §6.2, `0674222`)** — Desk-Page `/app/sales-dashboard` (Titel „Vertrieb"), erstes Vue-Frontend der App (`frontend/`, IIFE-Bundle `sales_dashboard`, Muster wie `pilanda_pls`). KOPIE des Theme-Bausteins `PpDashboard@1` + `PpDataGrid@3` (Copy-Modell, PP_REV mitkopiert); rein `--pp-*`-Tokens, hell+dunkel, Regel 6.1-6. **NUR echte Quellen** über `pilanda_sales.api.get_sales_dashboard`: KPI-Zeile Pilot-Treffer / Vertriebsprojekte / Aufträge / Angebote / Kunden; Karten Pilot-Feed (`Pilot Tender`, App optional → ehrlicher Leerzustand wenn fehlend), Projekte nach `custom_sales_phase`, Aufträge (`status=Auftrag`, E3 — SO-Automatik/Feld noch offen, s. u.), Absprünge (CRM-SPA `/crm`, Pilot-Workbench, Angebote, Kunden, Lastenheft, Varianten). **CRM-SPA `/crm` (Dominik) NICHT angefasst.** Verifiziert 14.07. (eingeloggt t.tester): 5 KPI (3/3/0/6/22) + 4 Karten + 3 Pilot-Treffer + 7 Phasen-Zeilen + 6 Absprünge, hell+dunkel, 0 Konsolenfehler. Build seit PR #13: `cd frontend && yarn build:dashboard` (`npm run build` baut jetzt die CRM-SPA!); dist = Build-Artefakt, gitignored — wie Schwester-Apps. **Handoff ERLEDIGT (Marco 15.07., Master N10/E8-Nachtrag):** Modul „vertrieb" = live mit Nav-Ziel `/app/sales-dashboard`; Interessent → `/crm/leads`, Verkaufschance → `/crm/deals` (Laufzeit = Dominiks CRM-Fork, s. Entscheide)
+- [x] **Vertrieb-Modul-Dashboard — ZURÜCKGEBAUT (Marco-Freigabe 20.07.2026):**
+  abgelöst durch das EINE Vertriebs-Dashboard `/crm/dashboard`
+  (`LCSCRMDashboard.vue`; Ein-Dashboard-Entscheid Marco 20.07., pilanda
+  `e153ab2`). Entfernt: `frontend/src/dashboard/*` (inkl. Doppel-Kopien
+  PpDashboard/PpDataGrid), `vite.dashboard.config.js` +
+  `build:dashboard`/`dev:dashboard`, Page-Ordner
+  `vertrieb/page/sales_dashboard/`, `pilanda_sales/api.py`
+  (`get_sales_dashboard` — einziger Konsument war diese Insel); DB-Eintrag
+  via Patch `v0_1.remove_sales_dashboard_page`. Pilot-Feed lebt im
+  CRM-Dashboard weiter; Alt-KPIs Angebote/Aufträge/Kunden entstehen dort
+  neu, wenn das Angebotswesen kommt (AP s. „Offen"). Historie: Git.
+  Ursprünglicher Bau (nur Historie): (N10 Welle 2, Master §6.2, `0674222`) — Desk-Page `/app/sales-dashboard` (Titel „Vertrieb"), erstes Vue-Frontend der App (`frontend/`, IIFE-Bundle `sales_dashboard`, Muster wie `pilanda_pls`). KOPIE des Theme-Bausteins `PpDashboard@1` + `PpDataGrid@3` (Copy-Modell, PP_REV mitkopiert); rein `--pp-*`-Tokens, hell+dunkel, Regel 6.1-6. **NUR echte Quellen** über `pilanda_sales.api.get_sales_dashboard`: KPI-Zeile Pilot-Treffer / Vertriebsprojekte / Aufträge / Angebote / Kunden; Karten Pilot-Feed (`Pilot Tender`, App optional → ehrlicher Leerzustand wenn fehlend), Projekte nach `custom_sales_phase`, Aufträge (`status=Auftrag`, E3 — SO-Automatik/Feld noch offen, s. u.), Absprünge (CRM-SPA `/crm`, Pilot-Workbench, Angebote, Kunden, Lastenheft, Varianten). **CRM-SPA `/crm` (Dominik) NICHT angefasst.** Verifiziert 14.07. (eingeloggt t.tester): 5 KPI (3/3/0/6/22) + 4 Karten + 3 Pilot-Treffer + 7 Phasen-Zeilen + 6 Absprünge, hell+dunkel, 0 Konsolenfehler. Build seit PR #13: `cd frontend && yarn build:dashboard` (`npm run build` baut jetzt die CRM-SPA!); dist = Build-Artefakt, gitignored — wie Schwester-Apps. **Handoff ERLEDIGT (Marco 15.07., Master N10/E8-Nachtrag):** Modul „vertrieb" = live mit Nav-Ziel `/app/sales-dashboard`; Interessent → `/crm/leads`, Verkaufschance → `/crm/deals` (Laufzeit = Dominiks CRM-Fork, s. Entscheide)
 
 - [x] **Theme-Konsistenz develop verifiziert (16.07.):** Kopien `PpDashboard@1`
   + `PpDataGrid@3` drift-frei (pp-rev-report ✓); Dashboard rein `--pp-*`-Tokens.
@@ -115,6 +126,21 @@ Rolle: baut aus Oswalds Prototyp (read-only Referenz, **kein Code-Port**) das ka
   Theme-SSOT, Diff leer) — dort aber Dominiks Pflege.
 
 ## Offen — wird wirklich gebaut
+- [ ] **Angebotswesen-KPIs ins EINE Dashboard** (Folge Insel-Rückbau 20.07.):
+  wenn das Angebotswesen (Lastenheft/Kalkulation/Angebote) kommt, entstehen
+  die Zähler Angebote/Aufträge/Kunden im `/crm/dashboard` neu (Quellen wie
+  ehem. `get_sales_dashboard`: Quotation/Customer/Project-status=Auftrag).
+- [ ] **Bizcard-Scanner-UI verdrahten [Dominik]:** `BizcardScannerButton/-
+  Modal.vue` existieren ohne Einbau; Ziel laut Marco 20.07.: mobil scannen
+  (Phone/Tablet) → Datenvorschlag in Personen/Kontakte. Backend +
+  Scanner-Docker stehen.
+- [ ] **Test-only-Widgets entscheiden:** Outlook-/Teams-/WhatsApp-Widgets +
+  SyncStatusBadge haben je nur ihre Spec, keinen Einbau — verdrahten oder
+  samt Spec entfernen (Marco/Dominik).
+- [ ] Dokumentierte Rückbau-Kandidaten (liegen gelassen, Marco 20.07. nur
+  Dashboard-Insel freigegeben): `LinkedProjectChip.vue` (Funktion lebt als
+  Projekt-Button in `LCSDeal.vue`), `pilanda/api.py::get_workspace_items`
+  (+3 Helfer, stack-weit 0 Aufrufer).
 - [ ] **Vertrieb-Integration (Entscheid oben) — Wellenplan:**
   - [x] Welle 1 (16.07., pilanda `33e628f`): erste 4 Punkte auf CRM-Seiten.
   - [x] Welle 2 ERLEDIGT durch die VOLLSTÄNDIGE CRM-Übernahme (16.07.,
@@ -174,7 +200,8 @@ Rolle: baut aus Oswalds Prototyp (read-only Referenz, **kein Code-Port**) das ka
   Trivy feuern nicht mehr je develop-Push (Dauerrot beseitigt); CodeQL
   behält den Wochenplan.
 - [ ] **Merge-Nacharbeit PR #13 (aus `9150ff62`):**
-  - [x] (a) sales_dashboard-Build unter vite 5 VERIFIZIERT (16.07.):
+  - [x] (a) sales_dashboard-Build unter vite 5 VERIFIZIERT (16.07.; Insel
+    inzwischen zurückgebaut 20.07., s. o. — Punkt nur Historie):
     `yarn build:dashboard` grün (89,55 kB JS + 18,91 kB CSS), Assets über
     Bench 200, `/app/sales-dashboard` eingeloggt gerendert (4 Karten,
     0 JS-Fehler). Engine-Tests 10/10 (pytest im Bench-Env; Achtung:
