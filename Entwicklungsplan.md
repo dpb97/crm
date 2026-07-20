@@ -209,10 +209,13 @@ Config fehlen), `calculation/engine.py` (Angebotswesen-Roadmap), alle
 
 ## Offen — wird wirklich gebaut
 - [ ] **Vertriebsfluss-Umbau (GF-Entscheid 20.07., s. Bindende Entscheide):**
-  - [ ] Klickdummy ZUERST (Theme-Showcase, Marco-Sichtung vor Umbau):
-    Pilot-Seite mit Reitern Chancen | Leads | Projekte + Buttons
-    „Kontakt aufgenommen → Lead" (am Tender) und „Projekt starten"
-    (am Lead).
+  - [x] Klickdummy GEBAUT (20.07., theme `3b50a77`, ASSET 130):
+    Showcase „CRM → Pilot · Vertriebsfluss" im Theme-Katalog — Reiter
+    Chancen | Leads | Projekte, Buttons „Kontakt aufgenommen → Lead" +
+    „Projekt starten" (löst Demo-Projektnummer), Tot-Zähler; echt
+    verdrahteter lokaler Demo-State, nur Pp*-Bausteine. **Marco-Sichtung/
+    Freigabe OFFEN** (3 Fragen: Reiter-Aufbau, Button-Texte,
+    Sidebar-Konsolidierung).
   - [ ] Tender→Lead-Brücke: Link-Feld + idempotente Lead-Anlage per
     Button (Muster news_ref, pilot/api.py).
   - [ ] „Projekt starten"-Button am Lead = bestehende Lead→Deal-
