@@ -68,7 +68,7 @@
       <div class="crmw-main">
         <!-- Kopf -->
         <PpPageHead
-          eyebrow="Vertrieb / CRM · Projekt"
+          :eyebrow="__('Sales / CRM · Project')"
           :title="doc.project_name || projectId"
           :subtitle="headSubtitle"
         >
@@ -80,8 +80,8 @@
               <span class="h-1.5 w-1.5 rounded-full" :class="statusDotClass(doc.status)" />
               {{ __(doc.status || 'Open') }}
             </span>
-            <button class="crmw-btn" @click="activeTab = T.ACT">Aktivität</button>
-            <button class="crmw-btn crmw-btn--primary" @click="showNewOfferDialog = true">Angebot erstellen</button>
+            <button class="crmw-btn" @click="activeTab = T.ACT">{{ __('Activity') }}</button>
+            <button class="crmw-btn crmw-btn--primary" @click="showNewOfferDialog = true">{{ __('Create Offer') }}</button>
           </template>
         </PpPageHead>
 
@@ -89,7 +89,7 @@
         <section class="crmw-stepper">
           <PpPhaseStepper :steps="phaseSteps" :current="currentStep" />
           <p v-if="doc.phase === 'Lost'" class="crmw-lost">
-            <FeatherIcon name="x-circle" class="inline h-3.5 w-3.5" /> Projekt als verloren markiert
+            <FeatherIcon name="x-circle" class="inline h-3.5 w-3.5" /> {{ __('Project marked as lost') }}
           </p>
         </section>
 
@@ -133,7 +133,7 @@
 
             <!-- Beschreibung -->
             <section>
-              <h4 class="crmw-sec-title">Projektbeschreibung</h4>
+              <h4 class="crmw-sec-title">{{ __('Project Description') }}</h4>
               <div v-if="editingDescription" class="mt-2 space-y-2">
                 <div class="relative">
                   <textarea v-model="editDescriptionValue" class="w-full rounded-lg border border-gray-200 px-3 py-2 pr-10 text-sm text-gray-800 focus:border-lcs-secondary focus:ring-1 focus:ring-lcs-secondary" rows="4" :placeholder="__('Add a project description...')" ref="descriptionInput" />
@@ -156,13 +156,13 @@
             <!-- Wert-Progression (editierbar: Budget → Richtpreis → Angebot) -->
             <section v-if="canShow('show_pricing_details')">
               <h4 class="crmw-sec-title">
-                Wert-Progression
-                <span class="ml-2 text-[10px] font-normal normal-case text-gray-400">Kundenbudget → interne Schätzung → festes Angebot</span>
+                {{ __('Value Progression') }}
+                <span class="ml-2 text-[10px] font-normal normal-case text-gray-400">{{ __('Customer budget → internal estimate → firm offer') }}</span>
               </h4>
               <div class="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
                 <PriceStageCard :label="__('Budget')" :sublabel="__('Customer indication')" :value="doc.budget_customer" color="gray" icon="user" :editable="true" :currency="doc.currency" @save="updateField('budget_customer', $event)" />
                 <PriceStageCard :label="__('Richtpreis')" :sublabel="__('Internal estimate')" :value="doc.richtpreis" color="blue" icon="clipboard" :editable="true" :currency="doc.currency" @save="updateField('richtpreis', $event)" />
-                <PriceStageCard :label="__('Angebot')" :sublabel="__('Formal quote')" :value="doc.angebot_total" color="green" icon="file-text" :editable="true" :currency="doc.currency" @save="updateField('angebot_total', $event)" />
+                <PriceStageCard :label="__('Offer')" :sublabel="__('Formal quote')" :value="doc.angebot_total" color="green" icon="file-text" :editable="true" :currency="doc.currency" @save="updateField('angebot_total', $event)" />
               </div>
               <div class="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
                 <div class="rounded-lg border bg-gray-50 p-3">
@@ -175,7 +175,7 @@
                   <div class="mt-1 text-base font-bold" :class="probabilityClass(doc.probability)">{{ Math.round(doc.probability) }}%</div>
                 </div>
                 <div v-if="budgetVsAngebot" class="rounded-lg border bg-gray-50 p-3">
-                  <div class="text-xs text-gray-500">{{ __('Budget vs. Angebot') }}</div>
+                  <div class="text-xs text-gray-500">{{ __('Budget vs. Offer') }}</div>
                   <div class="mt-1 text-base font-bold" :class="budgetVsAngebot >= 0 ? 'text-green-600' : 'text-amber-600'">{{ budgetVsAngebot >= 0 ? '+' : '' }}{{ Math.round(budgetVsAngebot) }}%</div>
                   <div class="mt-0.5 text-[10px] text-gray-400">{{ budgetVsAngebot >= 0 ? __('under customer budget') : __('over customer budget') }}</div>
                 </div>
@@ -187,11 +187,11 @@
           <div v-else-if="activeTab === T.ACT" class="crmw-tabpane space-y-4">
             <MailActivityWidget :project="projectId" />
 
-            <h4 class="crmw-sec-title">Angebots-Versionen</h4>
+            <h4 class="crmw-sec-title">{{ __('Offer Versions') }}</h4>
             <PpTimeline v-if="offerTimeline.length" :items="offerTimeline" />
-            <PpEmptyState v-else title="Keine Angebote" hint="Sobald ein Angebot angelegt ist, erscheint hier der Versionsverlauf." />
+            <PpEmptyState v-else :title="__('No offers')" :hint="__('Once an offer is created, its version history appears here.')" />
 
-            <h4 class="crmw-sec-title">Notizen &amp; Kommentare</h4>
+            <h4 class="crmw-sec-title">{{ __('Notes & Comments') }}</h4>
             <div v-if="activities.loading && !projectComments.length" class="flex items-center justify-center py-8">
               <div class="h-6 w-6 animate-spin rounded-full border-2 border-gray-200 border-t-lcs-secondary" />
             </div>
@@ -216,8 +216,8 @@
             </div>
             <PpEmptyState
               v-else-if="!offers.length"
-              title="Noch keine Angebote"
-              hint="Lege ein Angebot an, um Versionen und Ausgänge zu verfolgen."
+              :title="__('No offers yet')"
+              :hint="__('Create an offer to track versions and outcomes.')"
             >
               <template #action>
                 <Button variant="outline" size="sm" iconLeft="plus" @click="showNewOfferDialog = true" :label="__('Create first offer')" />
@@ -238,7 +238,7 @@
           <!-- Dokumente -->
           <div v-else-if="activeTab === T.DOC" class="crmw-tabpane">
             <PpDocList v-if="docItems.length" :docs="docItems" />
-            <PpEmptyState v-else title="Keine Dokumente verknüpft" hint="Verknüpfe einen SharePoint-Ordner, Teams-Kanal oder Dokument-Link im Projekt, um ihn hier zu öffnen." />
+            <PpEmptyState v-else :title="__('No documents linked')" :hint="__('Link a SharePoint folder, Teams channel, or document link in the project to open it here.')" />
           </div>
 
           <!-- Aufgaben & Zeit -->
@@ -254,7 +254,7 @@
             <div v-else-if="contactsData.length" class="rounded-lg border px-3">
               <ContactRow v-for="c in contactsData" :key="c.name" :contact="c.name" />
             </div>
-            <PpEmptyState v-else title="Keine Kontakte verknüpft" hint="Diesem Projekt sind noch keine Kontakte zugeordnet." />
+            <PpEmptyState v-else :title="__('No contacts linked')" :hint="__('No contacts are assigned to this project yet.')" />
           </div>
 
           <!-- PLM / BOM -->
@@ -323,7 +323,7 @@
             <h4 class="text-[10px] font-bold uppercase tracking-wider text-gray-400">{{ __('Pricing') }}</h4>
             <SideField :label="__('Budget')"><span class="text-sm tabular-nums" :class="doc.budget_customer ? 'text-gray-800' : 'text-gray-400'">{{ doc.budget_customer ? formatCurrency(doc.budget_customer) : '—' }}</span></SideField>
             <SideField :label="__('Richtpreis')"><span class="text-sm tabular-nums" :class="doc.richtpreis ? 'text-blue-700 font-medium' : 'text-gray-400'">{{ doc.richtpreis ? formatCurrency(doc.richtpreis) : '—' }}</span></SideField>
-            <SideField :label="__('Angebot')"><span class="text-sm tabular-nums" :class="doc.angebot_total ? 'text-green-700 font-semibold' : 'text-gray-400'">{{ doc.angebot_total ? formatCurrency(doc.angebot_total) : '—' }}</span></SideField>
+            <SideField :label="__('Offer')"><span class="text-sm tabular-nums" :class="doc.angebot_total ? 'text-green-700 font-semibold' : 'text-gray-400'">{{ doc.angebot_total ? formatCurrency(doc.angebot_total) : '—' }}</span></SideField>
           </div>
 
           <div v-if="doc.notes" class="space-y-2 bg-amber-50/30 px-5 py-4">
@@ -503,8 +503,8 @@ const budgetVsAngebot = computed(() => {
 
 // ---- Tabs (String-basiert für PpTabs) ----
 const T = {
-  OV: 'Übersicht', ACT: 'Aktivitäten', OFF: 'Angebote', DOC: 'Dokumente',
-  EXE: 'Aufgaben & Zeit', CON: 'Kontakte', PLM: 'PLM / BOM', MTX: 'Chancen-Matrix',
+  OV: __('Overview'), ACT: __('Activities'), OFF: __('Offers'), DOC: __('Documents'),
+  EXE: __('Tasks & Time'), CON: __('Contacts'), PLM: __('PLM / BOM'), MTX: __('Opportunity Matrix'),
 }
 const activeTab = ref(T.OV)
 const tabs = computed(() => {
@@ -517,14 +517,14 @@ const tabs = computed(() => {
 // ---- Phasen-Stepper (echte LCS-Phasen → Oberstufen) ----
 const PHASES = ['Qualified', 'Budget', 'Richtpreis', 'Offer', 'Negotiation', 'Won', 'Execution', 'Completed', 'Lost']
 const PHASE_STEPS = [
-  { key: 'Qualified',   idx: 1, group: 'Interessent', label: 'Qualifiziert' },
-  { key: 'Budget',      idx: 2, group: 'Angebot',     label: 'Budget' },
-  { key: 'Richtpreis',  idx: 3, group: 'Angebot',     label: 'Richtpreis' },
-  { key: 'Offer',       idx: 4, group: 'Angebot',     label: 'Angebot' },
-  { key: 'Negotiation', idx: 5, group: 'Angebot',     label: 'Verhandlung' },
-  { key: 'Won',         idx: 6, group: 'Projekt',     label: 'Auftrag' },
-  { key: 'Execution',   idx: 7, group: 'Projekt',     label: 'Ausführung' },
-  { key: 'Completed',   idx: 8, group: 'Projekt',     label: 'Abgeschlossen' },
+  { key: 'Qualified',   idx: 1, group: __('Lead'),    label: __('Qualified') },
+  { key: 'Budget',      idx: 2, group: __('Offer'),   label: __('Budget') },
+  { key: 'Richtpreis',  idx: 3, group: __('Offer'),   label: __('Richtpreis') },
+  { key: 'Offer',       idx: 4, group: __('Offer'),   label: __('Offer') },
+  { key: 'Negotiation', idx: 5, group: __('Offer'),   label: __('Negotiation') },
+  { key: 'Won',         idx: 6, group: __('Project'), label: __('Order') },
+  { key: 'Execution',   idx: 7, group: __('Project'), label: __('Execution') },
+  { key: 'Completed',   idx: 8, group: __('Project'), label: __('Completed') },
 ]
 const phaseSteps = PHASE_STEPS.map(({ idx, group, label }) => ({ idx, group, label }))
 const currentStep = computed(() => {
@@ -536,10 +536,10 @@ const currentStep = computed(() => {
 const kpis = computed(() => {
   const val = doc.value.estimated_value || doc.value.angebot_total || doc.value.richtpreis || doc.value.budget_customer || 0
   return [
-    { label: 'Auftragswert', value: formatCurrency(val), hint: 'Geschätzter Auftragswert' },
-    { label: 'Abschlusswahrsch.', value: `${Math.round(doc.value.probability || 0)} %`, hint: __(doc.value.phase || 'Open') },
-    { label: 'Erw. Abschluss', value: doc.value.expected_close_date ? formatDate(doc.value.expected_close_date) : '—', hint: 'laut Planung' },
-    { label: 'Angebote', value: String(offers.value.length), hint: activeOffersCount.value ? `${activeOffersCount.value} aktiv` : 'keine aktiven' },
+    { label: __('Order Value'), value: formatCurrency(val), hint: __('Estimated order value') },
+    { label: __('Close Probability'), value: `${Math.round(doc.value.probability || 0)} %`, hint: __(doc.value.phase || 'Open') },
+    { label: __('Exp. Close'), value: doc.value.expected_close_date ? formatDate(doc.value.expected_close_date) : '—', hint: __('per plan') },
+    { label: __('Offers'), value: String(offers.value.length), hint: activeOffersCount.value ? `${activeOffersCount.value} ${__('active')}` : __('none active') },
   ]
 })
 
@@ -703,11 +703,11 @@ const activeOffersCount = computed(() => offers.value.filter(o => ['Draft', 'Sen
 
 // Angebote → PpDataGrid
 const offerCols = [
-  { key: 'nr',      label: 'Angebot', pin: true, width: 220 },
-  { key: 'datum',   label: 'Datum', width: 120 },
-  { key: 'version', label: 'Version', align: 'center', width: 90 },
-  { key: 'wert',    label: 'Wert', align: 'right', width: 170 },
-  { key: 'status',  label: 'Status', width: 150 },
+  { key: 'nr',      label: __('Offer'), pin: true, width: 220 },
+  { key: 'datum',   label: __('Date'), width: 120 },
+  { key: 'version', label: __('Version'), align: 'center', width: 90 },
+  { key: 'wert',    label: __('Value'), align: 'right', width: 170 },
+  { key: 'status',  label: __('Status'), width: 150 },
 ]
 const offerRows = computed(() =>
   offers.value.map((o) => ({
@@ -734,8 +734,8 @@ const offerTimeline = computed(() =>
   offers.value.map((o) => ({
     kind: 'task',
     dir: null,
-    subject: `${o.offer_title || 'Angebot'} · v${o.version} — ${__(o.status)}`,
-    who: doc.value.salesperson || 'Vertrieb',
+    subject: `${o.offer_title || __('Offer')} · v${o.version} — ${__(o.status)}`,
+    who: doc.value.salesperson || __('Sales'),
     ago: o.offer_date ? formatDate(o.offer_date) : '',
   })),
 )
@@ -897,9 +897,9 @@ async function addProjectComment(text) {
 // Dokumente → PpDocList (echte Link-Felder des Projekts)
 const docItems = computed(() => {
   const out = []
-  if (doc.value.document_link) out.push({ id: 'doc', title: 'Projektdokument', kind: 'doc', href: doc.value.document_link, meta: ['Dokument-Link'] })
-  if (doc.value.sharepoint_link) out.push({ id: 'sp', title: 'SharePoint-Ordner', kind: 'doc', href: doc.value.sharepoint_link, meta: ['SharePoint'] })
-  if (doc.value.team_link) out.push({ id: 'teams', title: 'Teams-Kanal', kind: 'doc', href: doc.value.team_link, meta: ['Microsoft Teams'] })
+  if (doc.value.document_link) out.push({ id: 'doc', title: __('Project Document'), kind: 'doc', href: doc.value.document_link, meta: [__('Document link')] })
+  if (doc.value.sharepoint_link) out.push({ id: 'sp', title: __('SharePoint Folder'), kind: 'doc', href: doc.value.sharepoint_link, meta: ['SharePoint'] })
+  if (doc.value.team_link) out.push({ id: 'teams', title: __('Teams Channel'), kind: 'doc', href: doc.value.team_link, meta: ['Microsoft Teams'] })
   return out
 })
 

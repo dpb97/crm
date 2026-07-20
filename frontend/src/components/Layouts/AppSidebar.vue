@@ -103,10 +103,10 @@
       </SidebarLink>
       <!-- LCS: back link to the Pilanda intranet overview. -->
       <SidebarLink
-        :label="__('Zur Übersicht')"
+        :label="__('Back to overview')"
         :icon="LucideArrowLeft"
         :isCollapsed="isSidebarCollapsed"
-        @click="() => (window.location.href = '/pilanda')"
+        @click="goToPilandaOverview"
       />
       <SidebarLink
         v-if="isOnboardingStepsCompleted"
@@ -219,7 +219,7 @@ import {
 import router from '@/router'
 import { useStorage } from '@vueuse/core'
 import { useDemoData } from '@/composables/demoData'
-import { ref, reactive, computed, markRaw, onMounted } from 'vue'
+import { ref, reactive, computed, markRaw, watch } from 'vue'
 
 const { getPinnedViews, getPublicViews } = viewsStore()
 const { toggle: toggleNotificationPanel } = notificationsStore()
@@ -245,12 +245,12 @@ const links = [
     to: 'Leads',
   },
   {
-    label: 'Verkaufschance',
+    label: 'Deals',
     icon: DealsIcon,
     to: 'Deals',
   },
   {
-    label: 'Vertriebsprojekte',
+    label: 'Sales Projects',
     icon: LucideFolderKanban,
     to: 'LCS Projects',
   },
@@ -376,6 +376,12 @@ function getIcon(routeName, icon) {
     default:
       return PinIcon
   }
+}
+
+// LCS: back link target — `window` is not reachable from template
+// handlers (Vue template scope), so the redirect lives here.
+function goToPilandaOverview() {
+  window.location.href = '/pilanda'
 }
 
 // onboarding
@@ -584,18 +590,27 @@ const steps = reactive([
   },
 ])
 
-onMounted(async () => {
-  await users.promise
-
-  const filteredSteps = steps.filter((step) => {
-    if (step.condition) {
-      return step.condition()
-    }
-    return true
-  })
-
-  setUp(filteredSteps)
-})
+// LCS (20.07.2026): setUp muss synchron registriert sein, BEVOR der
+// Server-Onboarding-Status eintrifft (createResource in useOnboarding
+// startet im selben Setup-Tick) — sonst crasht frappe-ui syncStatus auf
+// onboardings[appName] === undefined bei jedem frischen Browser mit
+// vorhandenem Server-Status (Gerätewechsel oder Server-Seed).
+// Bewusst UNGEFILTERT: der Server kennt immer alle 9 Steps; die frühere
+// isManager()-Filterung (nur 'invite_your_team') erzeugte genau die
+// Längen-Divergenz, die denselben Crash auslöst.
+setUp(steps)
+// setUp öffnet showHelpModal anhand des localStorage-Flags BEVOR der
+// Server-Status gesynct ist — bei serverseitig erledigtem Onboarding
+// bliebe sonst ein leeres Panel stehen. Sobald der Sync (synchron aus
+// localStorage oder asynchron vom Server) "alles erledigt" meldet,
+// wieder schließen.
+watch(
+  isOnboardingStepsCompleted,
+  (done) => {
+    if (done) showHelpModal.value = false
+  },
+  { immediate: true },
+)
 
 // help center
 const articles = ref([

@@ -17,19 +17,19 @@
   <div class="flex h-full flex-col">
     <LayoutHeader>
       <template #left-header>
-        <Breadcrumbs :items="[{ label: 'Marktaufteilung', route: { name: 'LCS Market Assignment' } }]" />
+        <Breadcrumbs :items="[{ label: __('Market Assignment'), route: { name: 'LCS Market Assignment' } }]" />
       </template>
       <template #right-header>
-        <Button label="Aktualisieren" iconLeft="refresh-cw" @click="board.reload()" :loading="board.loading" />
+        <Button :label="__('Refresh')" iconLeft="refresh-cw" @click="board.reload()" :loading="board.loading" />
       </template>
     </LayoutHeader>
 
     <div class="crmt">
       <div class="crmt-inner">
         <PpPageHead
-          eyebrow="Vertrieb / CRM"
-          title="Marktaufteilung"
-          subtitle="Projektkarte + Territorien nach Sales-Manager · Klick auf einen Marker zeigt die Zuordnung"
+          :eyebrow="__('Sales / CRM')"
+          :title="__('Market Assignment')"
+          :subtitle="__('Project map + territories by sales manager · click a marker to see the assignment')"
         />
 
         <section class="crmt-kpis">
@@ -37,8 +37,8 @@
         </section>
 
         <!-- Prioritäten-Verteilung (echt, aggregiert) -->
-        <section class="crmt-prios" aria-label="Prioritäten">
-          <span class="crmt-prios-cap">Priorität</span>
+        <section class="crmt-prios" :aria-label="__('Priorities')">
+          <span class="crmt-prios-cap">{{ __('Priority') }}</span>
           <span v-for="p in PRIORITIES" :key="p" class="crmt-prio-chip" :data-tone="PRIO_TONE[p]">
             <i class="crmt-legend-dot" :class="'is-' + PRIO_TONE[p]" />{{ prioLabel(p) }} · {{ (summary.priority && summary.priority[p]) || 0 }}
           </span>
@@ -47,8 +47,8 @@
         <!-- Sales-Manager (Legende + Filter + Auslastung) -->
         <section class="crmt-section">
           <div class="crmt-section-head">
-            <h3 class="crmt-section-title">Zuständigkeit je Sales-Manager</h3>
-            <button v-if="manager || region || search" type="button" class="crmt-btn" @click="clearFilters">Filter zurücksetzen</button>
+            <h3 class="crmt-section-title">{{ __('Responsibility by sales manager') }}</h3>
+            <button v-if="manager || region || search" type="button" class="crmt-btn" @click="clearFilters">{{ __('Reset filters') }}</button>
           </div>
           <div class="crmt-mgrs">
             <button
@@ -63,13 +63,13 @@
                 <span class="crmt-mgr-badge" :class="'is-' + mgrKind(m.code)">{{ m.code }}</span>
                 <div class="crmt-mgr-id">
                   <span class="crmt-mgr-name">{{ m.user_name || m.code }}</span>
-                  <span class="crmt-mgr-sub">{{ m.territories }} Territorien · {{ m.countries }} Länder</span>
+                  <span class="crmt-mgr-sub">{{ m.territories }} {{ __('territories') }} · {{ m.countries }} {{ __('countries') }}</span>
                 </div>
               </div>
               <div class="crmt-mgr-work">
-                <span class="crmt-work-cell" data-kind="leads"><b>{{ m.leads }}</b>Leads</span>
-                <span class="crmt-work-cell" data-kind="deals"><b>{{ m.deals }}</b>Angebote</span>
-                <span class="crmt-work-cell" data-kind="projects"><b>{{ m.projects }}</b>Projekte</span>
+                <span class="crmt-work-cell" data-kind="leads"><b>{{ m.leads }}</b>{{ __('Leads') }}</span>
+                <span class="crmt-work-cell" data-kind="deals"><b>{{ m.deals }}</b>{{ __('Offers') }}</span>
+                <span class="crmt-work-cell" data-kind="projects"><b>{{ m.projects }}</b>{{ __('Projects') }}</span>
               </div>
             </button>
           </div>
@@ -78,39 +78,39 @@
         <!-- Projektkarte -->
         <section class="crmt-section">
           <div class="crmt-section-head">
-            <h3 class="crmt-section-title">Projektkarte</h3>
-            <span class="crmt-hint">{{ markers.length }} von {{ territories.length }} Territorien verortet</span>
+            <h3 class="crmt-section-title">{{ __('Project Map') }}</h3>
+            <span class="crmt-hint">{{ markers.length }} {{ __('of') }} {{ territories.length }} {{ __('territories located') }}</span>
           </div>
           <PpMap v-if="markers.length" :markers="markers" :active-id="activeId" @marker-click="pickMarker" />
           <div v-else class="crmt-card crmt-map-empty">
             <PpEmptyState
               :icon="IconMapPin"
-              :title="board.loading ? 'Karte wird geladen …' : 'Keine verortbaren Territorien'"
-              :hint="board.loading ? '' : 'Für die gefilterten Territorien liegen keine Länder mit Koordinaten vor.'"
+              :title="board.loading ? __('Loading map …') : __('No mappable territories')"
+              :hint="board.loading ? '' : __('The filtered territories have no countries with coordinates.')"
             />
           </div>
           <p class="crmt-active" data-testid="crmt-active">
             <template v-if="activeTerritory">
-              Ausgewählt: <strong>{{ activeTerritory.territory }}</strong> ·
-              Sales-Manager <strong>{{ activeTerritory.code || '—' }}</strong>
+              {{ __('Selected') }}: <strong>{{ activeTerritory.territory }}</strong> ·
+              {{ __('Sales manager') }} <strong>{{ activeTerritory.code || '—' }}</strong>
               <template v-if="activeTerritory.user_name"> ({{ activeTerritory.user_name }})</template> ·
-              {{ activeTerritory.country_count }} Länder · {{ activeTerritory.projects }} Projekte
+              {{ activeTerritory.country_count }} {{ __('countries') }} · {{ activeTerritory.projects }} {{ __('Projects') }}
             </template>
-            <template v-else>Kein Territorium ausgewählt — auf einen Marker klicken.</template>
+            <template v-else>{{ __('No territory selected — click a marker.') }}</template>
           </p>
         </section>
 
         <!-- Territorien -->
         <section class="crmt-section">
           <div class="crmt-section-head">
-            <h3 class="crmt-section-title">Territorien</h3>
+            <h3 class="crmt-section-title">{{ __('Territories') }}</h3>
             <div class="crmt-filters">
               <div class="crmt-search">
                 <FeatherIcon name="search" class="crmt-search-ico" />
-                <input v-model="search" type="search" class="crmt-input crmt-input--search" placeholder="Territorium / Land …" />
+                <input v-model="search" type="search" class="crmt-input crmt-input--search" :placeholder="__('Territory / country …')" />
               </div>
               <select v-model="region" class="crmt-input">
-                <option value="">Alle Regionen</option>
+                <option value="">{{ __('All regions') }}</option>
                 <option v-for="r in regionOptions" :key="r" :value="r">{{ r }}</option>
               </select>
             </div>
@@ -146,8 +146,8 @@
             <PpEmptyState
               v-else
               :icon="IconMapPin"
-              :title="board.loading ? 'Territorien werden geladen …' : 'Keine Territorien'"
-              :hint="board.loading ? '' : 'Für Filter/Suche gibt es aktuell keine Treffer.'"
+              :title="board.loading ? __('Loading territories …') : __('No territories')"
+              :hint="board.loading ? '' : __('No matches for the current filter/search.')"
             />
           </div>
         </section>
@@ -155,7 +155,7 @@
         <!-- Segment-Zuständigkeit -->
         <section v-if="segments.length" class="crmt-section">
           <div class="crmt-section-head">
-            <h3 class="crmt-section-title">Segment-Zuständigkeit</h3>
+            <h3 class="crmt-section-title">{{ __('Segment Responsibility') }}</h3>
           </div>
           <div class="crmt-card">
             <PpDataGrid :columns="segColumns" :rows="segRows">
@@ -195,10 +195,10 @@ const territories = computed(() => board.data?.territories || [])
 const segments = computed(() => board.data?.segments || [])
 
 const kpis = computed(() => [
-  { label: 'Territorien',     value: String(summary.value.territories), hint: 'Marktaufteilung' },
-  { label: 'Länder abgedeckt', value: String(summary.value.countries), hint: 'zugeordnete Länder' },
-  { label: 'Sales-Manager',   value: String(summary.value.managers), hint: 'mit Zuständigkeit' },
-  { label: 'Segmente',        value: String(summary.value.segments), hint: 'Verantwortungsmatrix' },
+  { label: __('Territories'),      value: String(summary.value.territories), hint: __('Market Assignment') },
+  { label: __('Countries covered'), value: String(summary.value.countries), hint: __('assigned countries') },
+  { label: __('Sales managers'),   value: String(summary.value.managers), hint: __('with responsibility') },
+  { label: __('Segments'),         value: String(summary.value.segments), hint: __('responsibility matrix') },
 ])
 
 // Sales-Manager ↔ Marker-/Legendenfarbe. Deterministisch aus der (nach
@@ -213,7 +213,7 @@ function mgrKind(code) { return mgrKindMap.value[code] || 'neutral' }
 
 // Prioritäten (deutsche Labels lokal — Frappes de.po übersetzt „Go" falsch).
 const PRIORITIES = ['Go', 'Watch', 'Maintain', 'Exit']
-const PRIORITY_LABELS = { Go: 'Aktiv verfolgen', Watch: 'Beobachten', Maintain: 'Halten', Exit: 'Rückzug' }
+const PRIORITY_LABELS = { Go: __('Actively pursue'), Watch: __('Watch'), Maintain: __('Maintain'), Exit: __('Withdraw') }
 const PRIO_TONE = { Go: 'success', Watch: 'info', Maintain: 'warning', Exit: 'neutral' }
 function prioLabel(p) { return PRIORITY_LABELS[p] || p }
 
@@ -249,20 +249,20 @@ function selectTerritory(id) { activeId.value = id }
 
 // Territorien-Tabelle.
 const columns = [
-  { key: 'territory', label: 'Territorium', pin: true, width: 200 },
-  { key: 'region',    label: 'Region', width: 150 },
-  { key: 'manager',   label: 'Sales-Manager', width: canManage.value ? 190 : 200 },
-  { key: 'priority',  label: 'Priorität', width: 150 },
-  { key: 'country_count', label: 'Länder', align: 'right', width: 90, agg: 'sum' },
-  { key: 'segment_count', label: 'Segmente', align: 'right', width: 100 },
-  { key: 'leads',     label: 'Leads', align: 'right', width: 90, agg: 'sum' },
-  { key: 'deals',     label: 'Angebote', align: 'right', width: 100, agg: 'sum' },
-  { key: 'projects',  label: 'Projekte', align: 'right', width: 100, agg: 'sum' },
+  { key: 'territory', label: __('Territory'), pin: true, width: 200 },
+  { key: 'region',    label: __('Region'), width: 150 },
+  { key: 'manager',   label: __('Sales manager'), width: canManage.value ? 190 : 200 },
+  { key: 'priority',  label: __('Priority'), width: 150 },
+  { key: 'country_count', label: __('Countries'), align: 'right', width: 90, agg: 'sum' },
+  { key: 'segment_count', label: __('Segments'), align: 'right', width: 100 },
+  { key: 'leads',     label: __('Leads'), align: 'right', width: 90, agg: 'sum' },
+  { key: 'deals',     label: __('Offers'), align: 'right', width: 100, agg: 'sum' },
+  { key: 'projects',  label: __('Projects'), align: 'right', width: 100, agg: 'sum' },
 ]
 const segColumns = [
-  { key: 'segment',     label: 'Segment', pin: true, width: 260 },
-  { key: 'lead_code',   label: 'Verantwortlich', width: 160 },
-  { key: 'deputy_code', label: 'Stellvertretung', width: 160 },
+  { key: 'segment',     label: __('Segment'), pin: true, width: 260 },
+  { key: 'lead_code',   label: __('Responsible'), width: 160 },
+  { key: 'deputy_code', label: __('Deputy'), width: 160 },
 ]
 const segRows = computed(() => segments.value.map((s, i) => ({ ...s, id: s.segment || ('seg-' + i) })))
 
@@ -283,11 +283,11 @@ async function reassign(row, code) {
       sales_manager_code: code,
       sales_manager: m?.user || null,
     })
-    toast.success('Territorium neu zugewiesen an ' + code)
+    toast.success(__('Territory reassigned to') + ' ' + code)
     board.reload()
   } catch (e) {
     Object.assign(row, prev)
-    toast.error(e?.messages?.[0] || 'Territorium konnte nicht neu zugewiesen werden.')
+    toast.error(e?.messages?.[0] || __('Territory could not be reassigned.'))
   }
 }
 </script>

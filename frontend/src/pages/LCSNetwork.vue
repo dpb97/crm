@@ -17,7 +17,7 @@
   <div class="flex h-full flex-col">
     <LayoutHeader>
       <template #left-header>
-        <Breadcrumbs :items="[{ label: 'Netzwerk', route: { name: 'LCS Network' } }]" />
+        <Breadcrumbs :items="[{ label: __('Network'), route: { name: 'LCS Network' } }]" />
       </template>
       <template #right-header>
         <div class="flex items-center gap-3">
@@ -26,14 +26,14 @@
               class="px-3 py-1 text-xs font-medium transition"
               :class="mode === 'people' ? 'bg-lcs-primary text-white' : 'bg-white text-gray-600 hover:bg-gray-50'"
               @click="mode = 'people'"
-            >Personen</button>
+            >{{ __('People') }}</button>
             <button
               class="px-3 py-1 text-xs font-medium transition"
               :class="mode === 'companies' ? 'bg-lcs-primary text-white' : 'bg-white text-gray-600 hover:bg-gray-50'"
               @click="mode = 'companies'"
-            >Firmen</button>
+            >{{ __('Organizations') }}</button>
           </div>
-          <Button label="Aktualisieren" iconLeft="refresh-cw" @click="graph.reload()" />
+          <Button :label="__('Refresh')" iconLeft="refresh-cw" @click="graph.reload()" />
         </div>
       </template>
     </LayoutHeader>
@@ -41,23 +41,23 @@
     <div class="crmn">
       <div class="crmn-inner">
         <PpPageHead
-          eyebrow="Vertrieb / CRM"
-          title="Netzwerk"
-          subtitle="Beziehungen zwischen Firmen und Personen · Klick auf einen Knoten öffnet das Profil"
+          :eyebrow="__('Sales / CRM')"
+          :title="__('Network')"
+          :subtitle="__('Relationships between organizations and people · click a node to open the profile')"
         />
 
-        <section class="crmn-legend" aria-label="Legende">
-          <span class="crmn-legend-item"><i class="crmn-legend-dot is-brand" />Firma</span>
-          <span class="crmn-legend-item"><i class="crmn-legend-dot crmn-legend-dot--ring" />Person</span>
-          <span class="crmn-legend-item"><i class="crmn-legend-line" />arbeitet bei</span>
-          <span class="crmn-legend-item"><i class="crmn-legend-line crmn-legend-line--dashed" />früher bei</span>
+        <section class="crmn-legend" :aria-label="__('Legend')">
+          <span class="crmn-legend-item"><i class="crmn-legend-dot is-brand" />{{ __('Organization') }}</span>
+          <span class="crmn-legend-item"><i class="crmn-legend-dot crmn-legend-dot--ring" />{{ __('Person') }}</span>
+          <span class="crmn-legend-item"><i class="crmn-legend-line" />{{ __('works at') }}</span>
+          <span class="crmn-legend-item"><i class="crmn-legend-line crmn-legend-line--dashed" />{{ __('previously at') }}</span>
         </section>
 
         <!-- Leer-/Ladezustand -->
         <section v-if="!nodes.length" class="crmn-graph crmn-empty">
           <PpEmptyState
-            :title="graph.loading ? 'Netzwerk wird geladen …' : 'Noch keine Netzwerkdaten'"
-            :hint="graph.loading ? '' : 'Sobald Firmen mit zugeordneten Kontakten existieren, erscheint hier der Beziehungsgraph.'"
+            :title="graph.loading ? __('Loading network …') : __('No network data yet')"
+            :hint="graph.loading ? '' : __('Once organizations with assigned contacts exist, the relationship graph appears here.')"
           />
         </section>
 
@@ -119,51 +119,51 @@
         <div class="crmn-detail-head">
           <span class="crmn-role" :class="selNode.type === 'company' ? 'is-brand' : 'is-info'">
             <i class="crmn-legend-dot" :class="selNode.type === 'company' ? 'is-brand' : 'is-info'" />
-            {{ selNode.type === 'company' ? 'Firma' : 'Person' }}
+            {{ selNode.type === 'company' ? __('Organization') : __('Person') }}
           </span>
         </div>
 
         <!-- Firma -->
         <template v-if="selNode.type === 'company'">
           <dl class="crmn-meta">
-            <div><dt>Typ</dt><dd>Firma</dd></div>
-            <div><dt>Kontakte</dt><dd>{{ selNode.size || 0 }}</dd></div>
+            <div><dt>{{ __('Type') }}</dt><dd>{{ __('Organization') }}</dd></div>
+            <div><dt>{{ __('Contacts') }}</dt><dd>{{ selNode.size || 0 }}</dd></div>
           </dl>
 
           <section class="crmn-sec">
-            <h4 class="crmn-sec-title">Personen</h4>
+            <h4 class="crmn-sec-title">{{ __('People') }}</h4>
             <ul v-if="selPeople.length" class="crmn-proj">
               <li v-for="p in selPeople" :key="p.id">
                 {{ p.label }}<span v-if="p.role" class="crmn-muted"> · {{ p.role }}</span>
               </li>
             </ul>
-            <p v-else class="crmn-desc">Keine Personen im Graphen zugeordnet.</p>
+            <p v-else class="crmn-desc">{{ __('No people assigned in the graph.') }}</p>
           </section>
 
           <section class="crmn-sec">
-            <h4 class="crmn-sec-title">Verbundene Firmen</h4>
+            <h4 class="crmn-sec-title">{{ __('Connected organizations') }}</h4>
             <ul v-if="selConnected.length" class="crmn-proj">
               <li v-for="c in selConnected" :key="c.id">
-                {{ c.label }}<span v-if="c.weight > 1" class="crmn-muted"> · {{ c.weight }} Wechsel</span>
+                {{ c.label }}<span v-if="c.weight > 1" class="crmn-muted"> · {{ c.weight }} {{ __('moves') }}</span>
               </li>
             </ul>
-            <p v-else class="crmn-desc">Keine firmenübergreifenden Verbindungen.</p>
+            <p v-else class="crmn-desc">{{ __('No cross-organization connections.') }}</p>
           </section>
         </template>
 
         <!-- Person -->
         <template v-else>
           <dl class="crmn-meta">
-            <div><dt>Funktion</dt><dd>{{ selNode.role || '—' }}</dd></div>
-            <div><dt>Firma</dt><dd>{{ selPersonCompany || '—' }}</dd></div>
+            <div><dt>{{ __('Role') }}</dt><dd>{{ selNode.role || '—' }}</dd></div>
+            <div><dt>{{ __('Organization') }}</dt><dd>{{ selPersonCompany || '—' }}</dd></div>
           </dl>
 
           <section class="crmn-sec">
-            <h4 class="crmn-sec-title">Früher tätig bei</h4>
+            <h4 class="crmn-sec-title">{{ __('Previously worked at') }}</h4>
             <ul v-if="selPersonPrev.length" class="crmn-proj">
               <li v-for="c in selPersonPrev" :key="c">{{ c }}</li>
             </ul>
-            <p v-else class="crmn-desc">Keine Karriere-Historie hinterlegt.</p>
+            <p v-else class="crmn-desc">{{ __('No career history on record.') }}</p>
           </section>
         </template>
       </div>
@@ -172,7 +172,7 @@
         <Button
           v-if="selNode"
           variant="solid"
-          :label="selNode.type === 'company' ? 'Organisation öffnen' : 'Kontakt öffnen'"
+          :label="selNode.type === 'company' ? __('Open organization') : __('Open contact')"
           iconLeft="external-link"
           @click="openSelected"
         />

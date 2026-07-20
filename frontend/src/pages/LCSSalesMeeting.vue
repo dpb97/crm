@@ -15,12 +15,12 @@
   <div class="flex h-full flex-col">
     <LayoutHeader>
       <template #left-header>
-        <Breadcrumbs :items="[{ label: 'Sales Meeting', route: { name: 'LCS Sales Meeting' } }]" />
+        <Breadcrumbs :items="[{ label: __('Sales Meeting'), route: { name: 'LCS Sales Meeting' } }]" />
       </template>
       <template #right-header>
         <div class="flex items-center gap-2">
-          <Button label="Insights" iconLeft="bar-chart-2" @click="$router.push({ name: 'LCS Forecasting' })" />
-          <Button label="Aktualisieren" iconLeft="refresh-cw" @click="board.reload()" :loading="board.loading" />
+          <Button :label="__('Insights')" iconLeft="bar-chart-2" @click="$router.push({ name: 'LCS Forecasting' })" />
+          <Button :label="__('Refresh')" iconLeft="refresh-cw" @click="board.reload()" :loading="board.loading" />
         </div>
       </template>
     </LayoutHeader>
@@ -28,9 +28,9 @@
     <div class="crmm">
       <div class="crmm-inner">
         <PpPageHead
-          eyebrow="Vertrieb / CRM"
-          title="Sales Meeting"
-          :subtitle="`Angebote in Bearbeitung · ${filteredRows.length} von ${rows.length} Chancen · ${money(kpiWeighted)} gewichtete Pipeline`"
+          :eyebrow="__('Sales / CRM')"
+          :title="__('Sales Meeting')"
+          :subtitle="`${__('Offers in progress')} · ${filteredRows.length} ${__('of')} ${rows.length} ${__('opportunities')} · ${money(kpiWeighted)} ${__('weighted pipeline')}`"
         />
 
         <!-- KPI-Zeile — reaktiv aus dem (gefilterten) Meeting-Stand -->
@@ -41,16 +41,16 @@
         <!-- Filter: verantwortlicher Vertriebler + Suche -->
         <section class="crmm-filter">
           <div class="crmm-field crmm-field--grow">
-            <label class="crmm-field-cap">Suche</label>
+            <label class="crmm-field-cap">{{ __('Search') }}</label>
             <div class="crmm-search">
               <FeatherIcon name="search" class="crmm-search-ico" />
-              <input v-model="search" type="search" class="crmm-input crmm-input--search" placeholder="Chance, Nummer, Land, Notiz …" />
+              <input v-model="search" type="search" class="crmm-input crmm-input--search" :placeholder="__('Opportunity, number, country, note …')" />
             </div>
           </div>
           <div class="crmm-field">
-            <label class="crmm-field-cap">Verantwortlich</label>
+            <label class="crmm-field-cap">{{ __('Responsible') }}</label>
             <select v-model="person" class="crmm-input">
-              <option value="">Alle Vertriebler</option>
+              <option value="">{{ __('All salespeople') }}</option>
               <option v-for="v in vertriebler" :key="v" :value="v">{{ shortUser(v) }}</option>
             </select>
           </div>
@@ -60,7 +60,7 @@
         <!-- Wichtig markiert (entitätsübergreifend, echte Sternflags) -->
         <section v-if="important.length" class="crmm-important">
           <div class="crmm-important-head">
-            <FeatherIcon name="star" class="crmm-important-star" /> Wichtig markiert
+            <FeatherIcon name="star" class="crmm-important-star" /> {{ __('Flagged important') }}
           </div>
           <div class="crmm-important-list">
             <button
@@ -91,7 +91,7 @@
               <span class="crmm-id">{{ row.project_number }}<template v-if="row.sub"> · {{ row.sub }}</template></span>
             </template>
             <template #cell-vertrieb="{ value }">
-              <span :class="{ 'crmm-muted': !value }">{{ value ? shortUser(value) : 'nicht zugewiesen' }}</span>
+              <span :class="{ 'crmm-muted': !value }">{{ value ? shortUser(value) : __('unassigned') }}</span>
             </template>
             <template #cell-phase="{ value }">
               <span class="crmm-pill" :data-tone="phaseTone(value)"><i class="crmm-dot" />{{ phaseLabel(value) }}</span>
@@ -110,8 +110,8 @@
           <PpEmptyState
             v-else
             :icon="IconInbox"
-            :title="board.loading ? 'Chancen werden geladen …' : 'Keine offenen Chancen'"
-            :hint="board.loading ? '' : (person || search ? 'Für Filter/Suche gibt es aktuell keine Treffer.' : 'Sobald Angebote in Bearbeitung sind, erscheinen sie hier.')"
+            :title="board.loading ? __('Loading opportunities …') : __('No open opportunities')"
+            :hint="board.loading ? '' : (person || search ? __('No matches for the current filter/search.') : __('Once offers are in progress, they appear here.'))"
           />
         </section>
       </div>
@@ -140,14 +140,14 @@ const important = computed(() => board.data?.important || [])
 
 // Phase → deutsche Bezeichnung + Ton (Funnel-Reihenfolge der LCS-Phasen).
 const PHASE = {
-  Qualified:   { label: 'Qualifiziert', tone: 'info' },
-  Budget:      { label: 'Budget',       tone: 'info' },
-  Richtpreis:  { label: 'Richtpreis',   tone: 'brand' },
-  Offer:       { label: 'Angebot',      tone: 'brand' },
-  Negotiation: { label: 'Verhandlung',  tone: 'warning' },
-  Won:         { label: 'Gewonnen',     tone: 'success' },
-  Execution:   { label: 'Ausführung',   tone: 'success' },
-  Completed:   { label: 'Abgeschlossen', tone: 'success' },
+  Qualified:   { label: __('Qualified'),   tone: 'info' },
+  Budget:      { label: __('Budget'),      tone: 'info' },
+  Richtpreis:  { label: __('Richtpreis'),  tone: 'brand' },
+  Offer:       { label: __('Offer'),       tone: 'brand' },
+  Negotiation: { label: __('Negotiation'), tone: 'warning' },
+  Won:         { label: __('Won'),         tone: 'success' },
+  Execution:   { label: __('Execution'),   tone: 'success' },
+  Completed:   { label: __('Completed'),   tone: 'success' },
 }
 function phaseLabel(p) { return PHASE[p]?.label || p || '—' }
 function phaseTone(p) { return PHASE[p]?.tone || 'info' }
@@ -189,14 +189,14 @@ const gridRows = computed(() => filteredRows.value.map((r) => {
 }))
 
 const columns = [
-  { key: 'chance',     label: 'Chance', pin: true, width: 240 },
-  { key: 'vertrieb',   label: 'Vertrieb', width: 130 },
-  { key: 'phase',      label: 'Phase', width: 150 },
-  { key: 'wahrsch',    label: 'P(win)', align: 'right', width: 90 },
-  { key: 'wertk',      label: 'Wert (k€)', align: 'right', width: 120, agg: 'sum' },
-  { key: 'gewichtetk', label: 'Gewichtet (k€)', align: 'right', width: 150, agg: 'sum' },
-  { key: 'beschluss',  label: 'Beschluss / Notiz', width: 280 },
-  { key: 'due',        label: 'Fällig', width: 110 },
+  { key: 'chance',     label: __('Opportunity'), pin: true, width: 240 },
+  { key: 'vertrieb',   label: __('Sales'), width: 130 },
+  { key: 'phase',      label: __('Phase'), width: 150 },
+  { key: 'wahrsch',    label: __('P(win)'), align: 'right', width: 90 },
+  { key: 'wertk',      label: __('Value (k€)'), align: 'right', width: 120, agg: 'sum' },
+  { key: 'gewichtetk', label: __('Weighted (k€)'), align: 'right', width: 150, agg: 'sum' },
+  { key: 'beschluss',  label: __('Decision / note'), width: 280 },
+  { key: 'due',        label: __('Due'), width: 110 },
 ]
 
 // KPIs reaktiv aus den gefilterten Zeilen (immer konsistent mit der Tabelle).
@@ -211,17 +211,17 @@ const kpiDueSoon = computed(() => filteredRows.value.filter((r) => {
 }).length)
 
 const kpis = computed(() => [
-  { label: 'Pipeline (gewichtet)', value: money(kpiWeighted.value), hint: 'Σ Wert × P(win)' },
-  { label: 'Offene Chancen',       value: String(filteredRows.value.length), hint: money(kpiTotal.value) + ' Volumen' },
-  { label: 'Ø Abschlusswahrsch.',  value: kpiAvgProb.value + ' %', hint: 'über offene Phasen' },
-  { label: 'Aktionen fällig (7 T)', value: String(kpiDueSoon.value), hint: 'in den nächsten 7 Tagen', ...(kpiDueSoon.value ? { delta: 'offen', dir: 'up' } : {}) },
+  { label: __('Pipeline (weighted)'), value: money(kpiWeighted.value), hint: __('Σ value × P(win)') },
+  { label: __('Open opportunities'),  value: String(filteredRows.value.length), hint: money(kpiTotal.value) + ' ' + __('volume') },
+  { label: __('Ø win probability'),   value: kpiAvgProb.value + ' %', hint: __('across open phases') },
+  { label: __('Actions due (7 d)'),   value: String(kpiDueSoon.value), hint: __('in the next 7 days'), ...(kpiDueSoon.value ? { delta: __('open'), dir: 'up' } : {}) },
 ])
 
 // Entitäts-übergreifende „Wichtig"-Sprünge (echte Sternflags).
 const ENTITY = {
-  project: { label: 'Projekt', route: 'LCS Project', param: 'id' },
-  lead:    { label: 'Lead',    route: 'Lead',        param: 'leadId' },
-  deal:    { label: 'Angebot', route: 'Deal',        param: 'dealId' },
+  project: { label: __('Project'), route: 'LCS Project', param: 'id' },
+  lead:    { label: __('Lead'),    route: 'Lead',        param: 'leadId' },
+  deal:    { label: __('Offer'),   route: 'Deal',        param: 'dealId' },
 }
 function entityLabel(e) { return ENTITY[e]?.label || e }
 function openItem(it) {

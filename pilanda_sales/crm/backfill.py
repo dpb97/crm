@@ -12,9 +12,71 @@ Bewusst NICHT übernommen: Opportunity → CRM Deal (Dominiks Funnel-Phasen-
 Semantik + Deal→LCS-Project-Automatik; Mapping gehört zu ihm bzw. E3).
 
 Lauf:  bench --site lcs.local execute pilanda_sales.crm.backfill.execute
+
+Zusätzlich (Audit 20.07.2026, Marco-GO): ensure_german_ux() — deutsche
+Standard-UX für alle LCS-Konten: Sprache de + Frappe-CRM-Onboarding als
+erledigt markiert (= serverseitig vorweggenommener „Skip all"-Klick je User,
+im Sinne des Entscheids vom 16.07., kein SPA-Hack).
+
+Lauf:  bench --site lcs.local execute pilanda_sales.crm.backfill.ensure_german_ux
 """
 
+import json
+
 import frappe
+
+# Domains unserer echten Konten; Frappe-/Fork-Test-Fixtures (example.com,
+# abc.com …) bleiben unangetastet — Test-Suites erwarten deren Zustand.
+_LCS_DOMAINS = ("@lcs.local", "@lcs-group.com", "@lcs-test.local")
+
+# Die 9 Onboarding-Steps der CRM-SPA (frontend AppSidebar.vue, useOnboarding
+# 'frappecrm'). Persistenz: User.onboarding_status (frappe/onboarding.py).
+_CRM_ONBOARDING_STEPS = [
+    "setup_your_password", "create_first_lead", "invite_your_team",
+    "convert_lead_to_deal", "create_first_task", "create_first_note",
+    "add_first_comment", "send_first_email", "change_deal_status",
+]
+
+
+def ensure_german_ux() -> dict:
+    """Sprache de + CRM-Onboarding erledigt für alle LCS-Konten (idempotent)."""
+    stats = {"sprache_de_gesetzt": 0, "onboarding_erledigt": 0, "unveraendert": 0}
+
+    users = frappe.get_all("User", filters={"enabled": 1}, fields=["name", "language"])
+    for user in users:
+        if not user.name.endswith(_LCS_DOMAINS):
+            continue
+        changed = False
+
+        if user.language != "de":
+            frappe.db.set_value("User", user.name, "language", "de", update_modified=False)
+            stats["sprache_de_gesetzt"] += 1
+            changed = True
+
+        raw = frappe.db.get_value("User", user.name, "onboarding_status")
+        status = frappe.parse_json(raw) if raw else {}
+        steps = status.get("frappecrm_onboarding_status") or []
+        done = {s.get("name") for s in steps if s.get("completed")}
+        if not all(name in done for name in _CRM_ONBOARDING_STEPS):
+            status["frappecrm_onboarding_status"] = [
+                {"name": name, "completed": True} for name in _CRM_ONBOARDING_STEPS
+            ]
+            frappe.db.set_value(
+                "User", user.name, "onboarding_status",
+                json.dumps(status), update_modified=False,
+            )
+            stats["onboarding_erledigt"] += 1
+            changed = True
+
+        if not changed:
+            stats["unveraendert"] += 1
+
+    frappe.db.commit()
+    print("ENSURE_GERMAN_UX:", stats)
+    return stats
+
+
+
 
 
 def execute() -> dict:

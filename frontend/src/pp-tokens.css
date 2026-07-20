@@ -15,9 +15,9 @@
  * Only the semantic + shape layers are meant to be referenced
  * from components / pages. Primitives are private to this file.
  *
- * Phase 0/1 theme: slate-light. Multi-theme is folder-ready:
- * a future slate-dark would override only the semantic layer
- * inside `[data-theme="slate-dark"] { … }`.
+ * Themes: hell (default, :root) + dunkel ([data-theme="dark"],
+ * Semantik-Layer-Override weiter unten in dieser Datei).
+ * Brand = Logo-Cyan #008B8B (Entscheid Marco 07.07.2026).
  */
 
 :root {
@@ -135,6 +135,10 @@
     --pp-bg-stage:       #c4c9d1;                 /* tiefste Bühne (Login-/Vorschau-Grund) */
     --pp-bg-hover:       #d4d8de;                 /* Hover-Fläche (= line-2 im Dummy) */
     --pp-bg-pressed:     #cdd3db;                 /* abgeleitet — Dummy definiert kein pressed */
+    --pp-bg-subtle:      #f5f7fa;                 /* dezente Binnenfläche HELLER als surface
+                                                     (Chips, Skeleton-Loader, Notiz-/Code-Flächen;
+                                                     Ghost-Token-Kur Audit 20.07.2026 — war in
+                                                     4 Repos referenziert, nie definiert) */
 
     /* Text — Klickdummy §6/N1 */
     --pp-text-primary:   #232a36;                 /* ink */
@@ -187,6 +191,9 @@
     --pp-brand-primary-d:   var(--pp-brand-800);
     --pp-brand-secondary:   var(--pp-brand-500);
     --pp-brand-primary-rgb: 0 139 139;   /* #008B8B → rgb(var(--…) / α) */
+    --pp-brand-primary-light: var(--pp-brand-100); /* helle Brand-Tönung für Flächen
+                                                      (Chat-Bubbles, aktive Chips;
+                                                      Ghost-Token-Kur Audit 20.07.2026) */
 
     /* =========================================================
      * 3. MODULE-ACCENT — application
@@ -309,6 +316,8 @@
     --pp-bg-stage:    #0c0f14;
     --pp-bg-hover:    #222932;                  /* = line-2 dunkel im Dummy */
     --pp-bg-pressed:  oklch(1 0 0 / 0.09);      /* abgeleitet — Dummy definiert kein pressed */
+    --pp-bg-subtle:   #232a34;                  /* Binnenfläche HELLER als surface (Pendant
+                                                   zum Hell-Wert, Ghost-Token-Kur 20.07.2026) */
 
     /* Text — Klickdummy §6/N1 dunkel */
     --pp-text-primary:   #e7ebf1;
@@ -326,6 +335,8 @@
      * helle Hover-/Text-Variante #54d3d3. */
     --pp-brand-primary:     #17b3b3;
     --pp-brand-primary-d:   #54d3d3;
+    --pp-brand-primary-light: var(--pp-brand-950); /* dunkle Brand-Tönung (Pendant zum
+                                                      Hell-Wert, Ghost-Token-Kur 20.07.2026) */
     --pp-brand-secondary:   var(--pp-brand-400);
     --pp-brand-primary-rgb: 23 179 179;   /* #17b3b3 */
 

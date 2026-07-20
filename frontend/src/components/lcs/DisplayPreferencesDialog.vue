@@ -78,7 +78,7 @@
             <PrefToggle
               v-model="form.show_bsm_section"
               :label="__('BSM (Construction)')"
-              :description="__('Baustellen-Management-Link, Defekte')"
+              :description="__('Construction-site management link, defects')"
               :locked="accessProfile?.hide_bsm"
             />
             <PrefToggle
@@ -90,7 +90,7 @@
             <PrefToggle
               v-model="form.show_pricing_details"
               :label="__('Pricing Stages')"
-              :description="__('Budget → Richtpreis → Angebot cards')"
+              :description="__('Budget → Richtpreis → Offer cards')"
               :locked="accessProfile?.hide_pricing"
             />
           </div>

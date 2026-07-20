@@ -23,22 +23,22 @@
   <div class="flex h-full flex-col">
     <LayoutHeader>
       <template #left-header>
-        <Breadcrumbs :items="[{ label: 'Schnellnotiz', route: { name: 'LCS Quick Note' } }]" />
+        <Breadcrumbs :items="[{ label: __('Quick Note'), route: { name: 'LCS Quick Note' } }]" />
       </template>
     </LayoutHeader>
 
     <div class="crms">
       <div class="crms-inner">
         <PpPageHead
-          eyebrow="Vertrieb / CRM"
-          title="Schnellnotiz"
-          :subtitle="`Notiz tippen oder sprechen · ${notes.length} ${notes.length === 1 ? 'Notiz' : 'Notizen'} in dieser Sitzung`"
+          :eyebrow="__('Sales / CRM')"
+          :title="__('Quick Note')"
+          :subtitle="`${__('Type or speak a note')} · ${notes.length} ${notes.length === 1 ? __('note') : __('notes')} ${__('in this session')}`"
         />
 
         <!-- Composer: PpSpeakOrType + Sprachauswahl (aus Alt-Seite erhalten) -->
         <section class="crms-composer">
           <div class="crms-lang">
-            <label class="crms-lang-cap" for="crms-lang">Sprache der Aufnahme</label>
+            <label class="crms-lang-cap" for="crms-lang">{{ __('Recording language') }}</label>
             <select id="crms-lang" v-model="language" class="crms-select">
               <option v-for="l in LANGS" :key="l.value" :value="l.value">{{ l.label }}</option>
             </select>
@@ -46,14 +46,13 @@
           <PpSpeakOrType
             v-model="draft"
             :disabled="busy"
-            placeholder="Schnellnotiz zum Projekt eintippen — Projektnummer, Name, Kunde oder Ort nennen. Oder Mikrofon für eine Sprachnotiz…"
+            :placeholder="__('Type a quick note about the project — mention the project number, name, customer, or location. Or use the microphone for a voice note…')"
             @text="onText"
             @audio="onAudio"
             @error="onError"
           />
           <p class="crms-hint">
-            Getippte Notizen werden automatisch dem passenden Projekt zugeordnet. Sprachnotizen werden
-            hochgeladen und serverseitig transkribiert (Sprache: {{ langLabel }}) — die Zuordnung erfolgt danach.
+            {{ __('Typed notes are automatically matched to the right project. Voice notes are uploaded and transcribed on the server (language: {0}) — matching happens afterwards.', [langLabel]) }}
           </p>
           <p v-if="lastError" class="crms-error" role="alert">
             <FeatherIcon name="alert-triangle" class="crms-error-ico" />{{ lastError }}
@@ -65,14 +64,14 @@
           <div class="crms-assign-head">
             <FeatherIcon name="git-branch" class="crms-assign-ico" />
             <div class="crms-assign-titles">
-              <span class="crms-assign-title">Projekt zuordnen</span>
+              <span class="crms-assign-title">{{ __('Assign project') }}</span>
               <span class="crms-assign-note">„{{ pending.text }}"</span>
             </div>
-            <button type="button" class="crms-assign-x" aria-label="Verwerfen" @click="cancelPending"><FeatherIcon name="x" /></button>
+            <button type="button" class="crms-assign-x" :aria-label="__('Discard')" @click="cancelPending"><FeatherIcon name="x" /></button>
           </div>
 
           <div v-if="candidates.length" class="crms-cands">
-            <span class="crms-cands-cap">Vorgeschlagene Projekte</span>
+            <span class="crms-cands-cap">{{ __('Suggested projects') }}</span>
             <button v-for="c in candidates" :key="c.name" type="button" class="crms-cand" :disabled="busy" @click="dispatchTo(c.name)">
               <div class="crms-cand-main">
                 <span class="crms-cand-name">{{ c.project_name }}<span v-if="c.project_type" class="crms-type" :data-type="c.project_type">{{ c.project_type }}</span></span>
@@ -85,14 +84,14 @@
               <span class="crms-cand-score" :data-conf="c.confidence">{{ confidenceLabel(c.confidence) }} · {{ Math.round(c.score * 100) }} %</span>
             </button>
           </div>
-          <p v-else class="crms-cands-empty">Kein Projekt automatisch erkannt — bitte unten manuell wählen.</p>
+          <p v-else class="crms-cands-empty">{{ __('No project detected automatically — please choose manually below.') }}</p>
 
           <div class="crms-manual">
-            <span class="crms-cands-cap">Manuell zuordnen</span>
+            <span class="crms-cands-cap">{{ __('Assign manually') }}</span>
             <div class="crms-search">
               <FeatherIcon name="search" class="crms-search-ico" />
               <input v-model="manualQuery" type="search" class="crms-select crms-select--search"
-                     placeholder="Projekt nach Nummer oder Name suchen …" @input="onManualSearch" />
+                     :placeholder="__('Search project by number or name …')" @input="onManualSearch" />
               <span v-if="manualSearching" class="crms-spin" />
             </div>
             <div v-if="manualResults.length" class="crms-manual-list">
@@ -103,20 +102,20 @@
                 </div>
               </button>
             </div>
-            <p v-else-if="manualQuery.length >= 2 && !manualSearching" class="crms-cands-empty">Keine passenden Projekte.</p>
+            <p v-else-if="manualQuery.length >= 2 && !manualSearching" class="crms-cands-empty">{{ __('No matching projects.') }}</p>
           </div>
         </section>
 
         <!-- Abgelegte Notizen (Sitzung) -->
         <section class="crms-list-wrap">
-          <h3 class="crms-list-title">Abgelegte Notizen</h3>
+          <h3 class="crms-list-title">{{ __('Saved notes') }}</h3>
           <ol v-if="notes.length" class="crms-list">
             <li v-for="n in notes" :key="n.id" class="crms-note" :class="'is-' + n.type">
               <div class="crms-note-main">
                 <p v-if="n.type === 'text'" class="crms-note-text">{{ n.text }}</p>
                 <div v-else class="crms-note-audio">
                   <audio class="crms-audio" :src="n.url" controls preload="metadata"></audio>
-                  <span class="crms-note-meta">Sprachnotiz · {{ n.seconds }} s · {{ n.kb }} kB · {{ n.mime }}</span>
+                  <span class="crms-note-meta">{{ __('Voice note') }} · {{ n.seconds }} s · {{ n.kb }} kB · {{ n.mime }}</span>
                 </div>
                 <div class="crms-note-foot">
                   <span v-if="n.target" class="crms-target">
@@ -124,12 +123,12 @@
                     <router-link :to="{ name: 'LCS Project', params: { id: n.target } }" class="crms-target-link">{{ n.target }}</router-link>
                   </span>
                   <span v-else-if="n.type === 'audio'" class="crms-queued">
-                    <FeatherIcon name="clock" class="crms-target-ico" />Transkription eingereiht<template v-if="n.job"> · {{ n.job }}</template>
+                    <FeatherIcon name="clock" class="crms-target-ico" />{{ __('Transcription queued') }}<template v-if="n.job"> · {{ n.job }}</template>
                   </span>
                   <span class="crms-note-time">{{ n.time }}</span>
                 </div>
               </div>
-              <button type="button" class="crms-del" aria-label="Notiz aus der Liste entfernen" title="Aus der Liste entfernen" @click="removeNote(n.id)">
+              <button type="button" class="crms-del" :aria-label="__('Remove note from list')" :title="__('Remove from list')" @click="removeNote(n.id)">
                 <FeatherIcon name="trash-2" />
               </button>
             </li>
@@ -137,8 +136,8 @@
           <PpEmptyState
             v-else
             :icon="IconStickyNote"
-            title="Noch keine Notizen"
-            hint="Tippe eine Notiz und drücke Enter oder nimm eine Sprachnotiz auf."
+            :title="__('No notes yet')"
+            :hint="__('Type a note and press Enter or record a voice note.')"
           />
         </section>
       </div>
@@ -192,17 +191,17 @@ async function onText(text) {
     const payload = res?.message || res || {}
     if (payload.auto_dispatched && payload.target_project) {
       addTextNote(text, payload.target_project)
-      toast.success('Notiz zugeordnet zu ' + payload.target_project)
+      toast.success(__('Note matched to') + ' ' + payload.target_project)
       clearPending()
     } else {
       pending.value = { text }
       candidates.value = payload.candidates || []
       manualQuery.value = ''
       manualResults.value = []
-      if (!candidates.value.length) toast.info('Kein Projekt automatisch erkannt — bitte manuell wählen.')
+      if (!candidates.value.length) toast.info(__('No project detected automatically — please choose manually.'))
     }
   } catch (err) {
-    lastError.value = err?.message || 'Analyse fehlgeschlagen. Bitte erneut versuchen.'
+    lastError.value = err?.message || __('Analysis failed. Please try again.')
   } finally {
     busy.value = false
   }
@@ -215,10 +214,10 @@ async function dispatchTo(project) {
   try {
     await call('lcs_integrations.notes.api.dispatch_note', { text, project })
     addTextNote(text, project)
-    toast.success('Notiz angehängt an ' + project)
+    toast.success(__('Note attached to') + ' ' + project)
     clearPending()
   } catch (err) {
-    lastError.value = err?.message || 'Konnte nicht speichern. Bitte erneut versuchen.'
+    lastError.value = err?.message || __('Could not save. Please try again.')
   } finally {
     busy.value = false
   }
@@ -247,15 +246,15 @@ async function onAudio(a) {
       const res = await call('lcs_integrations.notes.api.retranscribe_audio', { file_url: fileUrl, language: language.value })
       job = (res?.message || res || {}).job || ''
     } catch (err) {
-      lastError.value = err?.message || 'Transkriptions-Job konnte nicht eingereiht werden.'
+      lastError.value = err?.message || __('Transcription job could not be queued.')
     }
     notes.value.unshift({
       id: 'n' + ++seq, type: 'audio', url: a.url, mime: a.mimeType,
       seconds: Math.round(a.ms / 1000), kb: Math.round(a.blob.size / 1024), job, time: now(),
     })
-    if (job) toast.success('Sprachnotiz hochgeladen — Transkription eingereiht')
+    if (job) toast.success(__('Voice note uploaded — transcription queued'))
   } catch (err) {
-    lastError.value = err?.message || 'Audio konnte nicht hochgeladen werden.'
+    lastError.value = err?.message || __('Audio could not be uploaded.')
   } finally {
     busy.value = false
   }
@@ -275,7 +274,7 @@ async function uploadAudio(a) {
     headers: csrf ? { 'X-Frappe-CSRF-Token': csrf } : {},
     body: form,
   })
-  if (!res.ok) throw new Error(`Upload fehlgeschlagen: ${res.status}`)
+  if (!res.ok) throw new Error(__('Upload failed:') + ' ' + res.status)
   const payload = await res.json()
   return payload?.message?.file_url || null
 }
@@ -316,7 +315,7 @@ function removeNote(id) {
 }
 
 function confidenceLabel(level) {
-  return { high: 'Hoher Treffer', medium: 'Wahrscheinlich', low: 'Vielleicht', 'very-low': 'Schwach' }[level] || level || ''
+  return { high: __('Strong match'), medium: __('Likely'), low: __('Maybe'), 'very-low': __('Weak') }[level] || level || ''
 }
 </script>
 

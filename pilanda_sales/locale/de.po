@@ -1,0 +1,669 @@
+# Deutsche Uebersetzungen der pilanda_sales-V2-Flaechen (LCS-eigene Seiten in
+# der CRM-SPA + Vertriebs-Dashboard). Quelle: i18n-Umstellung Audit 20.07.2026.
+msgid ""
+msgstr ""
+"Project-Id-Version: pilanda_sales\n"
+"Language: de\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid "A won project"
+msgstr "Ein gewonnenes Projekt"
+
+msgid "across open phases"
+msgstr "über offene Phasen"
+
+msgid "Actions due (7 d)"
+msgstr "Aktionen fällig (7 T)"
+
+msgid "active"
+msgstr "aktiv"
+
+msgid "Actively pursue"
+msgstr "Aktiv verfolgen"
+
+msgid "Activities"
+msgstr "Aktivitäten"
+
+msgid "Activity"
+msgstr "Aktivität"
+
+msgid "all projects"
+msgstr "alle Projekte"
+
+msgid "All regions"
+msgstr "Alle Regionen"
+
+msgid "All salespeople"
+msgstr "Alle Vertriebler"
+
+msgid "Analysis failed. Please try again."
+msgstr "Analyse fehlgeschlagen. Bitte erneut versuchen."
+
+msgid "Assign manually"
+msgstr "Manuell zuordnen"
+
+msgid "Assign project"
+msgstr "Projekt zuordnen"
+
+msgid "assigned countries"
+msgstr "zugeordnete Länder"
+
+msgid "Audio could not be uploaded."
+msgstr "Audio konnte nicht hochgeladen werden."
+
+msgid "Budget → Richtpreis → Offer cards"
+msgstr "Budget → Richtpreis → Angebot cards"
+
+msgid "Budget vs. Offer"
+msgstr "Budget vs. Angebot"
+
+msgid "Close Probability"
+msgstr "Abschlusswahrsch."
+
+msgid "Completed"
+msgstr "Abgeschlossen"
+
+msgid "Connected organizations"
+msgstr "Verbundene Firmen"
+
+msgid "Construction-site management link, defects"
+msgstr "Baustellen-Management-Link, Defekte"
+
+msgid "Contacted"
+msgstr "Kontaktiert"
+
+msgid "Contacts"
+msgstr "Kontakte"
+
+msgid "Could not save. Please try again."
+msgstr "Konnte nicht speichern. Bitte erneut versuchen."
+
+msgid "Countries"
+msgstr "Länder"
+
+msgid "countries"
+msgstr "Länder"
+
+msgid "Countries covered"
+msgstr "Länder abgedeckt"
+
+msgid "Country"
+msgstr "Land"
+
+msgid "Create an offer to track versions and outcomes."
+msgstr "Lege ein Angebot an, um Versionen und Ausgänge zu verfolgen."
+
+msgid "Create Offer"
+msgstr "Angebot erstellen"
+
+msgid "CRM (Network & Pipeline)"
+msgstr "CRM (Netzwerk & Pipeline)"
+
+msgid "Customer — customer master data"
+msgstr "Customer — Kundenstammdaten"
+
+msgid "Customer budget → internal estimate → firm offer"
+msgstr "Kundenbudget → interne Schätzung → festes Angebot"
+
+msgid "Customers"
+msgstr "Kunden"
+
+msgid "Date"
+msgstr "Datum"
+
+msgid "Decision / note"
+msgstr "Beschluss / Notiz"
+
+msgid "Deputy"
+msgstr "Stellvertretung"
+
+msgid "Discard"
+msgstr "Verwerfen"
+
+msgid "Document link"
+msgstr "Dokument-Link"
+
+msgid "Documents"
+msgstr "Dokumente"
+
+msgid "Due"
+msgstr "Fällig"
+
+msgid "End"
+msgstr "Ende"
+
+msgid "Estimated order value"
+msgstr "Geschätzter Auftragswert"
+
+msgid "Execution"
+msgstr "Ausführung"
+
+msgid "Exp. Close"
+msgstr "Erw. Abschluss"
+
+msgid "Flagged important"
+msgstr "Wichtig markiert"
+
+msgid "highly relevant"
+msgstr "hoch relevant"
+
+msgid "hits"
+msgstr "Treffer"
+
+msgid "in the next 7 days"
+msgstr "in den nächsten 7 Tagen"
+
+msgid "in this session"
+msgstr "in dieser Sitzung"
+
+msgid "is"
+msgstr "ist"
+
+msgid "Lead"
+msgstr "Interessent"
+
+msgid "Leads, deals, contacts — Frappe CRM SPA"
+msgstr "Interessenten, Verkaufschancen, Kontakte — Frappe-CRM-SPA"
+
+msgid "Legend"
+msgstr "Legende"
+
+msgid "Likely"
+msgstr "Wahrscheinlich"
+
+msgid "Link a SharePoint folder, Teams channel, or document link in the project to open it here."
+msgstr "Verknüpfe einen SharePoint-Ordner, Teams-Kanal oder Dokument-Link im Projekt, um ihn hier zu öffnen."
+
+msgid "Loading …"
+msgstr "Lade …"
+
+msgid "Loading map …"
+msgstr "Karte wird geladen …"
+
+msgid "Loading network …"
+msgstr "Netzwerk wird geladen …"
+
+msgid "Loading opportunities …"
+msgstr "Chancen werden geladen …"
+
+msgid "Loading territories …"
+msgstr "Territorien werden geladen …"
+
+msgid "Loading…"
+msgstr "Lädt…"
+
+msgid "Maintain"
+msgstr "Halten"
+
+msgid "Market Assignment"
+msgstr "Marktaufteilung"
+
+msgid "Maybe"
+msgstr "Vielleicht"
+
+msgid "moves"
+msgstr "Wechsel"
+
+msgid "Negotiation"
+msgstr "Verhandlung"
+
+msgid "Network"
+msgstr "Netzwerk"
+
+msgid "New"
+msgstr "Neu"
+
+msgid "No career history on record."
+msgstr "Keine Karriere-Historie hinterlegt."
+
+msgid "No contacts are assigned to this project yet."
+msgstr "Diesem Projekt sind noch keine Kontakte zugeordnet."
+
+msgid "No contacts linked"
+msgstr "Keine Kontakte verknüpft"
+
+msgid "No cross-organization connections."
+msgstr "Keine firmenübergreifenden Verbindungen."
+
+msgid "No documents linked"
+msgstr "Keine Dokumente verknüpft"
+
+msgid "No mappable territories"
+msgstr "Keine verortbaren Territorien"
+
+msgid "No matches for the current filter/search."
+msgstr "Für Filter/Suche gibt es aktuell keine Treffer."
+
+msgid "No matching projects."
+msgstr "Keine passenden Projekte."
+
+msgid "No network data yet"
+msgstr "Noch keine Netzwerkdaten"
+
+msgid "No notes yet"
+msgstr "Noch keine Notizen"
+
+msgid "No offers"
+msgstr "Keine Angebote"
+
+msgid "No offers yet"
+msgstr "Noch keine Angebote"
+
+msgid "No open opportunities"
+msgstr "Keine offenen Chancen"
+
+msgid "No people assigned in the graph."
+msgstr "Keine Personen im Graphen zugeordnet."
+
+msgid "No project detected automatically — please choose manually below."
+msgstr "Kein Projekt automatisch erkannt — bitte unten manuell wählen."
+
+msgid "No project detected automatically — please choose manually."
+msgstr "Kein Projekt automatisch erkannt — bitte manuell wählen."
+
+msgid "No sales projects."
+msgstr "Keine Vertriebsprojekte."
+
+msgid "No tenders imported yet."
+msgstr "Noch keine Ausschreibungen eingespielt."
+
+msgid "No territories"
+msgstr "Keine Territorien"
+
+msgid "No territory selected — click a marker."
+msgstr "Kein Territorium ausgewählt — auf einen Marker klicken."
+
+msgid "none active"
+msgstr "keine aktiven"
+
+msgid "not available"
+msgstr "nicht verfügbar"
+
+msgid "note"
+msgstr "Notiz"
+
+msgid "Note attached to"
+msgstr "Notiz angehängt an"
+
+msgid "Note matched to"
+msgstr "Notiz zugeordnet zu"
+
+msgid "notes"
+msgstr "Notizen"
+
+msgid "Notes & Comments"
+msgstr "Notizen & Kommentare"
+
+msgid "Ø win probability"
+msgstr "Ø Abschlusswahrsch."
+
+msgid "of"
+msgstr "von"
+
+msgid "Offer"
+msgstr "Angebot"
+
+msgid "Offer Versions"
+msgstr "Angebots-Versionen"
+
+msgid "Offers"
+msgstr "Angebote"
+
+msgid "Offers in progress"
+msgstr "Angebote in Bearbeitung"
+
+msgid "Once an offer is created, its version history appears here."
+msgstr "Sobald ein Angebot angelegt ist, erscheint hier der Versionsverlauf."
+
+msgid "Once offers are in progress, they appear here."
+msgstr "Sobald Angebote in Bearbeitung sind, erscheinen sie hier."
+
+msgid "Once organizations with assigned contacts exist, the relationship graph appears here."
+msgstr "Sobald Firmen mit zugeordneten Kontakten existieren, erscheint hier der Beziehungsgraph."
+
+msgid "open"
+msgstr "offen"
+
+msgid "Open contact"
+msgstr "Kontakt öffnen"
+
+msgid "Open opportunities"
+msgstr "Offene Chancen"
+
+msgid "Open order list →"
+msgstr "Auftragsliste öffnen →"
+
+msgid "Open organization"
+msgstr "Organisation öffnen"
+
+msgid "opportunities"
+msgstr "Chancen"
+
+msgid "Opportunity"
+msgstr "Chance"
+
+msgid "Opportunity Matrix"
+msgstr "Chancen-Matrix"
+
+msgid "Opportunity, number, country, note …"
+msgstr "Chance, Nummer, Land, Notiz …"
+
+msgid "Order"
+msgstr "Auftrag"
+
+msgid "Order status"
+msgstr "Status Auftrag"
+
+msgid "Order Value"
+msgstr "Auftragswert"
+
+msgid "Orders"
+msgstr "Aufträge"
+
+msgid "Organization"
+msgstr "Firma"
+
+msgid "Organizations"
+msgstr "Firmen"
+
+msgid "Overview"
+msgstr "Übersicht"
+
+msgid "People"
+msgstr "Personen"
+
+msgid "per plan"
+msgstr "laut Planung"
+
+msgid "Pilot — Latest tenders"
+msgstr "Pilot — Neueste Ausschreibungen"
+
+msgid "Pilot hits"
+msgstr "Pilot-Treffer"
+
+msgid "Pilot Workbench"
+msgstr "Pilot-Workbench"
+
+msgid "Pilot Workbench →"
+msgstr "Pilot-Workbench →"
+
+msgid "Pipeline (weighted)"
+msgstr "Pipeline (gewichtet)"
+
+msgid "previously at"
+msgstr "früher bei"
+
+msgid "Previously worked at"
+msgstr "Früher tätig bei"
+
+msgid "Priorities"
+msgstr "Prioritäten"
+
+msgid "Priority"
+msgstr "Priorität"
+
+msgid "Project"
+msgstr "Projekt"
+
+msgid "Project Description"
+msgstr "Projektbeschreibung"
+
+msgid "Project Document"
+msgstr "Projektdokument"
+
+msgid "Project Map"
+msgstr "Projektkarte"
+
+msgid "Project map + territories by sales manager · click a marker to see the assignment"
+msgstr "Projektkarte + Territorien nach Sales-Manager · Klick auf einen Marker zeigt die Zuordnung"
+
+msgid "Project marked as lost"
+msgstr "Projekt als verloren markiert"
+
+msgid "Project Variant — technical & commercial variant comparison"
+msgstr "Project Variant — technischer & preislicher Variantenvergleich"
+
+msgid "project(s)"
+msgstr "Projekt(e)"
+
+msgid "project(s) with status \"Order\""
+msgstr "Projekt(e) mit Status „Auftrag“"
+
+msgid "Projects"
+msgstr "Projekte"
+
+msgid "Qualified"
+msgstr "Qualifiziert"
+
+msgid "Quick Note"
+msgstr "Schnellnotiz"
+
+msgid "Quotation — binding customer offers"
+msgstr "Quotation — verbindliche Kundenangebote"
+
+msgid "Quotations"
+msgstr "Angebote"
+
+msgid "Recording language"
+msgstr "Sprache der Aufnahme"
+
+msgid "Refresh"
+msgstr "Aktualisieren"
+
+msgid "Relationships between organizations and people · click a node to open the profile"
+msgstr "Beziehungen zwischen Firmen und Personen · Klick auf einen Knoten öffnet das Profil"
+
+msgid "Reload"
+msgstr "Neu laden"
+
+msgid "Remove from list"
+msgstr "Aus der Liste entfernen"
+
+msgid "Remove note from list"
+msgstr "Notiz aus der Liste entfernen"
+
+msgid "Requirement Spec"
+msgstr "Lastenheft"
+
+msgid "Requirement Spec — questionnaire filled in by the customer"
+msgstr "Requirement Spec — vom Kunden befüllter Fragebogen"
+
+msgid "Reset filters"
+msgstr "Filter zurücksetzen"
+
+msgid "Responsibility by sales manager"
+msgstr "Zuständigkeit je Sales-Manager"
+
+msgid "responsibility matrix"
+msgstr "Verantwortungsmatrix"
+
+msgid "Responsible"
+msgstr "Verantwortlich"
+
+msgid "Role"
+msgstr "Funktion"
+
+msgid "Sales"
+msgstr "Vertrieb"
+
+msgid "Sales / CRM"
+msgstr "Vertrieb / CRM"
+
+msgid "Sales / CRM · Project"
+msgstr "Vertrieb / CRM · Projekt"
+
+msgid "Sales data could not be loaded."
+msgstr "Vertriebsdaten konnten nicht geladen werden."
+
+msgid "Sales manager"
+msgstr "Sales-Manager"
+
+msgid "Sales managers"
+msgstr "Sales-Manager"
+
+msgid "Sales Projects"
+msgstr "Vertriebsprojekte"
+
+msgid "Sales projects by phase"
+msgstr "Vertriebsprojekte nach Phase"
+
+msgid "Saved notes"
+msgstr "Abgelegte Notizen"
+
+msgid "Scanner error"
+msgstr "Scanner-Fehler"
+
+msgid "Scanner loading…"
+msgstr "Scanner lädt…"
+
+msgid "Scout not installed"
+msgstr "Scout nicht installiert"
+
+msgid "Search"
+msgstr "Suche"
+
+msgid "Search project by number or name …"
+msgstr "Projekt nach Nummer oder Name suchen …"
+
+msgid "Segment Responsibility"
+msgstr "Segment-Zuständigkeit"
+
+msgid "Segments"
+msgstr "Segmente"
+
+msgid "Selected"
+msgstr "Ausgewählt"
+
+msgid "SharePoint Folder"
+msgstr "SharePoint-Ordner"
+
+msgid "Shortcuts"
+msgstr "Absprünge"
+
+msgid "Strong match"
+msgstr "Hoher Treffer"
+
+msgid "Suggested projects"
+msgstr "Vorgeschlagene Projekte"
+
+msgid "Tasks & Time"
+msgstr "Aufgaben & Zeit"
+
+msgid "Teams Channel"
+msgstr "Teams-Kanal"
+
+msgid "Tender"
+msgstr "Ausschreibung"
+
+msgid "Tender scout"
+msgstr "Ausschreibungs-Scout"
+
+msgid "Tender scout: rate hits & take them over"
+msgstr "Ausschreibungs-Scout: Treffer bewerten & übernehmen"
+
+msgid "Territories"
+msgstr "Territorien"
+
+msgid "territories"
+msgstr "Territorien"
+
+msgid "territories located"
+msgstr "Territorien verortet"
+
+msgid "Territory"
+msgstr "Territorium"
+
+msgid "Territory / country …"
+msgstr "Territorium / Land …"
+
+msgid "Territory could not be reassigned."
+msgstr "Territorium konnte nicht neu zugewiesen werden."
+
+msgid "Territory reassigned to"
+msgstr "Territorium neu zugewiesen an"
+
+msgid "The filtered territories have no countries with coordinates."
+msgstr "Für die gefilterten Territorien liegen keine Länder mit Koordinaten vor."
+
+msgid "the order (not a separate object). Which field feeds the filter list in the future and the hidden sales-order automation are still open in the domain plan."
+msgstr "der Auftrag (kein eigenes Objekt). Welches Feld die Filterliste künftig speist und die verdeckte Sales-Order-Automatik sind im Fachplan noch offen."
+
+msgid "The tender scout \"Pilot\" is not installed on this site — so there are no hits. (No placeholder/demo data.)"
+msgstr "Der Ausschreibungs-Scout „Pilot“ ist auf dieser Site nicht installiert — daher keine Treffer. (Keine Ersatz-/Demo-Daten.)"
+
+msgid "Transcription job could not be queued."
+msgstr "Transkriptions-Job konnte nicht eingereiht werden."
+
+msgid "Transcription queued"
+msgstr "Transkription eingereiht"
+
+msgid "Type"
+msgstr "Typ"
+
+msgid "Type a note and press Enter or record a voice note."
+msgstr "Tippe eine Notiz und drücke Enter oder nimm eine Sprachnotiz auf."
+
+msgid "Type a quick note about the project — mention the project number, name, customer, or location. Or use the microphone for a voice note…"
+msgstr "Schnellnotiz zum Projekt eintippen — Projektnummer, Name, Kunde oder Ort nennen. Oder Mikrofon für eine Sprachnotiz…"
+
+msgid "Type or speak a note"
+msgstr "Notiz tippen oder sprechen"
+
+msgid "Typed notes are automatically matched to the right project. Voice notes are uploaded and transcribed on the server (language: {0}) — matching happens afterwards."
+msgstr "Getippte Notizen werden automatisch dem passenden Projekt zugeordnet. Sprachnotizen werden hochgeladen und serverseitig transkribiert (Sprache: {0}) — die Zuordnung erfolgt danach."
+
+msgid "unassigned"
+msgstr "nicht zugewiesen"
+
+msgid "Upload failed:"
+msgstr "Upload fehlgeschlagen:"
+
+msgid "Value"
+msgstr "Wert"
+
+msgid "Value (k€)"
+msgstr "Wert (k€)"
+
+msgid "Value Progression"
+msgstr "Wert-Progression"
+
+msgid "Variants"
+msgstr "Varianten"
+
+msgid "Voice note"
+msgstr "Sprachnotiz"
+
+msgid "Voice note uploaded — transcription queued"
+msgstr "Sprachnotiz hochgeladen — Transkription eingereiht"
+
+msgid "volume"
+msgstr "Volumen"
+
+msgid "Watch"
+msgstr "Beobachten"
+
+msgid "Weak"
+msgstr "Schwach"
+
+msgid "Weighted (k€)"
+msgstr "Gewichtet (k€)"
+
+msgid "weighted pipeline"
+msgstr "gewichtete Pipeline"
+
+msgid "with responsibility"
+msgstr "mit Zuständigkeit"
+
+msgid "Withdraw"
+msgstr "Rückzug"
+
+msgid "Won"
+msgstr "Gewonnen"
+
+msgid "works at"
+msgstr "arbeitet bei"
+
+msgid "Σ value × P(win)"
+msgstr "Σ Wert × P(win)"

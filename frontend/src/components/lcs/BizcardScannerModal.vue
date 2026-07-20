@@ -35,7 +35,7 @@
         >
           <div class="flex flex-col items-center gap-2">
             <div class="h-6 w-6 animate-spin rounded-full border-2 border-gray-200 border-t-lcs-secondary" />
-            <span class="text-xs text-gray-500">{{ __('Scanner lädt…') }}</span>
+            <span class="text-xs text-gray-500">{{ __('Scanner loading…') }}</span>
           </div>
         </div>
       </div>
@@ -103,7 +103,7 @@ function onMessage(ev) {
       open.value = false
       break
     case 'errored':
-      lastError.value = data.message || __('Scanner-Fehler')
+      lastError.value = data.message || __('Scanner error')
       break
   }
 }

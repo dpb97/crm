@@ -23,6 +23,11 @@ import PpDataGrid from "./PpDataGrid.vue";
 
 defineProps({ ctx: { type: Object, default: () => ({}) } });
 
+// Diese Dashboard-App läuft im Frappe-Desk (/app/sales-dashboard), nicht in der
+// CRM-SPA — daher Frappes natives window.__ (mit allen App-Übersetzungen) statt
+// des frappe-ui-Plugins. Fallback = Identität, falls (noch) nicht geladen.
+const __ = (typeof window !== "undefined" && window.__) ? window.__ : (s) => s;
+
 const data = ref(null);
 const loading = ref(true);
 const errorMsg = ref("");
@@ -45,41 +50,41 @@ const phasenMax = computed(() =>
 
 // ---- KPI-Zeile (echte Zahlen) --------------------------------------
 const kpis = computed(() => [
-  { key: "pilot", label: "Pilot-Treffer",
+  { key: "pilot", label: __("Pilot hits"),
     value: pilotAvailable.value ? String(pilotTotal.value) : "—",
     hint: pilotAvailable.value
-      ? (pilotHoch.value ? `${pilotHoch.value}× hoch relevant` : "Ausschreibungs-Scout")
-      : "Scout nicht installiert",
+      ? (pilotHoch.value ? `${pilotHoch.value}× ${__("highly relevant")}` : __("Tender scout"))
+      : __("Scout not installed"),
     tone: "info", clickable: pilotAvailable.value },
-  { key: "projekte", label: "Vertriebsprojekte", value: String(projectTotal.value),
-    hint: "alle Projekte", tone: "neutral", clickable: true },
-  { key: "auftraege", label: "Aufträge", value: String(auftraegeTotal.value),
-    hint: "Status Auftrag", tone: auftraegeTotal.value > 0 ? "success" : "neutral",
+  { key: "projekte", label: __("Sales Projects"), value: String(projectTotal.value),
+    hint: __("all projects"), tone: "neutral", clickable: true },
+  { key: "auftraege", label: __("Orders"), value: String(auftraegeTotal.value),
+    hint: __("Order status"), tone: auftraegeTotal.value > 0 ? "success" : "neutral",
     clickable: true },
-  { key: "angebote", label: "Angebote", value: String(quotationTotal.value),
-    hint: "Quotation", tone: "neutral", clickable: true },
-  { key: "kunden", label: "Kunden", value: String(customerTotal.value),
-    hint: "Customer", tone: "neutral", clickable: true },
+  { key: "angebote", label: __("Quotations"), value: String(quotationTotal.value),
+    hint: __("Quotation"), tone: "neutral", clickable: true },
+  { key: "kunden", label: __("Customers"), value: String(customerTotal.value),
+    hint: __("Customer"), tone: "neutral", clickable: true },
 ]);
 
 // ---- Karten-Konfiguration ------------------------------------------
 const cards = computed(() => [
-  { id: "pilot", title: "Pilot — Neueste Ausschreibungen",
-    meta: pilotAvailable.value ? `${pilotTotal.value} Treffer` : "nicht verfügbar",
-    span: 7, action: pilotAvailable.value ? { label: "Pilot-Workbench →" } : null },
-  { id: "phasen", title: "Vertriebsprojekte nach Phase",
-    meta: `${projectTotal.value} Projekt(e)`, span: 5 },
-  { id: "auftraege", title: "Aufträge", meta: "Status Auftrag", span: 5 },
-  { id: "absprung", title: "Absprünge", span: 7 },
+  { id: "pilot", title: __("Pilot — Latest tenders"),
+    meta: pilotAvailable.value ? `${pilotTotal.value} ${__("hits")}` : __("not available"),
+    span: 7, action: pilotAvailable.value ? { label: __("Pilot Workbench →") } : null },
+  { id: "phasen", title: __("Sales projects by phase"),
+    meta: `${projectTotal.value} ${__("project(s)")}`, span: 5 },
+  { id: "auftraege", title: __("Orders"), meta: __("Order status"), span: 5 },
+  { id: "absprung", title: __("Shortcuts"), span: 7 },
 ]);
 
 // Pilot-Tabelle (PpDataGrid).
 const PILOT_COLS = [
-  { key: "score", label: "Score", align: "right", width: 78 },
-  { key: "titel", label: "Ausschreibung", minWidth: 200 },
-  { key: "land", label: "Land", width: 120 },
-  { key: "deadline_fmt", label: "Deadline", align: "right", width: 110 },
-  { key: "status", label: "Status", width: 120 },
+  { key: "score", label: __("Score"), align: "right", width: 78 },
+  { key: "titel", label: __("Tender"), minWidth: 200 },
+  { key: "land", label: __("Country"), width: 120 },
+  { key: "deadline_fmt", label: __("Deadline"), align: "right", width: 110 },
+  { key: "status", label: __("Status"), width: 120 },
 ];
 const pilotRows = computed(() => pilotNewest.value.map((t) => ({
   id: t.name,
@@ -138,12 +143,12 @@ function onCardAction(c) {
 
 // Absprung-Kacheln (reale Nav-Ziele aus der Vertriebs-SSOT).
 const jumps = [
-  { name: "CRM (Netzwerk & Pipeline)", desc: "Interessenten, Verkaufschancen, Kontakte — Frappe-CRM-SPA", target: "/crm" },
-  { name: "Pilot-Workbench", desc: "Ausschreibungs-Scout: Treffer bewerten & übernehmen", target: "/app/pilot-workbench" },
-  { name: "Angebote", desc: "Quotation — verbindliche Kundenangebote", target: "/app/quotation" },
-  { name: "Kunden", desc: "Customer — Kundenstammdaten", target: "/app/customer" },
-  { name: "Lastenheft", desc: "Requirement Spec — vom Kunden befüllter Fragebogen", target: "/app/requirement-spec" },
-  { name: "Varianten", desc: "Project Variant — technischer & preislicher Variantenvergleich", target: "/app/project-variant" },
+  { name: __("CRM (Network & Pipeline)"), desc: __("Leads, deals, contacts — Frappe CRM SPA"), target: "/crm" },
+  { name: __("Pilot Workbench"), desc: __("Tender scout: rate hits & take them over"), target: "/app/pilot-workbench" },
+  { name: __("Quotations"), desc: __("Quotation — binding customer offers"), target: "/app/quotation" },
+  { name: __("Customers"), desc: __("Customer — customer master data"), target: "/app/customer" },
+  { name: __("Requirement Spec"), desc: __("Requirement Spec — questionnaire filled in by the customer"), target: "/app/requirement-spec" },
+  { name: __("Variants"), desc: __("Project Variant — technical & commercial variant comparison"), target: "/app/project-variant" },
 ];
 
 async function load() {
@@ -164,7 +169,7 @@ async function load() {
     data.value = msg || {};
   } catch (e) {
     console.error("[sales-dashboard] load failed", e);
-    errorMsg.value = (e && e.message) || "Vertriebsdaten konnten nicht geladen werden.";
+    errorMsg.value = (e && e.message) || __("Sales data could not be loaded.");
     data.value = null;
   } finally {
     loading.value = false;
@@ -176,12 +181,12 @@ onMounted(load);
 
 <template>
   <div v-if="errorMsg" class="svd-error">{{ errorMsg }}</div>
-  <PpDashboard v-else-if="data" eyebrow="Vertrieb" title="Übersicht"
+  <PpDashboard v-else-if="data" :eyebrow="__('Sales')" :title="__('Overview')"
                :kpis="kpis" :cards="cards"
                @kpi-click="onKpi" @card-action="onCardAction">
     <template #actions>
-      <button class="svd-btn" @click="load" :disabled="loading" title="Neu laden">
-        {{ loading ? "Lädt…" : "Aktualisieren" }}
+      <button class="svd-btn" @click="load" :disabled="loading" :title="__('Reload')">
+        {{ loading ? __('Loading…') : __('Refresh') }}
       </button>
     </template>
 
@@ -198,11 +203,10 @@ onMounted(load);
             <span class="svd-pill">{{ value }}</span>
           </template>
         </PpDataGrid>
-        <p v-else class="svd-empty">Noch keine Ausschreibungen eingespielt.</p>
+        <p v-else class="svd-empty">{{ __('No tenders imported yet.') }}</p>
       </template>
       <p v-else class="svd-empty svd-empty--wip">
-        Der Ausschreibungs-Scout „Pilot“ ist auf dieser Site nicht installiert —
-        daher keine Treffer. (Keine Ersatz-/Demo-Daten.)
+        {{ __('The tender scout "Pilot" is not installed on this site — so there are no hits. (No placeholder/demo data.)') }}
       </p>
     </template>
 
@@ -218,20 +222,18 @@ onMounted(load);
           <span class="svd-bars__num">{{ p.n }}</span>
         </li>
       </ul>
-      <p v-else class="svd-empty">Keine Vertriebsprojekte.</p>
+      <p v-else class="svd-empty">{{ __('No sales projects.') }}</p>
     </template>
 
     <!-- Aufträge (gewonnene Projekte, Status Auftrag) -->
     <template #card-auftraege>
       <div class="svd-auf">
         <span class="svd-auf__num">{{ auftraegeTotal }}</span>
-        <span class="svd-auf__cap">Projekt(e) mit Status „Auftrag“</span>
+        <span class="svd-auf__cap">{{ __('project(s) with status "Order"') }}</span>
       </div>
-      <button type="button" class="svd-link" @click="goAuftraege">Auftragsliste öffnen →</button>
+      <button type="button" class="svd-link" @click="goAuftraege">{{ __('Open order list →') }}</button>
       <p class="svd-note">
-        E3: Ein gewonnenes Projekt <strong>ist</strong> der Auftrag (kein eigenes Objekt).
-        Welches Feld die Filterliste künftig speist und die verdeckte Sales-Order-Automatik
-        sind im Fachplan noch offen.
+        E3: {{ __('A won project') }} <strong>{{ __('is') }}</strong> {{ __('the order (not a separate object). Which field feeds the filter list in the future and the hidden sales-order automation are still open in the domain plan.') }}
       </p>
     </template>
 
@@ -246,7 +248,7 @@ onMounted(load);
       </div>
     </template>
   </PpDashboard>
-  <div v-else class="svd-empty svd-loading">Lade …</div>
+  <div v-else class="svd-empty svd-loading">{{ __('Loading …') }}</div>
 </template>
 
 <style scoped>

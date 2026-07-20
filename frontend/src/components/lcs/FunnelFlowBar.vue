@@ -36,7 +36,7 @@
             class="mb-1 text-[10px] font-bold uppercase tracking-wider"
             :class="groupActive(gi) && !isLost ? 'text-lcs-primary' : 'text-gray-400'"
           >
-            {{ __(g.name) }}
+            {{ groupLabel(g.name) }}
           </div>
 
           <div class="flex w-full items-center" :class="g.stages.length === 1 ? 'justify-center' : ''">
@@ -49,7 +49,7 @@
               <button
                 type="button"
                 class="group flex shrink-0 items-center gap-1.5 rounded-md px-1 py-0.5 transition hover:bg-gray-50"
-                :title="`${__(g.name)}: ${__(s.label)}`"
+                :title="`${groupLabel(g.name)}: ${stageLabel(s.label)}`"
                 @click="openInfo(s.idx)"
               >
                 <span
@@ -67,7 +67,7 @@
                       ? 'text-ink-gray-7'
                       : 'text-gray-400'"
                 >
-                  {{ __(s.label) }}
+                  {{ stageLabel(s.label) }}
                 </span>
               </button>
             </template>
@@ -86,7 +86,7 @@
           variant="solid"
           iconRight="arrow-right"
           :label="__('Next phase')"
-          :title="__(STAGES[currentIdx]?.label || '') + ' → ' + __(nextStageLabel)"
+          :title="stageLabel(STAGES[currentIdx]?.label || '') + ' → ' + stageLabel(nextStageLabel)"
           @click="goNext()"
         />
       </div>
@@ -97,7 +97,7 @@
           <FeatherIcon name="chevron-right" class="h-4 w-4 shrink-0 text-red-300" />
         </div>
         <div class="flex min-w-fit flex-col rounded-lg border border-red-200 bg-red-50/60 px-3 pb-1.5 pt-1">
-          <div class="mb-1 text-[10px] font-bold uppercase tracking-wider text-red-500">{{ __('Ende') }}</div>
+          <div class="mb-1 text-[10px] font-bold uppercase tracking-wider text-red-500">{{ __('End') }}</div>
           <div class="flex items-center gap-1.5 px-1 py-0.5">
             <span class="flex h-6 w-6 items-center justify-center rounded-full border-2 border-red-500 bg-red-500 text-white">
               <FeatherIcon name="x" class="h-3 w-3" />
@@ -122,8 +122,8 @@
     </div>
     <div class="flex-1 space-y-4 overflow-y-auto p-4">
       <div>
-        <span class="rounded px-1.5 py-0.5 text-[10px] font-bold uppercase" :class="groupClass(infoStage.group)">{{ __(infoStage.group) }}</span>
-        <h3 class="mt-2 text-lg font-semibold text-gray-900">{{ __(infoStage.label) }}</h3>
+        <span class="rounded px-1.5 py-0.5 text-[10px] font-bold uppercase" :class="groupClass(infoStage.group)">{{ groupLabel(infoStage.group) }}</span>
+        <h3 class="mt-2 text-lg font-semibold text-gray-900">{{ stageLabel(infoStage.label) }}</h3>
       </div>
       <p class="text-sm leading-relaxed text-gray-600">{{ phaseInfo(infoStage.label).desc }}</p>
       <div v-if="phaseInfo(infoStage.label).criteria?.length">
@@ -220,8 +220,8 @@
         class="w-full"
         variant="solid"
         iconRight="arrow-right"
-        :label="__('Next phase') + ': ' + __(nextStageLabel)"
-        :title="__(STAGES[currentIdx]?.label || '') + ' → ' + __(nextStageLabel)"
+        :label="__('Next phase') + ': ' + stageLabel(nextStageLabel)"
+        :title="stageLabel(STAGES[currentIdx]?.label || '') + ' → ' + stageLabel(nextStageLabel)"
         @click="goNext()"
       />
     </div>
@@ -313,6 +313,10 @@ async function saveField(fieldname, value) {
   }
 }
 
+// NOTE: the German phase/group strings below double as lookup keys against the
+// backend (LCS Funnel Phase / get_funnel_phases) and PHASE_INFO — they must NOT
+// change. For UI display only, they are mapped to English msgids and translated
+// back to German via the de.po (frontend-only, keys stay intact).
 const STAGES = [
   { label: 'Neu', group: 'Lead' },
   { label: 'Kontaktiert', group: 'Lead' },
@@ -323,6 +327,15 @@ const STAGES = [
   { label: 'Verhandlung', group: 'Angebot' },
   { label: 'Auftrag', group: 'Projekt' },
 ]
+
+// Display-only: German key → English msgid (de.po maps it back to German).
+const STAGE_MSGID = {
+  Neu: 'New', Kontaktiert: 'Contacted', Qualifiziert: 'Qualified', Budget: 'Budget',
+  Richtpreis: 'Richtpreis', Angebot: 'Offer', Verhandlung: 'Negotiation', Auftrag: 'Order',
+}
+const GROUP_MSGID = { Lead: 'Lead', Angebot: 'Offer', Projekt: 'Project' }
+const stageLabel = (l) => __(STAGE_MSGID[l] || l || '')
+const groupLabel = (g) => __(GROUP_MSGID[g] || g || '')
 
 // Entity segments with their stages (stage keeps its global funnel index)
 const GROUPS = computed(() => {
