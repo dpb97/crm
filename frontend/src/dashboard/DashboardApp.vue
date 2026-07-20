@@ -1,7 +1,7 @@
 <!--
   DashboardApp — Vertrieb-Modul-Dashboard auf /app/sales-dashboard.
 
-  KOPIE des Theme-Bausteins PpDashboard@1 (Copy-Modell, N10 / Master §6.2). Der
+  KOPIE des Theme-Bausteins PpDashboard@2 (Copy-Modell, N10 / Master §6.2). Der
   Baustein liefert die Buehne (Kopf + KPI-Zeile + Karten-Raster); hier werden KPIs
   und Karten ueber benannte Slots mit ECHTEN Quellen gefuellt. EINZIGE Datenquelle:
   pilanda_sales.api.get_sales_dashboard (keine Schatten-Daten, kein zweiter Endpoint):
@@ -14,7 +14,7 @@
 
   Dashboard = Einstieg des Vertrieb-Moduls; ersetzt NICHT die CRM-SPA (/crm) oder
   die Pilot-Workbench, sondern verortet sich davor und springt dorthin ab.
-  Bausteine: PpDashboard@1, PpDataGrid@3.
+  Bausteine: PpDashboard@2, PpDataGrid@3.
 -->
 <script setup>
 import { ref, computed, onMounted } from "vue";

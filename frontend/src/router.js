@@ -15,14 +15,36 @@ const routes = [
     component: () => import('@/pages/MobileNotification.vue'),
   },
   {
+    // CRM-Integration Teil 3/3: das CRM-Dashboard bekommt die Pilanda-UX
+    // (LCSCRMDashboard, PpDashboard-Komposition). Route-Shape unverändert
+    // (path/name 'Dashboard'), Datenlogik bleibt Dominiks get_dashboard.
     path: '/dashboard',
     name: 'Dashboard',
+    component: () => import('@/pages/LCSCRMDashboard.vue'),
+  },
+  {
+    // Dominiks Original-Dashboard (editierbares Chart-Grid) bleibt als
+    // Fallback erreichbar — nicht in der Sidebar verlinkt.
+    path: '/dashboard-upstream',
+    name: 'Dashboard Upstream',
     component: () => import('@/pages/Dashboard.vue'),
   },
   {
+    // CRM-Integration Teil 1/3: die Interessenten-Kernfläche bekommt die
+    // Pilanda-UX (LCSLeads, Pp*-Bausteine). Route-Shape unverändert
+    // (alias/path/name), damit der beforeEach-viewType-Guard weiter greift —
+    // LCSLeads ignoriert den viewType-Param.
     alias: '/leads',
     path: '/leads/view/:viewType?',
     name: 'Leads',
+    component: () => import('@/pages/LCSLeads.vue'),
+  },
+  {
+    // Dominiks Original-Leads-Liste bleibt als Fallback erreichbar
+    // (nicht in der Sidebar) — Übergang, bis der Detail-Umbau folgt.
+    alias: '/leads-upstream',
+    path: '/leads-upstream/view/:viewType?',
+    name: 'Leads Upstream',
     component: () => import('@/pages/Leads.vue'),
   },
   {
@@ -32,17 +54,28 @@ const routes = [
     props: true,
   },
   {
+    // CRM-Integration Teil 2/3: die Verkaufschancen-Kernfläche bekommt die
+    // Pilanda-UX (LCSDeals, PpKanban-Pipeline). Route-Shape unverändert
+    // (alias/path/name), damit der beforeEach-viewType-Guard weiter greift —
+    // LCSDeals ist selbst das Board und ignoriert den viewType-Param.
     alias: '/deals',
     path: '/deals/view/:viewType?',
     name: 'Deals',
-    component: () => import('@/pages/Deals.vue'),
-    // Default the Deals landing to the Kanban board. Any explicit view type
-    // (e.g. the List tab) is respected; only the bare /deals redirects.
+    component: () => import('@/pages/LCSDeals.vue'),
+    // Normalise the bare /deals landing to the Kanban board URL.
     beforeEnter: (to) => {
       if (!to.params.viewType && !to.query.view) {
         return { name: 'Deals', params: { viewType: 'kanban' }, query: to.query }
       }
     },
+  },
+  {
+    // Dominiks Original-Deals-Liste bleibt als Fallback erreichbar
+    // (nicht in der Sidebar) — Übergang, bis der Detail-Umbau folgt.
+    alias: '/deals-upstream',
+    path: '/deals-upstream/view/:viewType?',
+    name: 'Deals Upstream',
+    component: () => import('@/pages/Deals.vue'),
   },
   {
     path: '/deals/:dealId',

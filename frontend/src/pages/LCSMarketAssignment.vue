@@ -294,7 +294,7 @@ async function reassign(row, code) {
 
 <style scoped>
 .crmt { flex: 1; min-height: 0; overflow: auto; background: var(--pp-bg-base); }
-.crmt-inner { max-width: 1480px; margin: 0 auto; padding: var(--pp-space-6) var(--pp-space-6) var(--pp-space-12);
+.crmt-inner { width: 100%; margin: 0; padding: var(--pp-space-6) var(--pp-space-6) var(--pp-space-12);
   display: flex; flex-direction: column; gap: var(--pp-space-5); }
 
 .crmt-btn { appearance: none; cursor: pointer; font-family: inherit; font-size: var(--pp-fs-12, 12px);

@@ -350,7 +350,7 @@ function short(label) {
 
 <style scoped>
 .crmn { flex: 1; min-height: 0; overflow: auto; background: var(--pp-bg-base); }
-.crmn-inner { max-width: 1080px; margin: 0 auto; padding: var(--pp-space-6) var(--pp-space-6) var(--pp-space-12);
+.crmn-inner { width: 100%; margin: 0; padding: var(--pp-space-6) var(--pp-space-6) var(--pp-space-12);
   display: flex; flex-direction: column; gap: var(--pp-space-5); }
 
 .crmn-legend { display: flex; flex-wrap: wrap; gap: var(--pp-space-2) var(--pp-space-4);

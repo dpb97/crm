@@ -998,7 +998,7 @@ function formatRelativeTime(dateStr) {
 
 <style scoped>
 .crmw { background: var(--pp-bg-base); }
-.crmw-main { max-width: 1180px; margin: 0 auto; width: 100%; padding: var(--pp-space-6) var(--pp-space-6) var(--pp-space-12);
+.crmw-main { width: 100%; margin: 0; padding: var(--pp-space-6) var(--pp-space-6) var(--pp-space-12);
   display: flex; flex-direction: column; gap: var(--pp-space-5); }
 
 .crmw-btn { appearance: none; cursor: pointer; font-family: inherit; font-size: var(--pp-fs-13, 13px);

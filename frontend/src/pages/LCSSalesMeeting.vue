@@ -262,7 +262,7 @@ function dueClass(due) {
 
 <style scoped>
 .crmm { flex: 1; min-height: 0; overflow: auto; background: var(--pp-bg-base); }
-.crmm-inner { max-width: 1560px; margin: 0 auto; padding: var(--pp-space-6) var(--pp-space-6) var(--pp-space-12);
+.crmm-inner { width: 100%; margin: 0; padding: var(--pp-space-6) var(--pp-space-6) var(--pp-space-12);
   display: flex; flex-direction: column; gap: var(--pp-space-5); }
 
 .crmm-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--pp-space-3); }

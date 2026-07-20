@@ -44,8 +44,12 @@ def ensure_german_ux() -> dict:
 
     users = frappe.get_all("User", filters={"enabled": 1}, fields=["name", "language"])
     for user in users:
-        if not user.name.endswith(_LCS_DOMAINS):
+        # Administrator gehört dazu (Marco testet damit); Sprache bleibt bei
+        # ihm unangetastet (None = Systemdefault de), nur Onboarding-Dismiss.
+        if user.name != "Administrator" and not user.name.endswith(_LCS_DOMAINS):
             continue
+        if user.name == "Administrator" and user.language is None:
+            user.language = "de"  # nur lokale Sicht: set_value-Zweig unten überspringen
         changed = False
 
         if user.language != "de":

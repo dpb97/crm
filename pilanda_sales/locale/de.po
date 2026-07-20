@@ -667,3 +667,144 @@ msgstr "arbeitet bei"
 
 msgid "Σ value × P(win)"
 msgstr "Σ Wert × P(win)"
+
+# --- CRM-Integration Teil 1/3: Interessenten-Liste (LCSLeads) --------------
+msgid "Leads"
+msgstr "Interessenten"
+
+msgid "Total leads"
+msgstr "Interessenten gesamt"
+
+msgid "in the funnel"
+msgstr "im Trichter"
+
+msgid "awaiting first contact"
+msgstr "warten auf Erstkontakt"
+
+msgid "ready for offer stage"
+msgstr "bereit für Angebotsphase"
+
+msgid "Updated this week"
+msgstr "Diese Woche aktualisiert"
+
+msgid "last 7 days"
+msgstr "letzte 7 Tage"
+
+msgid "All statuses"
+msgstr "Alle Status"
+
+msgid "Status"
+msgstr "Status"
+
+msgid "Email"
+msgstr "E-Mail"
+
+msgid "Phone"
+msgstr "Telefon"
+
+msgid "Last modified"
+msgstr "Zuletzt geändert"
+
+msgid "Lead owner"
+msgstr "Lead-Verantwortlicher"
+
+msgid "click a row to open the profile"
+msgstr "Klick auf eine Zeile öffnet das Profil"
+
+msgid "No leads yet"
+msgstr "Noch keine Interessenten"
+
+msgid "No leads found"
+msgstr "Keine Interessenten gefunden"
+
+msgid "Leads created in the CRM will appear here."
+msgstr "Im CRM angelegte Interessenten erscheinen hier."
+
+msgid "Open in CRM"
+msgstr "Im CRM öffnen"
+
+# --- Deal-Kanban / Verkaufschancen (LCSDeals, Showcase #4, 20.07.2026) ---
+msgid "Deals"
+msgstr "Verkaufschancen"
+
+msgid "Open pipeline"
+msgstr "Offene Pipeline"
+
+msgid "Owner"
+msgstr "Besitzer"
+
+msgid "Phase"
+msgstr "Phase"
+
+msgid "Currency"
+msgstr "Währung"
+
+msgid "Last update"
+msgstr "Letzte Änderung"
+
+msgid "closed orders"
+msgstr "abgeschlossene Aufträge"
+
+msgid "drag cards between phases"
+msgstr "Karten per Drag & Drop zwischen Phasen verschieben"
+
+msgid "Status updated"
+msgstr "Status aktualisiert"
+
+msgid "Mark opportunity as lost"
+msgstr "Verkaufschance als verloren markieren"
+
+msgid "Reason for loss"
+msgstr "Verlustgrund"
+
+msgid "Additional notes"
+msgstr "Zusätzliche Notizen"
+
+msgid "Please select a reason for the loss."
+msgstr "Bitte einen Verlustgrund auswählen."
+
+msgid "Please add a note for the selected reason."
+msgstr "Bitte eine Notiz zum gewählten Grund angeben."
+
+msgid "Cancel"
+msgstr "Abbrechen"
+
+msgid "Save"
+msgstr "Speichern"
+
+# --- CRM-Dashboard (LCSCRMDashboard, CRM-Integration Teil 3/3) ---
+msgid "CRM Dashboard"
+msgstr "CRM-Dashboard"
+
+msgid "Time range"
+msgstr "Zeitraum"
+
+msgid "Last 7 Days"
+msgstr "Letzte 7 Tage"
+
+msgid "Last 30 Days"
+msgstr "Letzte 30 Tage"
+
+msgid "Last 60 Days"
+msgstr "Letzte 60 Tage"
+
+msgid "Last 90 Days"
+msgstr "Letzte 90 Tage"
+
+msgid "Sales User"
+msgstr "Vertriebler"
+
+msgid "The CRM dashboard could not be loaded."
+msgstr "Das CRM-Dashboard konnte nicht geladen werden."
+
+msgid "Try again"
+msgstr "Erneut versuchen"
+
+msgid "Loading dashboard …"
+msgstr "Dashboard wird geladen …"
+
+msgid "No data for the selected period."
+msgstr "Keine Daten für den gewählten Zeitraum."
+
+msgid "No charts configured for this dashboard."
+msgstr "Für dieses Dashboard sind keine Diagramme konfiguriert."
