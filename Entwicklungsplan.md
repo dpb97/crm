@@ -1,4 +1,11 @@
 # Entwicklungsplan — pilanda_sales (Vertrieb: Lastenheft → Kalkulation → Angebot)
+
+> **Design-Parallelität HTML ↔ Vue (VERPFLICHTEND, Marco 21.07.2026):**
+> Klickdummy-HTML (`pilanda_theme/klickdummy/`) und Theme-Vue-Bausteine
+> werden auf gleichem Stand gehalten — jede Verbesserung auf der einen
+> Seite wird SOFORT auf der anderen nachgezogen (laufend verbessern,
+> mitziehen, nie neu bauen). Prozess-SSOT: `pilanda/ENTWICKLUNGSPLAN.md §3`.
+
 > Master: pilanda/ENTWICKLUNGSPLAN.md · Theme-Mitbau: pilanda_theme/CONTRIBUTING.md
 > Stand: 16.07.2026 · Regel: NUR echte Zustände abhaken — Wahrheit ist Pflicht.
 
