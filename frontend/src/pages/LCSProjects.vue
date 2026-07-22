@@ -152,12 +152,19 @@
 
     <!-- Main content area -->
     <div class="flex-1 overflow-y-auto overflow-x-auto">
-      <!-- Map / Dashboard views (full portfolio, independent of list filters) -->
-      <div v-if="viewMode !== 'list'" class="p-5">
+      <!-- Map view — fills the full available height -->
+      <div v-if="viewMode === 'map'" class="h-full p-5">
+        <div v-if="mapData.loading && !mapProjects.length" class="flex h-full items-center justify-center">
+          <div class="h-6 w-6 animate-spin rounded-full border-2 border-gray-200 border-t-lcs-primary" />
+        </div>
+        <ProjectMap v-else :projects="mapProjects" height-class="h-full" />
+      </div>
+
+      <!-- Dashboard view (portfolio, independent of list filters) -->
+      <div v-else-if="viewMode === 'dashboard'" class="p-5">
         <div v-if="mapData.loading && !mapProjects.length" class="flex items-center justify-center py-16">
           <div class="h-6 w-6 animate-spin rounded-full border-2 border-gray-200 border-t-lcs-primary" />
         </div>
-        <ProjectMap v-else-if="viewMode === 'map'" :projects="mapProjects" />
         <ProjectDashboard v-else :projects="mapProjects" :loading="mapData.loading" />
       </div>
 

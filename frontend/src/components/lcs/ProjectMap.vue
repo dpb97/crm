@@ -10,7 +10,9 @@
 -->
 
 <template>
-  <div class="relative">
+  <!-- h-full lets a page pass heightClass="h-full" to fill available space;
+       with an indefinite parent height it harmlessly falls back to content. -->
+  <div class="relative h-full">
     <!-- H1: Visibility — loading overlay -->
     <div v-if="loading" class="absolute inset-0 z-20 flex items-center justify-center rounded-lg bg-white/80">
       <div class="flex flex-col items-center gap-2">
@@ -27,7 +29,7 @@
     </div>
 
     <!-- Map container -->
-    <div v-show="projects.length" class="relative">
+    <div v-show="projects.length" class="relative h-full">
       <div ref="mapContainer" :class="['w-full rounded-lg border', heightClass]" />
 
       <!-- H6: Recognition — phase color legend overlay -->
