@@ -28,6 +28,7 @@
         <slot />
       </div>
       <PpInspector
+        v-if="inspSpec || inspView || inspPanel"
         class="shrink-0"
         :spec="inspSpec"
         :collapsed="inspCollapsed"
