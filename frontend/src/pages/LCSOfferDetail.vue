@@ -19,7 +19,7 @@
           <template #default="{ open }">
             <Button :iconRight="open ? 'chevron-up' : 'chevron-down'">
               <template #prefix>
-                <span class="h-2 w-2 rounded-full" :class="statusDotClass(doc.status)" />
+                <span class="h-2 w-2 rounded-full" :style="statusDotStyle(doc.status)" />
               </template>
               {{ __(doc.status || 'Set Status') }}
             </Button>
@@ -30,47 +30,46 @@
   </LayoutHeader>
 
   <!-- Loading -->
-  <div v-if="offer.loading && !doc.name" class="flex h-full items-center justify-center">
-    <div class="h-8 w-8 animate-spin rounded-full border-2 border-gray-200 border-t-lcs-secondary" />
+  <div v-if="offer.loading && !doc.name" class="lcsod-center">
+    <div class="lcsod-spinner" />
   </div>
 
   <!-- Not found -->
-  <div v-else-if="!doc.name && !offer.loading" class="flex h-full items-center justify-center">
-    <div class="text-center">
-      <FeatherIcon name="alert-circle" class="mx-auto h-8 w-8 text-red-400" />
-      <h2 class="mt-4 text-lg font-medium text-gray-900">{{ __('Offer Not Found') }}</h2>
-      <Button class="mt-4" variant="outline" @click="$router.push({ name: 'LCS Projects' })" :label="__('Back to Projects')" iconLeft="arrow-left" />
-    </div>
+  <div v-else-if="!doc.name && !offer.loading" class="lcsod-center">
+    <PpEmptyState :icon="IconAlertCircle" :title="__('Offer Not Found')">
+      <template #action>
+        <Button variant="outline" @click="$router.push({ name: 'LCS Projects' })" :label="__('Back to Projects')" iconLeft="arrow-left" />
+      </template>
+    </PpEmptyState>
   </div>
 
   <!-- Main content -->
-  <div v-else class="flex-1 overflow-y-auto">
-    <div class="mx-auto max-w-5xl p-5 space-y-5">
+  <div v-else class="lcsod flex-1 overflow-y-auto">
+    <div class="lcsod-inner">
 
       <!-- Status Hero -->
-      <div class="rounded-xl border bg-gradient-to-r from-white to-gray-50 p-5">
+      <div class="lcsod-hero">
         <div class="flex flex-wrap items-start justify-between gap-4">
           <div class="min-w-0">
             <div class="flex items-center gap-2">
-              <h1 class="truncate text-xl font-bold text-gray-900">{{ doc.offer_title }}</h1>
-              <span class="rounded-full bg-gray-100 px-2 py-0.5 font-mono text-xs font-bold text-gray-700">v{{ doc.version }}</span>
+              <h1 class="lcsod-title">{{ doc.offer_title }}</h1>
+              <span class="lcsod-ver">v{{ doc.version }}</span>
             </div>
             <div class="mt-1 flex flex-wrap items-center gap-2 text-sm">
               <router-link
                 v-if="doc.project"
                 :to="{ name: 'LCS Project', params: { id: doc.project } }"
-                class="font-mono text-gray-500 hover:text-lcs-primary hover:underline"
+                class="lcsod-project"
               >
                 {{ doc.project }}
               </router-link>
-              <span class="text-gray-300">·</span>
-              <span class="font-mono text-xs text-gray-400">{{ doc.name }}</span>
+              <span class="lcsod-sep">·</span>
+              <span class="lcsod-id">{{ doc.name }}</span>
             </div>
           </div>
           <div class="flex flex-col items-end gap-2">
-            <span :class="statusClass(doc.status)" class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-semibold">
-              <span class="h-2 w-2 rounded-full" :class="statusDotClass(doc.status)" />
-              {{ __(doc.status) }}
+            <span class="lcsod-pill" :data-tone="statusTone(doc.status)">
+              <i class="lcsod-dot" />{{ __(doc.status) }}
             </span>
             <div class="text-right">
               <MoneyDual
@@ -83,8 +82,8 @@
                 :frozen-at="doc.rate_frozen_at"
                 size="lg"
               />
-              <div v-else class="text-2xl font-bold text-gray-300">—</div>
-              <div v-if="doc.probability" class="text-[10px] uppercase text-gray-400">
+              <div v-else class="lcsod-nomoney">—</div>
+              <div v-if="doc.probability" class="lcsod-prob">
                 {{ Math.round(doc.probability) }}% {{ __('probability') }}
               </div>
             </div>
@@ -101,12 +100,9 @@
       </div>
 
       <!-- FX Snapshot — frozen-at-save vs. live (Frankfurter.dev, ECB) -->
-      <div
-        v-if="doc.value && doc.currency && doc.currency !== 'EUR'"
-        class="rounded-xl border bg-white p-4"
-      >
+      <div v-if="doc.value && doc.currency && doc.currency !== 'EUR'" class="lcsod-card">
         <div class="mb-3 flex items-center justify-between">
-          <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+          <div class="lcsod-card-title">
             <FeatherIcon name="repeat" class="h-3 w-3" />
             {{ __('Currency Conversion') }}
           </div>
@@ -122,45 +118,41 @@
 
         <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <!-- Frozen card -->
-          <div class="rounded-lg border border-gray-200 bg-gray-50 p-3">
-            <div class="text-[10px] font-bold uppercase tracking-wider text-gray-400">
-              {{ __('Frozen at save') }}
-            </div>
-            <div class="mt-1 text-lg font-semibold tabular-nums text-gray-900">
+          <div class="lcsod-fx lcsod-fx--frozen">
+            <div class="lcsod-fx-cap">{{ __('Frozen at save') }}</div>
+            <div class="lcsod-fx-val">
               {{ doc.value_eur ? formatCurrency(doc.value_eur) : '—' }}
-              <span class="ml-1 text-xs font-normal text-gray-500">EUR</span>
+              <span class="lcsod-fx-ccy">EUR</span>
             </div>
-            <div class="mt-1 text-xs text-gray-500">
+            <div class="lcsod-fx-note">
               {{ doc.exchange_rate_to_eur
                   ? `1 ${doc.currency} = ${Number(doc.exchange_rate_to_eur).toFixed(4)} EUR`
                   : __('Not yet frozen — save the offer to capture a rate.') }}
             </div>
-            <div v-if="doc.rate_frozen_at" class="mt-0.5 text-[10px] text-gray-400">
+            <div v-if="doc.rate_frozen_at" class="lcsod-fx-stamp">
               {{ __('Captured') }} {{ formatDateTime(doc.rate_frozen_at) }}
             </div>
           </div>
 
           <!-- Live card -->
-          <div class="rounded-lg border border-lcs-secondary/30 bg-lcs-secondary/5 p-3">
+          <div class="lcsod-fx lcsod-fx--live">
             <div class="flex items-center justify-between">
-              <div class="text-[10px] font-bold uppercase tracking-wider text-lcs-secondary">
+              <div class="lcsod-fx-cap lcsod-fx-cap--live">
                 {{ __('Live (Frankfurter.dev · ECB)') }}
               </div>
               <span
                 v-if="fxDeltaPct != null"
-                class="rounded-full px-2 py-0.5 text-[10px] font-semibold tabular-nums"
-                :class="fxDeltaPct >= 0
-                  ? 'bg-green-100 text-green-700'
-                  : 'bg-red-100 text-red-700'"
+                class="lcsod-delta"
+                :data-tone="fxDeltaPct >= 0 ? 'success' : 'danger'"
               >
                 {{ fxDeltaPct >= 0 ? '+' : '' }}{{ fxDeltaPct.toFixed(2) }}%
               </span>
             </div>
-            <div class="mt-1 text-lg font-semibold tabular-nums text-gray-900">
+            <div class="lcsod-fx-val">
               {{ liveValueEur != null ? formatCurrency(liveValueEur) : '—' }}
-              <span class="ml-1 text-xs font-normal text-gray-500">EUR</span>
+              <span class="lcsod-fx-ccy">EUR</span>
             </div>
-            <div class="mt-1 text-xs text-gray-500">
+            <div class="lcsod-fx-note">
               {{ liveRateValue != null
                   ? `1 ${doc.currency} = ${Number(liveRateValue).toFixed(4)} EUR`
                   : (liveRate.loading ? __('Fetching…') : __('Live rate unavailable.')) }}
@@ -170,9 +162,9 @@
       </div>
 
       <!-- Status timeline -->
-      <div class="rounded-xl border bg-white p-4">
-        <div class="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
-          <FeatherIcon name="activity" class="mr-1 inline h-3 w-3" />
+      <div class="lcsod-card">
+        <div class="lcsod-card-title mb-3">
+          <FeatherIcon name="activity" class="h-3 w-3" />
           {{ __('Status Flow') }}
         </div>
         <div class="flex items-center gap-1 overflow-x-auto">
@@ -182,24 +174,23 @@
               @click="changeStatus(s)"
               :disabled="s === doc.status"
             >
-              <div class="h-8 w-8 rounded-full flex items-center justify-center"
-                   :class="statusFlowClass(s)">
+              <div class="lcsod-node" :data-state="statusFlowState(s)">
                 <FeatherIcon v-if="statusFlowIdx(s) <= statusFlowIdx(doc.status)" name="check" class="h-4 w-4" />
                 <span v-else class="text-[10px]">{{ i + 1 }}</span>
               </div>
-              <span class="text-[10px] font-medium" :class="s === doc.status ? 'text-gray-900' : 'text-gray-400'">
+              <span class="lcsod-node-label" :data-current="s === doc.status ? 'true' : 'false'">
                 {{ __(s) }}
               </span>
             </button>
-            <div v-if="i < statusFlow.length - 1" class="h-px w-6 shrink-0 bg-gray-200" />
+            <div v-if="i < statusFlow.length - 1" class="lcsod-node-link" />
           </template>
         </div>
       </div>
 
       <!-- ERPNext links -->
-      <div v-if="doc.erpnext_quotation || doc.erpnext_sales_order" class="rounded-xl border bg-white p-4">
-        <div class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
-          <FeatherIcon name="git-branch" class="mr-1 inline h-3 w-3" />
+      <div v-if="doc.erpnext_quotation || doc.erpnext_sales_order" class="lcsod-card">
+        <div class="lcsod-card-title mb-2">
+          <FeatherIcon name="git-branch" class="h-3 w-3" />
           {{ __('ERPNext Artefacts') }}
         </div>
         <div class="flex flex-wrap gap-2">
@@ -209,9 +200,9 @@
       </div>
 
       <!-- Notes -->
-      <div class="rounded-xl border bg-amber-50/30 border-amber-200 p-4">
+      <div class="lcsod-card lcsod-notes">
         <div class="mb-2 flex items-center justify-between">
-          <div class="flex items-center gap-2 text-sm font-semibold text-amber-900">
+          <div class="lcsod-notes-title">
             <FeatherIcon name="edit-3" class="h-4 w-4" />
             {{ __('Notes') }}
           </div>
@@ -222,7 +213,7 @@
             <textarea
               v-model="editNotesValue"
               ref="notesInput"
-              class="w-full rounded-lg border border-amber-300 bg-white px-3 py-2 pr-10 text-sm"
+              class="lcsod-textarea"
               rows="5"
               :placeholder="__('Terms, reminders, outcome...')"
             />
@@ -235,12 +226,12 @@
             <Button variant="ghost" size="sm" @click="cancelNotesEdit" :label="__('Cancel')" />
           </div>
         </div>
-        <div v-else-if="doc.notes" class="whitespace-pre-wrap text-sm text-gray-800" v-html="doc.notes" />
-        <div v-else class="text-sm italic text-amber-700/70">{{ __('No notes yet.') }}</div>
+        <div v-else-if="doc.notes" class="lcsod-notes-body" v-html="doc.notes" />
+        <div v-else class="lcsod-notes-empty">{{ __('No notes yet.') }}</div>
       </div>
 
       <!-- Won/Lost reason — only shown when relevant -->
-      <div v-if="doc.status === 'Rejected' || doc.status === 'Accepted'" class="rounded-xl border bg-white p-4">
+      <div v-if="doc.status === 'Rejected' || doc.status === 'Accepted'" class="lcsod-card">
         <InlineField
           :label="doc.status === 'Accepted' ? __('Won Notes') : __('Lost Reason')"
           :value="doc.won_lost_reason"
@@ -250,18 +241,18 @@
       </div>
 
       <!-- Attachments -->
-      <div v-if="attachments.data?.length" class="rounded-xl border bg-white p-4">
-        <div class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
-          <FeatherIcon name="paperclip" class="mr-1 inline h-3 w-3" />
+      <div v-if="attachments.data?.length" class="lcsod-card">
+        <div class="lcsod-card-title mb-2">
+          <FeatherIcon name="paperclip" class="h-3 w-3" />
           {{ __('Attachments') }} ({{ attachments.data.length }})
         </div>
-        <ul class="space-y-1 text-sm">
-          <li v-for="f in attachments.data" :key="f.name" class="flex items-center gap-2">
-            <FeatherIcon name="file" class="h-3.5 w-3.5 text-gray-400" />
-            <a :href="f.file_url" target="_blank" rel="noopener" class="text-lcs-secondary hover:underline">
+        <ul class="lcsod-files">
+          <li v-for="f in attachments.data" :key="f.name">
+            <FeatherIcon name="file" class="lcsod-file-ico" />
+            <a :href="f.file_url" target="_blank" rel="noopener" class="lcsod-file-link">
               {{ f.file_name || f.file_url }}
             </a>
-            <span class="text-xs text-gray-400">{{ (f.file_size / 1024).toFixed(0) }} KB</span>
+            <span class="lcsod-file-size">{{ (f.file_size / 1024).toFixed(0) }} KB</span>
           </li>
         </ul>
       </div>
@@ -280,15 +271,17 @@ import LayoutHeader from '@/components/LayoutHeader.vue'
 import VoiceInput from '@/components/lcs/VoiceInput.vue'
 import ErpNextDeepLink from '@/components/lcs/ErpNextDeepLink.vue'
 import MoneyDual from '@/components/lcs/MoneyDual.vue'
+import PpEmptyState from '@/components/pp/PpEmptyState.vue'
+import IconAlertCircle from '~icons/lucide/alert-circle'
 
 // Inline-editable field — click to edit, blur to save
 const InlineField = {
   props: ['label', 'value', 'type', 'format', 'suffix', 'warning'],
   emits: ['save'],
   template: `
-    <div class="rounded-lg border bg-white p-3 transition hover:shadow-sm" :class="warning ? 'border-red-200 bg-red-50' : ''">
-      <div class="text-[10px] font-bold uppercase tracking-wider text-gray-400">{{ label }}</div>
-      <div v-if="!editing" @click="startEdit" class="mt-1 cursor-pointer text-sm font-medium text-gray-900" :class="!value ? 'text-gray-300 italic' : ''">
+    <div class="lcsod-ifield" :class="{ 'lcsod-ifield--warn': warning }">
+      <div class="lcsod-ifield-cap">{{ label }}</div>
+      <div v-if="!editing" @click="startEdit" class="lcsod-ifield-val" :class="{ 'lcsod-ifield-val--empty': !value }">
         {{ value ? displayValue : '— click to set —' }}
       </div>
       <div v-else class="mt-1 flex gap-1">
@@ -296,7 +289,7 @@ const InlineField = {
           ref="input"
           v-model="editValue"
           :type="type || 'text'"
-          class="w-full rounded border border-gray-300 px-2 py-1 text-sm"
+          class="lcsod-ifield-input"
           @keydown.enter="commit"
           @keydown.escape="cancel"
           @blur="commit"
@@ -438,35 +431,26 @@ const attachments = createListResource({
   auto: true,
 })
 
-// --- Style helpers ---
-function statusClass(s) {
-  const m = {
-    Draft: 'bg-gray-50 text-gray-700 border border-gray-200',
-    Sent: 'bg-blue-50 text-blue-700 border border-blue-200',
-    'In Review': 'bg-purple-50 text-purple-700 border border-purple-200',
-    Accepted: 'bg-green-50 text-green-700 border border-green-200',
-    Rejected: 'bg-red-50 text-red-700 border border-red-200',
-    Expired: 'bg-gray-50 text-gray-500 border border-gray-200',
-    Revised: 'bg-amber-50 text-amber-700 border border-amber-200',
-  }
-  return m[s] || 'bg-gray-50 text-gray-600 border border-gray-200'
+// --- Style helpers (token-based tones) ---
+const TONE_VAR = {
+  neutral: 'var(--pp-text-tertiary)', info: 'var(--pp-state-info)', brand: 'var(--pp-brand-primary)',
+  success: 'var(--pp-state-success)', warning: 'var(--pp-state-warning)', danger: 'var(--pp-state-danger)',
 }
-
-function statusDotClass(s) {
-  const m = {
-    Draft: 'bg-gray-400', Sent: 'bg-blue-500', 'In Review': 'bg-purple-500',
-    Accepted: 'bg-green-500', Rejected: 'bg-red-500',
-    Expired: 'bg-gray-300', Revised: 'bg-amber-500',
-  }
-  return m[s] || 'bg-gray-400'
+function statusTone(s) {
+  return {
+    Draft: 'neutral', Sent: 'info', 'In Review': 'brand', Accepted: 'success',
+    Rejected: 'danger', Expired: 'neutral', Revised: 'warning',
+  }[s] || 'neutral'
 }
-
-function statusFlowClass(s) {
+function statusDotStyle(s) {
+  return { background: TONE_VAR[statusTone(s)] }
+}
+function statusFlowState(s) {
   const idx = statusFlowIdx(s)
-  const currentIdx = statusFlowIdx(doc.value.status)
-  if (s === doc.value.status) return 'bg-lcs-primary text-white ring-2 ring-lcs-secondary/40'
-  if (idx < currentIdx) return 'bg-green-500 text-white'
-  return 'bg-gray-100 text-gray-400'
+  const cur = statusFlowIdx(doc.value.status)
+  if (s === doc.value.status) return 'current'
+  if (idx < cur) return 'done'
+  return 'todo'
 }
 
 function formatCurrency(v) {
@@ -495,3 +479,117 @@ function _relTime(iso) {
   return `${Math.floor(s / 86400)}d ${__('ago')}`
 }
 </script>
+
+<style scoped>
+/* ---- Pilanda design system (token-only) ------------------------------- */
+.lcsod { background: var(--pp-bg-base); }
+.lcsod-inner { max-width: 64rem; margin: 0 auto; padding: var(--pp-space-5);
+  display: flex; flex-direction: column; gap: var(--pp-space-5); }
+.lcsod-center { display: flex; height: 100%; align-items: center; justify-content: center; }
+.lcsod-spinner { width: 32px; height: 32px; border-radius: var(--pp-radius-full);
+  border: 2px solid var(--pp-border-subtle); border-top-color: var(--pp-brand-primary);
+  animation: lcsod-spin 0.7s linear infinite; }
+@keyframes lcsod-spin { to { transform: rotate(360deg); } }
+
+/* Hero */
+.lcsod-hero { border: 1px solid var(--pp-border-subtle); border-radius: var(--pp-radius-ui);
+  background: linear-gradient(90deg, var(--pp-bg-surface), var(--pp-bg-sunken));
+  padding: var(--pp-space-5); box-shadow: var(--pp-shadow-xs); }
+.lcsod-title { margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-size: var(--pp-fs-20); font-weight: var(--pp-weight-bold); color: var(--pp-text-primary);
+  font-family: var(--pp-font-heading); }
+.lcsod-ver { border-radius: var(--pp-radius-full); background: var(--pp-bg-sunken);
+  padding: 2px var(--pp-space-2); font-size: 11px; font-weight: var(--pp-weight-bold);
+  color: var(--pp-text-secondary); font-variant-numeric: tabular-nums; }
+.lcsod-project { font-family: ui-monospace, monospace; color: var(--pp-text-tertiary); text-decoration: none; }
+.lcsod-project:hover { color: var(--pp-brand-primary); text-decoration: underline; }
+.lcsod-sep { color: var(--pp-border-strong); }
+.lcsod-id { font-family: ui-monospace, monospace; font-size: var(--pp-fs-12); color: var(--pp-text-tertiary); }
+.lcsod-nomoney { font-size: var(--pp-fs-24); font-weight: var(--pp-weight-bold); color: var(--pp-text-tertiary); }
+.lcsod-prob { font-size: 10px; text-transform: uppercase; color: var(--pp-text-tertiary); }
+
+/* Token pill (status) */
+.lcsod-pill { display: inline-flex; align-items: center; gap: 6px; font-size: var(--pp-fs-13, 13px);
+  font-weight: var(--pp-weight-semibold); padding: 4px var(--pp-space-3); border-radius: var(--pp-radius-full); }
+.lcsod-dot { width: 8px; height: 8px; border-radius: var(--pp-radius-full); flex-shrink: 0; background: currentColor; }
+.lcsod-pill[data-tone="info"]    { background: color-mix(in oklab, var(--pp-state-info) 14%, transparent);    color: var(--pp-state-info); }
+.lcsod-pill[data-tone="brand"]   { background: color-mix(in oklab, var(--pp-brand-primary) 14%, transparent); color: var(--pp-brand-primary); }
+.lcsod-pill[data-tone="success"] { background: color-mix(in oklab, var(--pp-state-success) 16%, transparent); color: var(--pp-state-success); }
+.lcsod-pill[data-tone="warning"] { background: color-mix(in oklab, var(--pp-state-warning) 16%, transparent); color: var(--pp-state-warning); }
+.lcsod-pill[data-tone="danger"]  { background: color-mix(in oklab, var(--pp-state-danger) 16%, transparent);  color: var(--pp-state-danger); }
+.lcsod-pill[data-tone="neutral"] { background: var(--pp-bg-sunken); color: var(--pp-text-secondary); }
+
+/* Cards */
+.lcsod-card { background: var(--pp-bg-surface); border: 1px solid var(--pp-border-subtle);
+  border-radius: var(--pp-radius-ui); box-shadow: var(--pp-shadow-xs); padding: var(--pp-space-4); }
+.lcsod-card-title { display: flex; align-items: center; gap: var(--pp-space-2); font-size: var(--pp-fs-12);
+  font-weight: var(--pp-weight-bold); letter-spacing: 0.04em; text-transform: uppercase; color: var(--pp-text-tertiary); }
+
+/* FX subcards */
+.lcsod-fx { border-radius: var(--pp-radius-ui); padding: var(--pp-space-3); border: 1px solid var(--pp-border-subtle); }
+.lcsod-fx--frozen { background: var(--pp-bg-sunken); }
+.lcsod-fx--live { border-color: color-mix(in oklab, var(--pp-brand-primary) 30%, transparent);
+  background: color-mix(in oklab, var(--pp-brand-primary) 6%, transparent); }
+.lcsod-fx-cap { font-size: 10px; font-weight: var(--pp-weight-bold); letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--pp-text-tertiary); }
+.lcsod-fx-cap--live { color: var(--pp-brand-primary); }
+.lcsod-fx-val { margin-top: var(--pp-space-1); font-size: var(--pp-fs-18); font-weight: var(--pp-weight-semibold);
+  color: var(--pp-text-primary); font-variant-numeric: tabular-nums; }
+.lcsod-fx-ccy { margin-left: var(--pp-space-1); font-size: var(--pp-fs-12); font-weight: var(--pp-weight-regular); color: var(--pp-text-tertiary); }
+.lcsod-fx-note { margin-top: var(--pp-space-1); font-size: var(--pp-fs-12); color: var(--pp-text-secondary); }
+.lcsod-fx-stamp { margin-top: 2px; font-size: 10px; color: var(--pp-text-tertiary); }
+.lcsod-delta { border-radius: var(--pp-radius-full); padding: 2px var(--pp-space-2); font-size: 10px;
+  font-weight: var(--pp-weight-semibold); font-variant-numeric: tabular-nums; }
+.lcsod-delta[data-tone="success"] { background: color-mix(in oklab, var(--pp-state-success) 18%, transparent); color: var(--pp-state-success); }
+.lcsod-delta[data-tone="danger"]  { background: color-mix(in oklab, var(--pp-state-danger) 18%, transparent);  color: var(--pp-state-danger); }
+
+/* Status flow nodes */
+.lcsod-node { width: 32px; height: 32px; border-radius: var(--pp-radius-full);
+  display: flex; align-items: center; justify-content: center; }
+.lcsod-node[data-state="current"] { background: var(--pp-brand-primary); color: var(--pp-text-on-accent);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--pp-brand-primary) 30%, transparent); }
+.lcsod-node[data-state="done"] { background: var(--pp-state-success); color: var(--pp-text-on-accent); }
+.lcsod-node[data-state="todo"] { background: var(--pp-bg-sunken); color: var(--pp-text-tertiary); }
+.lcsod-node-label { font-size: 10px; font-weight: var(--pp-weight-medium); color: var(--pp-text-tertiary); }
+.lcsod-node-label[data-current="true"] { color: var(--pp-text-primary); }
+.lcsod-node-link { height: 1px; width: 24px; flex-shrink: 0; background: var(--pp-border-default); }
+
+/* Notes */
+.lcsod-notes { border-color: color-mix(in oklab, var(--pp-state-warning) 30%, transparent);
+  background: color-mix(in oklab, var(--pp-state-warning) 7%, transparent); }
+.lcsod-notes-title { display: flex; align-items: center; gap: var(--pp-space-2); font-size: var(--pp-fs-14);
+  font-weight: var(--pp-weight-semibold); color: var(--pp-state-warning); }
+.lcsod-textarea { width: 100%; border-radius: var(--pp-radius-ui);
+  border: 1px solid color-mix(in oklab, var(--pp-state-warning) 40%, transparent);
+  background: var(--pp-bg-surface); padding: var(--pp-space-2) var(--pp-space-3); padding-right: 40px;
+  font-size: var(--pp-fs-14); color: var(--pp-text-primary); }
+.lcsod-textarea:focus { outline: none; border-color: var(--pp-brand-primary); }
+.lcsod-notes-body { white-space: pre-wrap; font-size: var(--pp-fs-14); color: var(--pp-text-primary); }
+.lcsod-notes-empty { font-size: var(--pp-fs-14); font-style: italic; color: color-mix(in oklab, var(--pp-state-warning) 70%, var(--pp-text-tertiary)); }
+
+/* Attachments */
+.lcsod-files { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; font-size: var(--pp-fs-14); }
+.lcsod-files li { display: flex; align-items: center; gap: var(--pp-space-2); }
+.lcsod-file-ico { width: 14px; height: 14px; color: var(--pp-text-tertiary); }
+.lcsod-file-link { color: var(--pp-brand-primary); text-decoration: none; }
+.lcsod-file-link:hover { text-decoration: underline; }
+.lcsod-file-size { font-size: var(--pp-fs-12); color: var(--pp-text-tertiary); }
+</style>
+
+<style>
+/* InlineField renders from a runtime string template, so scoped CSS can't
+   reach it — these rules are intentionally global (namespaced lcsod-ifield). */
+.lcsod-ifield { border-radius: var(--pp-radius-ui); border: 1px solid var(--pp-border-subtle);
+  background: var(--pp-bg-surface); padding: var(--pp-space-3); transition: box-shadow 0.15s ease; }
+.lcsod-ifield:hover { box-shadow: var(--pp-shadow-sm); }
+.lcsod-ifield--warn { border-color: color-mix(in oklab, var(--pp-state-danger) 40%, transparent);
+  background: color-mix(in oklab, var(--pp-state-danger) 8%, transparent); }
+.lcsod-ifield-cap { font-size: 10px; font-weight: var(--pp-weight-bold); letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--pp-text-tertiary); }
+.lcsod-ifield-val { margin-top: var(--pp-space-1); cursor: pointer; font-size: var(--pp-fs-14);
+  font-weight: var(--pp-weight-medium); color: var(--pp-text-primary); }
+.lcsod-ifield-val--empty { color: var(--pp-text-tertiary); font-style: italic; }
+.lcsod-ifield-input { width: 100%; border-radius: var(--pp-radius-ui); border: 1px solid var(--pp-border-default);
+  padding: 4px var(--pp-space-2); font-size: var(--pp-fs-14); background: var(--pp-bg-base); color: var(--pp-text-primary); }
+.lcsod-ifield-input:focus { outline: none; border-color: var(--pp-brand-primary); }
+</style>
