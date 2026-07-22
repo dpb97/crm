@@ -38,6 +38,18 @@ export function usePilandaNav() {
         target: m.target || m.path,
         g: m.groups || m.g || [],
       }))
+      // CRM-owned tool the shell nav-spec doesn't list yet — keep Quick Note reachable.
+      const _vt = modules.value.find((m) => m.id === 'vertrieb')
+      if (_vt) {
+        if (!_vt.g || !_vt.g.length) _vt.g = [{ sec: '', items: [] }]
+        const _items = _vt.g[0].items || (_vt.g[0].items = [])
+        if (!_items.some((i) => (i.t || i.target) === '/crm/quick-note')) {
+          const _at = _items.findIndex((i) => (i.t || i.target) === '/crm/sales-meeting')
+          _items.splice(_at >= 0 ? _at + 1 : _items.length, 0, {
+            n: 'Quick Note', t: '/crm/quick-note', k: 'cust', x: true, d: 'Schnellnotiz',
+          })
+        }
+      }
       allgemein.value = data?.allgemein || []
       wissen.value = data?.wissen || []
       loaded.value = true

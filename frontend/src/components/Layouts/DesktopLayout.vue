@@ -24,6 +24,13 @@
         <AppHeader />
         <slot />
       </div>
+      <PpInspector
+        class="shrink-0"
+        :spec="inspSpec"
+        :collapsed="inspCollapsed"
+        title="Spezifikation"
+        @update:collapsed="setInspCollapsed"
+      />
     </div>
     <GlobalModals />
   </div>
@@ -53,12 +60,15 @@ import GlobalModals from '@/components/Modals/GlobalModals.vue'
 import LCSBrandHeader from '@/components/lcs/LCSBrandHeader.vue'
 import PilandaSidebar from '@/components/lcs/PilandaSidebar.vue'
 import PpAppbar from '@/components/pp/PpAppbar.vue'
+import PpInspector from '@/components/pp/PpInspector.vue'
 import { usePilandaMode } from '@/composables/usePilandaMode'
+import { usePilandaInspect } from '@/composables/usePilandaInspect'
 import { sessionStore } from '@/stores/session'
 import { usersStore } from '@/stores/users'
 import { useOnboarding } from 'frappe-ui/frappe'
 
 const { pilandaMode } = usePilandaMode()
+const { spec: inspSpec, collapsed: inspCollapsed, setCollapsed: setInspCollapsed } = usePilandaInspect()
 
 // Logo-SSOT pilanda_theme (Laufzeit-URL, von Frappe serviert — wie im Desk).
 const BRAND_MARK = '/assets/pilanda_theme/logo/pilanda-mark.svg'

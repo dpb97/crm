@@ -30,6 +30,7 @@
       :max-width="440"
       :rail-width="56"
       @navigate="onNavigate"
+      @inspect="onInspect"
     />
     <!-- Kein CRM-Only-Button mehr (Marco 20.07.2026: EINE Shell;
          Standalone-Ansicht nur noch via ?mode=crm). -->
@@ -41,6 +42,7 @@ import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import PpSidebar from '@/components/pp/PpSidebar.vue'
 import { usePilandaNav } from '@/composables/usePilandaNav'
+import { usePilandaInspect } from '@/composables/usePilandaInspect'
 
 // Lucide-Icons (~icons/lucide/* — frappeui/vite lucideIcons-Plugin, wie im Desk).
 import IconHouse from '~icons/lucide/house'
@@ -70,6 +72,15 @@ import IconBoxes from '~icons/lucide/boxes'
 import IconLayoutGrid from '~icons/lucide/layout-grid'
 import IconFileText from '~icons/lucide/file-text'
 import IconCircleDot from '~icons/lucide/circle-dot'
+import IconMap from '~icons/lucide/map'
+import IconBuilding from '~icons/lucide/building-2'
+import IconPhone from '~icons/lucide/phone'
+import IconTarget from '~icons/lucide/target'
+import IconUserPlus from '~icons/lucide/user-plus'
+import IconStickyNote from '~icons/lucide/sticky-note'
+import IconClipboardCheck from '~icons/lucide/clipboard-check'
+import IconCalendarDays from '~icons/lucide/calendar-days'
+
 
 const ICON_MAP = {
   house: IconHouse, newspaper: IconNewspaper, radar: IconRadar,
@@ -87,6 +98,18 @@ const ICON_MAP = {
 // Schlüsselwort-Fallback (Port des Desk-iconFor) für Items ohne icon-Feld.
 function iconFor(name) {
   const n = String(name || '').toLowerCase()
+  if (/interessent|\blead/.test(n)) return IconUserPlus
+  if (/verkaufschance|chance|opportunity|\bdeal/.test(n)) return IconTarget
+  if (/auftrag|zuschlag|\border/.test(n)) return IconClipboardCheck
+  if (/vertriebsprojekt|\bprojekt/.test(n)) return IconFolderKanban
+  if (/karte|landkarte|\bmap/.test(n)) return IconMap
+  if (/markt|aufteilung|territor/.test(n)) return IconMap
+  if (/meeting|besprechung/.test(n)) return IconCalendarDays
+  if (/prognose|forecast/.test(n)) return IconTrendingUp
+  if (/firma|firmen|unternehmen|organisation/.test(n)) return IconBuilding
+  if (/\bperson/.test(n)) return IconUsers
+  if (/notiz|\bnote/.test(n)) return IconStickyNote
+  if (/call|anruf|telefon/.test(n)) return IconPhone
   if (/portfolio|forecast|scout|pilot|leitstelle|radar/.test(n)) return IconRadar
   if (/lager|artikel|bestand|inventur|stück|bom|variante/.test(n)) return IconBoxes
   if (/doku|lastenheft|bericht|angebot|vertrag|dokument/.test(n)) return IconFileText
@@ -106,6 +129,7 @@ function iconResolver(nameOrKeyword) {
 
 const router = useRouter()
 const { modules, zones, allgemein, wissen, load } = usePilandaNav()
+const { inspectItem } = usePilandaInspect()
 
 onMounted(load)
 
@@ -179,8 +203,17 @@ const wissenDisplay = computed(() => {
 // (Deckt Module, Dashboard, Allgemein-/Wissen-Items ab — PpSidebar reicht
 //  entweder ein item mit .t oder eine module-id durch.)
 // ---------------------------------------------------------------
+// Sidebar item clicked with a spec -> open the right-hand inspector.
+function onInspect(item) { inspectItem(item) }
+
 function onNavigate(payload) {
   const item = payload?.item
+  // Click also fills the right-hand inspector with the item/module info.
+  if (item) inspectItem(item)
+  else if (payload?.id) {
+    const _m = moduleById(payload.id)
+    if (_m) inspectItem({ ..._m, n: _m.name, label: _m.name, d: _m.desc })
+  }
   let target = (item && (item.t || item.target)) || null
   if (!target && payload?.id) {
     const m = moduleById(payload.id)
