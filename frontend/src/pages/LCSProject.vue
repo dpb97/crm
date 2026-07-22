@@ -32,7 +32,7 @@
           <template #default="{ open }">
             <Button :iconRight="open ? 'chevron-up' : 'chevron-down'">
               <template #prefix>
-                <span class="h-2 w-2 rounded-full" :class="phaseDotClass(doc.phase)" />
+                <span class="h-2 w-2 rounded-full" :style="phaseDotStyle(doc.phase)" />
               </template>
               {{ __(doc.phase || 'Set Phase') }}
             </Button>
@@ -74,11 +74,10 @@
         >
           <template #actions>
             <Tooltip :text="typeFullName(doc.project_type)">
-              <span :class="typeClass(doc.project_type)" class="shrink-0 rounded-full px-2 py-0.5 text-xs font-bold">{{ doc.project_type }}</span>
+              <span class="crmw-pill shrink-0" :data-tone="typeTone(doc.project_type)">{{ doc.project_type }}</span>
             </Tooltip>
-            <span :class="statusClass(doc.status)" class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold">
-              <span class="h-1.5 w-1.5 rounded-full" :class="statusDotClass(doc.status)" />
-              {{ __(doc.status || 'Open') }}
+            <span class="crmw-pill" :data-tone="statusTone(doc.status)">
+              <i class="crmw-dot" />{{ __(doc.status || 'Open') }}
             </span>
             <button class="crmw-btn" @click="activeTab = T.ACT">{{ __('Activity') }}</button>
             <button class="crmw-btn crmw-btn--primary" @click="showNewOfferDialog = true">{{ __('Create Offer') }}</button>
@@ -322,7 +321,7 @@
           <div v-if="canShow('show_pricing_details')" class="space-y-2 px-5 py-4">
             <h4 class="text-[10px] font-bold uppercase tracking-wider text-gray-400">{{ __('Pricing') }}</h4>
             <SideField :label="__('Budget')"><span class="text-sm tabular-nums" :class="doc.budget_customer ? 'text-gray-800' : 'text-gray-400'">{{ doc.budget_customer ? formatCurrency(doc.budget_customer) : '—' }}</span></SideField>
-            <SideField :label="__('Richtpreis')"><span class="text-sm tabular-nums" :class="doc.richtpreis ? 'text-blue-700 font-medium' : 'text-gray-400'">{{ doc.richtpreis ? formatCurrency(doc.richtpreis) : '—' }}</span></SideField>
+            <SideField :label="__('Richtpreis')"><span class="text-sm tabular-nums" :class="doc.richtpreis ? 'text-lcs-primary font-medium' : 'text-gray-400'">{{ doc.richtpreis ? formatCurrency(doc.richtpreis) : '—' }}</span></SideField>
             <SideField :label="__('Offer')"><span class="text-sm tabular-nums" :class="doc.angebot_total ? 'text-green-700 font-semibold' : 'text-gray-400'">{{ doc.angebot_total ? formatCurrency(doc.angebot_total) : '—' }}</span></SideField>
           </div>
 
@@ -956,26 +955,29 @@ async function updateField(fieldname, value) {
   })
 }
 
-// Style helpers
-function typeClass(type) {
-  const map = { SB: 'bg-blue-100 text-blue-800', WI: 'bg-purple-100 text-purple-800', LL: 'bg-emerald-100 text-emerald-800', SK: 'bg-amber-100 text-amber-800' }
-  return map[type] || 'bg-gray-100 text-gray-800'
+// Style helpers — token-based tones (data-tone → scoped pill styles).
+const TONE_VAR = {
+  neutral: 'var(--pp-text-tertiary)', info: 'var(--pp-state-info)', brand: 'var(--pp-brand-primary)',
+  success: 'var(--pp-state-success)', warning: 'var(--pp-state-warning)', danger: 'var(--pp-state-danger)',
+}
+function typeTone(type) {
+  return { SB: 'info', WI: 'brand', LL: 'success', SK: 'warning' }[type] || 'neutral'
 }
 function typeFullName(type) {
   const map = { SB: 'Seilbahn (Cable Car)', WI: 'Winde (Winch)', LL: 'Liftanlage (Lift)', SK: 'Sonderkonstruktion (Special)' }
   return map[type] || type
 }
-function phaseDotClass(phase) {
-  const map = { Qualified: 'bg-sky-500', Budget: 'bg-teal-500', Richtpreis: 'bg-violet-500', Offer: 'bg-amber-500', Negotiation: 'bg-orange-500', Won: 'bg-green-500', Execution: 'bg-lcs-primary', Completed: 'bg-gray-400', Lost: 'bg-red-500' }
-  return map[phase] || 'bg-gray-400'
+function phaseTone(phase) {
+  return {
+    Qualified: 'info', Budget: 'success', Richtpreis: 'brand', Offer: 'warning',
+    Negotiation: 'warning', Won: 'success', Execution: 'brand', Completed: 'neutral', Lost: 'danger',
+  }[phase] || 'neutral'
 }
-function statusClass(status) {
-  const map = { Open: 'bg-blue-50 text-blue-700 border border-blue-200', Active: 'bg-green-50 text-green-700 border border-green-200', 'On Hold': 'bg-amber-50 text-amber-700 border border-amber-200', Completed: 'bg-gray-50 text-gray-600 border border-gray-200', Cancelled: 'bg-red-50 text-red-700 border border-red-200' }
-  return map[status] || 'bg-gray-50 text-gray-600 border border-gray-200'
+function phaseDotStyle(phase) {
+  return { background: TONE_VAR[phaseTone(phase)] }
 }
-function statusDotClass(status) {
-  const map = { Open: 'bg-blue-500', Active: 'bg-green-500', 'On Hold': 'bg-amber-500', Completed: 'bg-gray-400', Cancelled: 'bg-red-500' }
-  return map[status] || 'bg-gray-400'
+function statusTone(status) {
+  return { Open: 'info', Active: 'success', 'On Hold': 'warning', Completed: 'neutral', Cancelled: 'danger' }[status] || 'neutral'
 }
 function probabilityClass(val) {
   if (val >= 70) return 'text-green-600'
@@ -1007,6 +1009,18 @@ function formatRelativeTime(dateStr) {
 .crmw-btn:hover { background: var(--pp-bg-hover); border-color: var(--pp-brand-primary); color: var(--pp-brand-primary); }
 .crmw-btn--primary { background: var(--pp-brand-primary); border-color: var(--pp-brand-primary); color: var(--pp-text-on-accent); }
 .crmw-btn--primary:hover { filter: brightness(1.05); color: var(--pp-text-on-accent); }
+
+/* Token pills (type / status) */
+.crmw-pill { display: inline-flex; align-items: center; gap: 5px; font-size: 11px;
+  font-weight: var(--pp-weight-semibold); padding: 3px var(--pp-space-2);
+  border-radius: var(--pp-radius-full); white-space: nowrap; }
+.crmw-dot { width: 6px; height: 6px; border-radius: var(--pp-radius-full); flex-shrink: 0; background: currentColor; }
+.crmw-pill[data-tone="info"]    { background: color-mix(in oklab, var(--pp-state-info) 14%, transparent);    color: var(--pp-state-info); }
+.crmw-pill[data-tone="brand"]   { background: color-mix(in oklab, var(--pp-brand-primary) 14%, transparent); color: var(--pp-brand-primary); }
+.crmw-pill[data-tone="success"] { background: color-mix(in oklab, var(--pp-state-success) 16%, transparent); color: var(--pp-state-success); }
+.crmw-pill[data-tone="warning"] { background: color-mix(in oklab, var(--pp-state-warning) 16%, transparent); color: var(--pp-state-warning); }
+.crmw-pill[data-tone="danger"]  { background: color-mix(in oklab, var(--pp-state-danger) 16%, transparent);  color: var(--pp-state-danger); }
+.crmw-pill[data-tone="neutral"] { background: var(--pp-bg-sunken); color: var(--pp-text-secondary); }
 
 .crmw-stepper { background: var(--pp-bg-surface); border: 1px solid var(--pp-border-subtle);
   border-radius: var(--pp-radius-ui); box-shadow: var(--pp-shadow-xs); padding: var(--pp-space-4); }
