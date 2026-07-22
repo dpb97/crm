@@ -30,7 +30,15 @@
         :collapsed="inspCollapsed"
         title="Spezifikation"
         @update:collapsed="setInspCollapsed"
-      />
+      >
+        <!-- Reiche Node-View (z. B. Netzwerk-Knoten) rendert in den Default-
+             Slot; ohne View fällt PpInspector auf sein eingebautes Spec-Panel
+             zurück. #title analog. -->
+        <template v-if="inspView" #title>{{ inspView.title }}</template>
+        <template v-if="inspView" #default>
+          <PpInspectorNodeView :view="inspView" />
+        </template>
+      </PpInspector>
     </div>
     <GlobalModals />
   </div>
@@ -61,6 +69,7 @@ import LCSBrandHeader from '@/components/lcs/LCSBrandHeader.vue'
 import PilandaSidebar from '@/components/lcs/PilandaSidebar.vue'
 import PpAppbar from '@/components/pp/PpAppbar.vue'
 import PpInspector from '@/components/pp/PpInspector.vue'
+import PpInspectorNodeView from '@/components/lcs/PpInspectorNodeView.vue'
 import { usePilandaMode } from '@/composables/usePilandaMode'
 import { usePilandaInspect } from '@/composables/usePilandaInspect'
 import { sessionStore } from '@/stores/session'
@@ -68,7 +77,7 @@ import { usersStore } from '@/stores/users'
 import { useOnboarding } from 'frappe-ui/frappe'
 
 const { pilandaMode } = usePilandaMode()
-const { spec: inspSpec, collapsed: inspCollapsed, setCollapsed: setInspCollapsed } = usePilandaInspect()
+const { spec: inspSpec, view: inspView, collapsed: inspCollapsed, setCollapsed: setInspCollapsed } = usePilandaInspect()
 
 // Logo-SSOT pilanda_theme (Laufzeit-URL, von Frappe serviert — wie im Desk).
 const BRAND_MARK = '/assets/pilanda_theme/logo/pilanda-mark.svg'

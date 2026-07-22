@@ -5,9 +5,11 @@
   (wer arbeitet wo) plus Karriere-Historie (wo jemand vorher war).
 
   Präsentation nach pilanda_theme-Showcase #6: PpPageHead + Legende +
-  PpNetworkGraph (Firmen-Ring) bzw. dichter Radial-Cluster (Personen) +
-  PpDrawer-Profil beim Klick auf einen Knoten. Alle Drawer-Felder stammen
-  ECHT aus der API-Antwort (get_network_graph) — keine Demodaten.
+  PpNetworkGraph (Firmen-Ring) bzw. dichter Radial-Cluster (Personen). Der
+  Klick auf einen Knoten füttert den globalen Shell-Inspektor
+  (usePilandaInspect → PpInspectorNodeView) mit einer reichen View. Alle
+  Felder stammen ECHT aus der API-Antwort (get_network_graph) — keine
+  Demodaten.
 
   Datenlogik unverändert produktiv:
     lcs_integrations.projects.api.get_network_graph
@@ -116,88 +118,23 @@
       </div>
     </div>
 
-    <!-- Knoten-Profil (echte Felder aus get_network_graph) -->
-    <PpDrawer v-model:open="drawerOpen" :width="440" :title="selNode ? selNode.label : ''">
-      <template v-if="selNode" #title>
-        <span class="crmn-dh">{{ selNode.label }}</span>
-      </template>
-      <div v-if="selNode" class="crmn-detail">
-        <div class="crmn-detail-head">
-          <span class="crmn-role" :class="selNode.type === 'company' ? 'is-brand' : 'is-info'">
-            <i class="crmn-legend-dot" :class="selNode.type === 'company' ? 'is-brand' : 'is-info'" />
-            {{ selNode.type === 'company' ? __('Organization') : __('Person') }}
-          </span>
-        </div>
-
-        <!-- Firma -->
-        <template v-if="selNode.type === 'company'">
-          <dl class="crmn-meta">
-            <div><dt>{{ __('Type') }}</dt><dd>{{ __('Organization') }}</dd></div>
-            <div><dt>{{ __('Contacts') }}</dt><dd>{{ selNode.size || 0 }}</dd></div>
-          </dl>
-
-          <section class="crmn-sec">
-            <h4 class="crmn-sec-title">{{ __('People') }}</h4>
-            <ul v-if="selPeople.length" class="crmn-proj">
-              <li v-for="p in selPeople" :key="p.id">
-                {{ p.label }}<span v-if="p.role" class="crmn-muted"> · {{ p.role }}</span>
-              </li>
-            </ul>
-            <p v-else class="crmn-desc">{{ __('No people assigned in the graph.') }}</p>
-          </section>
-
-          <section class="crmn-sec">
-            <h4 class="crmn-sec-title">{{ __('Connected organizations') }}</h4>
-            <ul v-if="selConnected.length" class="crmn-proj">
-              <li v-for="c in selConnected" :key="c.id">
-                {{ c.label }}<span v-if="c.weight > 1" class="crmn-muted"> · {{ c.weight }} {{ __('moves') }}</span>
-              </li>
-            </ul>
-            <p v-else class="crmn-desc">{{ __('No cross-organization connections.') }}</p>
-          </section>
-        </template>
-
-        <!-- Person -->
-        <template v-else>
-          <dl class="crmn-meta">
-            <div><dt>{{ __('Role') }}</dt><dd>{{ selNode.role || '—' }}</dd></div>
-            <div><dt>{{ __('Organization') }}</dt><dd>{{ selPersonCompany || '—' }}</dd></div>
-          </dl>
-
-          <section class="crmn-sec">
-            <h4 class="crmn-sec-title">{{ __('Previously worked at') }}</h4>
-            <ul v-if="selPersonPrev.length" class="crmn-proj">
-              <li v-for="c in selPersonPrev" :key="c">{{ c }}</li>
-            </ul>
-            <p v-else class="crmn-desc">{{ __('No career history on record.') }}</p>
-          </section>
-        </template>
-      </div>
-
-      <template #footer>
-        <Button
-          v-if="selNode"
-          variant="solid"
-          :label="selNode.type === 'company' ? __('Open organization') : __('Open contact')"
-          iconLeft="external-link"
-          @click="openSelected"
-        />
-      </template>
-    </PpDrawer>
+    <!-- Knoten-Profil: kein eigener Drawer mehr — der Klick füttert den
+         globalen Shell-Inspektor (usePilandaInspect → PpInspectorNodeView). -->
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { createResource, Breadcrumbs, Button } from 'frappe-ui'
 import LayoutHeader from '@/components/LayoutHeader.vue'
 import PpNetworkGraph from '@/components/pp/PpNetworkGraph.vue'
 import PpPageHead from '@/components/pp/PpPageHead.vue'
-import PpDrawer from '@/components/pp/PpDrawer.vue'
 import PpEmptyState from '@/components/pp/PpEmptyState.vue'
+import { usePilandaInspect } from '@/composables/usePilandaInspect'
 
 const router = useRouter()
+const { inspectNode } = usePilandaInspect()
 const W = 1400
 const H = 900
 // Standard = 'companies': landet direkt auf dem Theme-Baustein PpNetworkGraph
@@ -296,15 +233,68 @@ const ppEdges = computed(() =>
   })),
 )
 
-// --- Auswahl / Drawer -----------------------------------------------------
+// --- Auswahl / Inspektor --------------------------------------------------
 const selId = ref(null)
-const drawerOpen = ref(false)
 const selNode = computed(() => nodes.value.find((n) => n.id === selId.value) || null)
 
+// Klick auf einen Knoten → globalen Shell-Inspektor mit einer reichen View
+// füttern (echte Felder aus get_network_graph, wie zuvor im Drawer).
 function pick(id) {
   selId.value = id
-  drawerOpen.value = true
+  const n = selNode.value
+  if (!n) {
+    inspectNode(null)
+    return
+  }
+  const t = window.__
+  const view =
+    n.type === 'company'
+      ? {
+          title: n.label,
+          badge: { label: t('Organization'), tone: 'brand' },
+          rows: [
+            { label: t('Type'), value: t('Organization') },
+            { label: t('Contacts'), value: n.size || 0 },
+          ],
+          sections: [
+            {
+              title: t('People'),
+              items: selPeople.value.map((p) => ({ text: p.label, muted: p.role || '' })),
+              empty: t('No people assigned in the graph.'),
+            },
+            {
+              title: t('Connected organizations'),
+              items: selConnected.value.map((c) => ({
+                text: c.label,
+                muted: c.weight > 1 ? `${c.weight} ${t('moves')}` : '',
+              })),
+              empty: t('No cross-organization connections.'),
+            },
+          ],
+          action: { label: t('Open organization'), onClick: openSelected },
+        }
+      : {
+          title: n.label,
+          badge: { label: t('Person'), tone: 'info' },
+          rows: [
+            { label: t('Role'), value: n.role || '—' },
+            { label: t('Organization'), value: selPersonCompany.value || '—' },
+          ],
+          sections: [
+            {
+              title: t('Previously worked at'),
+              items: selPersonPrev.value.map((c) => ({ text: c })),
+              empty: t('No career history on record.'),
+            },
+          ],
+          action: { label: t('Open contact'), onClick: openSelected },
+        }
+  inspectNode(view)
 }
+
+// Beim Verlassen der Seite den Inspektor leeren (kein stehengebliebener
+// Netzwerk-Knoten auf anderen Seiten).
+onBeforeUnmount(() => inspectNode(null))
 
 // Personen einer Firma (aus dem Graphen abgeleitet).
 const selPeople = computed(() => {
@@ -393,21 +383,4 @@ function short(label) {
 .crmn-node-person { fill: var(--pp-bg-surface); stroke: var(--pp-brand-primary); stroke-width: 2; }
 .crmn-node.is-selected .crmn-node-person { stroke-width: 3.5; }
 .crmn-node-person-label { fill: var(--pp-text-tertiary); font-size: 10px; pointer-events: none; }
-
-/* Drawer-Detail */
-.crmn-dh { font-weight: var(--pp-weight-semibold); }
-.crmn-detail { display: flex; flex-direction: column; gap: var(--pp-space-4); }
-.crmn-detail-head { display: flex; }
-.crmn-role { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: var(--pp-weight-semibold);
-  padding: 2px var(--pp-space-2); border-radius: var(--pp-radius-full); background: var(--pp-bg-sunken); color: var(--pp-text-secondary); }
-.crmn-meta { display: grid; grid-template-columns: 1fr 1fr; gap: var(--pp-space-2) var(--pp-space-4); margin: 0; }
-.crmn-meta dt { font-size: var(--pp-fs-12); color: var(--pp-text-tertiary); }
-.crmn-meta dd { margin: 0; font-size: var(--pp-fs-14); color: var(--pp-text-primary); }
-.crmn-sec { display: flex; flex-direction: column; gap: var(--pp-space-2); }
-.crmn-sec-title { margin: 0; font-size: var(--pp-fs-12); font-weight: var(--pp-weight-bold);
-  letter-spacing: var(--pp-tracking-wide, 0.04em); text-transform: uppercase; color: var(--pp-text-tertiary); }
-.crmn-desc { margin: 0; font-size: var(--pp-fs-14); color: var(--pp-text-secondary); line-height: var(--pp-lh-relaxed, 1.6); }
-.crmn-proj { margin: 0; padding-left: var(--pp-space-4); font-size: var(--pp-fs-14); color: var(--pp-text-secondary);
-  display: flex; flex-direction: column; gap: 2px; }
-.crmn-muted { color: var(--pp-text-tertiary); }
 </style>
