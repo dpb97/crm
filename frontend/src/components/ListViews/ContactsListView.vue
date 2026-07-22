@@ -4,11 +4,18 @@
     :columns="columns"
     :rows="rows"
     :options="{
-      getRowRoute: (row) => ({
-        name: 'Contact',
-        params: { contactId: row.name },
-        query: { view: route.query.view, viewType: route.params.viewType },
-      }),
+      // LCS: when the parent supplies onRowClick (Pilanda Personen inspector),
+      // rows become clickable elements (no direct navigation); otherwise keep
+      // the upstream router-link behavior.
+      getRowRoute: options.onRowClick
+        ? undefined
+        : (row) => ({
+            name: 'Contact',
+            params: { contactId: row.name },
+            query: { view: route.query.view, viewType: route.params.viewType },
+          }),
+      onRowClick: options.onRowClick,
+      enableActive: !!options.onRowClick,
       selectable: options.selectable,
       showTooltip: options.showTooltip,
       resizeColumn: options.resizeColumn,

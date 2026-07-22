@@ -36,6 +36,7 @@
       resizeColumn: true,
       rowCount: contacts.data.row_count,
       totalCount: contacts.data.total_count,
+      onRowClick: rowInspect,
     }"
     @loadMore="() => loadMore++"
     @columnWidthUpdated="() => triggerResize++"
@@ -68,15 +69,55 @@ import ContactModal from '@/components/Modals/ContactModal.vue'
 import ContactsListView from '@/components/ListViews/ContactsListView.vue'
 import EmptyState from '@/components/ListViews/EmptyState.vue'
 import ViewControls from '@/components/ViewControls.vue'
+import ContactInspector from '@/components/lcs/ContactInspector.vue'
 import { getMeta } from '@/stores/meta'
 import { organizationsStore } from '@/stores/organizations.js'
 import { formatDate, timeAgo } from '@/utils'
 import { call } from 'frappe-ui'
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onBeforeUnmount } from 'vue'
+import { useRouter } from 'vue-router'
+import { usePilandaMode } from '@/composables/usePilandaMode'
+import { usePilandaInspect } from '@/composables/usePilandaInspect'
 
 const { getFormattedPercent, getFormattedFloat, getFormattedCurrency } =
   getMeta('Contact')
 const { getOrganization } = organizationsStore()
+
+// LCS (Pilanda): single-click a row → docked shell inspector (ContactInspector);
+// double-click or the inspector's "Open" → full contact detail. In CRM-only
+// mode there is no shell inspector, so a click navigates straight to detail.
+const router = useRouter()
+const { pilandaMode } = usePilandaMode()
+const { inspectPanel } = usePilandaInspect()
+
+let lastClick = { id: null, t: 0 }
+function rowInspect(row) {
+  const id = row?.name
+  if (!id) return
+  if (!pilandaMode.value) {
+    openContact(id)
+    return
+  }
+  const now = Date.now()
+  if (lastClick.id === id && now - lastClick.t < 350) {
+    lastClick = { id: null, t: 0 }
+    openContact(id)
+    return
+  }
+  lastClick = { id, t: now }
+  inspectPanel({
+    component: ContactInspector,
+    props: { contactId: id },
+    on: { open: openContact },
+    title: __('Contact'),
+  })
+}
+function openContact(id) {
+  router.push({ name: 'Contact', params: { contactId: id } })
+}
+onBeforeUnmount(() => {
+  if (pilandaMode.value) inspectPanel(null)
+})
 
 const showContactModal = ref(false)
 
