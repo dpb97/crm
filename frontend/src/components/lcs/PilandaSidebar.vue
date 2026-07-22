@@ -30,7 +30,6 @@
       :max-width="440"
       :rail-width="56"
       @navigate="onNavigate"
-      @inspect="onInspect"
     />
     <!-- Kein CRM-Only-Button mehr (Marco 20.07.2026: EINE Shell;
          Standalone-Ansicht nur noch via ?mode=crm). -->
@@ -42,7 +41,6 @@ import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import PpSidebar from '@/components/pp/PpSidebar.vue'
 import { usePilandaNav } from '@/composables/usePilandaNav'
-import { usePilandaInspect } from '@/composables/usePilandaInspect'
 
 // Lucide-Icons (~icons/lucide/* — frappeui/vite lucideIcons-Plugin, wie im Desk).
 import IconHouse from '~icons/lucide/house'
@@ -129,7 +127,6 @@ function iconResolver(nameOrKeyword) {
 
 const router = useRouter()
 const { modules, zones, allgemein, wissen, load } = usePilandaNav()
-const { inspectItem } = usePilandaInspect()
 
 onMounted(load)
 
@@ -203,17 +200,11 @@ const wissenDisplay = computed(() => {
 // (Deckt Module, Dashboard, Allgemein-/Wissen-Items ab — PpSidebar reicht
 //  entweder ein item mit .t oder eine module-id durch.)
 // ---------------------------------------------------------------
-// Sidebar item clicked with a spec -> open the right-hand inspector.
-function onInspect(item) { inspectItem(item) }
-
+// Sidebar clicks only navigate — the right-hand inspector is reserved for
+// real detail selections (list rows, network nodes, project/deal/contact).
+// The nav-item "Spezifikation" panel was removed on request.
 function onNavigate(payload) {
   const item = payload?.item
-  // Click also fills the right-hand inspector with the item/module info.
-  if (item) inspectItem(item)
-  else if (payload?.id) {
-    const _m = moduleById(payload.id)
-    if (_m) inspectItem({ ..._m, n: _m.name, label: _m.name, d: _m.desc })
-  }
   let target = (item && (item.t || item.target)) || null
   if (!target && payload?.id) {
     const m = moduleById(payload.id)
