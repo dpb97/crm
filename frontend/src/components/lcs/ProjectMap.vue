@@ -46,7 +46,7 @@
       </div>
 
       <!-- H1: Visibility — marker count -->
-      <div class="absolute right-3 top-3 z-10 rounded-md bg-white/90 px-2 py-1 text-xs text-gray-500 shadow-sm backdrop-blur-sm">
+      <div class="absolute bottom-3 right-3 z-10 rounded-md bg-white/90 px-2 py-1 text-xs text-gray-500 shadow-sm backdrop-blur-sm">
         {{ projects.length }} {{ __('locations') }}
       </div>
     </div>
@@ -98,10 +98,19 @@ async function ensureMap() {
     zoomControl: true,
     attributionControl: true,
   }).setView([47.0, 13.0], 3)
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  // Base layers — switchable (street map vs. satellite imagery).
+  const street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; OpenStreetMap',
-    maxZoom: 18,
-  }).addTo(map)
+    maxZoom: 19,
+  })
+  const satellite = L.tileLayer(
+    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    { attribution: 'Tiles &copy; Esri — World Imagery', maxZoom: 19 },
+  )
+  street.addTo(map) // default = street map
+  L.control
+    .layers({ [__('Map')]: street, [__('Satellite')]: satellite }, {}, { position: 'topright', collapsed: false })
+    .addTo(map)
   return L
 }
 
