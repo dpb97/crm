@@ -188,9 +188,20 @@ const routes = [
     component: () => import('@/pages/Tasks.vue'),
   },
   {
+    // Personen bekommen die Pilanda-UX (LCSContacts). Route-Shape unverändert
+    // (alias/path/name 'Contacts'), damit Nav + getRowRoute-Links weiter greifen.
+    // LCSContacts ignoriert den viewType-Param.
     alias: '/contacts',
     path: '/contacts/view/:viewType?',
     name: 'Contacts',
+    component: () => import('@/pages/LCSContacts.vue'),
+  },
+  {
+    // Generische Upstream-Kontaktliste bleibt als Fallback erreichbar
+    // (nicht in der Sidebar) — volle Filter/Views/Spaltenkonfig.
+    alias: '/contacts-upstream',
+    path: '/contacts-upstream/view/:viewType?',
+    name: 'Contacts Upstream',
     component: () => import('@/pages/Contacts.vue'),
   },
   {
@@ -200,9 +211,18 @@ const routes = [
     props: true,
   },
   {
+    // Firmen bekommen die Pilanda-UX (LCSOrganizations). Route-Shape unverändert
+    // (alias/path/name 'Organizations'). LCSOrganizations ignoriert viewType.
     alias: '/organizations',
     path: '/organizations/view/:viewType?',
     name: 'Organizations',
+    component: () => import('@/pages/LCSOrganizations.vue'),
+  },
+  {
+    // Generische Upstream-Firmenliste bleibt als Fallback erreichbar.
+    alias: '/organizations-upstream',
+    path: '/organizations-upstream/view/:viewType?',
+    name: 'Organizations Upstream',
     component: () => import('@/pages/Organizations.vue'),
   },
   {
