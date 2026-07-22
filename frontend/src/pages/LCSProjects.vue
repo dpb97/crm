@@ -325,9 +325,10 @@
     </div>
   </div>
 
-  <!-- Inspector — right sidebar showing details of the selected project -->
+  <!-- Inspector — CRM-only fixed overlay (Pilanda mode uses the docked shell
+       inspector, fed via inspectPanel in selectProject). -->
   <div
-    v-if="selectedProject"
+    v-if="selectedProject && !pilandaMode"
     class="fixed right-0 top-0 z-40 flex h-screen w-full flex-col border-l bg-white shadow-2xl sm:w-[22rem]"
   >
     <div class="flex items-center justify-between border-b px-3 py-2">
@@ -459,6 +460,8 @@ import { useStorage } from '@vueuse/core'
 import { sessionStore } from '@/stores/session'
 import { useOfflineList } from '@/composables/useOfflineList'
 import { useUserPreferences } from '@/composables/useUserPreferences'
+import { usePilandaMode } from '@/composables/usePilandaMode'
+import { usePilandaInspect } from '@/composables/usePilandaInspect'
 import BacklogImportDialog from '@/components/lcs/BacklogImportDialog.vue'
 import ColumnPicker from '@/components/lcs/ColumnPicker.vue'
 import ProjectInspector from '@/components/lcs/ProjectInspector.vue'
@@ -468,6 +471,8 @@ import LayoutHeader from '@/components/LayoutHeader.vue'
 
 const session = sessionStore()
 const userPrefs = useUserPreferences()
+const { pilandaMode } = usePilandaMode()
+const { inspectPanel } = usePilandaInspect()
 
 function openPreferences() {
   window.dispatchEvent(new CustomEvent('lcs-open-preferences'))
@@ -496,10 +501,21 @@ const onlyMine = useStorage('lcs-projects-only-mine', false)
 const showNewDialog = ref(false)
 const creating = ref(false)
 const selectedIndex = ref(-1)
-// Inspector selection: single click selects, double click opens
+// Inspector selection: single click selects, double click opens.
+// In Pilanda mode the details load into the docked shell inspector
+// (ProjectInspector as a dynamic panel); in CRM-only mode there is no shell
+// inspector, so the local fixed overlay below is used instead.
 const selectedProject = ref(null)
 function selectProject(p) {
   selectedProject.value = p
+  if (pilandaMode.value) {
+    inspectPanel({
+      component: ProjectInspector,
+      props: { project: p },
+      on: { open: navigateToProject },
+      title: __('Project'),
+    })
+  }
 }
 
 // KPI overview strip over the list
@@ -698,7 +714,11 @@ function handleKeyboard(e) {
 }
 
 onMounted(() => document.addEventListener('keydown', handleKeyboard))
-onUnmounted(() => document.removeEventListener('keydown', handleKeyboard))
+onUnmounted(() => {
+  document.removeEventListener('keydown', handleKeyboard)
+  // Don't leave a project panel in the shell inspector on other pages.
+  if (pilandaMode.value) inspectPanel(null)
+})
 
 function clearFilters() {
   filters.project_type = ''

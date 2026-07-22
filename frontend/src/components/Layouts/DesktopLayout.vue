@@ -31,12 +31,21 @@
         title="Spezifikation"
         @update:collapsed="setInspCollapsed"
       >
-        <!-- Reiche Node-View (z. B. Netzwerk-Knoten) rendert in den Default-
-             Slot; ohne View fällt PpInspector auf sein eingebautes Spec-Panel
+        <!-- Custom-Panel (interaktive Komponente, z. B. ProjectInspector) oder
+             reiche Node-View (Netzwerk-Knoten) rendern in den Default-Slot;
+             ohne beides fällt PpInspector auf sein eingebautes Spec-Panel
              zurück. #title analog. -->
-        <template v-if="inspView" #title>{{ inspView.title }}</template>
-        <template v-if="inspView" #default>
-          <PpInspectorNodeView :view="inspView" />
+        <template v-if="inspPanel || inspView" #title>
+          {{ (inspPanel && inspPanel.title) || (inspView && inspView.title) || '' }}
+        </template>
+        <template v-if="inspPanel || inspView" #default>
+          <component
+            v-if="inspPanel"
+            :is="inspPanel.component"
+            v-bind="inspPanel.props || {}"
+            v-on="inspPanel.on || {}"
+          />
+          <PpInspectorNodeView v-else :view="inspView" />
         </template>
       </PpInspector>
     </div>
@@ -77,7 +86,7 @@ import { usersStore } from '@/stores/users'
 import { useOnboarding } from 'frappe-ui/frappe'
 
 const { pilandaMode } = usePilandaMode()
-const { spec: inspSpec, view: inspView, collapsed: inspCollapsed, setCollapsed: setInspCollapsed } = usePilandaInspect()
+const { spec: inspSpec, view: inspView, panel: inspPanel, collapsed: inspCollapsed, setCollapsed: setInspCollapsed } = usePilandaInspect()
 
 // Logo-SSOT pilanda_theme (Laufzeit-URL, von Frappe serviert — wie im Desk).
 const BRAND_MARK = '/assets/pilanda_theme/logo/pilanda-mark.svg'
