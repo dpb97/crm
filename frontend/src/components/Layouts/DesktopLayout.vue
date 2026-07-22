@@ -20,7 +20,10 @@
       <div class="h-full shrink-0">
         <PilandaSidebar />
       </div>
-      <div class="flex-1 flex flex-col h-full overflow-auto bg-surface-white min-w-0">
+      <!-- Ein durchgehender Pilanda-Base-Hintergrund für Header + Seite; weiße
+           Karten (--pp-bg-surface) schweben darauf. Verhindert den weiß/grau-
+           Bruch zwischen Shell-Chrome und den getokenten Seiten-Canvasen. -->
+      <div class="lcs-pilanda-content flex-1 flex flex-col h-full overflow-auto min-w-0">
         <AppHeader />
         <slot />
       </div>
@@ -133,3 +136,10 @@ setUp(
   ].map((name) => ({ name, completed: false })),
 )
 </script>
+
+<style scoped>
+/* One consistent Pilanda backdrop for the whole content column (header + page),
+   so the token-gray page canvases and the shell chrome no longer clash white vs.
+   gray. White cards (--pp-bg-surface) float on this base. */
+.lcs-pilanda-content { background: var(--pp-bg-base); }
+</style>
