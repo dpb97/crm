@@ -35,9 +35,16 @@
     </template>
   </LayoutHeader>
 
-  <div class="flex flex-1 flex-col overflow-hidden">
+  <div class="lcsp-canvas flex flex-1 flex-col overflow-hidden">
+    <div class="lcsp-head">
+      <PpPageHead
+        :eyebrow="__('Sales / CRM')"
+        :title="__('Sales Projects')"
+        :subtitle="viewMode === 'list' && !projectsLoading ? `${projectList.length} ${__('of')} ${totalCount} ${__('Projects')}` : ''"
+      />
+    </div>
     <!-- H1: Visibility of system status — result count + active filters indicator -->
-    <div class="flex flex-wrap items-center justify-between gap-y-2 border-b bg-white px-5 py-3">
+    <div class="lcsp-filterbar flex flex-wrap items-center justify-between gap-y-2 border-b px-5 py-3">
       <div class="flex flex-wrap items-center gap-2 sm:gap-4">
         <!-- My Projects toggle — personalized view -->
         <div class="flex rounded-lg border bg-white p-0.5">
@@ -157,24 +164,12 @@
       <!-- List view: KPI strip + states + table -->
       <template v-else>
       <!-- KPI overview strip -->
-      <div v-if="projectList.length" class="grid grid-cols-2 gap-3 px-5 pt-4 md:grid-cols-4">
-        <div class="rounded-xl border bg-white p-4">
-          <div class="lcs-section-label">{{ __('Execution') }}</div>
-          <div class="mt-1 text-xl font-bold tabular-nums text-indigo-600">{{ overview.execution }}</div>
-        </div>
-        <div class="rounded-xl border bg-white p-4">
-          <div class="lcs-section-label">{{ __('Won') }}</div>
-          <div class="mt-1 text-xl font-bold tabular-nums text-green-600">{{ overview.won }}</div>
-        </div>
-        <div class="rounded-xl border bg-white p-4">
-          <div class="lcs-section-label">{{ __('Completed') }}</div>
-          <div class="mt-1 text-xl font-bold tabular-nums text-gray-700">{{ overview.completed }}</div>
-        </div>
-        <div class="rounded-xl border bg-white p-4">
-          <div class="lcs-section-label">{{ __('Total value') }}</div>
-          <div class="mt-1 text-xl font-bold tabular-nums text-lcs-primary">{{ overviewMoney }}</div>
-        </div>
-      </div>
+      <section v-if="projectList.length" class="lcsp-kpis">
+        <PpStatTile :label="__('Execution')" :value="String(overview.execution)" :hint="__('active builds')" />
+        <PpStatTile :label="__('Won')" :value="String(overview.won)" :hint="__('order booked')" />
+        <PpStatTile :label="__('Completed')" :value="String(overview.completed)" :hint="__('closed out')" />
+        <PpStatTile :label="__('Total value')" :value="overviewMoney" :hint="__('estimated pipeline')" />
+      </section>
 
       <!-- H1: Visibility — Loading state with skeleton -->
       <div v-if="projectsLoading && !projectList.length" class="p-5">
@@ -188,42 +183,36 @@
       </div>
 
       <!-- H9: Help recognize errors — Error state with recovery -->
-      <div v-else-if="projectsError && !projectList.length" class="flex flex-col items-center justify-center p-16">
-        <div class="rounded-full bg-red-50 p-4">
-          <FeatherIcon name="alert-circle" class="h-8 w-8 text-red-400" />
-        </div>
-        <h3 class="mt-4 text-sm font-medium text-gray-900">{{ __('Failed to load projects') }}</h3>
-        <p class="mt-1 text-sm text-gray-500">{{ projectsError }}</p>
-        <Button class="mt-4" variant="outline" @click="reloadProjects()" :label="__('Try again')" iconLeft="refresh-cw" />
+      <div v-else-if="projectsError && !projectList.length" class="lcsp-state">
+        <PpEmptyState :icon="IconAlertCircle" :title="__('Failed to load projects')" :hint="projectsError">
+          <template #action>
+            <Button variant="outline" @click="reloadProjects()" :label="__('Try again')" iconLeft="refresh-cw" />
+          </template>
+        </PpEmptyState>
       </div>
 
       <!-- H10: Help — Empty state with guidance -->
-      <div v-else-if="!projectList.length && !hasActiveFilters" class="flex flex-col items-center justify-center p-16">
-        <div class="rounded-full bg-gray-50 p-4">
-          <FeatherIcon name="folder" class="h-8 w-8 text-gray-300" />
-        </div>
-        <h3 class="mt-4 text-sm font-medium text-gray-900">{{ __('No projects yet') }}</h3>
-        <p class="mt-2 max-w-sm text-center text-sm text-gray-500">
-          {{ __('Create your first project to start tracking opportunities, phases, and team assignments.') }}
-        </p>
-        <Button class="mt-4" variant="solid" @click="showNewDialog = true" :label="__('Create first project')" iconLeft="plus" />
+      <div v-else-if="!projectList.length && !hasActiveFilters" class="lcsp-state">
+        <PpEmptyState :icon="IconFolder" :title="__('No projects yet')" :hint="__('Create your first project to start tracking opportunities, phases, and team assignments.')">
+          <template #action>
+            <Button variant="solid" @click="showNewDialog = true" :label="__('Create first project')" iconLeft="plus" />
+          </template>
+        </PpEmptyState>
       </div>
 
       <!-- Empty after filter — H5: Error prevention hint -->
-      <div v-else-if="!projectList.length && hasActiveFilters" class="flex flex-col items-center justify-center p-16">
-        <div class="rounded-full bg-amber-50 p-4">
-          <FeatherIcon name="search" class="h-8 w-8 text-amber-400" />
-        </div>
-        <h3 class="mt-4 text-sm font-medium text-gray-900">{{ __('No matching projects') }}</h3>
-        <p class="mt-1 text-sm text-gray-500">{{ __('Try adjusting your filters or') }}
-          <button class="font-medium text-lcs-secondary hover:underline" @click="clearFilters">{{ __('reset all filters') }}</button>.
-        </p>
+      <div v-else-if="!projectList.length && hasActiveFilters" class="lcsp-state">
+        <PpEmptyState :icon="IconSearchX" :title="__('No matching projects')" :hint="__('Try adjusting your filters.')">
+          <template #action>
+            <Button variant="subtle" @click="clearFilters" :label="__('Reset all filters')" iconLeft="x" />
+          </template>
+        </PpEmptyState>
       </div>
 
       <!-- Data table — H2: Match real world (German currency, familiar table layout) -->
       <table v-else class="w-full text-sm">
-        <thead class="sticky top-0 z-10 bg-gray-50">
-          <tr class="border-b text-left text-xs font-medium uppercase tracking-wide text-gray-500">
+        <thead class="lcsp-thead sticky top-0 z-10">
+          <tr class="border-b text-left text-xs font-medium uppercase tracking-wide">
             <th
               v-for="col in visibleColumns"
               :key="col.key"
@@ -246,8 +235,8 @@
           <tr
             v-for="(p, index) in projectList"
             :key="p.name"
-            class="group cursor-pointer border-b transition-colors hover:bg-gray-50"
-            :class="{ 'bg-blue-50/50': selectedIndex === index || selectedProject?.name === p.name }"
+            class="lcsp-row group cursor-pointer border-b transition-colors"
+            :class="{ 'lcsp-row--sel': selectedIndex === index || selectedProject?.name === p.name }"
             @click="selectProject(p)"
             @dblclick="navigateToProject(p)"
             @keydown.enter="navigateToProject(p)"
@@ -272,32 +261,19 @@
 
               <td v-else-if="col.key === 'project_type'" class="px-4 py-3.5">
                 <Tooltip :text="typeFullName(p.project_type)">
-                  <span
-                    :class="typeClass(p.project_type)"
-                    class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold"
-                  >
-                    {{ p.project_type }}
-                  </span>
+                  <span class="lcsp-pill" :data-tone="typeTone(p.project_type)">{{ p.project_type }}</span>
                 </Tooltip>
               </td>
 
               <td v-else-if="col.key === 'phase'" class="px-4 py-3.5">
-                <span
-                  :class="phaseClass(p.phase)"
-                  class="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold"
-                >
-                  <span class="h-1.5 w-1.5 rounded-full" :class="phaseDotClass(p.phase)" />
-                  {{ __(p.phase) }}
+                <span class="lcsp-pill" :data-tone="phaseTone(p.phase)">
+                  <i class="lcsp-dot" />{{ __(p.phase) }}
                 </span>
               </td>
 
               <td v-else-if="col.key === 'status'" class="px-4 py-3.5">
-                <span
-                  :class="statusClass(p.status)"
-                  class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium"
-                >
-                  <span class="h-1.5 w-1.5 rounded-full" :class="statusDotClass(p.status)" />
-                  {{ __(p.status || 'Open') }}
+                <span class="lcsp-pill" :data-tone="statusTone(p.status)">
+                  <i class="lcsp-dot" />{{ __(p.status || 'Open') }}
                 </span>
               </td>
 
@@ -468,6 +444,12 @@ import ProjectInspector from '@/components/lcs/ProjectInspector.vue'
 import ProjectDashboard from '@/components/lcs/ProjectDashboard.vue'
 import ProjectMap from '@/components/lcs/ProjectMap.vue'
 import LayoutHeader from '@/components/LayoutHeader.vue'
+import PpPageHead from '@/components/pp/PpPageHead.vue'
+import PpStatTile from '@/components/pp/PpStatTile.vue'
+import PpEmptyState from '@/components/pp/PpEmptyState.vue'
+import IconFolder from '~icons/lucide/folder'
+import IconSearchX from '~icons/lucide/search-x'
+import IconAlertCircle from '~icons/lucide/alert-circle'
 
 const session = sessionStore()
 const userPrefs = useUserPreferences()
@@ -745,67 +727,23 @@ function typeFullName(type) {
   return map[type] || type
 }
 
-function typeClass(type) {
-  const map = {
-    SB: 'bg-blue-100 text-blue-800',
-    WI: 'bg-purple-100 text-purple-800',
-    LL: 'bg-emerald-100 text-emerald-800',
-    SK: 'bg-amber-100 text-amber-800',
-  }
-  return map[type] || 'bg-gray-100 text-gray-800'
+// Badge tone maps — token-based pills (data-tone → scoped CSS).
+// Tones: brand | info | success | warning | danger | neutral.
+function typeTone(type) {
+  return { SB: 'info', WI: 'brand', LL: 'success', SK: 'warning' }[type] || 'neutral'
 }
-
-function phaseClass(phase) {
-  const map = {
-    Qualified: 'bg-sky-50 text-sky-700',
-    Budget: 'bg-teal-50 text-teal-700',
-    Richtpreis: 'bg-violet-50 text-violet-700',
-    Offer: 'bg-amber-50 text-amber-700',
-    Negotiation: 'bg-orange-50 text-orange-700',
-    Won: 'bg-green-50 text-green-700',
-    Execution: 'bg-lcs-primary/5 text-lcs-primary',
-    Completed: 'bg-gray-50 text-gray-600',
-    Lost: 'bg-red-50 text-red-700',
-  }
-  return map[phase] || 'bg-gray-50 text-gray-600'
+function phaseTone(phase) {
+  return {
+    Qualified: 'info', Budget: 'success', Richtpreis: 'brand', Offer: 'warning',
+    Negotiation: 'warning', Won: 'success', Execution: 'brand',
+    Completed: 'neutral', Lost: 'danger',
+  }[phase] || 'neutral'
 }
-
-function phaseDotClass(phase) {
-  const map = {
-    Qualified: 'bg-sky-500',
-    Budget: 'bg-teal-500',
-    Richtpreis: 'bg-violet-500',
-    Offer: 'bg-amber-500',
-    Negotiation: 'bg-orange-500',
-    Won: 'bg-green-500',
-    Execution: 'bg-lcs-primary',
-    Completed: 'bg-gray-400',
-    Lost: 'bg-red-500',
-  }
-  return map[phase] || 'bg-gray-400'
-}
-
-// Status badge helpers — prominent status visibility
-function statusClass(status) {
-  const map = {
-    Open: 'bg-blue-50 text-blue-700',
-    Active: 'bg-green-50 text-green-700',
-    'On Hold': 'bg-amber-50 text-amber-700',
-    Completed: 'bg-gray-50 text-gray-600',
-    Cancelled: 'bg-red-50 text-red-700',
-  }
-  return map[status] || 'bg-gray-50 text-gray-600'
-}
-
-function statusDotClass(status) {
-  const map = {
-    Open: 'bg-blue-500',
-    Active: 'bg-green-500',
-    'On Hold': 'bg-amber-500',
-    Completed: 'bg-gray-400',
-    Cancelled: 'bg-red-500',
-  }
-  return map[status] || 'bg-gray-400'
+function statusTone(status) {
+  return {
+    Open: 'info', Active: 'success', 'On Hold': 'warning',
+    Completed: 'neutral', Cancelled: 'danger',
+  }[status] || 'neutral'
 }
 
 // Notes preview — first 100 chars for tooltip
@@ -870,3 +808,35 @@ async function createProject() {
   }
 }
 </script>
+
+<style scoped>
+/* Pilanda design system — token-only chrome (matches LCSLeads/LCSNetwork). */
+.lcsp-canvas { background: var(--pp-bg-base); }
+.lcsp-head { padding: var(--pp-space-5) var(--pp-space-5) var(--pp-space-3); }
+.lcsp-filterbar { background: var(--pp-bg-surface); border-color: var(--pp-border-subtle); }
+.lcsp-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--pp-space-3); padding: var(--pp-space-4) var(--pp-space-5) 0; }
+.lcsp-state { padding: var(--pp-space-10, 40px) var(--pp-space-5); }
+
+/* Table chrome */
+.lcsp-thead { background: var(--pp-bg-sunken); color: var(--pp-text-tertiary); }
+.lcsp-row { border-color: var(--pp-border-subtle); }
+.lcsp-row:hover { background: var(--pp-bg-hover); }
+.lcsp-row--sel { background: var(--pp-accent-soft); }
+
+/* Token pills (phase / status / type) */
+.lcsp-pill { display: inline-flex; align-items: center; gap: 5px; font-size: 11px;
+  font-weight: var(--pp-weight-semibold); padding: 2px var(--pp-space-2);
+  border-radius: var(--pp-radius-full); white-space: nowrap; }
+.lcsp-dot { width: 6px; height: 6px; border-radius: var(--pp-radius-full); flex-shrink: 0; background: currentColor; }
+.lcsp-pill[data-tone="info"]    { background: color-mix(in oklab, var(--pp-state-info) 14%, transparent);    color: var(--pp-state-info); }
+.lcsp-pill[data-tone="brand"]   { background: color-mix(in oklab, var(--pp-brand-primary) 14%, transparent); color: var(--pp-brand-primary); }
+.lcsp-pill[data-tone="success"] { background: color-mix(in oklab, var(--pp-state-success) 16%, transparent); color: var(--pp-state-success); }
+.lcsp-pill[data-tone="warning"] { background: color-mix(in oklab, var(--pp-state-warning) 16%, transparent); color: var(--pp-state-warning); }
+.lcsp-pill[data-tone="danger"]  { background: color-mix(in oklab, var(--pp-state-danger) 16%, transparent);  color: var(--pp-state-danger); }
+.lcsp-pill[data-tone="neutral"] { background: var(--pp-bg-sunken); color: var(--pp-text-secondary); }
+
+@media (max-width: 900px) {
+  .lcsp-kpis { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
