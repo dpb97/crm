@@ -5,60 +5,55 @@
 -->
 
 <template>
-  <div class="flex h-full flex-col">
+  <div class="lcspm flex h-full flex-col">
     <!-- Page header with filters -->
-    <header
-      class="flex flex-wrap items-center gap-3 border-b border-gray-200 bg-white px-4 py-3"
-    >
-      <h1 class="text-lg font-semibold text-gray-900">
-        {{ __('Projects Map') }}
-      </h1>
-
-      <div class="ml-auto flex flex-wrap items-center gap-2">
-        <FormControl
-          v-model="phaseFilter"
-          type="select"
-          :placeholder="__('Phase')"
-          :options="phaseOptions"
-          class="min-w-[140px]"
-        />
-        <FormControl
-          v-model="salesManagerFilter"
-          type="autocomplete"
-          :placeholder="__('Sales Manager')"
-          :options="salesManagerOptions"
-          class="min-w-[180px]"
-        />
-        <Button
-          v-if="phaseFilter || salesManagerFilter"
-          variant="ghost"
-          @click="clearFilters"
-        >
-          {{ __('Clear') }}
-        </Button>
-        <Button :loading="loading" @click="fetchData">
-          <template #prefix>
-            <LucideRefreshCw class="h-4 w-4" />
-          </template>
-          {{ __('Refresh') }}
-        </Button>
-      </div>
+    <header class="lcspm-head">
+      <PpPageHead
+        :eyebrow="__('Sales / CRM')"
+        :title="__('Projects Map')"
+        :subtitle="__('Live world map of all LCS projects — filter by phase or sales manager')"
+      >
+        <template #actions>
+          <FormControl
+            v-model="phaseFilter"
+            type="select"
+            :placeholder="__('Phase')"
+            :options="phaseOptions"
+            class="min-w-[140px]"
+          />
+          <FormControl
+            v-model="salesManagerFilter"
+            type="autocomplete"
+            :placeholder="__('Sales Manager')"
+            :options="salesManagerOptions"
+            class="min-w-[180px]"
+          />
+          <Button
+            v-if="phaseFilter || salesManagerFilter"
+            variant="ghost"
+            @click="clearFilters"
+          >
+            {{ __('Clear') }}
+          </Button>
+          <Button :loading="loading" @click="fetchData">
+            <template #prefix>
+              <LucideRefreshCw class="h-4 w-4" />
+            </template>
+            {{ __('Refresh') }}
+          </Button>
+        </template>
+      </PpPageHead>
     </header>
 
     <!-- Banner: countries without coordinates -->
-    <div
-      v-if="unmappedCountries.length"
-      class="border-b border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-800"
-    >
-      <span class="font-medium">{{ __('Missing map coordinates:') }}</span>
+    <div v-if="unmappedCountries.length" class="lcspm-banner">
+      <span class="lcspm-banner-strong">{{ __('Missing map coordinates:') }}</span>
       {{ unmappedCountries.join(', ') }}
-      <span class="ml-1 text-amber-700">
-        ({{ __('add them in country_coords.py') }})
-      </span>
+      <span class="lcspm-banner-note">({{ __('add them in country_coords.py') }})</span>
     </div>
 
     <!-- Map body — OSM detail map -->
-    <div class="flex-1 overflow-auto bg-gray-50 p-3">
+    <div class="lcspm-body flex-1 overflow-auto p-3">
       <ProjectMap
         :projects="filteredProjects"
         height-class="h-[calc(100vh-16rem)]"
@@ -66,15 +61,13 @@
     </div>
 
     <!-- Stats footer -->
-    <footer
-      class="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-2 text-xs text-gray-500"
-    >
+    <footer class="lcspm-foot">
       <span>
         {{ filteredProjects.length }} {{ __('shown') }} ·
         {{ mappedProjects.length }} {{ __('mapped') }} ·
         {{ allProjects.length }} {{ __('total') }}
       </span>
-      <span v-if="lastFetchedAt" class="text-gray-400">
+      <span v-if="lastFetchedAt" class="lcspm-foot-muted">
         {{ __('Updated') }}: {{ lastFetchedAt }}
       </span>
     </footer>
@@ -86,6 +79,7 @@ import { computed, onMounted, ref } from 'vue'
 import { Button, FormControl, createResource } from 'frappe-ui'
 import LucideRefreshCw from '~icons/lucide/refresh-cw'
 import ProjectMap from '@/components/lcs/ProjectMap.vue'
+import PpPageHead from '@/components/pp/PpPageHead.vue'
 
 const allProjects = ref([])
 const unmappedCountries = ref([])
@@ -171,3 +165,21 @@ async function fetchData() {
 
 onMounted(fetchData)
 </script>
+
+<style scoped>
+.lcspm { background: var(--pp-bg-base); }
+.lcspm-head { padding: var(--pp-space-5) var(--pp-space-5) var(--pp-space-4);
+  background: var(--pp-bg-surface); border-bottom: 1px solid var(--pp-border-subtle); }
+.lcspm-banner { padding: var(--pp-space-2) var(--pp-space-4); font-size: var(--pp-fs-12);
+  border-bottom: 1px solid color-mix(in oklab, var(--pp-state-warning) 30%, transparent);
+  background: color-mix(in oklab, var(--pp-state-warning) 12%, transparent);
+  color: var(--pp-state-warning); }
+.lcspm-banner-strong { font-weight: var(--pp-weight-semibold); }
+.lcspm-banner-note { margin-left: var(--pp-space-1); opacity: 0.8; }
+.lcspm-body { background: var(--pp-bg-base); }
+.lcspm-foot { display: flex; align-items: center; justify-content: space-between;
+  padding: var(--pp-space-2) var(--pp-space-4); font-size: var(--pp-fs-12);
+  color: var(--pp-text-tertiary); background: var(--pp-bg-surface);
+  border-top: 1px solid var(--pp-border-subtle); }
+.lcspm-foot-muted { color: var(--pp-text-tertiary); opacity: 0.75; }
+</style>

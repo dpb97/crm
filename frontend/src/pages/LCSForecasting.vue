@@ -39,172 +39,171 @@
     </template>
   </LayoutHeader>
 
-  <div class="flex-1 overflow-y-auto p-5">
-    <!-- Access denied state — admin profile hides this page -->
-    <div v-if="accessDenied" class="flex flex-col items-center rounded-xl border border-dashed border-amber-200 bg-amber-50 py-16">
-      <FeatherIcon name="lock" class="h-10 w-10 text-amber-400" />
-      <h3 class="mt-4 text-sm font-medium text-amber-900">{{ __('Forecasting is not available for your role') }}</h3>
-      <p class="mt-1 max-w-sm text-center text-sm text-amber-700">
-        {{ __('Your access profile does not include forecasting. Contact your administrator to request access.') }}
-      </p>
-    </div>
+  <div class="lcsfc flex-1 overflow-y-auto">
+    <div class="lcsfc-inner">
+      <PpPageHead
+        :eyebrow="__('Sales / CRM')"
+        :title="__('Forecasting')"
+        :subtitle="__('Weighted revenue outlook across the pipeline')"
+      />
 
-    <!-- Loading -->
-    <div v-else-if="forecast.loading" class="space-y-4">
-      <div class="h-48 animate-pulse rounded-xl border bg-gray-50" />
-      <div class="h-72 animate-pulse rounded-xl border bg-gray-50" />
-    </div>
-
-    <!-- Empty state -->
-    <div v-else-if="!filteredBuckets.length" class="flex flex-col items-center rounded-xl border border-dashed border-gray-200 py-16">
-      <FeatherIcon name="trending-up" class="h-10 w-10 text-gray-300" />
-      <h3 class="mt-4 text-sm font-medium text-gray-900">{{ __('No forecast data') }}</h3>
-      <p class="mt-1 max-w-sm text-center text-sm text-gray-500">
-        {{ __('Set expected close dates on projects to see the forecast.') }}
-      </p>
-    </div>
-
-    <div v-else class="lcs-fc-body flex flex-col gap-6">
-      <!-- Summary row -->
-      <div class="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <KpiCard :label="__('Pipeline Total')" :value="formatCurrency(summary.total)" icon="trending-up" color="blue" />
-        <KpiCard :label="__('Weighted Forecast')" :value="formatCurrency(summary.weighted)" icon="target" color="green" :sublabel="__('probability-adjusted')" />
-        <KpiCard :label="__('Projects')" :value="summary.count" icon="folder" color="gray" :sublabel="__('active')" />
-        <KpiCard :label="__('Next Close')" :value="summary.nextClose" icon="calendar" color="amber" :sublabel="summary.nextCloseLabel" />
+      <!-- Access denied state — admin profile hides this page -->
+      <div v-if="accessDenied" class="lcsfc-denied">
+        <FeatherIcon name="lock" class="lcsfc-denied-ico" />
+        <h3 class="lcsfc-denied-title">{{ __('Forecasting is not available for your role') }}</h3>
+        <p class="lcsfc-denied-text">
+          {{ __('Your access profile does not include forecasting. Contact your administrator to request access.') }}
+        </p>
       </div>
 
-      <!-- Forecast bar chart -->
-      <div class="lcs-fc-chart rounded-xl border bg-white p-5">
-        <h3 class="mb-4 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-400">
-          <FeatherIcon name="bar-chart-2" class="h-3.5 w-3.5" />
-          {{ __('Weighted Revenue Forecast') }}
-          <span class="ml-2 font-normal normal-case text-gray-400">
-            ({{ __(periodLabel) }}, {{ filteredBuckets.length }} {{ __('periods') }})
-          </span>
-        </h3>
+      <!-- Loading -->
+      <div v-else-if="forecast.loading" class="lcsfc-skel">
+        <div class="lcsfc-skel-box" style="height: 12rem" />
+        <div class="lcsfc-skel-box" style="height: 18rem" />
+      </div>
 
-        <!-- Chart -->
-        <div class="lcs-fc-chart__plot relative h-64">
-          <div class="flex h-full items-end gap-2">
-            <div
-              v-for="(bucket, idx) in filteredBuckets"
-              :key="bucket.period"
-              class="group relative flex flex-1 flex-col justify-end focus:outline-none focus:ring-2 focus:ring-lcs-secondary rounded"
-              role="img"
-              tabindex="0"
-              :aria-label="`${formatPeriod(bucket.period)}: ${bucket.projects.length} ${__('projects')}, ${formatCurrency(bucket.total_value)} ${__('pipeline')}, ${formatCurrency(bucket.weighted_value)} ${__('weighted')}`"
-            >
-              <!-- Tooltip on hover — H3: Feedback -->
-              <div class="absolute -top-14 left-1/2 z-10 hidden -translate-x-1/2 whitespace-nowrap rounded-lg bg-gray-900 px-3 py-2 text-xs text-white shadow-lg group-hover:block">
-                <div class="font-semibold">{{ bucket.period }}</div>
-                <div class="mt-1">{{ __('Total') }}: {{ formatCurrency(bucket.total_value) }}</div>
-                <div class="text-green-300">{{ __('Weighted') }}: {{ formatCurrency(bucket.weighted_value) }}</div>
-                <div class="text-gray-300">{{ bucket.projects.length }} {{ __('projects') }}</div>
-              </div>
-              <!-- Total value (light background) -->
+      <!-- Empty state -->
+      <PpEmptyState
+        v-else-if="!filteredBuckets.length"
+        :icon="IconTrendingUp"
+        :title="__('No forecast data')"
+        :hint="__('Set expected close dates on projects to see the forecast.')"
+      />
+
+      <div v-else class="lcs-fc-body flex flex-col gap-6">
+        <!-- Summary row -->
+        <div class="lcsfc-kpis">
+          <PpStatTile :label="__('Pipeline Total')" :value="formatCurrency(summary.total)" :hint="__('open pipeline')" />
+          <PpStatTile :label="__('Weighted Forecast')" :value="formatCurrency(summary.weighted)" :hint="__('probability-adjusted')" />
+          <PpStatTile :label="__('Projects')" :value="String(summary.count)" :hint="__('active')" />
+          <PpStatTile :label="__('Next Close')" :value="summary.nextClose" :hint="summary.nextCloseLabel" />
+        </div>
+
+        <!-- Forecast bar chart -->
+        <div class="lcs-fc-chart lcsfc-card">
+          <h3 class="lcsfc-card-title">
+            <FeatherIcon name="bar-chart-2" class="h-3.5 w-3.5" />
+            {{ __('Weighted Revenue Forecast') }}
+            <span class="lcsfc-card-title-sub">({{ __(periodLabel) }}, {{ filteredBuckets.length }} {{ __('periods') }})</span>
+          </h3>
+
+          <!-- Chart -->
+          <div class="lcs-fc-chart__plot relative h-64">
+            <div class="flex h-full items-end gap-2">
               <div
-                class="w-full rounded-t-lg bg-gray-200 transition"
-                :style="{ height: `${(bucket.total_value / chartMax) * 100}%` }"
+                v-for="(bucket, idx) in filteredBuckets"
+                :key="bucket.period"
+                class="group relative flex flex-1 flex-col justify-end rounded focus:outline-none"
+                role="img"
+                tabindex="0"
+                :aria-label="`${formatPeriod(bucket.period)}: ${bucket.projects.length} ${__('projects')}, ${formatCurrency(bucket.total_value)} ${__('pipeline')}, ${formatCurrency(bucket.weighted_value)} ${__('weighted')}`"
               >
-                <!-- Weighted value (darker overlay) -->
-                <div
-                  class="w-full rounded-t-lg bg-lcs-primary transition"
-                  :style="{ height: `${(bucket.weighted_value / (bucket.total_value || 1)) * 100}%` }"
-                />
+                <!-- Tooltip on hover — H3: Feedback -->
+                <div class="lcsfc-tip group-hover:block">
+                  <div class="font-semibold">{{ bucket.period }}</div>
+                  <div class="mt-1">{{ __('Total') }}: {{ formatCurrency(bucket.total_value) }}</div>
+                  <div class="lcsfc-tip-hi">{{ __('Weighted') }}: {{ formatCurrency(bucket.weighted_value) }}</div>
+                  <div class="lcsfc-tip-mut">{{ bucket.projects.length }} {{ __('projects') }}</div>
+                </div>
+                <!-- Total value (light background) -->
+                <div class="lcsfc-bar-bg" :style="{ height: `${(bucket.total_value / chartMax) * 100}%` }">
+                  <!-- Weighted value (brand overlay) -->
+                  <div class="lcsfc-bar-fill" :style="{ height: `${(bucket.weighted_value / (bucket.total_value || 1)) * 100}%` }" />
+                </div>
+                <!-- Period label -->
+                <div class="lcsfc-bar-label">{{ formatPeriod(bucket.period) }}</div>
               </div>
-              <!-- Period label -->
-              <div class="mt-2 text-center text-[10px] font-medium text-gray-500">{{ formatPeriod(bucket.period) }}</div>
             </div>
           </div>
-        </div>
-        <!-- Legend -->
-        <div class="mt-4 flex justify-end gap-4 text-xs text-gray-500">
-          <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded bg-gray-200" /> {{ __('Total pipeline') }}</span>
-          <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded bg-lcs-primary" /> {{ __('Weighted (prob. adjusted)') }}</span>
-        </div>
-      </div>
-
-      <!-- Top Opportunities table -->
-      <div class="rounded-xl border bg-white">
-        <div class="border-b px-5 py-3">
-          <h3 class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-400">
-            <FeatherIcon name="zap" class="h-3.5 w-3.5" />
-            {{ __('Top Weighted Opportunities') }}
-          </h3>
-        </div>
-        <div class="overflow-x-auto"><table class="w-full min-w-[40rem] text-sm">
-          <thead>
-            <tr class="border-b bg-gray-50 text-left text-xs font-medium uppercase text-gray-500">
-              <th class="px-4 py-2">{{ __('Project') }}</th>
-              <th class="px-4 py-2">{{ __('Phase') }}</th>
-              <th class="px-4 py-2">{{ __('Responsible') }}</th>
-              <th class="px-4 py-2 text-right">{{ __('Value') }}</th>
-              <th class="px-4 py-2 text-right">{{ __('Prob.') }}</th>
-              <th class="px-4 py-2 text-right">{{ __('Weighted') }}</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr
-              v-for="p in topOpportunities"
-              :key="p.name"
-              class="cursor-pointer border-b hover:bg-gray-50"
-              @click="$router.push({ name: 'LCS Project', params: { id: p.name } })"
-            >
-              <td class="px-4 py-2.5">
-                <div class="font-medium text-gray-900">{{ p.project_name }}</div>
-                <div class="text-xs text-gray-400">{{ p.project_number }} • {{ p.project_type }}</div>
-              </td>
-              <td class="px-4 py-2.5 text-gray-600">{{ __(p.phase) }}</td>
-              <td class="px-4 py-2.5 text-gray-600">{{ shortUser(p.salesperson) }}</td>
-              <td class="px-4 py-2.5 text-right tabular-nums text-gray-700">{{ formatCurrency(p.value) }}</td>
-              <td class="px-4 py-2.5 text-right tabular-nums" :class="probabilityClass(p.probability)">{{ Math.round(p.probability || 0) }}%</td>
-              <td class="px-4 py-2.5 text-right tabular-nums font-semibold text-lcs-primary">{{ formatCurrency(p.weighted) }}</td>
-            </tr>
-          </tbody>
-        </table></div>
-      </div>
-
-      <!-- Source analytics donut -->
-      <div v-if="sourceData.length" class="rounded-xl border bg-white p-5">
-        <h3 class="mb-4 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-400">
-          <FeatherIcon name="git-branch" class="h-3.5 w-3.5" />
-          {{ __('Pipeline by Source Channel') }}
-        </h3>
-        <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
-          <!-- Donut chart -->
-          <div class="flex items-center justify-center">
-            <svg viewBox="0 0 200 200" class="h-44 w-44">
-              <circle cx="100" cy="100" r="75" fill="none" stroke="#f3f4f6" stroke-width="28" />
-              <circle
-                v-for="seg in sourceSegments"
-                :key="seg.source"
-                cx="100"
-                cy="100"
-                r="75"
-                fill="none"
-                :stroke="seg.color"
-                stroke-width="28"
-                :stroke-dasharray="`${seg.arc} ${circumference - seg.arc}`"
-                :stroke-dashoffset="-seg.offset"
-              />
-              <text x="100" y="94" text-anchor="middle" class="fill-gray-900 text-lg font-bold">
-                {{ formatCurrency(sourceTotal, true) }}
-              </text>
-              <text x="100" y="112" text-anchor="middle" class="fill-gray-400 text-[10px]">
-                {{ __('Total') }}
-              </text>
-            </svg>
+          <!-- Legend -->
+          <div class="lcsfc-legend">
+            <span><i class="lcsfc-sw lcsfc-sw--bg" /> {{ __('Total pipeline') }}</span>
+            <span><i class="lcsfc-sw lcsfc-sw--fill" /> {{ __('Weighted (prob. adjusted)') }}</span>
           </div>
-          <!-- Source breakdown -->
-          <div class="space-y-2">
-            <div v-for="seg in sourceSegments" :key="'row-' + seg.source" class="flex items-center justify-between rounded-lg bg-gray-50 p-2.5">
-              <div class="flex items-center gap-2">
-                <span class="h-3 w-3 rounded-full" :style="{ backgroundColor: seg.color }" />
-                <span class="text-sm font-medium text-gray-700">{{ seg.source || __('Unknown') }}</span>
-              </div>
-              <div class="text-right">
-                <div class="text-sm font-semibold tabular-nums text-gray-900">{{ formatCurrency(seg.value || 0) }}</div>
-                <div class="text-[10px] text-gray-500">{{ seg.count }} {{ __('proj.') }} • {{ seg.percentage }}%</div>
+        </div>
+
+        <!-- Top Opportunities table -->
+        <div class="lcsfc-card lcsfc-card--flush">
+          <div class="lcsfc-card-head">
+            <h3 class="lcsfc-card-title">
+              <FeatherIcon name="zap" class="h-3.5 w-3.5" />
+              {{ __('Top Weighted Opportunities') }}
+            </h3>
+          </div>
+          <div class="overflow-x-auto"><table class="lcsfc-table w-full min-w-[40rem] text-sm">
+            <thead>
+              <tr class="lcsfc-thead text-left text-xs font-medium uppercase">
+                <th>{{ __('Project') }}</th>
+                <th>{{ __('Phase') }}</th>
+                <th>{{ __('Responsible') }}</th>
+                <th class="text-right">{{ __('Value') }}</th>
+                <th class="text-right">{{ __('Prob.') }}</th>
+                <th class="text-right">{{ __('Weighted') }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="p in topOpportunities"
+                :key="p.name"
+                class="lcsfc-row cursor-pointer"
+                @click="$router.push({ name: 'LCS Project', params: { id: p.name } })"
+              >
+                <td>
+                  <div class="lcsfc-proj-name">{{ p.project_name }}</div>
+                  <div class="lcsfc-proj-meta">{{ p.project_number }} • {{ p.project_type }}</div>
+                </td>
+                <td class="lcsfc-td-mut">{{ __(p.phase) }}</td>
+                <td class="lcsfc-td-mut">{{ shortUser(p.salesperson) }}</td>
+                <td class="text-right tabular-nums lcsfc-td-num">{{ formatCurrency(p.value) }}</td>
+                <td class="text-right tabular-nums" :class="probabilityClass(p.probability)">{{ Math.round(p.probability || 0) }}%</td>
+                <td class="text-right tabular-nums lcsfc-td-strong">{{ formatCurrency(p.weighted) }}</td>
+              </tr>
+            </tbody>
+          </table></div>
+        </div>
+
+        <!-- Source analytics donut -->
+        <div v-if="sourceData.length" class="lcsfc-card">
+          <h3 class="lcsfc-card-title">
+            <FeatherIcon name="git-branch" class="h-3.5 w-3.5" />
+            {{ __('Pipeline by Source Channel') }}
+          </h3>
+          <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+            <!-- Donut chart -->
+            <div class="flex items-center justify-center">
+              <svg viewBox="0 0 200 200" class="h-44 w-44">
+                <circle class="lcsfc-donut-track" cx="100" cy="100" r="75" fill="none" stroke-width="28" />
+                <circle
+                  v-for="seg in sourceSegments"
+                  :key="seg.source"
+                  cx="100"
+                  cy="100"
+                  r="75"
+                  fill="none"
+                  :stroke="seg.color"
+                  stroke-width="28"
+                  :stroke-dasharray="`${seg.arc} ${circumference - seg.arc}`"
+                  :stroke-dashoffset="-seg.offset"
+                />
+                <text x="100" y="94" text-anchor="middle" class="lcsfc-donut-total">
+                  {{ formatCurrency(sourceTotal, true) }}
+                </text>
+                <text x="100" y="112" text-anchor="middle" class="lcsfc-donut-cap">
+                  {{ __('Total') }}
+                </text>
+              </svg>
+            </div>
+            <!-- Source breakdown -->
+            <div class="space-y-2">
+              <div v-for="seg in sourceSegments" :key="'row-' + seg.source" class="lcsfc-src-row">
+                <div class="flex items-center gap-2">
+                  <span class="lcsfc-src-dot" :style="{ backgroundColor: seg.color }" />
+                  <span class="lcsfc-src-name">{{ seg.source || __('Unknown') }}</span>
+                </div>
+                <div class="text-right">
+                  <div class="lcsfc-src-val">{{ formatCurrency(seg.value || 0) }}</div>
+                  <div class="lcsfc-src-meta">{{ seg.count }} {{ __('proj.') }} • {{ seg.percentage }}%</div>
+                </div>
               </div>
             </div>
           </div>
@@ -218,30 +217,12 @@
 import { ref, computed, watch } from 'vue'
 import { createResource, Breadcrumbs, Tooltip, FeatherIcon } from 'frappe-ui'
 import LayoutHeader from '@/components/LayoutHeader.vue'
+import PpPageHead from '@/components/pp/PpPageHead.vue'
+import PpStatTile from '@/components/pp/PpStatTile.vue'
+import PpEmptyState from '@/components/pp/PpEmptyState.vue'
+import IconTrendingUp from '~icons/lucide/trending-up'
 import { sessionStore } from '@/stores/session'
 import { useUserPreferences } from '@/composables/useUserPreferences'
-
-// Inline KPI card
-const KpiCard = {
-  props: ['label', 'value', 'icon', 'color', 'sublabel'],
-  template: `
-    <div class="rounded-xl border bg-white p-4 transition hover:shadow-sm">
-      <div class="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-gray-400">
-        <span v-if="icon" class="inline-flex h-3.5 w-3.5 items-center"><FeatherIconProxy :name="icon" /></span>
-        {{ label }}
-      </div>
-      <div class="mt-2 text-xl font-bold tabular-nums" :class="colorClass">{{ value }}</div>
-      <div v-if="sublabel" class="mt-0.5 text-xs text-gray-400">{{ sublabel }}</div>
-    </div>
-  `,
-  computed: {
-    colorClass() {
-      const m = { blue: 'text-lcs-primary', green: 'text-green-600', amber: 'text-amber-600', gray: 'text-gray-900' }
-      return m[this.color] || m.gray
-    },
-  },
-  components: { FeatherIconProxy: FeatherIcon },
-}
 
 const session = sessionStore()
 const userPrefs = useUserPreferences()
@@ -373,6 +354,89 @@ function formatPeriod(key) {
 </script>
 
 <style scoped>
+/* ---- Pilanda design system (token-only) ------------------------------- */
+.lcsfc { background: var(--pp-bg-base); }
+.lcsfc-inner { padding: var(--pp-space-5) var(--pp-space-5) var(--pp-space-12);
+  display: flex; flex-direction: column; gap: var(--pp-space-5); }
+
+.lcsfc-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--pp-space-3); }
+
+/* Access-denied (warning-toned card) */
+.lcsfc-denied { display: flex; flex-direction: column; align-items: center; text-align: center;
+  padding: var(--pp-space-12) var(--pp-space-5); border-radius: var(--pp-radius-ui);
+  border: 1px dashed color-mix(in oklab, var(--pp-state-warning) 35%, transparent);
+  background: color-mix(in oklab, var(--pp-state-warning) 10%, transparent); }
+.lcsfc-denied-ico { width: 40px; height: 40px; color: var(--pp-state-warning); }
+.lcsfc-denied-title { margin: var(--pp-space-4) 0 0; font-size: var(--pp-fs-14);
+  font-weight: var(--pp-weight-semibold); color: var(--pp-text-primary); }
+.lcsfc-denied-text { margin: var(--pp-space-1) 0 0; max-width: 24rem; font-size: var(--pp-fs-14);
+  color: var(--pp-text-secondary); }
+
+/* Skeleton */
+.lcsfc-skel { display: flex; flex-direction: column; gap: var(--pp-space-4); }
+.lcsfc-skel-box { border-radius: var(--pp-radius-ui); border: 1px solid var(--pp-border-subtle);
+  background: var(--pp-bg-sunken); animation: lcsfc-pulse 1.4s ease-in-out infinite; }
+@keyframes lcsfc-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+/* Cards */
+.lcsfc-card { background: var(--pp-bg-surface); border: 1px solid var(--pp-border-subtle);
+  border-radius: var(--pp-radius-ui); box-shadow: var(--pp-shadow-xs); padding: var(--pp-space-5); }
+.lcsfc-card--flush { padding: 0; }
+.lcsfc-card-head { padding: var(--pp-space-3) var(--pp-space-5); border-bottom: 1px solid var(--pp-border-subtle); }
+.lcsfc-card-title { margin: 0 0 var(--pp-space-4); display: flex; align-items: center; gap: var(--pp-space-2);
+  font-size: var(--pp-fs-12); font-weight: var(--pp-weight-bold); letter-spacing: 0.04em;
+  text-transform: uppercase; color: var(--pp-text-tertiary); }
+.lcsfc-card--flush .lcsfc-card-title { margin: 0; }
+.lcsfc-card-title-sub { margin-left: var(--pp-space-2); font-weight: var(--pp-weight-regular);
+  text-transform: none; letter-spacing: 0; color: var(--pp-text-tertiary); }
+
+/* Bar chart */
+.lcsfc-bar-bg { width: 100%; border-radius: var(--pp-radius-ui) var(--pp-radius-ui) 0 0;
+  background: var(--pp-bg-sunken); transition: height var(--pp-duration-base) var(--pp-ease-standard); }
+.lcsfc-bar-fill { width: 100%; border-radius: var(--pp-radius-ui) var(--pp-radius-ui) 0 0;
+  background: var(--pp-brand-primary); transition: height var(--pp-duration-base) var(--pp-ease-standard); }
+.lcsfc-bar-label { margin-top: var(--pp-space-2); text-align: center; font-size: 10px;
+  font-weight: var(--pp-weight-medium); color: var(--pp-text-tertiary); }
+.lcsfc-tip { position: absolute; top: -3.5rem; left: 50%; z-index: 10; display: none;
+  transform: translateX(-50%); white-space: nowrap; border-radius: var(--pp-radius-ui);
+  padding: var(--pp-space-2) var(--pp-space-3); font-size: var(--pp-fs-12);
+  background: var(--pp-text-primary); color: var(--pp-bg-surface); box-shadow: var(--pp-shadow-lg); }
+.lcsfc-tip-hi { color: color-mix(in oklab, var(--pp-state-success) 60%, white); }
+.lcsfc-tip-mut { opacity: 0.7; }
+.lcsfc-legend { margin-top: var(--pp-space-4); display: flex; justify-content: flex-end; gap: var(--pp-space-4);
+  font-size: var(--pp-fs-12); color: var(--pp-text-tertiary); }
+.lcsfc-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.lcsfc-sw { width: 12px; height: 12px; border-radius: var(--pp-radius-xs); }
+.lcsfc-sw--bg { background: var(--pp-bg-sunken); }
+.lcsfc-sw--fill { background: var(--pp-brand-primary); }
+
+/* Top opportunities table */
+.lcsfc-table th { padding: var(--pp-space-2) var(--pp-space-4); }
+.lcsfc-table td { padding: 10px var(--pp-space-4); }
+.lcsfc-thead { border-bottom: 1px solid var(--pp-border-subtle); background: var(--pp-bg-sunken);
+  color: var(--pp-text-tertiary); }
+.lcsfc-row { border-bottom: 1px solid var(--pp-border-subtle); }
+.lcsfc-row:hover { background: var(--pp-bg-hover); }
+.lcsfc-proj-name { font-weight: var(--pp-weight-medium); color: var(--pp-text-primary); }
+.lcsfc-proj-meta { font-size: var(--pp-fs-12); color: var(--pp-text-tertiary); }
+.lcsfc-td-mut { color: var(--pp-text-secondary); }
+.lcsfc-td-num { color: var(--pp-text-primary); }
+.lcsfc-td-strong { font-weight: var(--pp-weight-semibold); color: var(--pp-brand-primary); }
+
+/* Donut + source breakdown */
+.lcsfc-donut-track { stroke: var(--pp-bg-sunken); }
+.lcsfc-donut-total { fill: var(--pp-text-primary); font-size: 18px; font-weight: var(--pp-weight-bold); }
+.lcsfc-donut-cap { fill: var(--pp-text-tertiary); font-size: 10px; }
+.lcsfc-src-row { display: flex; align-items: center; justify-content: space-between;
+  border-radius: var(--pp-radius-ui); background: var(--pp-bg-sunken); padding: 10px; }
+.lcsfc-src-dot { width: 12px; height: 12px; border-radius: var(--pp-radius-full); flex-shrink: 0; }
+.lcsfc-src-name { font-size: var(--pp-fs-14); font-weight: var(--pp-weight-medium); color: var(--pp-text-secondary); }
+.lcsfc-src-val { font-size: var(--pp-fs-14); font-weight: var(--pp-weight-semibold);
+  color: var(--pp-text-primary); font-variant-numeric: tabular-nums; }
+.lcsfc-src-meta { font-size: 10px; color: var(--pp-text-tertiary); }
+
+@media (max-width: 900px) { .lcsfc-kpis { grid-template-columns: repeat(2, 1fr); } }
+
 /*
  * Mobile fixes (390px), CSS-only — no logic change. Spacing via --pp tokens.
  * 1) Header period/scope segmented controls ran off the right edge: let the
