@@ -156,7 +156,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { createResource, Breadcrumbs, Button } from 'frappe-ui'
 import LayoutHeader from '@/components/LayoutHeader.vue'
@@ -165,12 +165,17 @@ import PpStatTile from '@/components/pp/PpStatTile.vue'
 import PpDataGrid from '@/components/pp/PpDataGrid.vue'
 import PpEmptyState from '@/components/pp/PpEmptyState.vue'
 import PpDrawer from '@/components/pp/PpDrawer.vue'
+import LeadInspector from '@/components/lcs/LeadInspector.vue'
 import IconSearchX from '~icons/lucide/search-x'
 import IconInbox from '~icons/lucide/inbox'
 import IconMail from '~icons/lucide/mail'
 import IconPhone from '~icons/lucide/phone'
+import { usePilandaMode } from '@/composables/usePilandaMode'
+import { usePilandaInspect } from '@/composables/usePilandaInspect'
 
 const router = useRouter()
+const { pilandaMode } = usePilandaMode()
+const { inspectPanel } = usePilandaInspect()
 
 // --- Daten: echte CRM-Leads (Dominiks Backend, unverändert) ----------------
 const leadsRes = createResource({
@@ -301,10 +306,36 @@ const rows = computed(() =>
 const drawerOpen = ref(false)
 const selId = ref(null)
 const sel = computed(() => leads.value.find((l) => l.name === selId.value) || null)
-function openLead(id) { selId.value = id; drawerOpen.value = true }
+
+// Pilanda: single-click → docked shell inspector (LeadInspector); double-click
+// or "Open in CRM" → detail page. CRM-only mode keeps the local PpDrawer.
+let lastClick = { id: null, t: 0 }
+function openLead(id) {
+  selId.value = id
+  if (!pilandaMode.value) {
+    drawerOpen.value = true
+    return
+  }
+  const now = Date.now()
+  if (lastClick.id === id && now - lastClick.t < 350) {
+    lastClick = { id: null, t: 0 }
+    openInCrm()
+    return
+  }
+  lastClick = { id, t: now }
+  inspectPanel({
+    component: LeadInspector,
+    props: { lead: sel.value },
+    on: { open: openInCrm },
+    title: __('Lead'),
+  })
+}
 function openInCrm() {
   if (sel.value) router.push({ name: 'Lead', params: { leadId: sel.value.name } })
 }
+onBeforeUnmount(() => {
+  if (pilandaMode.value) inspectPanel(null)
+})
 </script>
 
 <style scoped>

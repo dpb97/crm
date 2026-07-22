@@ -3,11 +3,17 @@
     :columns="columns"
     :rows="rows"
     :options="{
-      getRowRoute: (row) => ({
-        name: 'Organization',
-        params: { organizationId: row.name },
-        query: { view: route.query.view, viewType: route.params.viewType },
-      }),
+      // LCS: parent-supplied onRowClick (Pilanda Firmen inspector) turns rows
+      // into clickable elements instead of router-links; otherwise unchanged.
+      getRowRoute: options.onRowClick
+        ? undefined
+        : (row) => ({
+            name: 'Organization',
+            params: { organizationId: row.name },
+            query: { view: route.query.view, viewType: route.params.viewType },
+          }),
+      onRowClick: options.onRowClick,
+      enableActive: !!options.onRowClick,
       selectable: options.selectable,
       showTooltip: options.showTooltip,
       resizeColumn: options.resizeColumn,

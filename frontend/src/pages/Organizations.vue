@@ -36,6 +36,7 @@
       resizeColumn: true,
       rowCount: organizations.data.row_count,
       totalCount: organizations.data.total_count,
+      onRowClick: rowInspect,
     }"
     @loadMore="() => loadMore++"
     @columnWidthUpdated="() => triggerResize++"
@@ -64,10 +65,14 @@ import OrganizationsIcon from '@/components/Icons/OrganizationsIcon.vue'
 import LayoutHeader from '@/components/LayoutHeader.vue'
 import OrganizationModal from '@/components/Modals/OrganizationModal.vue'
 import OrganizationsListView from '@/components/ListViews/OrganizationsListView.vue'
+import OrganizationInspector from '@/components/lcs/OrganizationInspector.vue'
 import ViewControls from '@/components/ViewControls.vue'
 import { getMeta } from '@/stores/meta'
 import { formatDate, timeAgo, website } from '@/utils'
-import { ref, computed } from 'vue'
+import { ref, computed, onBeforeUnmount } from 'vue'
+import { useRouter } from 'vue-router'
+import { usePilandaMode } from '@/composables/usePilandaMode'
+import { usePilandaInspect } from '@/composables/usePilandaInspect'
 import EmptyState from '../components/ListViews/EmptyState.vue'
 
 const { getFormattedPercent, getFormattedFloat, getFormattedCurrency } =
@@ -75,6 +80,41 @@ const { getFormattedPercent, getFormattedFloat, getFormattedCurrency } =
 
 const organizationsListView = ref(null)
 const showOrganizationModal = ref(false)
+
+// LCS (Pilanda): single-click → docked shell inspector; double-click or the
+// inspector "Open" → full detail. CRM-only mode navigates directly.
+const router = useRouter()
+const { pilandaMode } = usePilandaMode()
+const { inspectPanel } = usePilandaInspect()
+
+let lastClick = { id: null, t: 0 }
+function rowInspect(row) {
+  const id = row?.name
+  if (!id) return
+  if (!pilandaMode.value) {
+    openOrganization(id)
+    return
+  }
+  const now = Date.now()
+  if (lastClick.id === id && now - lastClick.t < 350) {
+    lastClick = { id: null, t: 0 }
+    openOrganization(id)
+    return
+  }
+  lastClick = { id, t: now }
+  inspectPanel({
+    component: OrganizationInspector,
+    props: { organizationId: id },
+    on: { open: openOrganization },
+    title: __('Company'),
+  })
+}
+function openOrganization(id) {
+  router.push({ name: 'Organization', params: { organizationId: id } })
+}
+onBeforeUnmount(() => {
+  if (pilandaMode.value) inspectPanel(null)
+})
 
 // organizations data is loaded in the ViewControls component
 const organizations = ref({})

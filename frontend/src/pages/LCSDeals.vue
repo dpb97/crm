@@ -108,15 +108,19 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onBeforeUnmount } from 'vue'
 import { call, createListResource, toast, Breadcrumbs, Button, FeatherIcon } from 'frappe-ui'
 import LayoutHeader from '@/components/LayoutHeader.vue'
 import PpPageHead from '@/components/pp/PpPageHead.vue'
 import PpStatTile from '@/components/pp/PpStatTile.vue'
 import PpKanban from '@/components/pp/PpKanban.vue'
 import PpDrawer from '@/components/pp/PpDrawer.vue'
+import DealInspector from '@/components/lcs/DealInspector.vue'
 import LostReasonDialog from '@/components/lcs/LostReasonDialog.vue'
 import { statusesStore } from '@/stores/statuses'
+import { useRouter } from 'vue-router'
+import { usePilandaMode } from '@/composables/usePilandaMode'
+import { usePilandaInspect } from '@/composables/usePilandaInspect'
 import { usersStore } from '@/stores/users'
 
 const statusStore = statusesStore()
@@ -335,14 +339,55 @@ watch(lostOpen, (open) => {
   }
 })
 
-/* ---- Detail-Drawer --------------------------------------------------- */
+/* ---- Detail-Drawer / Inspektor --------------------------------------- */
+const router = useRouter()
+const { pilandaMode } = usePilandaMode()
+const { inspectPanel } = usePilandaInspect()
+
 const drawerOpen = ref(false)
 const selId = ref(null)
 const sel = computed(() => boardDeals.value.find((d) => d.name === selId.value) || null)
+
+// Pilanda: single card click → docked shell inspector (DealInspector); double
+// click or "Open in CRM" → detail (redirects to the project). CRM-only mode
+// keeps the local PpDrawer.
+let lastClick = { id: null, t: 0 }
 function openDeal(id) {
   selId.value = id
-  drawerOpen.value = true
+  const d = sel.value
+  if (!pilandaMode.value || !d) {
+    drawerOpen.value = true
+    return
+  }
+  const now = Date.now()
+  if (lastClick.id === id && now - lastClick.t < 350) {
+    lastClick = { id: null, t: 0 }
+    openDealDetail(id)
+    return
+  }
+  lastClick = { id, t: now }
+  inspectPanel({
+    component: DealInspector,
+    props: {
+      dealName: d.name,
+      org: d.organization,
+      value: eur(d.deal_value, d.currency),
+      phase: statusLabel(d.status),
+      probability: dealProbability(d),
+      owner: d.deal_owner ? ownerName(d.deal_owner) : '',
+      currency: d.currency,
+      updated: formatDate(d.modified),
+    },
+    on: { open: openDealDetail },
+    title: __('Deal'),
+  })
 }
+function openDealDetail(id) {
+  router.push({ name: 'Deal', params: { dealId: id } })
+}
+onBeforeUnmount(() => {
+  if (pilandaMode.value) inspectPanel(null)
+})
 </script>
 
 <style scoped>
