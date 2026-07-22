@@ -1,4 +1,4 @@
-<!-- PP_REV: PpSidebar@5 -->
+<!-- PP_REV: PpSidebar@6 -->
 <!--
   PpSidebar.vue — vollständige App-Navigations-Sidebar (SSOT-Baustein).
 
@@ -32,6 +32,19 @@
     GETÖNT „Allgemein"-Block (Reihenfolge liefert der Host über `allgemein`);
            Trennlinie; „Wissen"-Block (`wissen`).
   Einfach-Selektion: genau EIN aktiver Punkt (v-model:activeKey).
+
+  @6 (21.07.2026 — Klickdummy-Sync):
+    · ZURÜCK-Zeile (Regel 3): schlichter Pfeil als eigene Zeile GANZ OBEN über dem
+      Modul-Dropdown; Label = vorherige Station, ellipsiert (title=Volltext), darf
+      NIE in den Canvas überlaufen (min-width:0/max-width:100%). Prop `back`, Emit `back`.
+    · ICON-REGEL (Regel 10): Icons NUR auf Ebene 1. Chevron-Kinder (sub/sub2) haben
+      KEIN Icon.
+    · EINFACH-SELEKTION (Regel 10): jede hervorhebbare Zeile leitet „aktiv" aus dem
+      EINEN Skalar `activeKey` ab — auch Modul-Verweise (News/Wissen) über den
+      Sentinel `mod:<id>`. Damit nimmt ein Klick auf einen Allgemein-/Wissen-Punkt
+      der Modul-/News-Zeile die Markierung ab (genau EIN aktiver Punkt).
+    · LABEL-OVERRIDE: Prop `labelOverrides` ({ Original: Ersatz }) — z. B.
+      „Terminpläne" → „Projektplan", wenn ein Projekt gewählt ist.
 
   ECHTE props-in / events-out — KEINE Attrappen, kein Store, kein Backend.
   Datenmodell = nav-v2 (zonen/module/allgemein/wissen); der Host reicht die
@@ -76,6 +89,8 @@ const props = defineProps({
   wissen:    { type: Array, default: () => [] },
   generalTitle: { type: String, default: "Allgemein" },
   iconResolver: { type: Function, default: null },
+  back:          { type: [Object, null], default: null },   // { label, full? } | null
+  labelOverrides:{ type: Object, default: () => ({}) },      // { Original: Ersatz }
 
   collapsed: { type: Boolean, default: false },
   width:     { type: Number, default: 256 },
@@ -89,8 +104,18 @@ const props = defineProps({
 });
 const emit = defineEmits([
   "update:collapsed", "update:width", "update:activeId", "update:activeKey",
-  "update:mobileOpen", "navigate", "inspect",
+  "update:mobileOpen", "navigate", "inspect", "back",
 ]);
+
+/* Label-Kürzung „… letzte Worte" (wie crumbCut im Klickdummy) — für die
+   Zurück-Zeile; der Volltext bleibt im title. */
+function crumbCut(t, n) {
+  t = String(t || ""); n = n || 34;
+  if (t.length <= n) return t;
+  const tail = t.slice(t.length - (n - 2));
+  const sp = tail.indexOf(" ");
+  return "… " + (sp > 0 && sp < 14 ? tail.slice(sp + 1) : tail);
+}
 
 /* ---------- Icons ---------- */
 function resolveIcon(item) {
@@ -218,15 +243,26 @@ function selectItem(node) {
 }
 function selectModuleItem(id) {                   // Modul-Verweis im Allgemein/Wissen (z.B. „News")
   emit("update:activeId", id);
-  emit("update:activeKey", (props.modules.find((m) => m.id === id) || {}).zone === "a" ||
-    (props.modules.find((m) => m.id === id) || {}).zone === "c" ? "dash" : null);
+  // Einfach-Selektion: der Verweis ist selbst der EINE aktive Punkt (Sentinel).
+  emit("update:activeKey", "mod:" + id);
   emit("inspect", null);
   emit("navigate", { type: "module", id });
   if (props.drawer) emit("update:mobileOpen", false);
 }
 
-/* Ist-Ziel extern? (nur Info für den Host — Öffnen macht der Host im navigate-Handler) */
-const itemTitle = (it) => it.n || it.label || "";
+/* Aktiv-Zustand IMMER aus dem einen Skalar activeKey (Einfach-Selektion): ein
+   Modul-Verweis (moduleId) über den Sentinel, sonst über den Zeilen-Key. */
+function keyActive(node) {
+  return node.item && node.item.moduleId
+    ? props.activeKey === "mod:" + node.item.moduleId
+    : props.activeKey === node.key;
+}
+
+/* Label + optionaler Override (z. B. „Terminpläne" → „Projektplan"). */
+const itemTitle = (it) => {
+  const base = it.n || it.label || "";
+  return props.labelOverrides[base] || base;
+};
 </script>
 
 <template>
@@ -235,6 +271,15 @@ const itemTitle = (it) => it.n || it.label || "";
            'is-drawer': drawer, 'is-open': drawer && mobileOpen }"
          :style="{ width: drawer ? null : ((collapsed ? railWidth : w) + 'px') }"
          aria-label="Navigation">
+
+    <!-- ZURÜCK-Zeile (Regel 3): schlichter Pfeil, Label = vorherige Station,
+         ellipsiert; läuft NIE in den Canvas über. -->
+    <div v-if="back && !collapsed" class="pp-sidebar__back">
+      <button type="button" class="pp-back" @click="emit('back')" :title="back.full || back.label">
+        <ChevronLeft class="pp-back__ic" />
+        <span class="pp-back__lbl">{{ crumbCut(back.label, 28) }}</span>
+      </button>
+    </div>
 
     <!-- KOPF: Modul-Dropdown (nur im nav-v2-Modus) -->
     <div v-if="modules.length" class="pp-sidebar__head">
@@ -297,7 +342,7 @@ const itemTitle = (it) => it.n || it.label || "";
                 <div v-if="c.children.length" class="pp-nav__group" :class="{ 'is-open': isExpanded(c.key) }">
                   <div class="pp-nav__item pp-nav__item--parent pp-nav__item--sub" :class="{ 'is-active': activeKey === c.key }">
                     <button type="button" class="pp-nav__row" :title="itemTitle(c.item)" @click="selectItem(c)">
-                      <span class="pp-nav__ic"><component :is="resolveIcon(c.item)" /></span>
+                      <!-- Icon-Regel: Chevron-Kinder (sub) tragen KEIN Icon -->
                       <span class="pp-nav__label">{{ itemTitle(c.item) }}</span>
                     </button>
                     <button type="button" class="pp-nav__chev" :aria-expanded="isExpanded(c.key)"
@@ -308,14 +353,12 @@ const itemTitle = (it) => it.n || it.label || "";
                     <button v-for="d in c.children" :key="d.key" type="button"
                             class="pp-nav__item pp-nav__item--sub2" :class="{ 'is-active': activeKey === d.key }"
                             :title="itemTitle(d.item)" @click="selectItem(d)">
-                      <span class="pp-nav__ic"><component :is="resolveIcon(d.item)" /></span>
                       <span class="pp-nav__label">{{ itemTitle(d.item) }}</span>
                     </button>
                   </div>
                 </div>
                 <button v-else type="button" class="pp-nav__item pp-nav__item--sub"
                         :class="{ 'is-active': activeKey === c.key }" :title="itemTitle(c.item)" @click="selectItem(c)">
-                  <span class="pp-nav__ic"><component :is="resolveIcon(c.item)" /></span>
                   <span class="pp-nav__label">{{ itemTitle(c.item) }}</span>
                 </button>
               </template>
@@ -348,15 +391,14 @@ const itemTitle = (it) => it.n || it.label || "";
             </div>
             <div v-show="isExpanded(node.key)" class="pp-nav__children">
               <button v-for="c in node.children" :key="c.key" type="button"
-                      class="pp-nav__item pp-nav__item--sub" :class="{ 'is-active': activeKey === c.key }"
+                      class="pp-nav__item pp-nav__item--sub" :class="{ 'is-active': keyActive(c) }"
                       :title="itemTitle(c.item)" @click="c.item.moduleId ? selectModuleItem(c.item.moduleId) : selectItem(c)">
-                <span class="pp-nav__ic"><component :is="resolveIcon(c.item)" /></span>
                 <span class="pp-nav__label">{{ itemTitle(c.item) }}</span>
               </button>
             </div>
           </div>
           <button v-else type="button" class="pp-nav__item"
-                  :class="{ 'is-active': (node.item.moduleId ? activeId === node.item.moduleId : activeKey === node.key) }"
+                  :class="{ 'is-active': keyActive(node) }"
                   :title="itemTitle(node.item)" @click="node.item.moduleId ? selectModuleItem(node.item.moduleId) : selectItem(node)">
             <span class="pp-nav__ic"><component :is="resolveIcon(node.item)" /></span>
             <span class="pp-nav__label">{{ itemTitle(node.item) }}</span>
@@ -380,14 +422,14 @@ const itemTitle = (it) => it.n || it.label || "";
               <div v-show="isExpanded(node.key)" class="pp-nav__children">
                 <button v-for="c in node.children" :key="c.key" type="button"
                         class="pp-nav__item pp-nav__item--sub"
-                        :class="{ 'is-active': (c.item.moduleId ? activeId === c.item.moduleId : activeKey === c.key) }"
+                        :class="{ 'is-active': keyActive(c) }"
                         :title="itemTitle(c.item)" @click="c.item.moduleId ? selectModuleItem(c.item.moduleId) : selectItem(c)">
-                  <span class="pp-nav__ic"><component :is="resolveIcon(c.item)" /></span>
                   <span class="pp-nav__label">{{ itemTitle(c.item) }}</span>
                 </button>
               </div>
             </div>
-            <button v-else type="button" class="pp-nav__item" :title="itemTitle(node.item)"
+            <button v-else type="button" class="pp-nav__item"
+                    :class="{ 'is-active': keyActive(node) }" :title="itemTitle(node.item)"
                     @click="node.item.moduleId ? selectModuleItem(node.item.moduleId) : selectItem(node)">
               <span class="pp-nav__ic"><component :is="resolveIcon(node.item)" /></span>
               <span class="pp-nav__label">{{ itemTitle(node.item) }}</span>
@@ -418,6 +460,19 @@ const itemTitle = (it) => it.n || it.label || "";
   background: var(--pp-bg-surface); border-right: 1px solid var(--pp-border-default);
   transition: width var(--pp-duration-base) var(--pp-ease-standard); }
 .pp-sidebar.is-resizing { transition: none; }
+
+/* ---- Zurück-Zeile (@6) — läuft NIE über: min-width:0 + Ellipsis ---- */
+.pp-sidebar__back { flex: 0 0 auto; display: flex; align-items: center;
+  padding: var(--pp-space-2) var(--pp-space-2) 0; min-width: 0; max-width: 100%; overflow: hidden; }
+.pp-back { flex: 1 1 auto; min-width: 0; max-width: 100%; overflow: hidden;
+  appearance: none; cursor: pointer; font-family: inherit; height: 30px;
+  display: flex; align-items: center; gap: 7px; padding: 0 var(--pp-space-2);
+  border: 1px solid var(--pp-border-default); border-radius: var(--pp-radius-ui);
+  background: var(--pp-bg-base); color: var(--pp-text-secondary); text-align: left; }
+.pp-back:hover { border-color: var(--pp-brand-primary); color: var(--pp-brand-primary); }
+.pp-back__ic { width: 15px; height: 15px; flex: 0 0 auto; }
+.pp-back__lbl { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap; font-size: var(--pp-fs-12); font-weight: var(--pp-weight-semibold); }
 
 .pp-sidebar__head { flex: 0 0 auto; padding: var(--pp-space-2); border-bottom: 1px solid var(--pp-border-subtle); }
 .pp-sidebar__body { flex: 1 1 auto; min-height: 0; overflow-y: auto; overflow-x: hidden;

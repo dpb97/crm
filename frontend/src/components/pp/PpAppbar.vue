@@ -1,4 +1,4 @@
-<!-- PP_REV: PpAppbar@2 -->
+<!-- PP_REV: PpAppbar@3 -->
 <!--
   PpAppbar.vue — Topbar der App-Shell (SSOT-Baustein).
 
@@ -15,9 +15,15 @@
   ECHTE props-in / events-out. Marke/Suche als Slots überschreibbar; der
   User-Chip nutzt den SSOT-Baustein <PpUserMenu>.
 
+  @3 (21.07.2026): optionale Orientierung „Zone › Modul › Seite" in der Topbar
+  (Regel 2). Das LETZTE Segment wird ellipsiert (max-width + title=Volltext), die
+  Zeile bricht NIE um — Referenz: setChrome/crumbCut im Klickdummy.
+
   Props:
     brandSrc   String  Logo-URL (Wortmarke) — links
     brandLabel String  Fallback-Text, wenn kein Logo
+    crumb      Array<String>  Orientierung, z. B. ["Vertrieb","CRM","Fjellanlegg…"].
+               Leer = keine Crumb-Zeile. Letztes Segment = aktuelle Seite (ellipsiert).
     search     Boolean (default true)  Lupe/Such-Einstieg zeigen
     windowControls Boolean (default true)  Fenster-Controls zeigen
     user       Object  { initials, name, role, items? } → PpUserMenu
@@ -43,6 +49,7 @@ import X from "~icons/lucide/x";
 defineProps({
   brandSrc:   { type: String, default: "" },
   brandLabel: { type: String, default: "PILANDA" },
+  crumb:      { type: Array, default: () => [] },
   search:     { type: Boolean, default: true },
   windowControls: { type: Boolean, default: true },
   user:       { type: Object, default: () => ({ initials: "?", name: "", role: "" }) },
@@ -60,6 +67,15 @@ const emit = defineEmits(["home", "search", "minimize", "toggle-size", "logout",
         <span class="pp-appbar__wm">{{ brandLabel }}</span>
       </slot>
     </button>
+
+    <!-- Orientierung: Zone › Modul › Seite (letztes Segment ellipsiert, nie umbrechend) -->
+    <nav v-if="crumb.length" class="pp-appbar__crumb" aria-label="Pfad">
+      <template v-for="(seg, i) in crumb" :key="i">
+        <span v-if="i > 0" class="pp-appbar__crumb-sep" aria-hidden="true">›</span>
+        <span v-if="i < crumb.length - 1" class="pp-appbar__crumb-seg">{{ seg }}</span>
+        <span v-else class="pp-appbar__crumb-cur" :title="seg">{{ seg }}</span>
+      </template>
+    </nav>
 
     <div class="pp-appbar__spacer"></div>
 
@@ -97,6 +113,16 @@ const emit = defineEmits(["home", "search", "minimize", "toggle-size", "logout",
 .pp-appbar__brand:hover { background: var(--pp-bg-hover); }
 .pp-appbar__mark { width: 30px; height: 30px; object-fit: contain; display: block; }
 .pp-appbar__wm { font-weight: var(--pp-weight-bold); letter-spacing: .18em; font-size: var(--pp-fs-15, 15px); color: var(--pp-text-primary); }
+
+.pp-appbar__crumb { display: flex; align-items: center; gap: 7px; min-width: 0; flex: 0 1 auto;
+  margin-left: var(--pp-space-4); padding-left: var(--pp-space-4);
+  border-left: 1px solid var(--pp-border-subtle);
+  font-size: 11.5px; font-weight: var(--pp-weight-semibold); letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--pp-text-tertiary); white-space: nowrap; overflow: hidden; }
+.pp-appbar__crumb-sep { color: var(--pp-text-tertiary); font-weight: var(--pp-weight-regular); flex: 0 0 auto; }
+.pp-appbar__crumb-seg { flex: 0 0 auto; }
+.pp-appbar__crumb-cur { min-width: 0; max-width: 46vw; overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap; color: var(--pp-text-primary); }
 
 .pp-appbar__spacer { flex: 1 1 auto; }
 .pp-appbar__right { display: flex; align-items: center; gap: var(--pp-space-3); flex: 0 0 auto; }

@@ -1,9 +1,11 @@
-<!-- PP_REV: PpDashboard@3 -->
+<!-- PP_REV: PpDashboard@4 -->
 <!-- @3 (20.07.2026): Karten-Chrome (Fläche/Rand/Radius/Schatten) wandert additiv
      in .ppd-card selbst — der Baustein ist damit SELBST-TRAGEND und rendert seine
      Karten auch dort als echte Karten, wo der Host die globale .pp-card-Utility
-     NICHT bereitstellt (diese CRM-SPA). Werte = exakt die .pp-card-Tokens.
-     SSOT: pilanda_theme/frontend/src/PpDashboard.vue (Kopie, nicht hier ändern). -->
+     NICHT bereitstellt (CRM-SPA pilanda_sales, Desk-Bundle). Bisher lieferte die
+     Fläche allein die showcase-lokale .pp-card (ThemePreview) → Kopien in echten
+     Apps rendern nackte Inhalte auf grauem Grund (Marco-Sichttest 20.07.). Werte
+     = exakt die .pp-card-Tokens; wo .pp-card existiert, bleibt es visuell gleich. -->
 <!--
   PpDashboard.vue — komponierbares Dashboard-LAYOUT (SSOT-Baustein, N9/§6.2).
 
@@ -220,6 +222,13 @@ function onKpi(k) {
 }
 @media (min-width: 2500px) {
   .ppd__inner { padding: var(--pp-space-8) var(--pp-space-8) var(--pp-space-10); }
+}
+
+/* Kompaktstufe ≤1500px (Klickdummy-Vorbild): engere Paddings, dichtere KPI-Kacheln. */
+@media (max-width: 1500px) {
+  .ppd__inner { padding: var(--pp-space-4) var(--pp-space-5) var(--pp-space-8); gap: var(--pp-space-4); }
+  .ppd__kpis { grid-template-columns: repeat(auto-fit, minmax(146px, 1fr)); gap: var(--pp-space-2); }
+  .ppd-kpi__value { font-size: var(--pp-fs-28, 26px); }
 }
 
 /* Responsive: Tablet → 6er-Halbraster, Mobile → 1-spaltig */
