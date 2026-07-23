@@ -11,7 +11,7 @@
   <div class="flex min-h-0 flex-1 flex-col">
     <LayoutHeader>
       <template #left-header>
-        <Breadcrumbs :items="[{ label: __('Organizations'), route: { name: 'Organizations' } }]" />
+        <Breadcrumbs :items="[{ label: 'Vertrieb' }, { label: 'CRM' }, { label: __('Organizations'), route: { name: 'Organizations' } }]" />
       </template>
       <template #right-header>
         <Button :label="__('Refresh')" iconLeft="refresh-cw" @click="reload" />
@@ -21,28 +21,29 @@
     <div class="crmo">
       <div class="crmo-inner">
         <PpPageHead
-          :eyebrow="__('Sales / CRM')"
           :title="__('Organizations')"
           :subtitle="`${filtered.length} ${__('of')} ${orgs.length} ${__('Organizations')} · ${__('click a row to open the profile')}`"
-        />
+        >
+          <template #actions>
+            <div class="crmo-search-wrap">
+              <IconSearch class="crmo-search-ico" />
+              <input v-model="q" type="search" class="crmo-search" :placeholder="__('Search / filter by industry') + ' …'" />
+            </div>
+          </template>
+        </PpPageHead>
 
+        <!-- KPI-Karten = klickbare Segment-Filter (Master Regel 9). -->
         <section class="crmo-kpis">
-          <PpStatTile v-for="k in kpis" :key="k.label" v-bind="k" />
-        </section>
-
-        <section class="crmo-filter">
-          <div class="crmo-field crmo-field--search">
-            <label class="crmo-field-cap">{{ __('Search') }}</label>
-            <input v-model="q" type="search" class="crmo-input" :placeholder="__('Search') + ' …'" />
-          </div>
-          <div class="crmo-field">
-            <label class="crmo-field-cap">{{ __('Industry') }}</label>
-            <select v-model="fIndustry" class="crmo-input">
-              <option value="alle">{{ __('All industries') }}</option>
-              <option v-for="i in industryList" :key="i" :value="i">{{ i }}</option>
-            </select>
-          </div>
-          <button v-if="hasFilter" class="crmo-btn crmo-reset" @click="resetFilter">{{ __('Reset filters') }}</button>
+          <button
+            v-for="k in kpis"
+            :key="k.seg"
+            type="button"
+            class="crmo-kpi"
+            :class="{ 'is-active': segment === k.seg }"
+            @click="toggleSeg(k.seg)"
+          >
+            <PpStatTile :label="k.label" :value="k.value" :hint="k.hint" />
+          </button>
         </section>
 
         <section class="crmo-card">
@@ -111,6 +112,7 @@ import OrganizationInspector from '@/components/lcs/OrganizationInspector.vue'
 import LcsPagination from '@/components/lcs/LcsPagination.vue'
 import IconSearchX from '~icons/lucide/search-x'
 import IconInbox from '~icons/lucide/inbox'
+import IconSearch from '~icons/lucide/search'
 import { usePilandaMode } from '@/composables/usePilandaMode'
 import { usePilandaInspect } from '@/composables/usePilandaInspect'
 import { usePagination } from '@/composables/usePagination'
@@ -145,40 +147,47 @@ function prettyUrl(u) {
   return String(u || '').replace(/^https?:\/\//, '').replace(/\/$/, '')
 }
 
+// Suche (inkl. Branche/Territorium) + KPI-Segment (Master Regel 9).
 const q = ref('')
-const fIndustry = ref('alle')
-const hasFilter = computed(() => q.value.trim() !== '' || fIndustry.value !== 'alle')
-function resetFilter() { q.value = ''; fIndustry.value = 'alle' }
+const segment = ref('') // '' | 'website' | 'territory' | 'week'
+const hasFilter = computed(() => q.value.trim() !== '' || segment.value !== '')
+function resetFilter() { q.value = ''; segment.value = '' }
+function toggleSeg(seg) { segment.value = seg === '' ? '' : (segment.value === seg ? '' : seg) }
 
-const industryList = computed(() =>
-  [...new Set(orgs.value.map((o) => o.industry).filter(Boolean))].sort(),
-)
-
+const WEEK_MS = 7 * 24 * 3600 * 1000
 const filtered = computed(() => {
   const needle = q.value.trim().toLowerCase()
+  const weekAgo = Date.now() - WEEK_MS
   return orgs.value.filter((o) => {
     const qOk = !needle ||
       (o.organization_name || o.name || '').toLowerCase().includes(needle) ||
       (o.industry || '').toLowerCase().includes(needle) ||
       (o.territory || '').toLowerCase().includes(needle)
-    const iOk = fIndustry.value === 'alle' || o.industry === fIndustry.value
-    return qOk && iOk
+    let sOk = true
+    if (segment.value === 'website') sOk = !!o.website
+    else if (segment.value === 'territory') sOk = !!o.territory
+    else if (segment.value === 'week') {
+      const t = o.modified ? new Date(o.modified).getTime() : NaN
+      sOk = !isNaN(t) && t >= weekAgo
+    }
+    return qOk && sOk
   })
 })
 
 const kpis = computed(() => {
   const list = orgs.value
   const withWeb = list.filter((o) => o.website).length
-  const weekAgo = Date.now() - 7 * 24 * 3600 * 1000
+  const withTerr = list.filter((o) => o.territory).length
+  const weekAgo = Date.now() - WEEK_MS
   const weekCount = list.filter((o) => {
     const t = o.modified ? new Date(o.modified).getTime() : NaN
     return !isNaN(t) && t >= weekAgo
   }).length
   return [
-    { label: __('Total organizations'), value: String(list.length), hint: __('in the CRM') },
-    { label: __('Industries'), value: String(industryList.value.length), hint: __('distinct sectors') },
-    { label: __('With website'), value: String(withWeb), hint: __('online presence') },
-    { label: __('Updated this week'), value: String(weekCount), hint: __('last 7 days') },
+    { seg: '', label: __('Total organizations'), value: String(list.length), hint: __('in the CRM') },
+    { seg: 'website', label: __('With website'), value: String(withWeb), hint: __('online presence') },
+    { seg: 'territory', label: __('With territory'), value: String(withTerr), hint: __('assigned market') },
+    { seg: 'week', label: __('Updated this week'), value: String(weekCount), hint: __('last 7 days') },
   ]
 })
 
@@ -252,19 +261,23 @@ onBeforeUnmount(() => {
 
 .crmo-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--pp-space-3); }
 
-.crmo-filter { display: flex; align-items: flex-end; gap: var(--pp-space-3); flex-wrap: wrap;
-  padding: var(--pp-space-3) var(--pp-space-4); background: var(--pp-bg-surface);
-  border: 1px solid var(--pp-border-subtle); border-radius: var(--pp-radius-ui); box-shadow: var(--pp-shadow-xs); }
-.crmo-field { display: flex; flex-direction: column; gap: 3px; }
-.crmo-field--search { flex: 1 1 240px; min-width: 200px; }
-.crmo-field-cap { font-size: 10px; font-weight: var(--pp-weight-bold); letter-spacing: var(--pp-tracking-wide, 0.04em);
-  text-transform: uppercase; color: var(--pp-text-tertiary); }
-.crmo-input { appearance: none; font-family: inherit; font-size: var(--pp-fs-13, 13px); color: var(--pp-text-primary);
-  padding: 6px var(--pp-space-3); border: 1px solid var(--pp-border-default); border-radius: var(--pp-radius-ui);
-  background: var(--pp-bg-base); min-width: 150px; }
-.crmo-input:focus { outline: none; border-color: var(--pp-brand-primary);
+/* KPI-Karten als klickbare Segment-Filter (Regel 9) */
+.crmo-kpi { appearance: none; border: none; background: none; padding: 0; margin: 0; cursor: pointer;
+  text-align: left; border-radius: var(--pp-radius-ui); outline: none; }
+.crmo-kpi > :deep(.pp-kpi) { transition: box-shadow .12s, border-color .12s; }
+.crmo-kpi:hover > :deep(.pp-kpi) { border-color: var(--pp-brand-primary); }
+.crmo-kpi.is-active > :deep(.pp-kpi) { border-color: var(--pp-brand-primary);
+  box-shadow: 0 0 0 2px color-mix(in oklab, var(--pp-brand-primary) 30%, transparent); }
+.crmo-kpi:focus-visible > :deep(.pp-kpi) { box-shadow: var(--pp-shadow-focus-ring, 0 0 0 3px rgb(var(--pp-brand-primary-rgb) / 0.3)); }
+
+/* Kompakte Kopf-Suche (statt Filterzeile) */
+.crmo-search-wrap { position: relative; display: flex; align-items: center; }
+.crmo-search-ico { position: absolute; left: 9px; width: 15px; height: 15px; color: var(--pp-text-tertiary); pointer-events: none; }
+.crmo-search { appearance: none; font-family: inherit; font-size: var(--pp-fs-13, 13px); color: var(--pp-text-primary);
+  padding: 7px 11px 7px 30px; border: 1px solid var(--pp-border-default); border-radius: var(--pp-radius-ui);
+  background: var(--pp-bg-surface); min-width: 260px; }
+.crmo-search:focus { outline: none; border-color: var(--pp-brand-primary);
   box-shadow: 0 0 0 3px rgb(var(--pp-brand-primary-rgb) / 0.15); }
-.crmo-reset { margin-left: auto; }
 
 .crmo-card { background: var(--pp-bg-surface); border: 1px solid var(--pp-border-subtle);
   border-radius: var(--pp-radius-ui); box-shadow: var(--pp-shadow-xs); padding: var(--pp-space-2);

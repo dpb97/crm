@@ -14,7 +14,7 @@
   <div class="flex min-h-0 flex-1 flex-col">
     <LayoutHeader>
       <template #left-header>
-        <Breadcrumbs :items="[{ label: __('Contacts'), route: { name: 'Contacts' } }]" />
+        <Breadcrumbs :items="[{ label: 'Vertrieb' }, { label: 'CRM' }, { label: __('Contacts'), route: { name: 'Contacts' } }]" />
       </template>
       <template #right-header>
         <Button :label="__('Refresh')" iconLeft="refresh-cw" @click="reload" />
@@ -24,30 +24,30 @@
     <div class="crmc">
       <div class="crmc-inner">
         <PpPageHead
-          :eyebrow="__('Sales / CRM')"
           :title="__('Contacts')"
           :subtitle="`${filtered.length} ${__('of')} ${contacts.length} ${__('Contacts')} · ${__('click a row to open the profile')}`"
-        />
+        >
+          <template #actions>
+            <div class="crmc-search-wrap">
+              <IconSearch class="crmc-search-ico" />
+              <input v-model="q" type="search" class="crmc-search" :placeholder="__('Search / filter by company') + ' …'" />
+            </div>
+          </template>
+        </PpPageHead>
 
-        <!-- KPI-Strip -->
+        <!-- KPI-Karten = klickbare Segment-Filter (Master Regel 9: keine
+             separate Deko-Filterzeile; Firma-Filtern via Suche). -->
         <section class="crmc-kpis">
-          <PpStatTile v-for="k in kpis" :key="k.label" v-bind="k" />
-        </section>
-
-        <!-- Filterleiste -->
-        <section class="crmc-filter">
-          <div class="crmc-field crmc-field--search">
-            <label class="crmc-field-cap">{{ __('Search') }}</label>
-            <input v-model="q" type="search" class="crmc-input" :placeholder="__('Search') + ' …'" />
-          </div>
-          <div class="crmc-field">
-            <label class="crmc-field-cap">{{ __('Company') }}</label>
-            <select v-model="fCompany" class="crmc-input">
-              <option value="alle">{{ __('All companies') }}</option>
-              <option v-for="c in companyList" :key="c" :value="c">{{ c }}</option>
-            </select>
-          </div>
-          <button v-if="hasFilter" class="crmc-btn crmc-reset" @click="resetFilter">{{ __('Reset filters') }}</button>
+          <button
+            v-for="k in kpis"
+            :key="k.seg"
+            type="button"
+            class="crmc-kpi"
+            :class="{ 'is-active': segment === k.seg }"
+            @click="toggleSeg(k.seg)"
+          >
+            <PpStatTile :label="k.label" :value="k.value" :hint="k.hint" />
+          </button>
         </section>
 
         <!-- Tabelle ODER Leerzustand -->
@@ -119,6 +119,7 @@ import LcsPagination from '@/components/lcs/LcsPagination.vue'
 import IconSearchX from '~icons/lucide/search-x'
 import IconInbox from '~icons/lucide/inbox'
 import IconPhone from '~icons/lucide/phone'
+import IconSearch from '~icons/lucide/search'
 import { usePilandaMode } from '@/composables/usePilandaMode'
 import { usePilandaInspect } from '@/composables/usePilandaInspect'
 import { usePagination } from '@/composables/usePagination'
@@ -179,43 +180,48 @@ function fmtDate(v) {
   return isNaN(d) ? String(v) : d.toLocaleDateString('de-DE')
 }
 
-// --- Filter ----------------------------------------------------------------
+// --- Filter: Suche (inkl. Firma) + KPI-Segment (Master Regel 9) ------------
 const q = ref('')
-const fCompany = ref('alle')
-const hasFilter = computed(() => q.value.trim() !== '' || fCompany.value !== 'alle')
-function resetFilter() { q.value = ''; fCompany.value = 'alle' }
+const segment = ref('') // '' | 'company' | 'email' | 'week'
+const hasFilter = computed(() => q.value.trim() !== '' || segment.value !== '')
+function resetFilter() { q.value = ''; segment.value = '' }
+function toggleSeg(seg) { segment.value = seg === '' ? '' : (segment.value === seg ? '' : seg) }
 
-const companyList = computed(() =>
-  [...new Set(contacts.value.map((c) => c.company_name).filter(Boolean))].sort(),
-)
-
+const WEEK_MS = 7 * 24 * 3600 * 1000
 const filtered = computed(() => {
   const needle = q.value.trim().toLowerCase()
+  const weekAgo = Date.now() - WEEK_MS
   return contacts.value.filter((c) => {
     const qOk = !needle ||
       displayName(c).toLowerCase().includes(needle) ||
       (c.company_name || '').toLowerCase().includes(needle) ||
       (c.email_id || '').toLowerCase().includes(needle)
-    const cOk = fCompany.value === 'alle' || c.company_name === fCompany.value
-    return qOk && cOk
+    let sOk = true
+    if (segment.value === 'company') sOk = !!c.company_name
+    else if (segment.value === 'email') sOk = !!c.email_id
+    else if (segment.value === 'week') {
+      const t = c.modified ? new Date(c.modified).getTime() : NaN
+      sOk = !isNaN(t) && t >= weekAgo
+    }
+    return qOk && sOk
   })
 })
 
-// --- KPI-Strip -------------------------------------------------------------
+// --- KPI-Karten (klickbare Segmente) --------------------------------------
 const kpis = computed(() => {
   const list = contacts.value
   const withCompany = list.filter((c) => c.company_name).length
   const withEmail = list.filter((c) => c.email_id).length
-  const weekAgo = Date.now() - 7 * 24 * 3600 * 1000
+  const weekAgo = Date.now() - WEEK_MS
   const weekCount = list.filter((c) => {
     const t = c.modified ? new Date(c.modified).getTime() : NaN
     return !isNaN(t) && t >= weekAgo
   }).length
   return [
-    { label: __('Total contacts'), value: String(list.length), hint: __('in the CRM') },
-    { label: __('With company'), value: String(withCompany), hint: __('assigned to a Firma') },
-    { label: __('With email'), value: String(withEmail), hint: __('reachable by mail') },
-    { label: __('Updated this week'), value: String(weekCount), hint: __('last 7 days') },
+    { seg: '', label: __('Total contacts'), value: String(list.length), hint: __('in the CRM') },
+    { seg: 'company', label: __('With company'), value: String(withCompany), hint: __('assigned to a Firma') },
+    { seg: 'email', label: __('With email'), value: String(withEmail), hint: __('reachable by mail') },
+    { seg: 'week', label: __('Updated this week'), value: String(weekCount), hint: __('last 7 days') },
   ]
 })
 
@@ -293,19 +299,23 @@ onBeforeUnmount(() => {
 
 .crmc-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--pp-space-3); }
 
-.crmc-filter { display: flex; align-items: flex-end; gap: var(--pp-space-3); flex-wrap: wrap;
-  padding: var(--pp-space-3) var(--pp-space-4); background: var(--pp-bg-surface);
-  border: 1px solid var(--pp-border-subtle); border-radius: var(--pp-radius-ui); box-shadow: var(--pp-shadow-xs); }
-.crmc-field { display: flex; flex-direction: column; gap: 3px; }
-.crmc-field--search { flex: 1 1 240px; min-width: 200px; }
-.crmc-field-cap { font-size: 10px; font-weight: var(--pp-weight-bold); letter-spacing: var(--pp-tracking-wide, 0.04em);
-  text-transform: uppercase; color: var(--pp-text-tertiary); }
-.crmc-input { appearance: none; font-family: inherit; font-size: var(--pp-fs-13, 13px); color: var(--pp-text-primary);
-  padding: 6px var(--pp-space-3); border: 1px solid var(--pp-border-default); border-radius: var(--pp-radius-ui);
-  background: var(--pp-bg-base); min-width: 150px; }
-.crmc-input:focus { outline: none; border-color: var(--pp-brand-primary);
+/* KPI-Karten als klickbare Segment-Filter (Regel 9) */
+.crmc-kpi { appearance: none; border: none; background: none; padding: 0; margin: 0; cursor: pointer;
+  text-align: left; border-radius: var(--pp-radius-ui); outline: none; }
+.crmc-kpi > :deep(.pp-kpi) { transition: box-shadow .12s, border-color .12s; }
+.crmc-kpi:hover > :deep(.pp-kpi) { border-color: var(--pp-brand-primary); }
+.crmc-kpi.is-active > :deep(.pp-kpi) { border-color: var(--pp-brand-primary);
+  box-shadow: 0 0 0 2px color-mix(in oklab, var(--pp-brand-primary) 30%, transparent); }
+.crmc-kpi:focus-visible > :deep(.pp-kpi) { box-shadow: var(--pp-shadow-focus-ring, 0 0 0 3px rgb(var(--pp-brand-primary-rgb) / 0.3)); }
+
+/* Kompakte Kopf-Suche (statt Filterzeile) */
+.crmc-search-wrap { position: relative; display: flex; align-items: center; }
+.crmc-search-ico { position: absolute; left: 9px; width: 15px; height: 15px; color: var(--pp-text-tertiary); pointer-events: none; }
+.crmc-search { appearance: none; font-family: inherit; font-size: var(--pp-fs-13, 13px); color: var(--pp-text-primary);
+  padding: 7px 11px 7px 30px; border: 1px solid var(--pp-border-default); border-radius: var(--pp-radius-ui);
+  background: var(--pp-bg-surface); min-width: 260px; }
+.crmc-search:focus { outline: none; border-color: var(--pp-brand-primary);
   box-shadow: 0 0 0 3px rgb(var(--pp-brand-primary-rgb) / 0.15); }
-.crmc-reset { margin-left: auto; }
 
 .crmc-card { background: var(--pp-bg-surface); border: 1px solid var(--pp-border-subtle);
   border-radius: var(--pp-radius-ui); box-shadow: var(--pp-shadow-xs); padding: var(--pp-space-2);
