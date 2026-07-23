@@ -53,6 +53,17 @@
         </template>
       </PpInspector>
     </div>
+    <!-- Feste Statuszeile unten (Klickdummy-Master Regel 5:
+         Marke · LCS Group · Benutzer · Stand). -->
+    <footer class="lcs-statusbar">
+      <span class="lcs-statusbar-brand">Pilanda</span>
+      <span class="lcs-statusbar-dot">·</span>
+      <span>LCS Group</span>
+      <span class="lcs-statusbar-dot">·</span>
+      <span>{{ appbarUser.name || __('User') }}</span>
+      <span class="lcs-statusbar-spacer"></span>
+      <span>Pilanda Sales CRM</span>
+    </footer>
     <GlobalModals />
   </div>
 
@@ -143,4 +154,12 @@ setUp(
    so the token-gray page canvases and the shell chrome no longer clash white vs.
    gray. White cards (--pp-bg-surface) float on this base. */
 .lcs-pilanda-content { background: var(--pp-bg-base); }
+
+/* Master rule 5: fixed 28px status bar (Marke · LCS Group · Benutzer · Stand). */
+.lcs-statusbar { height: 28px; flex: none; display: flex; align-items: center; gap: var(--pp-space-3);
+  padding: 0 var(--pp-space-4); font-size: 10.5px; color: var(--pp-text-tertiary);
+  background: var(--pp-bg-surface); border-top: 1px solid var(--pp-border-subtle); }
+.lcs-statusbar-brand { font-weight: var(--pp-weight-bold); color: var(--pp-brand-primary); letter-spacing: .02em; }
+.lcs-statusbar-dot { opacity: .5; }
+.lcs-statusbar-spacer { flex: 1; }
 </style>
