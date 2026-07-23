@@ -16,7 +16,21 @@
 
 <template>
   <div class="pilanda-sidebar-host">
+    <!-- Zurück = schlichter Pfeil als eigene Zeile über dem Modul-Dropdown
+         (Klickdummy-Master Regel 3; Label = vorherige Station). -->
+    <button
+      v-if="canBack"
+      type="button"
+      class="pilanda-back"
+      :class="{ 'is-rail': collapsed }"
+      :title="__('Back') + (prevStation ? ' · ' + prevStation : '')"
+      @click="goBack"
+    >
+      <IconArrowLeft class="pilanda-back-ico" />
+      <span v-if="!collapsed" class="pilanda-back-label">{{ prevStation || __('Back') }}</span>
+    </button>
     <PpSidebar
+      class="pilanda-sb-main"
       :modules="modules"
       :zones="zones"
       :allgemein="allgemeinDisplay"
@@ -41,6 +55,7 @@ import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import PpSidebar from '@/components/pp/PpSidebar.vue'
 import { usePilandaNav } from '@/composables/usePilandaNav'
+import IconArrowLeft from '~icons/lucide/arrow-left'
 
 // Lucide-Icons (~icons/lucide/* — frappeui/vite lucideIcons-Plugin, wie im Desk).
 import IconHouse from '~icons/lucide/house'
@@ -129,6 +144,33 @@ const router = useRouter()
 const { modules, zones, allgemein, wissen, load } = usePilandaNav()
 
 onMounted(load)
+
+// ---------------------------------------------------------------
+// Zurück-Zeile (Master Regel 3): schlichter Pfeil über dem Dropdown,
+// Label = zuletzt verlassene Station. router.afterEach merkt sich die
+// Herkunft; erst nach der ersten SPA-Navigation sichtbar.
+const ROUTE_LABELS = {
+  Contacts: 'Personen', Contact: 'Person', Organizations: 'Firmen', Organization: 'Firma',
+  Leads: 'Interessenten', Lead: 'Interessent', Deals: 'Verkaufschancen', Deal: 'Verkaufschance',
+  'LCS Projects': 'Vertriebsprojekte', 'LCS Project': 'Projekt', 'LCS Network': 'Netzwerk',
+  'LCS Market Assignment': 'Marktaufteilung', 'LCS Forecasting': 'Prognose',
+  'LCS Sales Meeting': 'Sales Meeting', 'LCS Quick Note': 'Quick Note',
+  'LCS CRM Dashboard': 'Dashboard', Notes: 'Notizen', Tasks: 'Aufgaben', 'Call Logs': 'Call Logs',
+}
+function stationLabel(r) {
+  if (!r || !r.name) return ''
+  return ROUTE_LABELS[r.name] || __(String(r.name))
+}
+const prevStation = ref('')
+const canBack = ref(false)
+function goBack() { router.back() }
+const _removeAfterEach = router.afterEach((to, from) => {
+  if (from && from.name && from.fullPath !== to.fullPath) {
+    prevStation.value = stationLabel(from)
+    canBack.value = true
+  }
+})
+onBeforeUnmount(() => _removeAfterEach && _removeAfterEach())
 
 const moduleById = (id) => modules.value.find((m) => m.id === id) || null
 
@@ -256,4 +298,15 @@ onBeforeUnmount(() => window.removeEventListener('resize', onResize))
    border-right selbst mit (identisch zur Desk-Sidebar). Volle Höhe, damit die
    Sidebar zwischen Topbar und Fensterrand aufspannt. */
 .pilanda-sidebar-host { display: flex; flex-direction: column; height: 100%; }
+.pilanda-sb-main { flex: 1; min-height: 0; }
+
+/* Zurück-Zeile (Master Regel 3) */
+.pilanda-back { display: flex; align-items: center; gap: 8px; width: 100%; flex: none;
+  padding: 8px 16px; background: var(--pp-bg-surface); border: none;
+  border-bottom: 1px solid var(--pp-border-subtle); cursor: pointer;
+  color: var(--pp-text-secondary); font-family: inherit; font-size: 12px; text-align: left; }
+.pilanda-back:hover { background: var(--pp-bg-hover); color: var(--pp-brand-primary); }
+.pilanda-back.is-rail { justify-content: center; padding: 8px 0; }
+.pilanda-back-ico { width: 15px; height: 15px; flex-shrink: 0; }
+.pilanda-back-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 </style>
