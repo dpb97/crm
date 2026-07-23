@@ -21,6 +21,12 @@ from frappe.utils import now_datetime
 
 _TEAMS_CALL = "https://teams.microsoft.com/l/call/0/0?users="
 
+# Teams' deep-link parser wants '@', ':' and '+' LITERAL in the `users` value
+# (docs: users=4:+448719762819 / users=a.wilber@example.com). URL-encoding them
+# (%40 / %3A / %2B) breaks the link → Teams shows "There's a problem with this
+# link". So only escape truly-unsafe chars (spaces etc.), never these three.
+_USERS_SAFE = "@:+"
+
 
 def _e164(raw: str) -> str:
     """Digits with a single leading '+' (Teams PSTN wants +<country><number>)."""
@@ -33,9 +39,9 @@ def _deep_link(email: str | None, phone: str | None) -> str:
     fall back to a PSTN call (needs Teams Phone) via the '4:' number prefix.
     """
     if email:
-        return _TEAMS_CALL + quote(email)
+        return _TEAMS_CALL + quote(email, safe=_USERS_SAFE)
     if phone:
-        return _TEAMS_CALL + quote("4:" + _e164(phone))
+        return _TEAMS_CALL + quote("4:" + _e164(phone), safe=_USERS_SAFE)
     return ""
 
 
