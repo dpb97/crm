@@ -8,7 +8,7 @@
   Ersetzt die generische Upstream-Liste (bleibt als /organizations-upstream).
 -->
 <template>
-  <div class="flex h-full flex-col">
+  <div class="flex min-h-0 flex-1 flex-col">
     <LayoutHeader>
       <template #left-header>
         <Breadcrumbs :items="[{ label: __('Organizations'), route: { name: 'Organizations' } }]" />
@@ -47,6 +47,7 @@
 
         <section class="crmo-card">
           <template v-if="rows.length">
+          <div class="crmo-scroll">
           <PpDataGrid :columns="columns" :rows="pagedRows" @row-click="openOrg">
             <template #cell-name="{ row }">
               <span class="crmo-name">{{ row.name }}</span>
@@ -66,6 +67,7 @@
               <span class="crmo-muted">{{ fmtDate(value) }}</span>
             </template>
           </PpDataGrid>
+          </div>
           <LcsPagination
             v-if="rowTotal > 25"
             :from="pgFrom" :to="pgTo" :total="rowTotal"
@@ -235,9 +237,11 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-.crmo { height: 100%; overflow: auto; background: var(--pp-bg-base); }
-.crmo-inner { padding: var(--pp-space-6) var(--pp-space-6) var(--pp-space-12);
+/* Fixed viewport-height layout: table scrolls in its own region (see LCSContacts). */
+.crmo { flex: 1; min-height: 0; overflow: hidden; background: var(--pp-bg-base); display: flex; flex-direction: column; }
+.crmo-inner { flex: 1; min-height: 0; padding: var(--pp-space-6) var(--pp-space-6) var(--pp-space-6);
   display: flex; flex-direction: column; gap: var(--pp-space-5); }
+.crmo-scroll { flex: 1; min-height: 0; overflow: auto; }
 
 .crmo-btn { appearance: none; cursor: pointer; font-family: inherit; font-size: var(--pp-fs-13, 13px);
   padding: 6px var(--pp-space-3); border-radius: var(--pp-radius-ui);
@@ -263,7 +267,8 @@ onBeforeUnmount(() => {
 .crmo-reset { margin-left: auto; }
 
 .crmo-card { background: var(--pp-bg-surface); border: 1px solid var(--pp-border-subtle);
-  border-radius: var(--pp-radius-ui); box-shadow: var(--pp-shadow-xs); padding: var(--pp-space-2); }
+  border-radius: var(--pp-radius-ui); box-shadow: var(--pp-shadow-xs); padding: var(--pp-space-2);
+  flex: 1; min-height: 0; display: flex; flex-direction: column; }
 
 .crmo-name { display: block; font-weight: var(--pp-weight-medium); color: var(--pp-text-primary); }
 .crmo-id { display: block; font-size: 11px; color: var(--pp-text-tertiary); }

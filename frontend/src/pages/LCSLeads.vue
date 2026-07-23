@@ -19,7 +19,7 @@
   PpEmptyState · PpDrawer.
 -->
 <template>
-  <div class="flex h-full flex-col">
+  <div class="flex min-h-0 flex-1 flex-col">
     <LayoutHeader>
       <template #left-header>
         <Breadcrumbs :items="[{ label: __('Leads'), route: { name: 'Leads' } }]" />
@@ -61,6 +61,7 @@
         <!-- Tabelle ODER ehrlicher Leerzustand -->
         <section class="crml-card">
           <template v-if="rows.length">
+          <div class="crml-scroll">
           <PpDataGrid :columns="columns" :rows="pagedRows" @row-click="openLead">
             <template #cell-name="{ row }">
               <span class="crml-name">{{ row.name }}</span>
@@ -89,6 +90,7 @@
               <span class="crml-muted">{{ fmtDate(value) }}</span>
             </template>
           </PpDataGrid>
+          </div>
           <LcsPagination
             v-if="rowTotal > 25"
             :from="pgFrom" :to="pgTo" :total="rowTotal"
@@ -356,9 +358,11 @@ onBeforeUnmount(() => {
 
 <style scoped>
 /* Vollbreiten-Canvas — KEIN zentrierendes max-width (Shell-2.0-Vorgabe). */
-.crml { height: 100%; overflow: auto; background: var(--pp-bg-base); }
-.crml-inner { padding: var(--pp-space-6) var(--pp-space-6) var(--pp-space-12);
+/* Fixed viewport-height layout: table scrolls in its own region (see LCSContacts). */
+.crml { flex: 1; min-height: 0; overflow: hidden; background: var(--pp-bg-base); display: flex; flex-direction: column; }
+.crml-inner { flex: 1; min-height: 0; padding: var(--pp-space-6) var(--pp-space-6) var(--pp-space-6);
   display: flex; flex-direction: column; gap: var(--pp-space-5); }
+.crml-scroll { flex: 1; min-height: 0; overflow: auto; }
 
 /* Buttons */
 .crml-btn { appearance: none; cursor: pointer; font-family: inherit; font-size: var(--pp-fs-13, 13px);
@@ -388,7 +392,8 @@ onBeforeUnmount(() => {
 
 /* Karte um die Tabelle */
 .crml-card { background: var(--pp-bg-surface); border: 1px solid var(--pp-border-subtle);
-  border-radius: var(--pp-radius-ui); box-shadow: var(--pp-shadow-xs); padding: var(--pp-space-2); }
+  border-radius: var(--pp-radius-ui); box-shadow: var(--pp-shadow-xs); padding: var(--pp-space-2);
+  flex: 1; min-height: 0; display: flex; flex-direction: column; }
 
 /* Zell-Renderer */
 .crml-name { display: block; font-weight: var(--pp-weight-medium); color: var(--pp-text-primary); }

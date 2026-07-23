@@ -11,7 +11,7 @@
   lcs_integrations.projects.api.get_contact_email_counts.
 -->
 <template>
-  <div class="flex h-full flex-col">
+  <div class="flex min-h-0 flex-1 flex-col">
     <LayoutHeader>
       <template #left-header>
         <Breadcrumbs :items="[{ label: __('Contacts'), route: { name: 'Contacts' } }]" />
@@ -53,6 +53,7 @@
         <!-- Tabelle ODER Leerzustand -->
         <section class="crmc-card">
           <template v-if="rows.length">
+          <div class="crmc-scroll">
           <PpDataGrid :columns="columns" :rows="pagedRows" @row-click="openContact">
             <template #cell-name="{ row }">
               <span class="crmc-name">{{ row.name }}</span>
@@ -73,6 +74,7 @@
               <span class="crmc-muted">{{ fmtDate(value) }}</span>
             </template>
           </PpDataGrid>
+          </div>
           <LcsPagination
             v-if="rowTotal > 25"
             :from="pgFrom" :to="pgTo" :total="rowTotal"
@@ -275,9 +277,12 @@ onBeforeUnmount(() => {
 
 <style scoped>
 /* Vollbreiten-Canvas (kein max-width), token-only — Idiom von LCSLeads. */
-.crmc { height: 100%; overflow: auto; background: var(--pp-bg-base); }
-.crmc-inner { padding: var(--pp-space-6) var(--pp-space-6) var(--pp-space-12);
+/* Fixed viewport-height layout: header/KPIs/filter stay put, the table scrolls
+   inside its own region so the page never grows taller than the screen. */
+.crmc { flex: 1; min-height: 0; overflow: hidden; background: var(--pp-bg-base); display: flex; flex-direction: column; }
+.crmc-inner { flex: 1; min-height: 0; padding: var(--pp-space-6) var(--pp-space-6) var(--pp-space-6);
   display: flex; flex-direction: column; gap: var(--pp-space-5); }
+.crmc-scroll { flex: 1; min-height: 0; overflow: auto; }
 
 .crmc-btn { appearance: none; cursor: pointer; font-family: inherit; font-size: var(--pp-fs-13, 13px);
   padding: 6px var(--pp-space-3); border-radius: var(--pp-radius-ui);
@@ -303,7 +308,8 @@ onBeforeUnmount(() => {
 .crmc-reset { margin-left: auto; }
 
 .crmc-card { background: var(--pp-bg-surface); border: 1px solid var(--pp-border-subtle);
-  border-radius: var(--pp-radius-ui); box-shadow: var(--pp-shadow-xs); padding: var(--pp-space-2); }
+  border-radius: var(--pp-radius-ui); box-shadow: var(--pp-shadow-xs); padding: var(--pp-space-2);
+  flex: 1; min-height: 0; display: flex; flex-direction: column; }
 
 .crmc-name { display: block; font-weight: var(--pp-weight-medium); color: var(--pp-text-primary); }
 .crmc-id { display: block; font-size: 11px; color: var(--pp-text-tertiary); }
