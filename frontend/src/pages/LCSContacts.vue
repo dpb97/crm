@@ -52,7 +52,8 @@
 
         <!-- Tabelle ODER Leerzustand -->
         <section class="crmc-card">
-          <PpDataGrid v-if="rows.length" :columns="columns" :rows="rows" @row-click="openContact">
+          <template v-if="rows.length">
+          <PpDataGrid :columns="columns" :rows="pagedRows" @row-click="openContact">
             <template #cell-name="{ row }">
               <span class="crmc-name">{{ row.name }}</span>
               <span class="crmc-id">{{ row.email || '—' }}</span>
@@ -72,6 +73,13 @@
               <span class="crmc-muted">{{ fmtDate(value) }}</span>
             </template>
           </PpDataGrid>
+          <LcsPagination
+            v-if="rowTotal > 25"
+            :from="pgFrom" :to="pgTo" :total="rowTotal"
+            :page="page" :page-count="pageCount" :page-size="pageSize"
+            @prev="pgPrev" @next="pgNext" @page-size="setPageSize"
+          />
+          </template>
 
           <PpEmptyState
             v-else-if="hasFilter"
@@ -105,11 +113,13 @@ import PpStatTile from '@/components/pp/PpStatTile.vue'
 import PpDataGrid from '@/components/pp/PpDataGrid.vue'
 import PpEmptyState from '@/components/pp/PpEmptyState.vue'
 import ContactInspector from '@/components/lcs/ContactInspector.vue'
+import LcsPagination from '@/components/lcs/LcsPagination.vue'
 import IconSearchX from '~icons/lucide/search-x'
 import IconInbox from '~icons/lucide/inbox'
 import IconPhone from '~icons/lucide/phone'
 import { usePilandaMode } from '@/composables/usePilandaMode'
 import { usePilandaInspect } from '@/composables/usePilandaInspect'
+import { usePagination } from '@/composables/usePagination'
 
 const router = useRouter()
 const { pilandaMode } = usePilandaMode()
@@ -226,6 +236,12 @@ const rows = computed(() =>
     modified: c.modified,
   })),
 )
+
+// --- Pagination (client-side; the list loads all rows) ---------------------
+const {
+  paged: pagedRows, page, pageCount, total: rowTotal,
+  from: pgFrom, to: pgTo, pageSize, next: pgNext, prev: pgPrev, setPageSize,
+} = usePagination(rows)
 
 // --- Klick → Inspektor -----------------------------------------------------
 let lastClick = { id: null, t: 0 }

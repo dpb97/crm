@@ -46,7 +46,8 @@
         </section>
 
         <section class="crmo-card">
-          <PpDataGrid v-if="rows.length" :columns="columns" :rows="rows" @row-click="openOrg">
+          <template v-if="rows.length">
+          <PpDataGrid :columns="columns" :rows="pagedRows" @row-click="openOrg">
             <template #cell-name="{ row }">
               <span class="crmo-name">{{ row.name }}</span>
               <span class="crmo-id">{{ row.industry || '—' }}</span>
@@ -65,6 +66,13 @@
               <span class="crmo-muted">{{ fmtDate(value) }}</span>
             </template>
           </PpDataGrid>
+          <LcsPagination
+            v-if="rowTotal > 25"
+            :from="pgFrom" :to="pgTo" :total="rowTotal"
+            :page="page" :page-count="pageCount" :page-size="pageSize"
+            @prev="pgPrev" @next="pgNext" @page-size="setPageSize"
+          />
+          </template>
 
           <PpEmptyState
             v-else-if="hasFilter"
@@ -98,10 +106,12 @@ import PpStatTile from '@/components/pp/PpStatTile.vue'
 import PpDataGrid from '@/components/pp/PpDataGrid.vue'
 import PpEmptyState from '@/components/pp/PpEmptyState.vue'
 import OrganizationInspector from '@/components/lcs/OrganizationInspector.vue'
+import LcsPagination from '@/components/lcs/LcsPagination.vue'
 import IconSearchX from '~icons/lucide/search-x'
 import IconInbox from '~icons/lucide/inbox'
 import { usePilandaMode } from '@/composables/usePilandaMode'
 import { usePilandaInspect } from '@/composables/usePilandaInspect'
+import { usePagination } from '@/composables/usePagination'
 
 const router = useRouter()
 const { pilandaMode } = usePilandaMode()
@@ -188,6 +198,12 @@ const rows = computed(() =>
     modified: o.modified,
   })),
 )
+
+// Pagination (client-side; the list loads all rows).
+const {
+  paged: pagedRows, page, pageCount, total: rowTotal,
+  from: pgFrom, to: pgTo, pageSize, next: pgNext, prev: pgPrev, setPageSize,
+} = usePagination(rows)
 
 let lastClick = { id: null, t: 0 }
 function openOrg(id) {

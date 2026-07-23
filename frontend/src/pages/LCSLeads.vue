@@ -60,7 +60,8 @@
 
         <!-- Tabelle ODER ehrlicher Leerzustand -->
         <section class="crml-card">
-          <PpDataGrid v-if="rows.length" :columns="columns" :rows="rows" @row-click="openLead">
+          <template v-if="rows.length">
+          <PpDataGrid :columns="columns" :rows="pagedRows" @row-click="openLead">
             <template #cell-name="{ row }">
               <span class="crml-name">{{ row.name }}</span>
               <span class="crml-id">{{ row.id }}</span>
@@ -88,6 +89,13 @@
               <span class="crml-muted">{{ fmtDate(value) }}</span>
             </template>
           </PpDataGrid>
+          <LcsPagination
+            v-if="rowTotal > 25"
+            :from="pgFrom" :to="pgTo" :total="rowTotal"
+            :page="page" :page-count="pageCount" :page-size="pageSize"
+            @prev="pgPrev" @next="pgNext" @page-size="setPageSize"
+          />
+          </template>
 
           <!-- Leerzustand: leer nach Filter vs. gar keine Daten -->
           <PpEmptyState
@@ -166,12 +174,14 @@ import PpDataGrid from '@/components/pp/PpDataGrid.vue'
 import PpEmptyState from '@/components/pp/PpEmptyState.vue'
 import PpDrawer from '@/components/pp/PpDrawer.vue'
 import LeadInspector from '@/components/lcs/LeadInspector.vue'
+import LcsPagination from '@/components/lcs/LcsPagination.vue'
 import IconSearchX from '~icons/lucide/search-x'
 import IconInbox from '~icons/lucide/inbox'
 import IconMail from '~icons/lucide/mail'
 import IconPhone from '~icons/lucide/phone'
 import { usePilandaMode } from '@/composables/usePilandaMode'
 import { usePilandaInspect } from '@/composables/usePilandaInspect'
+import { usePagination } from '@/composables/usePagination'
 
 const router = useRouter()
 const { pilandaMode } = usePilandaMode()
@@ -303,6 +313,12 @@ const rows = computed(() =>
 )
 
 // --- Detail-Drawer (echt: Zeilenklick öffnet) ------------------------------
+// Pagination (client-side; the list loads all rows).
+const {
+  paged: pagedRows, page, pageCount, total: rowTotal,
+  from: pgFrom, to: pgTo, pageSize, next: pgNext, prev: pgPrev, setPageSize,
+} = usePagination(rows)
+
 const drawerOpen = ref(false)
 const selId = ref(null)
 const sel = computed(() => leads.value.find((l) => l.name === selId.value) || null)
