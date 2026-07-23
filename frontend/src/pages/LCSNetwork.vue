@@ -19,7 +19,7 @@
   <div class="flex h-full flex-col">
     <LayoutHeader>
       <template #left-header>
-        <Breadcrumbs :items="[{ label: __('Network'), route: { name: 'LCS Network' } }]" />
+        <Breadcrumbs :items="[{ label: 'Vertrieb' }, { label: 'CRM' }, { label: __('Network'), route: { name: 'LCS Network' } }]" />
       </template>
       <template #right-header>
         <div class="flex items-center gap-3">
@@ -43,7 +43,6 @@
     <div class="crmn">
       <div class="crmn-inner">
         <PpPageHead
-          :eyebrow="__('Sales / CRM')"
           :title="__('Network')"
           :subtitle="__('Relationships between organizations and people · click a node to open the profile')"
         />

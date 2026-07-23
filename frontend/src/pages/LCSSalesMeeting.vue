@@ -15,7 +15,7 @@
   <div class="flex h-full flex-col">
     <LayoutHeader>
       <template #left-header>
-        <Breadcrumbs :items="[{ label: __('Sales Meeting'), route: { name: 'LCS Sales Meeting' } }]" />
+        <Breadcrumbs :items="[{ label: 'Vertrieb' }, { label: 'CRM' }, { label: __('Sales Meeting'), route: { name: 'LCS Sales Meeting' } }]" />
       </template>
       <template #right-header>
         <div class="flex items-center gap-2">
@@ -28,7 +28,6 @@
     <div class="crmm">
       <div class="crmm-inner">
         <PpPageHead
-          :eyebrow="__('Sales / CRM')"
           :title="__('Sales Meeting')"
           :subtitle="`${__('Offers in progress')} · ${filteredRows.length} ${__('of')} ${rows.length} ${__('opportunities')} · ${money(kpiWeighted)} ${__('weighted pipeline')}`"
         />

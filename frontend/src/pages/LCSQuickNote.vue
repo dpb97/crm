@@ -23,14 +23,13 @@
   <div class="flex h-full flex-col">
     <LayoutHeader>
       <template #left-header>
-        <Breadcrumbs :items="[{ label: __('Quick Note'), route: { name: 'LCS Quick Note' } }]" />
+        <Breadcrumbs :items="[{ label: 'Vertrieb' }, { label: 'CRM' }, { label: __('Quick Note'), route: { name: 'LCS Quick Note' } }]" />
       </template>
     </LayoutHeader>
 
     <div class="crms">
       <div class="crms-inner">
         <PpPageHead
-          :eyebrow="__('Sales / CRM')"
           :title="__('Quick Note')"
           :subtitle="`${__('Type or speak a note')} · ${notes.length} ${notes.length === 1 ? __('note') : __('notes')} ${__('in this session')}`"
         />

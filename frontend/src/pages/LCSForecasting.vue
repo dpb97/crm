@@ -1,7 +1,7 @@
 <template>
   <LayoutHeader>
     <template #left-header>
-      <Breadcrumbs :items="[{ label: __('Forecasting'), route: { name: 'LCS Forecasting' } }]" />
+      <Breadcrumbs :items="[{ label: 'Vertrieb' }, { label: 'CRM' }, { label: __('Forecasting'), route: { name: 'LCS Forecasting' } }]" />
     </template>
     <template #right-header>
       <!-- Period selector — H7: Flexibility -->
@@ -42,7 +42,6 @@
   <div class="lcsfc flex-1 overflow-y-auto">
     <div class="lcsfc-inner">
       <PpPageHead
-        :eyebrow="__('Sales / CRM')"
         :title="__('Forecasting')"
         :subtitle="__('Weighted revenue outlook across the pipeline')"
       />

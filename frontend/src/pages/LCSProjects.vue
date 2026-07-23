@@ -1,7 +1,7 @@
 <template>
   <LayoutHeader>
     <template #left-header>
-      <Breadcrumbs :items="[{ label: __('Sales Projects'), route: { name: 'LCS Projects' } }]" />
+      <Breadcrumbs :items="[{ label: 'Vertrieb' }, { label: 'CRM' }, { label: __('Sales Projects'), route: { name: 'LCS Projects' } }]" />
     </template>
     <template #right-header>
       <div class="flex items-center gap-2">
@@ -38,7 +38,6 @@
   <div class="lcsp-canvas flex flex-1 flex-col overflow-hidden">
     <div class="lcsp-head">
       <PpPageHead
-        :eyebrow="__('Sales / CRM')"
         :title="__('Sales Projects')"
         :subtitle="viewMode === 'list' && !projectsLoading ? `${projectList.length} ${__('of')} ${totalCount} ${__('Projects')}` : ''"
       />

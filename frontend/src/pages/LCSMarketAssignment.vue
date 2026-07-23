@@ -18,7 +18,7 @@
   <div class="flex h-full flex-col">
     <LayoutHeader>
       <template #left-header>
-        <Breadcrumbs :items="[{ label: __('Market Assignment'), route: { name: 'LCS Market Assignment' } }]" />
+        <Breadcrumbs :items="[{ label: 'Vertrieb' }, { label: 'CRM' }, { label: __('Market Assignment'), route: { name: 'LCS Market Assignment' } }]" />
       </template>
       <template #right-header>
         <Button :label="__('Refresh')" iconLeft="refresh-cw" @click="board.reload()" :loading="board.loading" />
@@ -28,7 +28,6 @@
     <div class="crmt">
       <div class="crmt-inner">
         <PpPageHead
-          :eyebrow="__('Sales / CRM')"
           :title="__('Market Assignment')"
           :subtitle="__('Project map + territories by sales manager · click a marker to see the assignment')"
         />
