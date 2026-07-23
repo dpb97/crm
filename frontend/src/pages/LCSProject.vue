@@ -294,33 +294,16 @@
       </div>
     </div>
 
-    <!-- Meta-/Inspector-Spalte (bestehendes Seitenpanel, Funktionserhalt) -->
-    <Resizer side="right" class="flex !w-full shrink-0 flex-col justify-between border-t bg-white lg:!w-auto lg:border-l lg:border-t-0">
+    <!-- Meta-Spalte: nur noch Notizen-Vorschau + externe Links. Classification /
+         People / Pricing auf Wunsch ausgeblendet; das Panel entfällt ganz, wenn
+         weder Notizen noch Links vorhanden sind. -->
+    <Resizer
+      v-if="doc.notes || doc.team_link || doc.sharepoint_link"
+      side="right"
+      class="flex !w-full shrink-0 flex-col justify-between border-t bg-white lg:!w-auto lg:border-l lg:border-t-0"
+    >
       <div class="flex-1 overflow-y-auto">
         <div class="divide-y">
-          <div class="space-y-3 px-5 py-4">
-            <h4 class="text-[10px] font-bold uppercase tracking-wider text-gray-400">{{ __('Classification') }}</h4>
-            <SideField :label="__('Country')"><span class="text-sm text-gray-800">{{ doc.country || '—' }}</span></SideField>
-            <SideField :label="__('GU')">
-              <span v-if="doc.is_gu" class="flex items-center gap-1 text-sm text-green-600"><FeatherIcon name="check-circle" class="h-3.5 w-3.5" /> {{ __('Yes') }}</span>
-              <span v-else class="text-sm text-gray-400">{{ __('No') }}</span>
-            </SideField>
-          </div>
-
-          <div class="space-y-3 px-5 py-4">
-            <h4 class="text-[10px] font-bold uppercase tracking-wider text-gray-400">{{ __('People') }}</h4>
-            <SideField :label="__('Salesperson')"><UserPicker :value="doc.salesperson" :placeholder="__('Assign…')" @save="v => updateField('salesperson', v)" /></SideField>
-            <SideField :label="__('Sales Manager')"><UserPicker :value="doc.sales_manager" :placeholder="__('Assign…')" @save="v => updateField('sales_manager', v)" /></SideField>
-            <SideField :label="__('Organization')"><span class="text-sm text-gray-800">{{ doc.organization || '—' }}</span></SideField>
-          </div>
-
-          <div v-if="canShow('show_pricing_details')" class="space-y-2 px-5 py-4">
-            <h4 class="text-[10px] font-bold uppercase tracking-wider text-gray-400">{{ __('Pricing') }}</h4>
-            <SideField :label="__('Budget')"><span class="text-sm tabular-nums" :class="doc.budget_customer ? 'text-gray-800' : 'text-gray-400'">{{ doc.budget_customer ? formatCurrency(doc.budget_customer) : '—' }}</span></SideField>
-            <SideField :label="__('Richtpreis')"><span class="text-sm tabular-nums" :class="doc.richtpreis ? 'text-lcs-primary font-medium' : 'text-gray-400'">{{ doc.richtpreis ? formatCurrency(doc.richtpreis) : '—' }}</span></SideField>
-            <SideField :label="__('Offer')"><span class="text-sm tabular-nums" :class="doc.angebot_total ? 'text-green-700 font-semibold' : 'text-gray-400'">{{ doc.angebot_total ? formatCurrency(doc.angebot_total) : '—' }}</span></SideField>
-          </div>
-
           <div v-if="doc.notes" class="space-y-2 bg-amber-50/30 px-5 py-4">
             <h4 class="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-amber-700"><FeatherIcon name="edit-3" class="h-3 w-3" />{{ __('Notes Preview') }}</h4>
             <p class="line-clamp-4 whitespace-pre-wrap text-xs text-gray-700">{{ doc.notes }}</p>
@@ -415,7 +398,6 @@ import Resizer from '@/components/Resizer.vue'
 import FusionItemPicker from '@/components/lcs/FusionItemPicker.vue'
 import BomTree from '@/components/lcs/BomTree.vue'
 import ExecutionPanel from '@/components/lcs/ExecutionPanel.vue'
-import UserPicker from '@/components/lcs/UserPicker.vue'
 import OpportunityMatrix from '@/components/lcs/OpportunityMatrix.vue'
 import MailActivityWidget from '@/components/lcs/MailActivityWidget.vue'
 import ContactRow from '@/components/lcs/ContactRow.vue'
@@ -436,11 +418,6 @@ import { copyToClipboard, timeAgo } from '@/utils'
 import { useUserPreferences } from '@/composables/useUserPreferences'
 
 const { canShow } = useUserPreferences()
-
-const SideField = {
-  props: ['label'],
-  template: `<div class="flex items-center justify-between"><label class="text-xs text-gray-500">{{ label }}</label><slot /></div>`,
-}
 
 const router = useRouter()
 const props = defineProps({ id: { type: String, required: true } })
