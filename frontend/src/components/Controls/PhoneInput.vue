@@ -69,6 +69,7 @@
 import { ref, computed, watch, onBeforeUnmount, nextTick } from 'vue'
 import IconGlobe from '~icons/lucide/globe'
 import IconChevron from '~icons/lucide/chevron-down'
+import { COUNTRIES, detectCountry } from '@/utils/phoneCountry'
 import 'flag-icons/css/flag-icons.min.css'
 
 const props = defineProps({
@@ -78,54 +79,12 @@ const props = defineProps({
 })
 const emit = defineEmits(['change'])
 
-// [iso2, dial] — names via Intl.DisplayNames, flags via flag-icons. Shared dial
-// codes list the primary first (used for prefix detection). Broad but not
-// exhaustive; unknown prefixes just show the globe, the number still stores.
-const RAW = [
-  ['AT', 43], ['DE', 49], ['CH', 41], ['LI', 423], ['IT', 39], ['FR', 33],
-  ['ES', 34], ['PT', 351], ['GB', 44], ['IE', 353], ['NL', 31], ['BE', 32],
-  ['LU', 352], ['DK', 45], ['SE', 46], ['NO', 47], ['FI', 358], ['IS', 354],
-  ['PL', 48], ['CZ', 420], ['SK', 421], ['HU', 36], ['SI', 386], ['HR', 385],
-  ['BA', 387], ['RS', 381], ['ME', 382], ['MK', 389], ['AL', 355], ['GR', 30],
-  ['BG', 359], ['RO', 40], ['MD', 373], ['UA', 380], ['BY', 375], ['LT', 370],
-  ['LV', 371], ['EE', 372], ['RU', 7], ['KZ', 7], ['TR', 90], ['CY', 357],
-  ['MT', 356], ['US', 1], ['CA', 1], ['MX', 52], ['BR', 55], ['AR', 54],
-  ['CL', 56], ['CO', 57], ['PE', 51], ['CN', 86], ['JP', 81], ['KR', 82],
-  ['IN', 91], ['ID', 62], ['TH', 66], ['VN', 84], ['SG', 65], ['MY', 60],
-  ['PH', 63], ['AU', 61], ['NZ', 64], ['ZA', 27], ['EG', 20], ['MA', 212],
-  ['NG', 234], ['KE', 254], ['IL', 972], ['SA', 966], ['AE', 971], ['QA', 974],
-]
-const regionNames = (() => {
-  try { return new Intl.DisplayNames(['de'], { type: 'region' }) } catch { return null }
-})()
-const COUNTRIES = RAW.map(([iso2, dial]) => ({
-  iso2,
-  dial,
-  name: (regionNames && regionNames.of(iso2)) || iso2,
-})).sort((a, b) => a.name.localeCompare(b.name, 'de'))
-
-// Detection order: longest dial wins; for equal dial the first in RAW (primary).
-const BY_LEN = [...COUNTRIES].sort(
-  (a, b) => String(b.dial).length - String(a.dial).length ||
-    RAW.findIndex((r) => r[0] === a.iso2) - RAW.findIndex((r) => r[0] === b.iso2),
-)
-function detect(v) {
-  const s = String(v || '').trim()
-  if (!s.startsWith('+')) return null
-  const d = s.slice(1).replace(/\D/g, '')
-  if (!d) return null
-  for (const c of BY_LEN) {
-    if (d.startsWith(String(c.dial))) return c
-  }
-  return null
-}
-
 const local = ref(props.value || '')
 const forcedIso = ref(null) // set when the user picks a country explicitly
 watch(() => props.value, (v) => { if (v !== local.value) local.value = v || '' })
 
 const current = computed(() => {
-  const d = detect(local.value)
+  const d = detectCountry(local.value)
   if (d) return d
   if (forcedIso.value) return COUNTRIES.find((c) => c.iso2 === forcedIso.value) || null
   return null
@@ -173,7 +132,7 @@ function onDocClick(e) {
 }
 function pick(c) {
   // Strip an existing "+<dial>" prefix, keep the national part, prepend the new dial.
-  const cur = detect(local.value)
+  const cur = detectCountry(local.value)
   let national = local.value.trim()
   if (cur) national = national.replace(/^\+\s*/, '').replace(new RegExp('^' + cur.dial + '\\s*'), '')
   else national = national.replace(/^\+?\s*/, '')

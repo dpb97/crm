@@ -3,7 +3,10 @@
     class="group flex w-full items-center justify-between rounded bg-transparent p-1 pl-2 text-base text-ink-gray-8 transition-colors hover:bg-surface-gray-3 active:bg-surface-gray-4"
   >
     <div class="flex flex-1 items-center justify-between gap-7">
-      <div v-show="!editMode">{{ option.value }}</div>
+      <div v-show="!editMode" class="flex items-center gap-1.5">
+        <span v-if="flag" :class="flag" class="pdi-flag" />
+        <span>{{ option.value }}</span>
+      </div>
       <TextInput
         v-show="editMode"
         ref="inputRef"
@@ -57,10 +60,18 @@
 import SuccessIcon from '@/components/Icons/SuccessIcon.vue'
 import EditIcon from '@/components/Icons/EditIcon.vue'
 import { TextInput } from 'frappe-ui'
-import { nextTick, ref, onMounted, reactive, watch } from 'vue'
+import { nextTick, ref, onMounted, reactive, watch, computed } from 'vue'
+import { detectCountry, flagClass } from '@/utils/phoneCountry'
+import 'flag-icons/css/flag-icons.min.css'
 
 const props = defineProps({
   option: { type: Object, default: () => {} },
+})
+
+// Flag only for phone-looking option values ("+<dial>…").
+const flag = computed(() => {
+  const c = detectCountry(props.option?.value)
+  return c ? flagClass(c.iso2) : null
 })
 
 const localOption = reactive({ ...props.option })
@@ -99,3 +110,14 @@ const saveOption = (e) => {
   isNew.value = false
 }
 </script>
+
+<style scoped>
+.pdi-flag {
+  width: 18px;
+  height: 13px;
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.06);
+  background-size: cover;
+  flex-shrink: 0;
+}
+</style>
