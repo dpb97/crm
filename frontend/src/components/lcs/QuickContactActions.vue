@@ -8,11 +8,11 @@
 
 <template>
   <div class="grid grid-cols-2 gap-2" :class="cols === 4 ? 'sm:grid-cols-4' : ''">
-    <!-- Calling goes through Teams (VoIP by email, PSTN by number) and is
-         logged as a CRM Call Log — no Twilio dialer involved. -->
-    <button type="button" :disabled="!(phone || email)" :class="actionCls(phone || email)" @click="onCall">
+    <!-- Plain callto: link — hands the number to the OS' registered dialer
+         (Teams / Skype / softphone). No Call Log / Teams deep-link flow. -->
+    <a :href="phone ? 'callto:' + telNumber(phone) : null" :class="actionCls(phone)">
       <FeatherIcon name="phone" class="h-4 w-4" /> {{ __('Call') }}
-    </button>
+    </a>
     <a :href="email ? `mailto:${email}` : null" :class="actionCls(email)">
       <FeatherIcon name="mail" class="h-4 w-4" /> {{ __('Mail') }}
     </a>
@@ -27,27 +27,18 @@
 
 <script setup>
 import { FeatherIcon } from 'frappe-ui'
-import { useTeamsCall } from '@/composables/useTeamsCall'
 
-const props = defineProps({
+defineProps({
   email: { type: String, default: '' },
   phone: { type: String, default: '' },
   // 4 = two-up on mobile, four-up on >=sm; otherwise always two-up.
   cols: { type: Number, default: 2 },
-  // Optional: link the logged call to the record it was started from.
-  referenceDoctype: { type: String, default: '' },
-  referenceName: { type: String, default: '' },
 })
 
-const { teamsCall } = useTeamsCall()
-function onCall() {
-  if (!props.phone && !props.email) return
-  teamsCall({
-    email: props.email,
-    phone: props.phone,
-    reference_doctype: props.referenceDoctype,
-    reference_name: props.referenceName,
-  })
+// callto: wants a clean number — keep digits and a single leading '+'.
+function telNumber(p) {
+  const n = String(p).replace(/[^\d+]/g, '')
+  return n.startsWith('+') ? '+' + n.slice(1).replace(/\+/g, '') : n
 }
 
 // wa.me wants the country code without '+' and without leading zeros. Strip the
