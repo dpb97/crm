@@ -5,8 +5,9 @@
   und wie viel Arbeit (Leads / Angebote / Projekte) trägt jeder Sales-Manager.
 
   Präsentation nach pilanda_theme-Showcase #8: PpPageHead + PpStatTile +
-  PpMap (Marker je Territorium, gefärbt nach zuständigem Sales-Manager) +
-  PpDataGrid (Territorien). Datenlogik unverändert produktiv:
+  TerritoryMap (echte Leaflet-Weltkarte, Marker je Territorium auf echter
+  Geografie, gefärbt nach zuständigem Sales-Manager) + PpDataGrid (Territorien).
+  Datenlogik unverändert produktiv:
     lcs_integrations.projects.api.get_market_assignment
   Die Marker-Koordinate ist der geografische Schwerpunkt der (echten) Länder
   eines Territoriums (serverseitig aus dem bestehenden Country-Centroid-Table)
@@ -81,7 +82,7 @@
             <h3 class="crmt-section-title">{{ __('Project Map') }}</h3>
             <span class="crmt-hint">{{ markers.length }} {{ __('of') }} {{ territories.length }} {{ __('territories located') }}</span>
           </div>
-          <PpMap v-if="markers.length" :markers="markers" :active-id="activeId" :marker-scale="1.6" @marker-click="pickMarker" />
+          <TerritoryMap v-if="markers.length" :markers="markers" :active-id="activeId" height-class="h-[60vh]" @marker-click="pickMarker" />
           <div v-else class="crmt-card crmt-map-empty">
             <PpEmptyState
               :icon="IconMapPin"
@@ -175,7 +176,7 @@ import { createResource, call, toast, Breadcrumbs, Button, FormControl, FeatherI
 import LayoutHeader from '@/components/LayoutHeader.vue'
 import PpPageHead from '@/components/pp/PpPageHead.vue'
 import PpStatTile from '@/components/pp/PpStatTile.vue'
-import PpMap from '@/components/pp/PpMap.vue'
+import TerritoryMap from '@/components/lcs/TerritoryMap.vue'
 import PpDataGrid from '@/components/pp/PpDataGrid.vue'
 import PpEmptyState from '@/components/pp/PpEmptyState.vue'
 import IconMapPin from '~icons/lucide/map-pin'
