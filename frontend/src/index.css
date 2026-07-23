@@ -3,6 +3,11 @@
    (PpSidebar) in Pilanda mode. Namespaced, so no clash with the --lcs-* set. */
 @import './pp-tokens.css';
 
+/* Klickdummy-Master §5: app-weit keine sichtbaren Scrollbalken (Scrollen
+   bleibt voll funktional). Firefox + IE + WebKit/Blink. */
+* { scrollbar-width: none; -ms-overflow-style: none; }
+*::-webkit-scrollbar { width: 0; height: 0; display: none; }
+
 /* ============================================================
    LCS Theme Tokens — single source of truth for design tokens.
    Tailwind theme.extend.colors registers the SAME values; CSS
