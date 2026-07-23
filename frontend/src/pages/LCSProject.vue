@@ -296,10 +296,6 @@
 
     <!-- Meta-/Inspector-Spalte (bestehendes Seitenpanel, Funktionserhalt) -->
     <Resizer side="right" class="flex !w-full shrink-0 flex-col justify-between border-t bg-white lg:!w-auto lg:border-l lg:border-t-0">
-      <div v-if="doc.name && canShow('show_integration_panel')" class="border-b px-5 py-4">
-        <IntegrationStatusPanel :project="projectId" />
-      </div>
-
       <div class="flex-1 overflow-y-auto">
         <div class="divide-y">
           <div class="space-y-3 px-5 py-4">
@@ -416,7 +412,6 @@ import {
 import LayoutHeader from '@/components/LayoutHeader.vue'
 import MoneyDual from '@/components/lcs/MoneyDual.vue'
 import Resizer from '@/components/Resizer.vue'
-import IntegrationStatusPanel from '@/components/lcs/IntegrationStatusPanel.vue'
 import FusionItemPicker from '@/components/lcs/FusionItemPicker.vue'
 import BomTree from '@/components/lcs/BomTree.vue'
 import ExecutionPanel from '@/components/lcs/ExecutionPanel.vue'
@@ -508,7 +503,7 @@ const T = {
 const activeTab = ref(T.OV)
 const tabs = computed(() => {
   const list = [T.OV, T.ACT, T.OFF, T.DOC, T.EXE, T.CON]
-  if (canShow('show_fusion_section')) list.push(T.PLM)
+  // PLM / BOM tab hidden on request (the pane/loader stay in code, unreachable).
   if (canShow('show_opportunity_matrix')) list.push(T.MTX)
   return list
 })
