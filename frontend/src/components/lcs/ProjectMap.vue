@@ -32,8 +32,10 @@
     <div v-show="projects.length" class="relative h-full">
       <div ref="mapContainer" :class="['w-full rounded-lg border', heightClass]" />
 
-      <!-- H6: Recognition — phase color legend overlay -->
-      <div class="absolute bottom-3 left-3 z-10 rounded-lg border bg-white/95 px-3 py-2 shadow-sm backdrop-blur-sm">
+      <!-- H6: Recognition — phase color legend overlay. Top-left (right of the
+           zoom control) so a full-height map never clips it at the bottom edge
+           / against the shell status bar. -->
+      <div class="absolute top-3 left-14 z-[400] rounded-lg border bg-white/95 px-3 py-2 shadow-sm backdrop-blur-sm">
         <div class="mb-1 text-[10px] font-semibold uppercase tracking-wide text-gray-400">{{ __('Phase') }}</div>
         <div class="flex flex-wrap gap-x-3 gap-y-1">
           <span
@@ -47,8 +49,9 @@
         </div>
       </div>
 
-      <!-- H1: Visibility — marker count -->
-      <div class="absolute bottom-3 right-3 z-10 rounded-md bg-white/90 px-2 py-1 text-xs text-gray-500 shadow-sm backdrop-blur-sm">
+      <!-- H1: Visibility — marker count. Bottom-left (clear of the Leaflet
+           attribution at bottom-right). -->
+      <div class="absolute bottom-3 left-3 z-[400] rounded-md bg-white/90 px-2 py-1 text-xs text-gray-500 shadow-sm backdrop-blur-sm">
         {{ projects.length }} {{ __('locations') }}
       </div>
     </div>
