@@ -1,9 +1,23 @@
-<!-- PP_REV: PpDataGrid@4 -->
+<!-- PP_REV: PpDataGrid@5 -->
 <!--
   PpDataGrid.vue — erweiterte, wiederverwendbare Datentabelle (List-Ansichten/
   Reports). Ersetzt spaeter statische Tabellen.
 
   ECHTE props-in / events-out Komponente — kein Store, kein Backend.
+
+  @5 (26.07.2026, Marco A2 — Klickdummy Listen-Picker `wireListPick`/
+  `enhancePickTable`): ADDITIV, voll rueckwaertskompatibel (alle Verbraucher
+  unveraendert — neue Props optional, default aus).
+    · `pickable` + v-model `picked` (Array<id>): KONTROLLIERTE Picker-Spalte GANZ
+      LINKS (Checkboxen). Kopf-Checkbox = alle an/aus (indeterminate bei Teil-
+      auswahl), dezenter Zaehler im Kopf, ausgewaehlte Zeilen dezent markiert
+      (`.pp-datagrid__row--picked`). Abgrenzung zu `selectable`: `selectable` ist
+      die LEGACY-Variante mit INTERNEM Auswahlzustand + Bulk-Leiste (emit
+      update:selection); `pickable` ist die kontrollierte Klickdummy-Parity, deren
+      Auswahl der Host per v-model haelt (z. B. um kontextabhaengige Aktionen in
+      die Funktionsbar zu injizieren). Nur EINE der beiden je Tabelle nutzen.
+    · Emit `row-dblclick`(id): Doppelklick auf eine Datenzeile (Doppelklick-Detail-
+      regel). Ohne Listener wirkungslos.
 
   @4 (23.07.2026): Spalten koennen mit `hidden: true` STANDARDMAESSIG
   ausgeblendet starten und werden ueber den Spalten-Chooser (`columnTools`)
@@ -59,8 +73,10 @@ const props = defineProps({
   chooserKeys:{ type: Array,   default: null },  // @4: Chooser auf diese keys begrenzen (null = alle Spalten)
   reorderable:{ type: Boolean, default: false }, // Spaltenreihenfolge per Drag and Drop
   resizable:  { type: Boolean, default: false }, // Spaltenbreite per Ziehen am Rand
+  pickable:   { type: Boolean, default: false }, // @5: kontrollierte Picker-Spalte links (v-model:picked)
+  picked:     { type: Array,   default: () => [] }, // @5: ausgewaehlte ids (kontrolliert)
 });
-const emit = defineEmits(["row-click", "update:selection", "toggle-expand"]);
+const emit = defineEmits(["row-click", "update:selection", "toggle-expand", "update:picked", "row-dblclick"]);
 
 /* ---- Spalten-Normalisierung ------------------------------------ */
 const baseCols = computed(() =>
@@ -169,8 +185,8 @@ const groupSegments = computed(() => {
   return segs;
 });
 
-/* Wieviele fuehrende Steuer-Spalten (Auswahl / Aufklappen) gibt es? */
-const leadCols = computed(() => (props.selectable ? 1 : 0) + (props.expandable ? 1 : 0));
+/* Wieviele fuehrende Steuer-Spalten (Picker / Auswahl / Aufklappen) gibt es? */
+const leadCols = computed(() => (props.pickable ? 1 : 0) + (props.selectable ? 1 : 0) + (props.expandable ? 1 : 0));
 
 /* ---- Sortierung (clientseitig) --------------------------------- */
 const sortKey = ref("");
@@ -247,6 +263,26 @@ function toggleAll() {
 function clearSel() {
   selected.value = new Set();
   emitSelection();
+}
+
+/* ---- Kontrollierter Picker (@5) -------------------------------- */
+const pickedSet = computed(() => new Set(props.picked));
+const allPicked = computed(
+  () => allIds.value.length > 0 && allIds.value.every((id) => pickedSet.value.has(id)),
+);
+const somePicked = computed(
+  () => allIds.value.some((id) => pickedSet.value.has(id)) && !allPicked.value,
+);
+const pickedCount = computed(() => props.picked.length);
+function togglePick(id) {
+  const next = props.picked.slice();
+  const i = next.indexOf(id);
+  if (i >= 0) next.splice(i, 1);
+  else next.push(id);
+  emit("update:picked", next);
+}
+function togglePickAll() {
+  emit("update:picked", allPicked.value ? [] : allIds.value.slice());
 }
 
 /* ---- Aufklappen ------------------------------------------------ */
@@ -353,6 +389,20 @@ function sortState(key) {
           <!-- Spalten-Kopf -->
           <tr>
             <th
+              v-if="pickable"
+              class="pp-datagrid__cell pp-datagrid__cell--lead pp-datagrid__cell--ctrl pp-datagrid__cell--pick"
+            >
+              <input
+                type="checkbox"
+                class="pp-datagrid__check"
+                :checked="allPicked"
+                :indeterminate.prop="somePicked"
+                @change="togglePickAll"
+                aria-label="Alle auswählen"
+              />
+              <span v-if="pickedCount" class="pp-datagrid__pick-count">{{ pickedCount }}</span>
+            </th>
+            <th
               v-if="expandable"
               class="pp-datagrid__cell pp-datagrid__cell--lead pp-datagrid__cell--ctrl"
             ></th>
@@ -419,9 +469,28 @@ function sortState(key) {
             <template v-for="row in sec.rows" :key="row.id">
               <tr
                 class="pp-datagrid__row"
-                :class="{ 'is-selected': selectable && selected.has(row.id) }"
+                :class="{
+                  'is-selected': selectable && selected.has(row.id),
+                  'pp-datagrid__row--picked': pickable && pickedSet.has(row.id),
+                }"
                 @click="emit('row-click', row.id)"
+                @dblclick="emit('row-dblclick', row.id)"
               >
+                <!-- Picker (@5, kontrolliert) -->
+                <td
+                  v-if="pickable"
+                  class="pp-datagrid__cell pp-datagrid__cell--ctrl pp-datagrid__cell--pick"
+                  @click.stop
+                >
+                  <input
+                    type="checkbox"
+                    class="pp-datagrid__check"
+                    :checked="pickedSet.has(row.id)"
+                    @change="togglePick(row.id)"
+                    :aria-label="'Zeile ' + row.id + ' auswählen'"
+                  />
+                </td>
+
                 <!-- Aufklapp-Chevron -->
                 <td v-if="expandable" class="pp-datagrid__cell pp-datagrid__cell--ctrl">
                   <button
@@ -478,6 +547,7 @@ function sortState(key) {
                   :key="row.id + '-c' + cii"
                   class="pp-datagrid__row pp-datagrid__row--child"
                 >
+                  <td v-if="pickable" class="pp-datagrid__cell pp-datagrid__cell--ctrl pp-datagrid__cell--pick"></td>
                   <td v-if="expandable" class="pp-datagrid__cell pp-datagrid__cell--ctrl"></td>
                   <td
                     v-if="selectable"
@@ -719,6 +789,18 @@ function sortState(key) {
   color: var(--pp-text-on-accent); background: var(--pp-brand-primary);
   padding: 1px 6px; border-radius: var(--pp-radius-full); letter-spacing: 0;
 }
+
+/* ---- Kontrollierter Picker (@5) ------------------------------- */
+.pp-datagrid__cell--pick { position: relative; }
+.pp-datagrid__head .pp-datagrid__cell--pick { white-space: nowrap; }
+.pp-datagrid__pick-count {
+  display: inline-block; margin-left: 4px; vertical-align: middle;
+  font-size: 10px; font-weight: var(--pp-weight-bold); letter-spacing: 0;
+  color: var(--pp-text-on-accent); background: var(--pp-brand-primary);
+  padding: 1px 6px; border-radius: var(--pp-radius-full);
+}
+.pp-datagrid__row--picked td { background: rgb(var(--pp-brand-primary-rgb) / 0.08); }
+.pp-datagrid__row--picked td.pp-datagrid__pin { background: rgb(var(--pp-brand-primary-rgb) / 0.08); }
 
 /* ---- Checkbox / Chevron --------------------------------------- */
 .pp-datagrid__check { width: 15px; height: 15px; accent-color: var(--pp-brand-primary); cursor: pointer; }
