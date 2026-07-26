@@ -1,4 +1,4 @@
-<!-- PP_REV: PpSidebar@6 -->
+<!-- PP_REV: PpSidebar@8 -->
 <!--
   PpSidebar.vue — vollständige App-Navigations-Sidebar (SSOT-Baustein).
 
@@ -32,6 +32,18 @@
     GETÖNT „Allgemein"-Block (Reihenfolge liefert der Host über `allgemein`);
            Trennlinie; „Wissen"-Block (`wissen`).
   Einfach-Selektion: genau EIN aktiver Punkt (v-model:activeKey).
+
+  @7 (Klickdummy-Revision Marco 24.07.2026 — Regel 5):
+    · CHEVRON-GRUPPE ÖFFNET, WENN PARENT ODER KIND AKTIV IST. Standard bleibt
+      eingeklappt; sobald der Parent selbst oder ein (Enkel-)Kind der aktive
+      Punkt ist, klappt die Gruppe automatisch auf (zusätzlich zum manuellen
+      Chevron-Toggle). Umgesetzt über `groupOpen()` (manuell ODER enthält den
+      aktiven Schlüssel) — greift für Modulmenü, Allgemein und Wissen.
+    · SUB-EINRÜCKUNG NIE LINKS DES PARENT-TEXTS: Unterpunkte (Ebene 2/3) rücken
+      auf die PARENT-TEXTKANTE (41 px = 16 px Padding + 16 px Icon + 9 px Gap)
+      ein — sie sind ikonlos, sonst stünde der Text links des Parents. Dezente
+      Führungslinie auf der Icon-Achse (~23 px) und leicht kleinere/gedämpfte
+      Schrift.
 
   @6 (21.07.2026 — Klickdummy-Sync):
     · ZURÜCK-Zeile (Regel 3): schlichter Pfeil als eigene Zeile GANZ OBEN über dem
@@ -229,6 +241,15 @@ const expanded = reactive({});
 function toggleGroup(key) { expanded[key] = !expanded[key]; }
 const isExpanded = (key) => !!expanded[key];
 
+/* @7 (Regel 5): Gruppe ist offen, wenn sie manuell aufgeklappt wurde ODER der
+   Parent bzw. ein (Enkel-)Kind der aktive Punkt ist. `keyActive` (weiter unten,
+   Funktionsdeklaration → hoisted) deckt Item-Keys und Modul-Verweise ab. */
+function containsActive(node) {
+  if (keyActive(node)) return true;
+  return (node.children || []).some((c) => containsActive(c));
+}
+function groupOpen(node) { return isExpanded(node.key) || containsActive(node); }
+
 /* ---------- Auswahl / Navigation ---------- */
 function selectDashboard() {
   emit("update:activeKey", "dash");
@@ -327,29 +348,29 @@ const itemTitle = (it) => {
         <div v-if="gi > 0" class="pp-nav__sep"></div>
         <template v-for="node in g.tree" :key="node.key">
           <!-- Parent mit Kindern: Zeile bleibt Link + Chevron-Toggle daneben -->
-          <div v-if="node.children.length" class="pp-nav__group" :class="{ 'is-open': isExpanded(node.key) }">
+          <div v-if="node.children.length" class="pp-nav__group" :class="{ 'is-open': groupOpen(node) }">
             <div class="pp-nav__item pp-nav__item--parent" :class="{ 'is-active': activeKey === node.key }">
               <button type="button" class="pp-nav__row" :title="itemTitle(node.item)" @click="selectItem(node)">
                 <span class="pp-nav__ic"><component :is="resolveIcon(node.item)" /></span>
                 <span class="pp-nav__label">{{ itemTitle(node.item) }}</span>
               </button>
-              <button type="button" class="pp-nav__chev" :aria-expanded="isExpanded(node.key)"
-                      :aria-label="isExpanded(node.key) ? 'einklappen' : 'ausklappen'"
+              <button type="button" class="pp-nav__chev" :aria-expanded="groupOpen(node)"
+                      :aria-label="groupOpen(node) ? 'einklappen' : 'ausklappen'"
                       @click.stop="toggleGroup(node.key)"><ChevronDown /></button>
             </div>
-            <div v-show="isExpanded(node.key)" class="pp-nav__children">
+            <div v-show="groupOpen(node)" class="pp-nav__children">
               <template v-for="c in node.children" :key="c.key">
-                <div v-if="c.children.length" class="pp-nav__group" :class="{ 'is-open': isExpanded(c.key) }">
+                <div v-if="c.children.length" class="pp-nav__group" :class="{ 'is-open': groupOpen(c) }">
                   <div class="pp-nav__item pp-nav__item--parent pp-nav__item--sub" :class="{ 'is-active': activeKey === c.key }">
                     <button type="button" class="pp-nav__row" :title="itemTitle(c.item)" @click="selectItem(c)">
                       <!-- Icon-Regel: Chevron-Kinder (sub) tragen KEIN Icon -->
                       <span class="pp-nav__label">{{ itemTitle(c.item) }}</span>
                     </button>
-                    <button type="button" class="pp-nav__chev" :aria-expanded="isExpanded(c.key)"
-                            :aria-label="isExpanded(c.key) ? 'einklappen' : 'ausklappen'"
+                    <button type="button" class="pp-nav__chev" :aria-expanded="groupOpen(c)"
+                            :aria-label="groupOpen(c) ? 'einklappen' : 'ausklappen'"
                             @click.stop="toggleGroup(c.key)"><ChevronDown /></button>
                   </div>
-                  <div v-show="isExpanded(c.key)" class="pp-nav__children">
+                  <div v-show="groupOpen(c)" class="pp-nav__children">
                     <button v-for="d in c.children" :key="d.key" type="button"
                             class="pp-nav__item pp-nav__item--sub2" :class="{ 'is-active': activeKey === d.key }"
                             :title="itemTitle(d.item)" @click="selectItem(d)">
@@ -377,7 +398,7 @@ const itemTitle = (it) => {
       <div v-if="allgemeinTree.length || wissenTree.length" class="pp-nav__sep"></div>
       <div v-if="allgemeinTree.length || wissenTree.length" class="pp-sidebar__general">
         <template v-for="node in allgemeinTree" :key="node.key">
-          <div v-if="node.children.length" class="pp-nav__group" :class="{ 'is-open': isExpanded(node.key) }">
+          <div v-if="node.children.length" class="pp-nav__group" :class="{ 'is-open': groupOpen(node) }">
             <div class="pp-nav__item pp-nav__item--parent">
               <button type="button" class="pp-nav__row" :title="itemTitle(node.item)"
                       @click="node.item.moduleId ? selectModuleItem(node.item.moduleId) : selectItem(node)">
@@ -385,11 +406,11 @@ const itemTitle = (it) => {
                 <span class="pp-nav__label">{{ itemTitle(node.item) }}</span>
                 <span v-if="node.children.length" class="pp-nav__count">{{ node.children.length }}</span>
               </button>
-              <button type="button" class="pp-nav__chev" :aria-expanded="isExpanded(node.key)"
-                      :aria-label="isExpanded(node.key) ? 'einklappen' : 'ausklappen'"
+              <button type="button" class="pp-nav__chev" :aria-expanded="groupOpen(node)"
+                      :aria-label="groupOpen(node) ? 'einklappen' : 'ausklappen'"
                       @click.stop="toggleGroup(node.key)"><ChevronDown /></button>
             </div>
-            <div v-show="isExpanded(node.key)" class="pp-nav__children">
+            <div v-show="groupOpen(node)" class="pp-nav__children">
               <button v-for="c in node.children" :key="c.key" type="button"
                       class="pp-nav__item pp-nav__item--sub" :class="{ 'is-active': keyActive(c) }"
                       :title="itemTitle(c.item)" @click="c.item.moduleId ? selectModuleItem(c.item.moduleId) : selectItem(c)">
@@ -408,18 +429,18 @@ const itemTitle = (it) => {
         <template v-if="wissenTree.length">
           <div class="pp-nav__sep"></div>
           <template v-for="node in wissenTree" :key="node.key">
-            <div v-if="node.children.length" class="pp-nav__group" :class="{ 'is-open': isExpanded(node.key) }">
+            <div v-if="node.children.length" class="pp-nav__group" :class="{ 'is-open': groupOpen(node) }">
               <div class="pp-nav__item pp-nav__item--parent">
                 <button type="button" class="pp-nav__row" :title="itemTitle(node.item)"
                         @click="node.item.moduleId ? selectModuleItem(node.item.moduleId) : selectItem(node)">
                   <span class="pp-nav__ic"><component :is="resolveIcon(node.item)" /></span>
                   <span class="pp-nav__label">{{ itemTitle(node.item) }}</span>
                 </button>
-                <button type="button" class="pp-nav__chev" :aria-expanded="isExpanded(node.key)"
-                        :aria-label="isExpanded(node.key) ? 'einklappen' : 'ausklappen'"
+                <button type="button" class="pp-nav__chev" :aria-expanded="groupOpen(node)"
+                        :aria-label="groupOpen(node) ? 'einklappen' : 'ausklappen'"
                         @click.stop="toggleGroup(node.key)"><ChevronDown /></button>
               </div>
-              <div v-show="isExpanded(node.key)" class="pp-nav__children">
+              <div v-show="groupOpen(node)" class="pp-nav__children">
                 <button v-for="c in node.children" :key="c.key" type="button"
                         class="pp-nav__item pp-nav__item--sub"
                         :class="{ 'is-active': keyActive(c) }"
@@ -544,10 +565,22 @@ const itemTitle = (it) => {
 .pp-nav__chev:hover { color: var(--pp-brand-primary-d, var(--pp-brand-primary)); background: var(--pp-bg-hover); }
 .pp-nav__chev :deep(svg) { width: 13px; height: 13px; transition: transform var(--pp-duration-fast) var(--pp-ease-standard); }
 .pp-nav__group.is-open > .pp-nav__item--parent .pp-nav__chev :deep(svg) { transform: rotate(180deg); }
-.pp-nav__children { display: block; }
+/* @7 Regel 5: Unterpunkte rücken auf die PARENT-TEXTKANTE ein (Padding + Icon +
+   Gap) — nie weiter links als der Parent-Text. Führungslinie auf der Icon-Achse. */
+.pp-nav__children { display: block; position: relative; }
+.pp-nav__children::before { content: ""; position: absolute; top: 2px; bottom: 2px;
+  left: calc(var(--pp-space-3) + 7px); width: 1px; background: var(--pp-border-subtle); }
 
-.pp-nav__item--sub  { padding-left: var(--pp-space-5); }
-.pp-nav__item--sub2 { padding-left: calc(var(--pp-space-5) + var(--pp-space-4)); }
+.pp-nav__item--sub,
+.pp-nav__item--sub2 { font-size: var(--pp-fs-12, 12px); }
+.pp-nav__item--sub  .pp-nav__label,
+.pp-nav__item--sub2 .pp-nav__label { color: var(--pp-text-secondary); }
+.pp-nav__item--sub.is-active  .pp-nav__label,
+.pp-nav__item--sub2.is-active .pp-nav__label { color: var(--pp-brand-primary-d, var(--pp-brand-primary)); }
+/* Textkante des Parents = Padding-links (space-3) + Icon (16px) + Gap (space-2). */
+.pp-nav__item--sub  { padding-left: calc(var(--pp-space-3) + 16px + var(--pp-space-2)); }
+.pp-nav__item--sub2 { padding-left: calc(var(--pp-space-3) + 16px + var(--pp-space-2) + var(--pp-space-4)); }
+.pp-nav__item--parent.pp-nav__item--sub { padding-left: calc(var(--pp-space-3) + 16px + var(--pp-space-2)); }
 
 /* Trennlinie statt Überschrift */
 .pp-nav__sep { height: 1px; margin: var(--pp-space-2) var(--pp-space-2); background: var(--pp-border-subtle); }

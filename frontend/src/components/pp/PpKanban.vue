@@ -1,4 +1,4 @@
-<!-- PP_REV: PpKanban@3 -->
+<!-- PP_REV: PpKanban@4 -->
 <!--
   PpKanban.vue — Karten-Board mit ECHTEM Drag & Drop (SSOT-Baustein).
 
@@ -12,19 +12,33 @@
   aktualisiert (optimistische Anzeige); die App entscheidet via @move, ob sie
   den neuen Stand übernimmt/persistiert.
 
+  @4 (23.07.2026): Aufgaben-Karte nachgezogen aus dem Klickdummy (Batch V).
+  Optionale, RÜCKWÄRTSKOMPATIBLE Kartenfelder:
+    · ref       String  — Kennung oben links (z. B. „AP-4471")
+    · prio      { label, tone }  — Prioritäts-Chip oben rechts, KLICKBAR
+                (tone ∈ danger|warning|success) → emit `prio-click`
+    · stripe    String  — CSS-Farbe des linken Prioritäts-Streifens der Karte
+    · subtitle  String  — Unterzeile unter dem Titel (z. B. Projekt · Bereich)
+    · meta      Array<String>  — zusätzliche Meta-Angaben (Stunden, %, Fällig …)
+  Neu: Doppelklick auf eine Karte → emit `card-dblclick` (z. B. Deep-Link).
+  Ohne die neuen Felder rendert die Karte exakt wie @3.
+
   Props:
     columns  Array<{ key, label, wip? }>
              · wip  optionale Obergrenze → Zähler wird bei Überschreitung
                als Warnung (rot) markiert
-    cards    Array<{ id, col, title, badges?, assignee?, due? }>
+    cards    Array<{ id, col, title, badges?, assignee?, due?,
+                     ref?, prio?, stripe?, subtitle?, meta? }>
              · badges   Array<string | { label, tone? }>  tone: neutral|info|
                success|warning|danger
              · assignee String (Kürzel/Name → Avatar-Initialen)
              · due      String (Fälligkeit, frei formatiert)
 
   Emits:
-    move        ({ cardId, fromCol, toCol, index })  nach erfolgreichem Ablegen
-    card-click  (cardId)                             Klick ohne Ziehen
+    move         ({ cardId, fromCol, toCol, index })  nach erfolgreichem Ablegen
+    card-click   (cardId)                             Klick ohne Ziehen
+    card-dblclick(cardId)                             Doppelklick auf eine Karte
+    prio-click   (cardId)                             Klick auf den Prio-Chip
 
   Slots (@3):
     #column-meta   Optionaler Zusatz je Spaltenkopf, gerendert UNTER dem
@@ -43,8 +57,9 @@ import { ref, computed, watch, onBeforeUnmount } from "vue";
 const props = defineProps({
   columns: { type: Array, default: () => [] }, // [{ key, label, wip? }]
   cards:   { type: Array, default: () => [] }, // [{ id, col, title, badges?, assignee?, due? }]
+  highlightCol: { type: String, default: "" }, // @4: eine Spalte fokussieren (andere gedämpft)
 });
-const emit = defineEmits(["move", "card-click"]);
+const emit = defineEmits(["move", "card-click", "card-dblclick", "prio-click"]);
 
 /* ---- Interner, ablegbarer Karten-Zustand ----------------------- */
 const localCards = ref([]);
@@ -74,6 +89,12 @@ function badgeStyle(b) {
   return col ? { color: col, borderColor: col } : null;
 }
 const badgeLabel = (b) => (typeof b === "object" ? b.label : b);
+
+/* Prio-Chip (@4): getönter Chip in State-Farbe, klickbar (Zyklus im Host). */
+function prioStyle(prio) {
+  const col = TONE_STATE[prio?.tone] || "var(--pp-text-secondary)";
+  return { color: col, background: `color-mix(in oklab, ${col} 12%, transparent)` };
+}
 const initials = (name) =>
   (name || "").split(/\s+/).map((w) => w[0]).join("").slice(0, 2).toUpperCase();
 
@@ -198,7 +219,11 @@ onBeforeUnmount(() => {
       :key="col.key"
       class="pp-kanban__col"
       :data-kanban-col="col.key"
-      :class="{ 'is-dropzone': drag && drag.active && dropTarget && dropTarget.col === col.key }"
+      :class="{
+        'is-dropzone': drag && drag.active && dropTarget && dropTarget.col === col.key,
+        'is-dim': highlightCol && col.key !== highlightCol,
+        'is-hl':  highlightCol && col.key === highlightCol,
+      }"
     >
       <div class="pp-kanban__head">
         <span class="pp-kanban__title">{{ col.label }}</span>
@@ -225,10 +250,27 @@ onBeforeUnmount(() => {
           <div
             class="pp-kanban__card"
             :class="{ 'is-dragging': drag && drag.active && drag.id === card.id }"
+            :style="card.stripe ? { borderLeft: '3px solid ' + card.stripe } : null"
             :data-kanban-card="card.id"
             @pointerdown="onPointerDown($event, card)"
+            @dblclick="emit('card-dblclick', card.id)"
           >
+            <!-- Kopfzeile (@4): Kennung + klickbarer Prio-Chip -->
+            <div v-if="card.ref || card.prio" class="pp-kanban__card-top">
+              <span v-if="card.ref" class="pp-kanban__card-ref">{{ card.ref }}</span>
+              <button
+                v-if="card.prio"
+                type="button"
+                class="pp-kanban__prio"
+                :style="prioStyle(card.prio)"
+                :title="'Klick ändert die Dringlichkeit'"
+                @pointerdown.stop
+                @click.stop="emit('prio-click', card.id)"
+              ><span class="pp-kanban__prio-dot"></span>{{ card.prio.label }}</button>
+            </div>
+
             <div class="pp-kanban__card-title">{{ card.title }}</div>
+            <div v-if="card.subtitle" class="pp-kanban__card-sub">{{ card.subtitle }}</div>
 
             <div v-if="card.badges && card.badges.length" class="pp-kanban__badges">
               <span
@@ -239,12 +281,13 @@ onBeforeUnmount(() => {
               >{{ badgeLabel(b) }}</span>
             </div>
 
-            <div v-if="card.assignee || card.due" class="pp-kanban__card-meta">
+            <div v-if="card.assignee || card.due || (card.meta && card.meta.length)" class="pp-kanban__card-meta">
+              <span v-for="(m, mi) in card.meta" :key="'m' + mi" class="pp-kanban__meta-item">{{ m }}</span>
+              <span v-if="card.due" class="pp-kanban__due">{{ card.due }}</span>
               <span v-if="card.assignee" class="pp-kanban__who">
                 <span class="pp-kanban__avatar" :title="card.assignee">{{ initials(card.assignee) }}</span>
-                <span class="pp-kanban__who-name">{{ card.assignee }}</span>
+                <span v-if="!card.meta || !card.meta.length" class="pp-kanban__who-name">{{ card.assignee }}</span>
               </span>
-              <span v-if="card.due" class="pp-kanban__due">{{ card.due }}</span>
             </div>
           </div>
         </template>
@@ -278,6 +321,9 @@ onBeforeUnmount(() => {
   border-color: rgb(var(--pp-brand-primary-rgb) / 0.45);
   background: rgb(var(--pp-brand-primary-rgb) / 0.05);
 }
+/* Lane-Fokus (@4): eine Spalte hervorheben, die übrigen dämpfen. */
+.pp-kanban__col.is-dim { opacity: 0.45; }
+.pp-kanban__col.is-hl { box-shadow: 0 0 0 2px var(--pp-brand-primary); }
 .pp-kanban__body { min-height: 24px; }
 
 /* Kopf-Zusatz (@3): nur vorhanden, wenn der #column-meta-Slot befüllt ist.
@@ -319,6 +365,21 @@ onBeforeUnmount(() => {
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .pp-kanban__due { font-size: 11px; color: var(--pp-text-tertiary); flex-shrink: 0; }
+
+/* Karte @4: Kopfzeile / Prio-Chip / Unterzeile / Meta-Items */
+.pp-kanban__card-top { display: flex; align-items: center; justify-content: space-between;
+  gap: var(--pp-space-2); margin-bottom: 3px; }
+.pp-kanban__card-ref { font-size: 10px; font-weight: var(--pp-weight-bold);
+  color: var(--pp-brand-primary); font-variant-numeric: tabular-nums; }
+.pp-kanban__prio { appearance: none; cursor: pointer; font-family: inherit;
+  display: inline-flex; align-items: center; gap: 4px; padding: 1px 8px;
+  border: 1px solid transparent; border-radius: var(--pp-radius-full);
+  font-size: 10px; font-weight: var(--pp-weight-bold); }
+.pp-kanban__prio:hover { border-color: currentColor; }
+.pp-kanban__prio-dot { width: 6px; height: 6px; border-radius: var(--pp-radius-full); background: currentColor; }
+.pp-kanban__card-sub { font-size: var(--pp-fs-12, 12px); color: var(--pp-text-tertiary);
+  margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pp-kanban__meta-item { font-size: 10px; color: var(--pp-text-secondary); font-variant-numeric: tabular-nums; }
 
 .pp-kanban__drop {
   height: 2px; margin: 3px 2px;

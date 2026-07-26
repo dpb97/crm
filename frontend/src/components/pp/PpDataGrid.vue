@@ -1,17 +1,25 @@
-<!-- PP_REV: PpDataGrid@3 -->
+<!-- PP_REV: PpDataGrid@4 -->
 <!--
   PpDataGrid.vue — erweiterte, wiederverwendbare Datentabelle (List-Ansichten/
   Reports). Ersetzt spaeter statische Tabellen.
 
   ECHTE props-in / events-out Komponente — kein Store, kein Backend.
 
+  @4 (23.07.2026): Spalten koennen mit `hidden: true` STANDARDMAESSIG
+  ausgeblendet starten und werden ueber den Spalten-Chooser (`columnTools`)
+  eingeblendet — nachgezogen aus dem Klickdummy-Artikelstamm (Batch V:
+  Beschreibung/Zolltarifnummer/Preis/Lieferant/Bestand). „Zuruecksetzen" stellt
+  den initialen Sichtbarkeitszustand wieder her. RUECKWAERTSKOMPATIBEL: ohne
+  `hidden` starten alle Spalten sichtbar wie @3.
+
   Props:
-    columns     Array<{ key, label, align?, group?, agg?, width?, pin? }>
+    columns     Array<{ key, label, align?, group?, agg?, width?, pin?, hidden? }>
                 · align 'left'|'right'|'center' (default 'left')
                 · group  optionaler Spaltengruppen-Name → gemeinsame Uebergruppen-Kopfzeile
                 · agg    'sum'|'avg' → Summen-/Schnitt-Fusszeile fuer diese Spalte
                 · width  px-Zahl (feste Spaltenbreite)
                 · pin    true → Spalte links fixiert (sticky)
+                · hidden true → Spalte initial ausgeblendet (per Chooser einblendbar)
     rows        Array<{ id, [key]: value, _children?: Array<row> }>
     groupBy     String (optional column.key) — Zeilen werden gruppiert (Gruppenkopf)
     selectable  Boolean (default false) — Auswahl-Checkboxen + Select-all + Bulk-Leiste
@@ -48,6 +56,7 @@ const props = defineProps({
   selectable: { type: Boolean, default: false },
   expandable: { type: Boolean, default: false },
   columnTools:{ type: Boolean, default: false }, // Spaltenauswahl-Toolbar (Sichtbarkeit)
+  chooserKeys:{ type: Array,   default: null },  // @4: Chooser auf diese keys begrenzen (null = alle Spalten)
   reorderable:{ type: Boolean, default: false }, // Spaltenreihenfolge per Drag and Drop
   resizable:  { type: Boolean, default: false }, // Spaltenbreite per Ziehen am Rand
 });
@@ -64,12 +73,21 @@ const baseCols = computed(() =>
     width: typeof c.width === "number" ? c.width : null,
     minWidth: typeof c.minWidth === "number" ? c.minWidth : 60,
     pin:   !!c.pin,
+    hidden: !!c.hidden,
   })),
+);
+
+/* Initial ausgeblendete Spalten (column.hidden) — Basis für Chooser + Reset. */
+const initialHidden = computed(() => new Set(baseCols.value.filter((c) => c.hidden).map((c) => c.key)));
+
+/* Spalten, die der Chooser anbietet (chooserKeys begrenzt, sonst alle). */
+const chooserCols = computed(() =>
+  props.chooserKeys ? baseCols.value.filter((c) => props.chooserKeys.includes(c.key)) : baseCols.value,
 );
 
 /* ---- Spalten-Verwaltung: Reihenfolge / Sichtbarkeit / Breite ---- */
 const colOrder  = ref(null);          // Array<key> | null = natürliche Reihenfolge
-const colHidden = ref(new Set());     // ausgeblendete keys
+const colHidden = ref(new Set(props.columns.filter((c) => c.hidden).map((c) => c.key))); // ausgeblendete keys (initial aus column.hidden)
 const colWidths = ref({});            // key -> px (Resize-Override)
 const menuOpen  = ref(false);
 
@@ -92,7 +110,7 @@ function toggleColVis(key) {
 }
 function resetCols() {
   colOrder.value = null;
-  colHidden.value = new Set();
+  colHidden.value = new Set(initialHidden.value); // initialen Sichtbarkeitszustand wiederherstellen
   colWidths.value = {};
   menuOpen.value = false;
 }
@@ -286,7 +304,7 @@ function sortState(key) {
         </button>
         <div v-if="menuOpen" class="pp-datagrid__colmenu-pop">
           <span class="pp-datagrid__colmenu-title">Spalten anzeigen</span>
-          <label v-for="c in baseCols" :key="c.key" class="pp-datagrid__colmenu-item">
+          <label v-for="c in chooserCols" :key="c.key" class="pp-datagrid__colmenu-item">
             <input type="checkbox" class="pp-datagrid__check"
                    :checked="!colHidden.has(c.key)" @change="toggleColVis(c.key)" />
             <span>{{ c.label }}</span>
