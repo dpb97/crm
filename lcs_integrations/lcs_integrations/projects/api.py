@@ -838,97 +838,6 @@ def get_network_graph(limit_orgs=14, per_org=8):
 
 
 @frappe.whitelist()
-def get_sales_meeting_data():
-    """Sales-meeting board mirroring the LCS Excel protocol: one row per
-    active opportunity with PL/PN, last comment, responsible (Wer), next
-    action + due (KW), status/phase, chance %, value, sector."""
-    import datetime
-
-    ACTIVE = ["Qualified", "Budget", "Richtpreis", "Offer", "Negotiation"]
-    projects = frappe.get_all(
-        "LCS Project",
-        filters={"phase": ["in", ACTIVE]},
-        fields=[
-            "name", "project_name", "project_number", "project_type", "phase",
-            "status", "country", "salesperson", "sales_manager", "probability",
-            "estimated_value", "is_important",
-        ],
-        order_by="is_important desc, probability desc, estimated_value desc",
-        limit_page_length=0,
-    )
-    today = datetime.date.today()
-    rows, total, weighted, due_count = [], 0.0, 0.0, 0
-    for p in projects:
-        last = frappe.get_all(
-            "Comment",
-            filters={"reference_doctype": "LCS Project", "reference_name": p.name,
-                     "comment_type": ["in", ["Comment", "Info"]]},
-            fields=["content", "creation"], order_by="creation desc", limit=1,
-        )
-        comment = frappe.utils.strip_html(last[0].content or "")[:240] if last else ""
-        task = frappe.get_all(
-            "CRM Task",
-            filters={"reference_doctype": "LCS Project", "reference_docname": p.name,
-                     "status": ["in", ["Todo", "Backlog", "In Progress"]]},
-            fields=["title", "due_date"], order_by="due_date asc", limit=1,
-        )
-        next_action = task[0].title if task else ""
-        due = task[0].due_date if task else None
-        kw = ""
-        if due:
-            try:
-                kw = "KW" + str(frappe.utils.getdate(due).isocalendar()[1])
-            except Exception:
-                kw = ""
-        val = p.estimated_value or 0
-        prob = p.probability or 0
-        w = val * prob / 100.0
-        total += val
-        weighted += w
-        if due and frappe.utils.getdate(due) <= frappe.utils.add_days(today, 7):
-            due_count += 1
-        rows.append({
-            "name": p.name, "project_name": p.project_name, "project_number": p.project_number,
-            "type": p.project_type, "phase": p.phase, "status": p.status, "country": p.country,
-            "salesperson": p.salesperson, "comment": comment, "next_action": next_action,
-            "due": str(due) if due else "", "kw": kw, "probability": prob, "value": val,
-            "weighted": w, "is_important": p.is_important,
-        })
-    # Star-flagged items across all entities surface here too.
-    important = []
-    for p in frappe.get_all("LCS Project", filters={"is_important": 1},
-                            fields=["name", "project_name", "project_number", "phase", "salesperson", "estimated_value"]):
-        important.append({"entity": "project", "name": p.name, "label": p.project_name,
-                          "sub": p.project_number, "status": p.phase, "person": p.salesperson,
-                          "value": p.estimated_value or 0})
-    for l in frappe.get_all("CRM Lead", filters={"is_important": 1},
-                            fields=["name", "lead_name", "organization", "status", "lead_owner", "annual_revenue"]):
-        important.append({"entity": "lead", "name": l.name, "label": l.lead_name or l.name,
-                          "sub": l.organization, "status": l.status, "person": l.lead_owner,
-                          "value": l.annual_revenue or 0})
-    for d in frappe.get_all("CRM Deal", filters={"is_important": 1},
-                            fields=["name", "organization", "status", "deal_owner", "annual_revenue"]):
-        important.append({"entity": "deal", "name": d.name, "label": d.organization or d.name,
-                          "sub": d.name, "status": d.status, "person": d.deal_owner,
-                          "value": d.annual_revenue or 0})
-
-    # Active leads — top of the funnel, reviewed in the meeting too.
-    leads = frappe.get_all(
-        "CRM Lead",
-        filters={"status": ["in", ["New", "Contacted", "Nurture", "Qualified"]]},
-        fields=["name", "lead_name", "organization", "status", "lead_owner",
-                "annual_revenue", "is_important"],
-        order_by="is_important desc, modified desc",
-        limit_page_length=0,
-    )
-
-    return {"rows": rows, "important": important, "leads": leads, "summary": {
-        "count": len(rows), "total": total, "weighted": weighted,
-        "due_actions": due_count, "important": len(important), "leads": len(leads),
-    }}
-
-
-@frappe.whitelist()
 def get_funnel_phases():
     """Editable funnel phase definitions for the FunnelFlowBar.
 
@@ -1237,6 +1146,25 @@ def get_sales_meeting_agenda(meeting_date=None):
     } for p in proj_rows]
 
     # Meeting frame (KV shown as inspector default content) — raw values,
+    # Cross-entity star-flagged items (projects / leads / deals) — the "flagged
+    # important" surface the committee reviews first.
+    important = []
+    for p in frappe.get_all("LCS Project", filters={"is_important": 1},
+                            fields=["name", "project_name", "project_number", "phase", "salesperson", "estimated_value"]):
+        important.append({"entity": "project", "name": p.name, "label": p.project_name or p.name,
+                          "sub": p.project_number, "status": p.phase, "person": p.salesperson,
+                          "value": p.estimated_value or 0})
+    for l in frappe.get_all("CRM Lead", filters={"is_important": 1},
+                            fields=["name", "lead_name", "organization", "status", "lead_owner", "annual_revenue"]):
+        important.append({"entity": "lead", "name": l.name, "label": l.lead_name or l.name,
+                          "sub": l.organization, "status": l.status, "person": l.lead_owner,
+                          "value": l.annual_revenue or 0})
+    for d in frappe.get_all("CRM Deal", filters={"is_important": 1},
+                            fields=["name", "organization", "status", "deal_owner", "annual_revenue"]):
+        important.append({"entity": "deal", "name": d.name, "label": d.organization or d.name,
+                          "sub": d.name, "status": d.status, "person": d.deal_owner,
+                          "value": d.annual_revenue or 0})
+
     # the SPA composes the (i18n) labels.
     frame = {
         "meeting_date": str(mdate),
@@ -1246,12 +1174,13 @@ def get_sales_meeting_agenda(meeting_date=None):
         "opportunities": len(chancen),
         "leads": len(leads),
         "projects": len(projekte),
+        "important": len(important),
     }
 
     return {
         "meeting_date": str(mdate), "agenda": agenda, "archived_count": archived_count,
         "chancen": chancen, "leads": leads, "projekte": projekte,
-        "decisions": decisions, "frame": frame,
+        "decisions": decisions, "important": important, "frame": frame,
     }
 
 

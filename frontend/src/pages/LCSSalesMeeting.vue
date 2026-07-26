@@ -50,6 +50,31 @@
 
           <p v-if="flash" class="crmsm-flash" role="status">{{ flash }}</p>
 
+          <!-- Flagged important (entitätsübergreifende Sternflags) -->
+          <section v-if="important.length" class="crmsm-card crmsm-important">
+            <header class="crmsm-important-head">
+              <IconStar class="crmsm-important-star" /> {{ __('Flagged important') }}
+              <span class="crmsm-ch-m">{{ important.length }} {{ __('across projects, leads and opportunities') }}</span>
+            </header>
+            <div class="crmsm-important-list">
+              <button
+                v-for="it in important"
+                :key="it.entity + it.name"
+                type="button"
+                class="crmsm-important-row"
+                @click="openImportant(it)"
+              >
+                <span class="crmsm-ent" :data-ent="it.entity">{{ entityLabel(it.entity) }}</span>
+                <span class="crmsm-important-main">
+                  <span class="crmsm-important-title">{{ it.label }}</span>
+                  <span class="crmsm-important-sub">{{ it.sub }}<template v-if="it.person"> · {{ shortUser(it.person) }}</template></span>
+                </span>
+                <span v-if="it.status" class="crmsm-pill" data-tone="info"><i class="crmsm-dot" />{{ it.status }}</span>
+                <span v-if="it.value" class="crmsm-important-val">{{ money(it.value) }}</span>
+              </button>
+            </div>
+          </section>
+
           <!-- Agenda: Entscheid direkt am Punkt -->
           <section class="crmsm-card">
             <header class="crmsm-ch">
@@ -172,6 +197,7 @@ import PpEmptyState from '@/components/pp/PpEmptyState.vue'
 import PpFunctionBar from '@/components/pp/PpFunctionBar.vue'
 import PpModal from '@/components/pp/PpModal.vue'
 import IconClipboard from '~icons/lucide/clipboard-list'
+import IconStar from '~icons/lucide/star'
 import { usePilandaInspect } from '@/composables/usePilandaInspect'
 
 const router = useRouter()
@@ -188,6 +214,7 @@ const chancen = computed(() => board.data?.chancen || [])
 const leads = computed(() => board.data?.leads || [])
 const projekte = computed(() => board.data?.projekte || [])
 const decisions = computed(() => board.data?.decisions || [])
+const important = computed(() => board.data?.important || [])
 const frame = computed(() => board.data?.frame || {})
 const stageTotal = computed(() => chancen.value.length + leads.value.length + projekte.value.length)
 const meetingDateLabel = computed(() => board.data?.meeting_date ? fmtDate(board.data.meeting_date) : '')
@@ -243,6 +270,7 @@ function showDefaultInspector() {
     badge: { label: meetingDateLabel.value, tone: 'brand' },
     rows: [
       { label: __('Open points'), value: String(f.open_points ?? agenda.value.length) },
+      { label: __('Flagged important'), value: String(f.important ?? important.value.length) },
       { label: __('Opportunities'), value: String(f.opportunities ?? chancen.value.length) },
       { label: __('Leads'), value: String(f.leads ?? leads.value.length) },
       { label: __('Sales projects'), value: String(f.projects ?? projekte.value.length) },
@@ -302,6 +330,18 @@ function openStage(kind, o) {
   if (kind === 'deal') router.push({ name: 'Deal', params: { dealId: o.id } })
   else if (kind === 'lead') router.push({ name: 'Lead', params: { leadId: o.id } })
   else if (kind === 'project') router.push({ name: 'LCS Project', params: { id: o.id } })
+}
+
+// --- Flagged important (cross-entity star flags) ---------------------------
+const ENTITY = {
+  project: { label: __('Project'), route: 'LCS Project', param: 'id' },
+  lead: { label: __('Lead'), route: 'Lead', param: 'leadId' },
+  deal: { label: __('Opportunity'), route: 'Deal', param: 'dealId' },
+}
+function entityLabel(e) { return ENTITY[e]?.label || e }
+function openImportant(it) {
+  const cfg = ENTITY[it.entity]
+  if (cfg) router.push({ name: cfg.route, params: { [cfg.param]: it.name } })
 }
 
 // --- FunctionBar-Aktionen + Modals -----------------------------------------
@@ -369,6 +409,32 @@ function fmtDate(d) {
 
 .crmsm-card { background: var(--pp-bg-surface); border: 1px solid var(--pp-border-subtle);
   border-radius: var(--pp-radius-ui); box-shadow: var(--pp-shadow-xs); padding: var(--pp-space-2); overflow: hidden; }
+
+/* Flagged important (entitätsübergreifend) */
+.crmsm-important { padding: 0; }
+.crmsm-important-head { display: flex; align-items: center; gap: 6px; padding: var(--pp-space-2) var(--pp-space-4);
+  border-bottom: 1px solid var(--pp-border-subtle); background: color-mix(in oklab, var(--pp-state-warning) 8%, transparent);
+  font-size: var(--pp-fs-12, 12px); font-weight: var(--pp-weight-bold); letter-spacing: var(--pp-tracking-wide, 0.04em);
+  text-transform: uppercase; color: var(--pp-state-warning); }
+.crmsm-important-star { width: 14px; height: 14px; }
+.crmsm-important-head .crmsm-ch-m { text-transform: none; letter-spacing: normal; font-weight: var(--pp-weight-regular); }
+.crmsm-important-list { display: flex; flex-direction: column; }
+.crmsm-important-row { appearance: none; cursor: pointer; text-align: left; font-family: inherit;
+  display: flex; align-items: center; gap: var(--pp-space-3); padding: var(--pp-space-2) var(--pp-space-4);
+  border: 0; border-top: 1px solid var(--pp-border-subtle); background: transparent; }
+.crmsm-important-row:first-child { border-top: 0; }
+.crmsm-important-row:hover { background: var(--pp-bg-hover); }
+.crmsm-important-main { min-width: 0; flex: 1; display: flex; flex-direction: column; }
+.crmsm-important-title { font-size: var(--pp-fs-13, 13px); font-weight: var(--pp-weight-medium); color: var(--pp-text-primary);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.crmsm-important-sub { font-size: 11px; color: var(--pp-text-tertiary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.crmsm-important-val { flex-shrink: 0; font-size: var(--pp-fs-13, 13px); font-weight: var(--pp-weight-medium);
+  color: var(--pp-text-secondary); font-variant-numeric: tabular-nums; }
+.crmsm-ent { flex-shrink: 0; font-size: 10px; font-weight: var(--pp-weight-bold); text-transform: uppercase;
+  padding: 2px var(--pp-space-2); border-radius: var(--pp-radius-ui); }
+.crmsm-ent[data-ent="project"] { background: color-mix(in oklab, var(--pp-state-success) 14%, transparent); color: var(--pp-state-success); }
+.crmsm-ent[data-ent="lead"]    { background: color-mix(in oklab, var(--pp-state-warning) 16%, transparent); color: var(--pp-state-warning); }
+.crmsm-ent[data-ent="deal"]    { background: color-mix(in oklab, var(--pp-state-info) 14%, transparent); color: var(--pp-state-info); }
 .crmsm-ch { display: flex; align-items: baseline; gap: var(--pp-space-2); padding: var(--pp-space-2) var(--pp-space-3) var(--pp-space-3);
   font-size: var(--pp-fs-13, 13px); font-weight: var(--pp-weight-semibold); color: var(--pp-text-primary); }
 .crmsm-ch-m { font-size: 11px; font-weight: var(--pp-weight-regular); color: var(--pp-text-tertiary); }
