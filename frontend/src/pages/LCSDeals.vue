@@ -35,7 +35,24 @@
           :eyebrow="__('Sales / CRM')"
           :title="__('Deals')"
           :subtitle="subtitle"
-        />
+        >
+          <template #actions>
+            <div class="lcsd-viewseg" role="tablist">
+              <button
+                v-for="v in VIEWS"
+                :key="v.key"
+                type="button"
+                class="lcsd-viewseg-btn"
+                :class="{ 'is-active': viewMode === v.key }"
+                :aria-pressed="viewMode === v.key"
+                :title="v.label"
+                @click="viewMode = v.key"
+              >
+                <component :is="v.icon" class="lcsd-viewseg-ico" /><span>{{ v.label }}</span>
+              </button>
+            </div>
+          </template>
+        </PpPageHead>
 
         <section class="lcsd-kpis">
           <PpStatTile v-for="k in kpis" :key="k.label" v-bind="k" />
@@ -45,6 +62,22 @@
           <div v-if="!statuses.length" class="lcsd-empty">
             {{ dealsRes.loading || statusStore.dealStatuses.loading ? __('Loading opportunities …') : __('No open opportunities') }}
           </div>
+
+          <!-- Liste: gleicher Abstiegs-Vertrag (Klick → Inspektor, Doppelklick
+               → öffnen) über openDeal; Phasen-Wechsel bleibt dem Board vorbehalten. -->
+          <div v-else-if="viewMode === 'list'" class="lcsd-listcard">
+            <PpDataGrid :columns="listColumns" :rows="listRows" @row-click="openDeal">
+              <template #cell-phase="{ row }">
+                <span class="lcsd-pill" :data-tone="row.tone"><i class="lcsd-dot" />{{ statusLabel(row.phase) }}</span>
+              </template>
+              <template #cell-value="{ row }">{{ row.valueFmt }}</template>
+              <template #cell-prob="{ value }">{{ value }} %</template>
+              <template #cell-owner="{ value }">
+                <span :class="{ 'lcsd-muted': !value }">{{ value || __('unassigned') }}</span>
+              </template>
+            </PpDataGrid>
+          </div>
+
           <PpKanban
             v-else
             :columns="columns"
@@ -109,12 +142,16 @@
 
 <script setup>
 import { ref, computed, watch, onBeforeUnmount } from 'vue'
+import { useStorage } from '@vueuse/core'
 import { call, createListResource, toast, Breadcrumbs, Button, FeatherIcon } from 'frappe-ui'
 import LayoutHeader from '@/components/LayoutHeader.vue'
 import PpPageHead from '@/components/pp/PpPageHead.vue'
 import PpStatTile from '@/components/pp/PpStatTile.vue'
 import PpKanban from '@/components/pp/PpKanban.vue'
+import PpDataGrid from '@/components/pp/PpDataGrid.vue'
 import PpDrawer from '@/components/pp/PpDrawer.vue'
+import IconList from '~icons/lucide/list'
+import IconColumns from '~icons/lucide/columns-3'
 import DealInspector from '@/components/lcs/DealInspector.vue'
 import LostReasonDialog from '@/components/lcs/LostReasonDialog.vue'
 import { statusesStore } from '@/stores/statuses'
@@ -232,6 +269,34 @@ const cards = computed(() =>
       assignee: d.deal_owner ? ownerName(d.deal_owner) : null,
     }
   }),
+)
+
+/* ---- List ⇄ Kanban (Befund 18: gleiche SSOT, gleicher Abstiegs-Vertrag) - */
+const viewMode = useStorage('lcs-deals-view-mode', 'kanban')
+const VIEWS = [
+  { key: 'list', label: __('List'), icon: IconList },
+  { key: 'kanban', label: __('Board'), icon: IconColumns },
+]
+const listColumns = [
+  { key: 'org', label: __('Opportunity'), pin: true, width: 260 },
+  { key: 'phase', label: __('Phase'), width: 160 },
+  { key: 'value', label: __('Value'), align: 'right', width: 140, agg: 'sum' },
+  { key: 'prob', label: __('P(win)'), align: 'right', width: 90 },
+  { key: 'owner', label: __('Owner'), width: 160 },
+  { key: 'modified', label: __('Last update'), align: 'right', width: 140 },
+]
+const listRows = computed(() =>
+  boardDeals.value.map((d) => ({
+    id: d.name,
+    org: d.organization || d.name,
+    phase: d.status,
+    value: Number(d.deal_value) || 0,
+    valueFmt: eur(d.deal_value, d.currency),
+    prob: dealProbability(d),
+    owner: d.deal_owner ? ownerName(d.deal_owner) : '',
+    modified: formatDate(d.modified),
+    tone: statusType(d.status) === 'Won' ? 'success' : statusType(d.status) === 'Lost' ? 'danger' : 'info',
+  })),
 )
 
 /* ---- KPI-Strip: gewichtete/ungewichtete Pipeline, offene Chancen ---- */
@@ -406,6 +471,28 @@ onBeforeUnmount(() => {
   gap: var(--pp-space-3);
 }
 .lcsd-board { min-width: 0; }
+
+/* Ansicht-Umschalter Liste ⇄ Kanban (Befund 18) */
+.lcsd-viewseg { display: inline-flex; gap: 2px; padding: 2px; border-radius: var(--pp-radius-ui);
+  background: var(--pp-bg-base); border: 1px solid var(--pp-border-default); }
+.lcsd-viewseg-btn { appearance: none; cursor: pointer; font-family: inherit; font-size: var(--pp-fs-12, 12px);
+  display: inline-flex; align-items: center; gap: 5px; padding: 5px 10px; border: none;
+  border-radius: var(--pp-radius-ui); background: transparent; color: var(--pp-text-secondary); }
+.lcsd-viewseg-btn:hover { color: var(--pp-brand-primary); }
+.lcsd-viewseg-btn.is-active { background: var(--pp-bg-surface); color: var(--pp-brand-primary);
+  font-weight: var(--pp-weight-semibold); box-shadow: var(--pp-shadow-xs); }
+.lcsd-viewseg-ico { width: 14px; height: 14px; }
+
+/* Listen-Karte + Zell-Renderer */
+.lcsd-listcard { background: var(--pp-bg-surface); border: 1px solid var(--pp-border-subtle);
+  border-radius: var(--pp-radius-ui); box-shadow: var(--pp-shadow-xs); padding: var(--pp-space-2); }
+.lcsd-muted { color: var(--pp-text-tertiary); font-style: italic; }
+.lcsd-pill { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: var(--pp-weight-semibold);
+  padding: 2px var(--pp-space-2); border-radius: var(--pp-radius-full); white-space: nowrap; }
+.lcsd-dot { width: 6px; height: 6px; border-radius: var(--pp-radius-full); flex-shrink: 0; background: currentColor; }
+.lcsd-pill[data-tone="info"]    { background: color-mix(in oklab, var(--pp-state-info) 14%, transparent);    color: var(--pp-state-info); }
+.lcsd-pill[data-tone="success"] { background: color-mix(in oklab, var(--pp-state-success) 16%, transparent); color: var(--pp-state-success); }
+.lcsd-pill[data-tone="danger"]  { background: color-mix(in oklab, var(--pp-state-danger) 16%, transparent);  color: var(--pp-state-danger); }
 /* Phasen-Summe im Spaltenkopf (#column-meta-Slot) — dezent, token-only. */
 .lcsd-col-sum {
   font-size: var(--pp-fs-12);

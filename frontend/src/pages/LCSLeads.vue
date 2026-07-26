@@ -40,6 +40,20 @@
               <IconSearch class="crml-search-ico" />
               <input v-model="q" type="search" class="crml-search" :placeholder="__('Search / filter by status') + ' …'" />
             </div>
+            <div class="crml-viewseg" role="tablist">
+              <button
+                v-for="v in VIEWS"
+                :key="v.key"
+                type="button"
+                class="crml-viewseg-btn"
+                :class="{ 'is-active': viewMode === v.key }"
+                :aria-pressed="viewMode === v.key"
+                :title="v.label"
+                @click="viewMode = v.key"
+              >
+                <component :is="v.icon" class="crml-viewseg-ico" /><span>{{ v.label }}</span>
+              </button>
+            </div>
           </template>
         </PpPageHead>
 
@@ -58,7 +72,7 @@
         </section>
 
         <!-- Tabelle ODER ehrlicher Leerzustand -->
-        <section class="crml-card">
+        <section v-if="viewMode === 'list'" class="crml-card">
           <template v-if="rows.length">
           <div class="crml-scroll">
           <PpDataGrid :columns="columns" :rows="pagedRows" @row-click="openLead">
@@ -116,6 +130,24 @@
             :hint="loading ? '' : __('Leads created in the CRM will appear here.')"
           />
         </section>
+
+        <!-- Kanban nach Status (gleicher Abstiegs-Vertrag: Klick → Inspektor,
+             Doppelklick → öffnen; Drag verschiebt den Status). -->
+        <section v-else class="crml-board">
+          <PpKanban
+            v-if="kanbanColumns.length"
+            :columns="kanbanColumns"
+            :cards="kanbanCards"
+            @card-click="openLead"
+            @move="onLeadMove"
+          />
+          <PpEmptyState
+            v-else
+            :icon="IconInbox"
+            :title="loading ? __('Loading …') : __('No lead statuses')"
+            :hint="loading ? '' : __('Lead statuses configured in the CRM appear as columns here.')"
+          />
+        </section>
       </div>
     </div>
 
@@ -165,13 +197,15 @@
 </template>
 
 <script setup>
-import { ref, computed, onBeforeUnmount } from 'vue'
+import { ref, computed, watch, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
-import { createResource, Breadcrumbs, Button } from 'frappe-ui'
+import { useStorage } from '@vueuse/core'
+import { createResource, call, toast, Breadcrumbs, Button } from 'frappe-ui'
 import LayoutHeader from '@/components/LayoutHeader.vue'
 import PpPageHead from '@/components/pp/PpPageHead.vue'
 import PpStatTile from '@/components/pp/PpStatTile.vue'
 import PpDataGrid from '@/components/pp/PpDataGrid.vue'
+import PpKanban from '@/components/pp/PpKanban.vue'
 import PpEmptyState from '@/components/pp/PpEmptyState.vue'
 import PpDrawer from '@/components/pp/PpDrawer.vue'
 import LeadInspector from '@/components/lcs/LeadInspector.vue'
@@ -181,6 +215,8 @@ import IconInbox from '~icons/lucide/inbox'
 import IconMail from '~icons/lucide/mail'
 import IconPhone from '~icons/lucide/phone'
 import IconSearch from '~icons/lucide/search'
+import IconList from '~icons/lucide/list'
+import IconColumns from '~icons/lucide/columns-3'
 import { usePilandaMode } from '@/composables/usePilandaMode'
 import { usePilandaInspect } from '@/composables/usePilandaInspect'
 import { usePagination } from '@/composables/usePagination'
@@ -203,9 +239,20 @@ const leadsRes = createResource({
   },
   auto: true,
 })
-const leads = computed(() => leadsRes.data || [])
+// Mutable board clone so the Kanban can move cards optimistically; both the
+// list and the board read from it, so a drag reflects in either view.
+const boardLeads = ref([])
+watch(() => leadsRes.data, (d) => { boardLeads.value = (d || []).map((x) => ({ ...x })) }, { immediate: true, deep: true })
+const leads = computed(() => boardLeads.value)
 const loading = computed(() => leadsRes.loading)
 function reload() { leadsRes.reload(); statusRes.reload() }
+
+// List ⇄ Kanban (Befund 18: SSOT-Liste, one renderer, same descent contract).
+const viewMode = useStorage('lcs-leads-view-mode', 'list')
+const VIEWS = [
+  { key: 'list', label: __('List'), icon: IconList },
+  { key: 'kanban', label: __('Board'), icon: IconColumns },
+]
 
 // --- Status-Stammdaten inkl. Farbe (für farbige Status-Pillen + Filter) ----
 const statusRes = createResource({
@@ -325,6 +372,35 @@ const rows = computed(() =>
   })),
 )
 
+// --- Kanban (nach Status; gefiltert wie die Liste) -------------------------
+const kanbanColumns = computed(() => statusList.value.map((s) => ({ key: s.name, label: __(s.name) })))
+const kanbanCards = computed(() =>
+  filtered.value
+    .filter((l) => l.status)
+    .map((l) => ({
+      id: l.name,
+      col: l.status,
+      title: displayName(l),
+      badges: l.organization ? [{ label: l.organization, tone: 'neutral' }] : [],
+      assignee: l.lead_owner || null,
+    })),
+)
+// Drag → Status persistieren (optimistisch + Rollback + Toast). Lead-Status hat
+// keinen Pflicht-Grund wie „Lost" bei Deals, daher direkte Ablage.
+async function onLeadMove({ cardId, fromCol, toCol }) {
+  if (fromCol === toCol) return
+  const lead = boardLeads.value.find((l) => l.name === cardId)
+  if (!lead) return
+  lead.status = toCol
+  try {
+    await call('frappe.client.set_value', { doctype: 'CRM Lead', name: cardId, fieldname: { status: toCol } })
+    toast({ title: __('Status updated'), icon: 'check-circle', iconClasses: 'text-green-500' })
+  } catch (e) {
+    lead.status = fromCol
+    toast({ title: __('Could not save. Please try again.'), text: e?.messages?.[0] || e?.message || '', icon: 'alert-circle', iconClasses: 'text-red-500' })
+  }
+}
+
 // --- Detail-Drawer (echt: Zeilenklick öffnet) ------------------------------
 // Pagination (client-side; the list loads all rows).
 const {
@@ -403,6 +479,20 @@ onBeforeUnmount(() => {
   background: var(--pp-bg-surface); min-width: 260px; }
 .crml-search:focus { outline: none; border-color: var(--pp-brand-primary);
   box-shadow: 0 0 0 3px rgb(var(--pp-brand-primary-rgb) / 0.15); }
+
+/* Ansicht-Umschalter Liste ⇄ Kanban (Befund 18) */
+.crml-viewseg { display: inline-flex; gap: 2px; padding: 2px; border-radius: var(--pp-radius-ui);
+  background: var(--pp-bg-base); border: 1px solid var(--pp-border-default); }
+.crml-viewseg-btn { appearance: none; cursor: pointer; font-family: inherit; font-size: var(--pp-fs-12, 12px);
+  display: inline-flex; align-items: center; gap: 5px; padding: 5px 10px; border: none;
+  border-radius: var(--pp-radius-ui); background: transparent; color: var(--pp-text-secondary); }
+.crml-viewseg-btn:hover { color: var(--pp-brand-primary); }
+.crml-viewseg-btn.is-active { background: var(--pp-bg-surface); color: var(--pp-brand-primary);
+  font-weight: var(--pp-weight-semibold); box-shadow: var(--pp-shadow-xs); }
+.crml-viewseg-ico { width: 14px; height: 14px; }
+
+/* Kanban-Board (eigener Scroll-Bereich im fixierten Viewport-Layout) */
+.crml-board { flex: 1; min-height: 0; overflow: auto; }
 
 /* Karte um die Tabelle */
 .crml-card { background: var(--pp-bg-surface); border: 1px solid var(--pp-border-subtle);

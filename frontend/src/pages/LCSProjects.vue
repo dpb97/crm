@@ -134,8 +134,8 @@
           <Button
             variant="ghost"
             icon="refresh-cw"
-            @click="viewMode === 'list' ? reloadProjects() : mapData.reload()"
-            :class="{ 'animate-spin': viewMode === 'list' ? projectsLoading : mapData.loading }"
+            @click="['map', 'dashboard'].includes(viewMode) ? mapData.reload() : reloadProjects()"
+            :class="{ 'animate-spin': ['map', 'dashboard'].includes(viewMode) ? mapData.loading : projectsLoading }"
           />
         </Tooltip>
         <!-- Per-user column selection — persisted in LCS User Preferences -->
@@ -165,6 +165,23 @@
           <div class="h-6 w-6 animate-spin rounded-full border-2 border-gray-200 border-t-lcs-primary" />
         </div>
         <ProjectDashboard v-else :projects="mapProjects" :loading="mapData.loading" />
+      </div>
+
+      <!-- Kanban view — projects grouped by phase; drag persists the phase.
+           Same descent contract as the table (click → inspector, dbl → open). -->
+      <div v-else-if="viewMode === 'kanban'" class="h-full overflow-auto p-5">
+        <PpKanban
+          v-if="projectList.length"
+          :columns="kanbanColumns"
+          :cards="kanbanCards"
+          @card-click="selectProjectById"
+          @card-dblclick="navigateToProjectById"
+          @move="onProjectMove"
+        />
+        <div v-else-if="projectsLoading" class="flex items-center justify-center py-16">
+          <div class="h-6 w-6 animate-spin rounded-full border-2 border-gray-200 border-t-lcs-primary" />
+        </div>
+        <PpEmptyState v-else :icon="IconFolder" :title="__('No projects yet')" :hint="__('Projects appear here grouped by phase.')" />
       </div>
 
       <!-- List view: KPI strip + states + table -->
@@ -436,7 +453,7 @@
 
 <script setup>
 import { ref, computed, reactive, watch, onMounted, onUnmounted } from 'vue'
-import { createResource, Breadcrumbs, Button, FormControl, Dialog, Tooltip, FeatherIcon, toast } from 'frappe-ui'
+import { createResource, call, Breadcrumbs, Button, FormControl, Dialog, Tooltip, FeatherIcon, toast } from 'frappe-ui'
 import { useRouter } from 'vue-router'
 import { useStorage } from '@vueuse/core'
 import { sessionStore } from '@/stores/session'
@@ -453,6 +470,7 @@ import LayoutHeader from '@/components/LayoutHeader.vue'
 import PpPageHead from '@/components/pp/PpPageHead.vue'
 import PpStatTile from '@/components/pp/PpStatTile.vue'
 import PpEmptyState from '@/components/pp/PpEmptyState.vue'
+import PpKanban from '@/components/pp/PpKanban.vue'
 import IconFolder from '~icons/lucide/folder'
 import IconSearchX from '~icons/lucide/search-x'
 import IconAlertCircle from '~icons/lucide/alert-circle'
@@ -506,6 +524,45 @@ function selectProject(p) {
   }
 }
 
+// --- Kanban view (Befund 18: same SSOT list, same descent contract) --------
+// Single card click → inspector (selectProject), double click → open, drag →
+// persist the phase. PpKanban holds the moved card optimistically; the reload
+// after persisting confirms it (or reverts it on error).
+function selectProjectById(id) {
+  const p = projectList.value.find((x) => x.name === id)
+  if (p) selectProject(p)
+}
+function navigateToProjectById(id) {
+  const p = projectList.value.find((x) => x.name === id)
+  if (p) navigateToProject(p)
+}
+const kanbanColumns = computed(() =>
+  phaseOptions.filter((o) => o.value).map((o) => ({ key: o.value, label: o.label })),
+)
+const kanbanCards = computed(() =>
+  projectList.value.map((p) => ({
+    id: p.name,
+    col: p.phase,
+    title: p.project_name || p.name,
+    badges: [
+      ...(p.project_type ? [{ label: p.project_type, tone: typeTone(p.project_type) }] : []),
+      ...(p.estimated_value ? [{ label: formatCurrency(p.estimated_value), tone: 'neutral' }] : []),
+    ],
+    assignee: p.salesperson || null,
+  })),
+)
+async function onProjectMove({ cardId, fromCol, toCol }) {
+  if (fromCol === toCol) return
+  try {
+    await call('frappe.client.set_value', { doctype: 'LCS Project', name: cardId, fieldname: { phase: toCol } })
+    toast({ title: __('Phase updated'), icon: 'check-circle', iconClasses: 'text-green-500' })
+    reloadProjects()
+  } catch (e) {
+    toast({ title: __('Could not save. Please try again.'), text: e?.messages?.[0] || e?.message || '', icon: 'alert-circle', iconClasses: 'text-red-500' })
+    reloadProjects()
+  }
+}
+
 // KPI overview strip over the list
 const overview = computed(() => {
   const list = projectList.value || []
@@ -526,6 +583,7 @@ const sortDirection = ref('desc')
 const viewMode = useStorage('lcs-projects-view-mode', 'list')
 const VIEW_MODES = [
   { key: 'list', icon: 'list', label: __('List') },
+  { key: 'kanban', icon: 'columns', label: __('Board') },
   { key: 'map', icon: 'map', label: __('Map') },
   { key: 'dashboard', icon: 'bar-chart-2', label: __('Dashboard') },
 ]
