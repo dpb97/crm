@@ -78,48 +78,21 @@
           <PpStatTile :label="__('Next Close')" :value="summary.nextClose" :hint="summary.nextCloseLabel" />
         </div>
 
-        <!-- Forecast bar chart -->
-        <div class="lcs-fc-chart lcsfc-card">
-          <h3 class="lcsfc-card-title">
-            <FeatherIcon name="bar-chart-2" class="h-3.5 w-3.5" />
-            {{ __('Weighted Revenue Forecast') }}
-            <span class="lcsfc-card-title-sub">({{ __(periodLabel) }}, {{ filteredBuckets.length }} {{ __('periods') }})</span>
-          </h3>
-
-          <!-- Chart -->
-          <div class="lcs-fc-chart__plot relative h-64">
-            <div class="flex h-full items-end gap-2">
-              <div
-                v-for="(bucket, idx) in filteredBuckets"
-                :key="bucket.period"
-                class="group relative flex flex-1 flex-col justify-end rounded focus:outline-none"
-                role="img"
-                tabindex="0"
-                :aria-label="`${formatPeriod(bucket.period)}: ${bucket.projects.length} ${__('projects')}, ${formatCurrency(bucket.total_value)} ${__('pipeline')}, ${formatCurrency(bucket.weighted_value)} ${__('weighted')}`"
-              >
-                <!-- Tooltip on hover — H3: Feedback -->
-                <div class="lcsfc-tip group-hover:block">
-                  <div class="font-semibold">{{ bucket.period }}</div>
-                  <div class="mt-1">{{ __('Total') }}: {{ formatCurrency(bucket.total_value) }}</div>
-                  <div class="lcsfc-tip-hi">{{ __('Weighted') }}: {{ formatCurrency(bucket.weighted_value) }}</div>
-                  <div class="lcsfc-tip-mut">{{ bucket.projects.length }} {{ __('projects') }}</div>
-                </div>
-                <!-- Total value (light background) -->
-                <div class="lcsfc-bar-bg" :style="{ height: `${(bucket.total_value / chartMax) * 100}%` }">
-                  <!-- Weighted value (brand overlay) -->
-                  <div class="lcsfc-bar-fill" :style="{ height: `${(bucket.weighted_value / (bucket.total_value || 1)) * 100}%` }" />
-                </div>
-                <!-- Period label -->
-                <div class="lcsfc-bar-label">{{ formatPeriod(bucket.period) }}</div>
-              </div>
-            </div>
-          </div>
-          <!-- Legend -->
-          <div class="lcsfc-legend">
-            <span><i class="lcsfc-sw lcsfc-sw--bg" /> {{ __('Total pipeline') }}</span>
-            <span><i class="lcsfc-sw lcsfc-sw--fill" /> {{ __('Weighted (prob. adjusted)') }}</span>
-          </div>
-        </div>
+        <!-- Forecast chart (theme SSOT PpForecast: Ist/Plan/Prognose-Korridor).
+             Reine Zukunfts-Pipeline → splitAt=0 (alles Prognose); Korridor aus
+             Wahrscheinlichkeit abgeleitet: best = volle Pipeline, worst =
+             konservativ, Linie = gewichtete Erwartung. -->
+        <PpForecast
+          :title="__('Weighted Revenue Forecast')"
+          :meta="`${__(periodLabel)} · ${filteredBuckets.length} ${__('periods')}`"
+          :cats="fcModel.cats"
+          :split-at="0"
+          :exp="fcModel.exp"
+          :best="fcModel.best"
+          :worst="fcModel.worst"
+          :yfmt="fcYFmt"
+          :note="__('Corridor: best = full pipeline · worst = conservative floor · line = probability-weighted forecast (€).')"
+        />
 
         <!-- Top Opportunities table -->
         <div class="lcsfc-card lcsfc-card--flush">
@@ -219,6 +192,7 @@ import LayoutHeader from '@/components/LayoutHeader.vue'
 import PpPageHead from '@/components/pp/PpPageHead.vue'
 import PpStatTile from '@/components/pp/PpStatTile.vue'
 import PpEmptyState from '@/components/pp/PpEmptyState.vue'
+import PpForecast from '@/components/pp/PpForecast.vue'
 import IconTrendingUp from '~icons/lucide/trending-up'
 import { sessionStore } from '@/stores/session'
 import { useUserPreferences } from '@/composables/useUserPreferences'
@@ -267,10 +241,21 @@ const filteredBuckets = computed(() => {
   }).filter(Boolean)
 })
 
-const chartMax = computed(() => {
-  const max = Math.max(...filteredBuckets.value.map(b => b.total_value || 0), 1)
-  return max * 1.1
+// PpForecast-Modell: reine Zukunfts-Pipeline → Korridor aus Wahrscheinlichkeit.
+const fcModel = computed(() => {
+  const b = filteredBuckets.value
+  return {
+    cats: b.map((x) => formatPeriod(x.period)),
+    exp: b.map((x) => x.weighted_value || 0),          // erwartet = gewichtet
+    best: b.map((x) => x.total_value || 0),            // best = volle Pipeline
+    worst: b.map((x) => Math.round((x.weighted_value || 0) * 0.6)), // konservativ
+  }
 })
+function fcYFmt(v) {
+  if (v >= 1_000_000) return (v / 1_000_000).toFixed(1) + 'M'
+  if (v >= 1000) return Math.round(v / 1000) + 'k'
+  return Math.round(v)
+}
 
 const summary = computed(() => {
   const buckets = filteredBuckets.value
@@ -389,26 +374,6 @@ function formatPeriod(key) {
 .lcsfc-card-title-sub { margin-left: var(--pp-space-2); font-weight: var(--pp-weight-regular);
   text-transform: none; letter-spacing: 0; color: var(--pp-text-tertiary); }
 
-/* Bar chart */
-.lcsfc-bar-bg { width: 100%; border-radius: var(--pp-radius-ui) var(--pp-radius-ui) 0 0;
-  background: var(--pp-bg-sunken); transition: height var(--pp-duration-base) var(--pp-ease-standard); }
-.lcsfc-bar-fill { width: 100%; border-radius: var(--pp-radius-ui) var(--pp-radius-ui) 0 0;
-  background: var(--pp-brand-primary); transition: height var(--pp-duration-base) var(--pp-ease-standard); }
-.lcsfc-bar-label { margin-top: var(--pp-space-2); text-align: center; font-size: 10px;
-  font-weight: var(--pp-weight-medium); color: var(--pp-text-tertiary); }
-.lcsfc-tip { position: absolute; top: -3.5rem; left: 50%; z-index: 10; display: none;
-  transform: translateX(-50%); white-space: nowrap; border-radius: var(--pp-radius-ui);
-  padding: var(--pp-space-2) var(--pp-space-3); font-size: var(--pp-fs-12);
-  background: var(--pp-text-primary); color: var(--pp-bg-surface); box-shadow: var(--pp-shadow-lg); }
-.lcsfc-tip-hi { color: color-mix(in oklab, var(--pp-state-success) 60%, white); }
-.lcsfc-tip-mut { opacity: 0.7; }
-.lcsfc-legend { margin-top: var(--pp-space-4); display: flex; justify-content: flex-end; gap: var(--pp-space-4);
-  font-size: var(--pp-fs-12); color: var(--pp-text-tertiary); }
-.lcsfc-legend span { display: inline-flex; align-items: center; gap: 6px; }
-.lcsfc-sw { width: 12px; height: 12px; border-radius: var(--pp-radius-xs); }
-.lcsfc-sw--bg { background: var(--pp-bg-sunken); }
-.lcsfc-sw--fill { background: var(--pp-brand-primary); }
-
 /* Top opportunities table */
 .lcsfc-table th { padding: var(--pp-space-2) var(--pp-space-4); }
 .lcsfc-table td { padding: 10px var(--pp-space-4); }
@@ -455,12 +420,6 @@ function formatPeriod(key) {
   }
   .lcs-fc-controls > * {
     flex: 0 0 auto;
-  }
-  .lcs-fc-chart {
-    order: 10; /* push the chart below the KPI row + opportunities table */
-  }
-  .lcs-fc-chart__plot {
-    height: 12rem; /* was h-64 (16rem) — reclaim above-the-fold space */
   }
 }
 </style>

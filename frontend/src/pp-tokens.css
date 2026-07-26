@@ -149,6 +149,15 @@
     --pp-text-on-accent: #ffffff;
     --pp-text-link:      var(--accent-current);
 
+    /* Statisches Weiss — bewusst NICHT theme-flippend (kein Dark-Override).
+     * Fuer Flaechen, die aus physikalischen Gruenden in beiden Themes weiss
+     * bleiben MUESSEN: QR-Quiet-Zone (Scanner-Kontrast, PpQr), Druck-/
+     * Papierflaechen. Nicht als UI-Hintergrund verwenden. */
+    --pp-static-white:   #ffffff;
+    /* Absolutes Schwarz — nur zum Abdunkeln von Kantenfarben per color-mix
+     * (z. B. Segment-/Gate-Rand im Portfolio-Gantt). Kein UI-Hintergrund. */
+    --pp-static-black:   #000000;
+
     /* Borders — Klickdummy §6/N1 (line / line-2 / line-hover) */
     --pp-border-subtle:  #d4d8de;
     --pp-border-default: #c7ccd4;
@@ -284,6 +293,24 @@
     --pp-fs-32: 32px;
     --pp-fs-40: 40px;
     --pp-fs-56: 56px;
+
+    /* -----------------------------------------------------------------
+     * Projektleitstand (PLS) — Portfolio-Gantt, Auslastungsband,
+     * Forecast-Reservierungen. Werte 1:1 aus dem Klickdummy-Handoff
+     * (--pls-*, Welle 25.07.), hier als kanonische --pp-pls-*-Tokens.
+     * Konsumenten: PpPortfolioGantt (+ Preview PLS-Gantt). ----------- */
+    --pp-pls-row-h: 54px;        /* Höhe zugeklappter Projekt-Balkenzeilen (> PM) */
+    --pp-pls-seg-h: 16px;        /* Höhe der Phasen-Segmente im Projektbalken */
+    --pp-pls-proj-bar-h: 9px;    /* Höhe des Grund-/Rahmenbalkens je Projekt */
+    --pp-pls-resv-opacity: 0.42; /* Transparenz der Forecast-Reservierungsbalken */
+    --pp-pls-resv-col: #7c5cff;  /* Forecast-Reservierung (violett) */
+    --pp-pls-band-h: 60px;       /* Höhe Auslastungsband unter dem Gantt */
+    --pp-pls-band-ok: #159a62;   /* Auslastung grün (Kapazität ausreichend) */
+    --pp-pls-band-warn: #d98a06; /* Auslastung gelb (85–100 %) */
+    --pp-pls-band-bad: #c0392b;  /* Auslastung rot (Überlast) */
+    --pp-pls-free-col: #9fd3b8;  /* „frei"-Zone (offene Kapazität) */
+    --pp-pls-gate-col: #0d3b66;  /* Gate/Meilenstein-Diamant im Projektbalken */
+    --pp-pls-seg-col: #5b8dc9;   /* Default-Farbe Phasen-Segment */
 }
 
 /* =============================================================
@@ -481,4 +508,18 @@ img.rounded-full,
 .inline-flex.rounded-full [class*="avatar"],
 .inline-flex.rounded-full img.rounded-full {
     border-radius: var(--pp-radius-full) !important;
+}
+
+/* =============================================================
+ * PLS-Tokens — Dunkel-Feinschliff (Kontrast auf dunklem Grund).
+ * Nur die Flächen-/Bandfarben leicht aufhellen; Gate/Segment/
+ * Reservierung sind bereits sattgenug und bleiben gemeinsam.
+ * ============================================================= */
+:root[data-theme="dark"], [data-theme="dark"] {
+    --pp-pls-band-ok: #1ab673;
+    --pp-pls-band-warn: #eaa11f;
+    --pp-pls-band-bad: #e05646;
+    --pp-pls-free-col: #6fae90;
+    --pp-pls-seg-col: #6f9fd8;
+    --pp-pls-gate-col: #2f6aa8;
 }

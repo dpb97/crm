@@ -291,6 +291,7 @@ declare module 'vue' {
     PpDocList: typeof import('./src/components/pp/PpDocList.vue')['default']
     PpDrawer: typeof import('./src/components/pp/PpDrawer.vue')['default']
     PpEmptyState: typeof import('./src/components/pp/PpEmptyState.vue')['default']
+    PpForecast: typeof import('./src/components/pp/PpForecast.vue')['default']
     PpInspector: typeof import('./src/components/pp/PpInspector.vue')['default']
     PpInspectorNodeView: typeof import('./src/components/lcs/PpInspectorNodeView.vue')['default']
     PpKanban: typeof import('./src/components/pp/PpKanban.vue')['default']
