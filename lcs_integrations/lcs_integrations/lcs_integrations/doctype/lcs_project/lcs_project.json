@@ -25,6 +25,12 @@
   "industry",
   "primary_contact",
   "contacts",
+  "section_location",
+  "valley_mast_latitude",
+  "valley_mast_longitude",
+  "column_break_location",
+  "mountain_mast_latitude",
+  "mountain_mast_longitude",
   "section_opportunity",
   "deal",
   "source",
@@ -187,6 +193,40 @@
    "fieldtype": "Table",
    "label": "Project Contacts",
    "options": "LCS Project Contact"
+  },
+  {
+   "description": "Cable-crane route endpoints for the project map (PpGeoMap): valley mast (Endmast Tal) + mountain mast (Endmast Berg). Marker shape follows Project Type, colour follows Phase; the span label is computed from the two points.",
+   "fieldname": "section_location",
+   "fieldtype": "Section Break",
+   "label": "Location & Cable Route"
+  },
+  {
+   "fieldname": "valley_mast_latitude",
+   "fieldtype": "Float",
+   "label": "Valley Mast Latitude (Endmast Tal)",
+   "precision": "6"
+  },
+  {
+   "fieldname": "valley_mast_longitude",
+   "fieldtype": "Float",
+   "label": "Valley Mast Longitude (Endmast Tal)",
+   "precision": "6"
+  },
+  {
+   "fieldname": "column_break_location",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "mountain_mast_latitude",
+   "fieldtype": "Float",
+   "label": "Mountain Mast Latitude (Endmast Berg)",
+   "precision": "6"
+  },
+  {
+   "fieldname": "mountain_mast_longitude",
+   "fieldtype": "Float",
+   "label": "Mountain Mast Longitude (Endmast Berg)",
+   "precision": "6"
   },
   {
    "fieldname": "section_opportunity",
