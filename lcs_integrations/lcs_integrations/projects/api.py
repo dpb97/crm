@@ -87,6 +87,64 @@ def get_project_map_data():
     return projects
 
 
+# Phase → cable-crane lifecycle state (PpGeoMap marker colour). Acquisition
+# until Order; Execution = building; Completed = operating.
+_GEO_STATE = {
+    "Qualified": "akquise", "Budget": "akquise", "Richtpreis": "akquise",
+    "Offer": "akquise", "Negotiation": "akquise", "Won": "akquise",
+    "Execution": "bau", "Completed": "betrieb", "Lost": "akquise",
+}
+# Project type → PpGeoMap marker shape (only the shapes it knows).
+_GEO_TYP = {"SB": "SB", "WI": "WI", "SK": "SK"}
+
+
+@frappe.whitelist()
+def get_project_geo():
+    """Cable-route map data for PpGeoMap. Projects that carry both mast
+    coordinates become `masten` (valley↔mountain route); the rest fall back to
+    a country-centroid `pin`. Marker shape follows project_type, colour follows
+    the phase-derived lifecycle state; the span label is computed client-side."""
+    projects = frappe.get_all(
+        "LCS Project",
+        filters={"status": ["!=", "Cancelled"]},
+        fields=[
+            "name", "project_name", "project_number", "project_type", "phase",
+            "organization", "salesperson", "estimated_value", "country",
+            "valley_mast_latitude", "valley_mast_longitude",
+            "mountain_mast_latitude", "mountain_mast_longitude",
+        ],
+    )
+    from lcs_integrations.projects.country_coords import get_coords
+
+    masten, pins = [], []
+    for p in projects:
+        has_route = (
+            p.valley_mast_latitude is not None and p.valley_mast_longitude is not None
+            and p.mountain_mast_latitude is not None and p.mountain_mast_longitude is not None
+        )
+        if has_route:
+            m = {
+                "nr": p.project_number or p.name,
+                "n": p.project_name or p.name,
+                "firma": p.organization or "",
+                "phase": p.phase or "",
+                "state": _GEO_STATE.get(p.phase, "akquise"),
+                "wert": p.estimated_value or 0,
+                "wer": p.salesperson or "",
+                "tal": [p.valley_mast_latitude, p.valley_mast_longitude],
+                "berg": [p.mountain_mast_latitude, p.mountain_mast_longitude],
+            }
+            typ = _GEO_TYP.get(p.project_type)
+            if typ:
+                m["typ"] = typ
+            masten.append(m)
+        else:
+            coords = get_coords(p.country)
+            if coords:
+                pins.append({"t": p.project_name or p.name, "ll": [coords[0], coords[1]]})
+    return {"masten": masten, "pins": pins}
+
+
 @frappe.whitelist()
 def get_opportunity_matrix(project):
     """Get opportunity matrix entries for a project."""

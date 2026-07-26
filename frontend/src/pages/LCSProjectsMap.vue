@@ -1,185 +1,111 @@
 <!--
-  LCSProjectsMap — full-bleed world map of all LCS Projects.
-  Wraps the existing ProjectMap component with page chrome, filters,
-  and a fetch against lcs_integrations.projects.map_api.get_projects_for_map.
--->
+  LCSProjectsMap — Projektkarte (Projektkarte-Nav) auf dem Theme-Baustein
+  PpGeoMap: echte Seilkran-Trassen (Endmast Tal ↔ Berg) je Projekt mit
+  Mast-Koordinaten, sonst ein Länder-Zentroid-Pin. Marker-Form = Anlagentyp,
+  Farbe = Lebenszyklus (aus der Phase). Klick → Shell-Inspektor.
 
+  Daten: lcs_integrations.projects.api.get_project_geo → { masten, pins }.
+-->
 <template>
-  <div class="lcspm flex h-full flex-col">
-    <!-- Page header with filters -->
+  <div class="lcspm flex min-h-0 flex-1 flex-col">
     <header class="lcspm-head">
       <PpPageHead
-        :eyebrow="__('Sales / CRM')"
         :title="__('Projects Map')"
-        :subtitle="__('Live world map of all LCS projects — filter by phase or sales manager')"
+        :subtitle="__('Cable-crane routes on a live map · click a project for the details')"
       >
         <template #actions>
-          <FormControl
-            v-model="phaseFilter"
-            type="select"
-            :placeholder="__('Phase')"
-            :options="phaseOptions"
-            class="min-w-[140px]"
-          />
-          <FormControl
-            v-model="salesManagerFilter"
-            type="autocomplete"
-            :placeholder="__('Sales Manager')"
-            :options="salesManagerOptions"
-            class="min-w-[180px]"
-          />
-          <Button
-            v-if="phaseFilter || salesManagerFilter"
-            variant="ghost"
-            @click="clearFilters"
-          >
-            {{ __('Clear') }}
-          </Button>
-          <Button :loading="loading" @click="fetchData">
-            <template #prefix>
-              <LucideRefreshCw class="h-4 w-4" />
-            </template>
+          <div class="lcspm-seg">
+            <button
+              v-for="s in segments"
+              :key="s.key"
+              type="button"
+              class="lcspm-seg-btn"
+              :class="{ 'is-active': segment === s.key }"
+              @click="segment = s.key"
+            >{{ s.label }}</button>
+          </div>
+          <Button :loading="geo.loading" @click="geo.reload()">
+            <template #prefix><LucideRefreshCw class="h-4 w-4" /></template>
             {{ __('Refresh') }}
           </Button>
         </template>
       </PpPageHead>
     </header>
 
-    <!-- Banner: countries without coordinates -->
-    <div v-if="unmappedCountries.length" class="lcspm-banner">
-      <span class="lcspm-banner-strong">{{ __('Missing map coordinates:') }}</span>
-      {{ unmappedCountries.join(', ') }}
-      <span class="lcspm-banner-note">({{ __('add them in country_coords.py') }})</span>
+    <div class="lcspm-body flex-1 min-h-0 overflow-hidden p-3">
+      <PpGeoMap :masten="masten" :pins="pins" :segment="segment" height="100%" @inspect="onInspect" />
     </div>
 
-    <!-- Map body — OSM detail map -->
-    <div class="lcspm-body flex-1 overflow-auto p-3">
-      <ProjectMap
-        :projects="filteredProjects"
-        height-class="h-[calc(100vh-16rem)]"
-      />
-    </div>
-
-    <!-- Stats footer -->
     <footer class="lcspm-foot">
       <span>
-        {{ filteredProjects.length }} {{ __('shown') }} ·
-        {{ mappedProjects.length }} {{ __('mapped') }} ·
-        {{ allProjects.length }} {{ __('total') }}
+        {{ masten.length }} {{ __('routes') }} · {{ pins.length }} {{ __('pins') }} ·
+        {{ masten.length + pins.length }} {{ __('total') }}
       </span>
-      <span v-if="lastFetchedAt" class="lcspm-foot-muted">
-        {{ __('Updated') }}: {{ lastFetchedAt }}
-      </span>
+      <span v-if="geo.loading" class="lcspm-foot-muted">{{ __('Loading …') }}</span>
     </footer>
   </div>
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
-import { Button, FormControl, createResource } from 'frappe-ui'
+import { computed, ref, onBeforeUnmount } from 'vue'
+import { Button, createResource } from 'frappe-ui'
 import LucideRefreshCw from '~icons/lucide/refresh-cw'
-import ProjectMap from '@/components/lcs/ProjectMap.vue'
+import PpGeoMap from '@/components/pp/PpGeoMap.vue'
 import PpPageHead from '@/components/pp/PpPageHead.vue'
+import { usePilandaMode } from '@/composables/usePilandaMode'
+import { usePilandaInspect } from '@/composables/usePilandaInspect'
 
-const allProjects = ref([])
-const unmappedCountries = ref([])
-const lastFetchedAt = ref('')
-const loading = ref(false)
+const { pilandaMode } = usePilandaMode()
+const { inspectNode } = usePilandaInspect()
 
-const phaseFilter = ref('')
-const salesManagerFilter = ref('')
-
-const phaseOptions = [
-  '',
-  'Qualified',
-  'Budget',
-  'Richtpreis',
-  'Offer',
-  'Negotiation',
-  'Won',
-  'Execution',
-  'Completed',
-  'Lost',
-]
-
-const usersResource = createResource({
-  url: 'frappe.client.get_list',
-  params: {
-    doctype: 'User',
-    filters: { enabled: 1, user_type: 'System User' },
-    fields: ['name', 'full_name'],
-    limit_page_length: 200,
-  },
+const geo = createResource({
+  url: 'lcs_integrations.projects.api.get_project_geo',
   auto: true,
 })
+const masten = computed(() => geo.data?.masten || [])
+const pins = computed(() => geo.data?.pins || [])
 
-const salesManagerOptions = computed(() =>
-  (usersResource.data || []).map((u) => ({
-    label: u.full_name || u.name,
-    value: u.name,
-  })),
-)
+// PpGeoMap-Status-Segment (Lebenszyklus) statt der alten Phasen-Filterzeile.
+const segment = ref('all')
+const segments = [
+  { key: 'all', label: __('All') },
+  { key: 'akquise', label: __('Acquisition') },
+  { key: 'bau', label: __('Building') },
+  { key: 'betrieb', label: __('Operating') },
+  { key: 'service', label: __('Service') },
+]
 
-const mappedProjects = computed(() =>
-  allProjects.value.filter((p) => p.latitude != null && p.longitude != null),
-)
-
-const filteredProjects = computed(() =>
-  mappedProjects.value.filter((p) => {
-    if (phaseFilter.value && p.phase !== phaseFilter.value) return false
-    if (
-      salesManagerFilter.value &&
-      p.sales_manager !== salesManagerFilter.value
-    )
-      return false
-    return true
-  }),
-)
-
-function clearFilters() {
-  phaseFilter.value = ''
-  salesManagerFilter.value = ''
+// Klick auf Anlage/Pin/Seillinie → angedockter Shell-Inspektor.
+function onInspect(payload) {
+  if (!pilandaMode.value) return
+  inspectNode({
+    title: payload?.title || '',
+    rows: (payload?.rows || []).map((r) => ({ label: r[0], value: r[1] })),
+  })
 }
-
-async function fetchData() {
-  loading.value = true
-  try {
-    const r = await fetch(
-      '/api/method/lcs_integrations.projects.map_api.get_projects_for_map',
-      {
-        credentials: 'include',
-        headers: { 'X-Frappe-CSRF-Token': window.csrf_token || 'token' },
-      },
-    )
-    const json = await r.json()
-    const msg = json.message || {}
-    allProjects.value = msg.projects || []
-    unmappedCountries.value = msg.unmapped_countries || []
-    lastFetchedAt.value = new Date().toLocaleTimeString()
-  } catch (e) {
-    console.error('Failed to load projects map data', e)
-  } finally {
-    loading.value = false
-  }
-}
-
-onMounted(fetchData)
+onBeforeUnmount(() => {
+  if (pilandaMode.value) inspectNode(null)
+})
 </script>
 
 <style scoped>
 .lcspm { background: var(--pp-bg-base); }
 .lcspm-head { padding: var(--pp-space-5) var(--pp-space-5) var(--pp-space-4);
   background: var(--pp-bg-surface); border-bottom: 1px solid var(--pp-border-subtle); }
-.lcspm-banner { padding: var(--pp-space-2) var(--pp-space-4); font-size: var(--pp-fs-12);
-  border-bottom: 1px solid color-mix(in oklab, var(--pp-state-warning) 30%, transparent);
-  background: color-mix(in oklab, var(--pp-state-warning) 12%, transparent);
-  color: var(--pp-state-warning); }
-.lcspm-banner-strong { font-weight: var(--pp-weight-semibold); }
-.lcspm-banner-note { margin-left: var(--pp-space-1); opacity: 0.8; }
 .lcspm-body { background: var(--pp-bg-base); }
 .lcspm-foot { display: flex; align-items: center; justify-content: space-between;
   padding: var(--pp-space-2) var(--pp-space-4); font-size: var(--pp-fs-12);
   color: var(--pp-text-tertiary); background: var(--pp-bg-surface);
   border-top: 1px solid var(--pp-border-subtle); }
 .lcspm-foot-muted { color: var(--pp-text-tertiary); opacity: 0.75; }
+
+/* Status-Segment (Lebenszyklus-Filter) */
+.lcspm-seg { display: inline-flex; gap: 2px; padding: 2px; border-radius: var(--pp-radius-ui);
+  background: var(--pp-bg-base); border: 1px solid var(--pp-border-subtle); }
+.lcspm-seg-btn { appearance: none; cursor: pointer; font-family: inherit; font-size: var(--pp-fs-12);
+  padding: 4px 10px; border: none; border-radius: var(--pp-radius-ui); background: transparent;
+  color: var(--pp-text-secondary); }
+.lcspm-seg-btn:hover { color: var(--pp-brand-primary); }
+.lcspm-seg-btn.is-active { background: var(--pp-bg-surface); color: var(--pp-brand-primary);
+  font-weight: var(--pp-weight-semibold); box-shadow: var(--pp-shadow-xs); }
 </style>
