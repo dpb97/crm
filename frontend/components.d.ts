@@ -286,6 +286,7 @@ declare module 'vue' {
     PpAppbar: typeof import('./src/components/pp/PpAppbar.vue')['default']
     PpCommandPalette: typeof import('./src/components/pp/PpCommandPalette.vue')['default']
     PpComments: typeof import('./src/components/pp/PpComments.vue')['default']
+    PpContactCards: typeof import('./src/components/pp/PpContactCards.vue')['default']
     PpDashboard: typeof import('./src/components/pp/PpDashboard.vue')['default']
     PpDataGrid: typeof import('./src/components/pp/PpDataGrid.vue')['default']
     PpDocList: typeof import('./src/components/pp/PpDocList.vue')['default']

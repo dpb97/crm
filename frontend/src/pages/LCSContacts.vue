@@ -28,6 +28,10 @@
           :subtitle="`${filtered.length} ${__('of')} ${contacts.length} ${__('Contacts')} · ${__('click a row to open the profile')}`"
         >
           <template #actions>
+            <div class="crmc-viewtoggle">
+              <button type="button" class="crmc-vt-btn" :class="{ 'is-active': viewMode === 'list' }" :title="__('List')" @click="viewMode = 'list'"><IconList /></button>
+              <button type="button" class="crmc-vt-btn" :class="{ 'is-active': viewMode === 'cards' }" :title="__('Cards')" @click="viewMode = 'cards'"><IconGrid /></button>
+            </div>
             <div class="crmc-search-wrap">
               <IconSearch class="crmc-search-ico" />
               <input v-model="q" type="search" class="crmc-search" :placeholder="__('Search / filter by company') + ' …'" />
@@ -54,7 +58,7 @@
         <section class="crmc-card">
           <template v-if="rows.length">
           <div class="crmc-scroll">
-          <PpDataGrid :columns="columns" :rows="pagedRows" @row-click="openContact">
+          <PpDataGrid v-if="viewMode === 'list'" :columns="columns" :rows="pagedRows" @row-click="openContact">
             <template #cell-name="{ row }">
               <span class="crmc-name">{{ row.name }}</span>
               <span class="crmc-id">{{ row.email || '—' }}</span>
@@ -74,6 +78,18 @@
               <span class="crmc-muted">{{ fmtDate(value) }}</span>
             </template>
           </PpDataGrid>
+          <!-- Karten-Ansicht (Theme PpContactCards als reiner Renderer; eigene
+               Toolbar per CSS aus, meine Suche/KPI/Pagination bleiben). -->
+          <PpContactCards
+            v-else
+            class="crmc-cards"
+            :people="cardPeople"
+            view="cards"
+            :searchable="false"
+            :action-label="__('Open')"
+            @select="(p) => openContact(p.id)"
+            @action="(p) => openDetail(p.id)"
+          />
           </div>
           <LcsPagination
             v-if="rowTotal > 25"
@@ -114,12 +130,15 @@ import PpPageHead from '@/components/pp/PpPageHead.vue'
 import PpStatTile from '@/components/pp/PpStatTile.vue'
 import PpDataGrid from '@/components/pp/PpDataGrid.vue'
 import PpEmptyState from '@/components/pp/PpEmptyState.vue'
+import PpContactCards from '@/components/pp/PpContactCards.vue'
 import ContactInspector from '@/components/lcs/ContactInspector.vue'
 import LcsPagination from '@/components/lcs/LcsPagination.vue'
 import IconSearchX from '~icons/lucide/search-x'
 import IconInbox from '~icons/lucide/inbox'
 import IconPhone from '~icons/lucide/phone'
 import IconSearch from '~icons/lucide/search'
+import IconList from '~icons/lucide/list'
+import IconGrid from '~icons/lucide/layout-grid'
 import { usePilandaMode } from '@/composables/usePilandaMode'
 import { usePilandaInspect } from '@/composables/usePilandaInspect'
 import { usePagination } from '@/composables/usePagination'
@@ -251,6 +270,19 @@ const {
   from: pgFrom, to: pgTo, pageSize, next: pgNext, prev: pgPrev, setPageSize,
 } = usePagination(rows)
 
+// Listen-/Karten-Umschalter (Karten via PpContactCards, gefüttert aus den
+// paginierten Zeilen — KPI-Filter + Pagination gelten in beiden Ansichten).
+const viewMode = ref('list')
+const cardPeople = computed(() =>
+  pagedRows.value.map((r) => ({
+    id: r.id,
+    name: r.name,
+    company: r.company_name,
+    email: r.email,
+    phone: r.mobile_no,
+  })),
+)
+
 // --- Klick → Inspektor -----------------------------------------------------
 let lastClick = { id: null, t: 0 }
 function openContact(id) {
@@ -316,6 +348,17 @@ onBeforeUnmount(() => {
   background: var(--pp-bg-surface); min-width: 260px; }
 .crmc-search:focus { outline: none; border-color: var(--pp-brand-primary);
   box-shadow: 0 0 0 3px rgb(var(--pp-brand-primary-rgb) / 0.15); }
+
+/* Listen-/Karten-Umschalter */
+.crmc-viewtoggle { display: inline-flex; gap: 2px; padding: 2px; border-radius: var(--pp-radius-ui);
+  background: var(--pp-bg-base); border: 1px solid var(--pp-border-subtle); }
+.crmc-vt-btn { appearance: none; cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
+  width: 30px; height: 28px; border: none; border-radius: var(--pp-radius-ui); background: transparent; color: var(--pp-text-tertiary); }
+.crmc-vt-btn:hover { color: var(--pp-brand-primary); }
+.crmc-vt-btn.is-active { background: var(--pp-bg-surface); color: var(--pp-brand-primary); box-shadow: var(--pp-shadow-xs); }
+.crmc-vt-btn :deep(svg) { width: 15px; height: 15px; }
+/* PpContactCards als reiner Karten-Renderer: eigene Toolbar aus. */
+.crmc-cards :deep(.pp-contacts__bar) { display: none; }
 
 .crmc-card { background: var(--pp-bg-surface); border: 1px solid var(--pp-border-subtle);
   border-radius: var(--pp-radius-ui); box-shadow: var(--pp-shadow-xs); padding: var(--pp-space-2);
