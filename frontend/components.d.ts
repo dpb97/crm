@@ -284,6 +284,7 @@ declare module 'vue' {
     PlaybackSpeedOption: typeof import('./src/components/Activities/PlaybackSpeedOption.vue')['default']
     PlayIcon: typeof import('./src/components/Icons/PlayIcon.vue')['default']
     PpAppbar: typeof import('./src/components/pp/PpAppbar.vue')['default']
+    PpColChooser: typeof import('./src/components/pp/PpColChooser.vue')['default']
     PpCommandPalette: typeof import('./src/components/pp/PpCommandPalette.vue')['default']
     PpComments: typeof import('./src/components/pp/PpComments.vue')['default']
     PpContactCards: typeof import('./src/components/pp/PpContactCards.vue')['default']

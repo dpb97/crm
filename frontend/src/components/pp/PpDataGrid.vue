@@ -1,9 +1,25 @@
-<!-- PP_REV: PpDataGrid@5 -->
+<!-- PP_REV: PpDataGrid@6 -->
 <!--
   PpDataGrid.vue — erweiterte, wiederverwendbare Datentabelle (List-Ansichten/
   Reports). Ersetzt spaeter statische Tabellen.
 
   ECHTE props-in / events-out Komponente — kein Store, kein Backend.
+
+  @6 (26.07.2026, Konsistenz-Sweep F24 — „gleiche Dinge immer gleich" + neuer
+  Picker-Vertrag Marco):
+    (a) COLCHOOSER-KONSUM: der frühere EIGENE Spalten-Wähler
+      (`pp-datagrid__colmenu`) ist ersetzt durch Konsum des gemeinsamen
+      Bausteins PpColChooser (EIN Spalten-Wähler stack-weit). `columnTools`
+      rendert jetzt die PpColChooser-Pille „Spalten"; Sichtbarkeit + DnD-
+      Reihenfolge laufen über dessen Events. Optik/Bedienung identisch zu Gantt.
+    (b) PICKER-VERTRAG: die Picker-Spalte ist DEFAULT AUS. `pickable` schaltet
+      die FÄHIGKEIT frei; die Aktivierung steuert der Verbraucher über die neue
+      v-model-Prop `pickMode` (Toggle „Auswählen" gehört in die Funktionsbar-
+      Werkzeuge des Verbrauchers). Im Picker-Modus ist die GANZE Zeile
+      Auswahlfläche (Klick auf Zeile ODER Checkbox wählt); der `row-click`-Emit
+      (Inspektor-Selektion) PAUSIERT im Picker-Modus, `row-dblclick` bleibt.
+      `picked` v-model + Zähler unverändert. Voll rückwärtskompatibel:
+      Verbraucher ohne `pickMode` verhalten sich wie bisher (Picker bleibt aus).
 
   @5 (26.07.2026, Marco A2 — Klickdummy Listen-Picker `wireListPick`/
   `enhancePickTable`): ADDITIV, voll rueckwaertskompatibel (alle Verbraucher
@@ -60,8 +76,8 @@ import ChevronUp    from "~icons/lucide/chevron-up";
 import ChevronDown  from "~icons/lucide/chevron-down";
 import ChevronsUpDown from "~icons/lucide/chevrons-up-down";
 import ChevronRight from "~icons/lucide/chevron-right";
-import Columns3     from "~icons/lucide/columns-3";
 import X            from "~icons/lucide/x";
+import PpColChooser from "./PpColChooser.vue";
 
 const props = defineProps({
   columns:    { type: Array,   default: () => [] },
@@ -69,14 +85,15 @@ const props = defineProps({
   groupBy:    { type: String,  default: "" },
   selectable: { type: Boolean, default: false },
   expandable: { type: Boolean, default: false },
-  columnTools:{ type: Boolean, default: false }, // Spaltenauswahl-Toolbar (Sichtbarkeit)
+  columnTools:{ type: Boolean, default: false }, // Spaltenauswahl-Toolbar (Sichtbarkeit) — via PpColChooser
   chooserKeys:{ type: Array,   default: null },  // @4: Chooser auf diese keys begrenzen (null = alle Spalten)
   reorderable:{ type: Boolean, default: false }, // Spaltenreihenfolge per Drag and Drop
   resizable:  { type: Boolean, default: false }, // Spaltenbreite per Ziehen am Rand
   pickable:   { type: Boolean, default: false }, // @5: kontrollierte Picker-Spalte links (v-model:picked)
   picked:     { type: Array,   default: () => [] }, // @5: ausgewaehlte ids (kontrolliert)
+  pickMode:   { type: Boolean, default: false }, // @6: Picker-Modus an/aus (v-model, DEFAULT AUS)
 });
-const emit = defineEmits(["row-click", "update:selection", "toggle-expand", "update:picked", "row-dblclick"]);
+const emit = defineEmits(["row-click", "update:selection", "toggle-expand", "update:picked", "update:pickMode", "row-dblclick"]);
 
 /* ---- Spalten-Normalisierung ------------------------------------ */
 const baseCols = computed(() =>
@@ -105,7 +122,7 @@ const chooserCols = computed(() =>
 const colOrder  = ref(null);          // Array<key> | null = natürliche Reihenfolge
 const colHidden = ref(new Set(props.columns.filter((c) => c.hidden).map((c) => c.key))); // ausgeblendete keys (initial aus column.hidden)
 const colWidths = ref({});            // key -> px (Resize-Override)
-const menuOpen  = ref(false);
+const chooserOpen = ref(false);       // PpColChooser-Panel offen
 
 const orderedKeys = computed(() => colOrder.value ?? baseCols.value.map((c) => c.key));
 
@@ -128,7 +145,25 @@ function resetCols() {
   colOrder.value = null;
   colHidden.value = new Set(initialHidden.value); // initialen Sichtbarkeitszustand wiederherstellen
   colWidths.value = {};
-  menuOpen.value = false;
+  chooserOpen.value = false;
+}
+
+/* ---- PpColChooser-Anbindung (@6, EIN Spalten-Wähler) ----------- */
+/* Items in AKTUELLER Reihenfolge (chooserCols folgt orderedKeys über baseCols). */
+const chooserItems = computed(() =>
+  orderedKeys.value
+    .map((k) => chooserCols.value.find((c) => c.key === k))
+    .filter(Boolean)
+    .map((c) => ({ k: c.key, l: c.label, checked: !colHidden.value.has(c.key) })),
+);
+/* DnD-Reihenfolge aus dem Chooser: bei Teil-Auswahl (chooserKeys) nur die
+   betroffenen Slots im vollen colOrder ersetzen, Rest bleibt an Ort. */
+function onChooserReorder(newKeys) {
+  if (!props.chooserKeys) { colOrder.value = newKeys.slice(); return; }
+  const full = orderedKeys.value.slice();
+  const slots = full.map((k, i) => (props.chooserKeys.includes(k) ? i : -1)).filter((i) => i >= 0);
+  slots.forEach((slot, idx) => { if (newKeys[idx] != null) full[slot] = newKeys[idx]; });
+  colOrder.value = full;
 }
 
 /* Drag-and-Drop Spaltenreihenfolge */
@@ -185,8 +220,17 @@ const groupSegments = computed(() => {
   return segs;
 });
 
+/* Picker sichtbar nur wenn Fähigkeit frei UND Modus an (@6, Default aus). */
+const showPick = computed(() => props.pickable && props.pickMode);
+
 /* Wieviele fuehrende Steuer-Spalten (Picker / Auswahl / Aufklappen) gibt es? */
-const leadCols = computed(() => (props.pickable ? 1 : 0) + (props.selectable ? 1 : 0) + (props.expandable ? 1 : 0));
+const leadCols = computed(() => (showPick.value ? 1 : 0) + (props.selectable ? 1 : 0) + (props.expandable ? 1 : 0));
+
+/* Zeilen-Klick: im Picker-Modus wählt die ganze Zeile; sonst Inspektor-Selektion. */
+function onRowClick(id) {
+  if (showPick.value) togglePick(id);
+  else emit("row-click", id);
+}
 
 /* ---- Sortierung (clientseitig) --------------------------------- */
 const sortKey = ref("");
@@ -331,29 +375,24 @@ function sortState(key) {
 
 <template>
   <div class="pp-datagrid">
-    <!-- Spalten-Toolbar: Sichtbarkeit / Hinweis Reorder+Resize -->
+    <!-- Spalten-Toolbar: Sichtbarkeit (PpColChooser, EIN Baustein) / Hinweis Reorder+Resize -->
     <div v-if="columnTools || reorderable || resizable" class="pp-datagrid__toolbar">
-      <div v-if="columnTools" class="pp-datagrid__colmenu">
-        <button type="button" class="pp-datagrid__colmenu-btn" :class="{ 'is-open': menuOpen }"
-                :aria-expanded="menuOpen" @click="menuOpen = !menuOpen">
-          <Columns3 /> Spalten
-        </button>
-        <div v-if="menuOpen" class="pp-datagrid__colmenu-pop">
-          <span class="pp-datagrid__colmenu-title">Spalten anzeigen</span>
-          <label v-for="c in chooserCols" :key="c.key" class="pp-datagrid__colmenu-item">
-            <input type="checkbox" class="pp-datagrid__check"
-                   :checked="!colHidden.has(c.key)" @change="toggleColVis(c.key)" />
-            <span>{{ c.label }}</span>
-          </label>
-          <button type="button" class="pp-datagrid__colmenu-reset" @click="resetCols">Zurücksetzen</button>
-        </div>
-      </div>
+      <PpColChooser
+        v-if="columnTools"
+        v-model:open="chooserOpen"
+        :items="chooserItems"
+        :reorderable="reorderable"
+        head="Spalten anzeigen"
+        label="Spalten"
+        @toggle="toggleColVis($event.k)"
+        @reorder="onChooserReorder"
+      />
+      <button v-if="columnTools" type="button" class="pp-datagrid__colreset" @click="resetCols">Zurücksetzen</button>
       <span v-if="reorderable || resizable" class="pp-datagrid__toolbar-hint">
         {{ reorderable && resizable ? 'Spaltenkopf ziehen = umsortieren · Rand ziehen = Breite'
           : reorderable ? 'Spaltenkopf ziehen zum Umsortieren' : 'Spaltenrand ziehen für Breite' }}
       </span>
     </div>
-    <div v-if="columnTools && menuOpen" class="pp-datagrid__backdrop" @click="menuOpen = false"></div>
 
     <!-- Bulk-Leiste (nur bei Auswahl > 0) -->
     <div v-if="selectable && selectedCount > 0" class="pp-datagrid__bulk">
@@ -389,7 +428,7 @@ function sortState(key) {
           <!-- Spalten-Kopf -->
           <tr>
             <th
-              v-if="pickable"
+              v-if="showPick"
               class="pp-datagrid__cell pp-datagrid__cell--lead pp-datagrid__cell--ctrl pp-datagrid__cell--pick"
             >
               <input
@@ -471,14 +510,14 @@ function sortState(key) {
                 class="pp-datagrid__row"
                 :class="{
                   'is-selected': selectable && selected.has(row.id),
-                  'pp-datagrid__row--picked': pickable && pickedSet.has(row.id),
+                  'pp-datagrid__row--picked': showPick && pickedSet.has(row.id),
                 }"
-                @click="emit('row-click', row.id)"
+                @click="onRowClick(row.id)"
                 @dblclick="emit('row-dblclick', row.id)"
               >
-                <!-- Picker (@5, kontrolliert) -->
+                <!-- Picker (@5 kontrolliert, @6 nur im Picker-Modus) -->
                 <td
-                  v-if="pickable"
+                  v-if="showPick"
                   class="pp-datagrid__cell pp-datagrid__cell--ctrl pp-datagrid__cell--pick"
                   @click.stop
                 >
@@ -547,7 +586,7 @@ function sortState(key) {
                   :key="row.id + '-c' + cii"
                   class="pp-datagrid__row pp-datagrid__row--child"
                 >
-                  <td v-if="pickable" class="pp-datagrid__cell pp-datagrid__cell--ctrl pp-datagrid__cell--pick"></td>
+                  <td v-if="showPick" class="pp-datagrid__cell pp-datagrid__cell--ctrl pp-datagrid__cell--pick"></td>
                   <td v-if="expandable" class="pp-datagrid__cell pp-datagrid__cell--ctrl"></td>
                   <td
                     v-if="selectable"
@@ -653,42 +692,13 @@ function sortState(key) {
   padding: var(--pp-space-2) var(--pp-space-3);
   border-bottom: 1px solid var(--pp-border-subtle);
 }
-.pp-datagrid__colmenu { position: relative; }
-.pp-datagrid__colmenu-btn {
+.pp-datagrid__colreset {
   appearance: none; cursor: pointer; font-family: inherit; font-size: var(--pp-fs-12);
-  display: inline-flex; align-items: center; gap: 6px; padding: 4px var(--pp-space-3);
-  border: 1px solid var(--pp-border-default); border-radius: var(--pp-radius-ui);
-  background: var(--pp-bg-surface); color: var(--pp-text-primary);
+  padding: 4px var(--pp-space-2); border: 0; background: transparent;
+  color: var(--pp-text-secondary); border-radius: var(--pp-radius-ui);
 }
-.pp-datagrid__colmenu-btn:hover, .pp-datagrid__colmenu-btn.is-open {
-  background: var(--pp-bg-hover); border-color: var(--pp-brand-primary); color: var(--pp-brand-primary);
-}
-.pp-datagrid__colmenu-btn :deep(svg) { width: 14px; height: 14px; }
-.pp-datagrid__colmenu-pop {
-  position: absolute; top: calc(100% + 4px); left: 0; z-index: 20; min-width: 200px;
-  display: flex; flex-direction: column; gap: 1px; padding: var(--pp-space-2);
-  background: var(--pp-bg-surface); border: 1px solid var(--pp-border-default);
-  border-radius: var(--pp-radius-ui); box-shadow: var(--pp-shadow-lg);
-}
-.pp-datagrid__colmenu-title {
-  font-size: 10px; font-weight: var(--pp-weight-bold); letter-spacing: var(--pp-tracking-wide);
-  text-transform: uppercase; color: var(--pp-text-tertiary); padding: 2px var(--pp-space-1) 4px;
-}
-.pp-datagrid__colmenu-item {
-  display: flex; align-items: center; gap: var(--pp-space-2); cursor: pointer;
-  padding: 4px var(--pp-space-1); border-radius: var(--pp-radius-ui);
-  font-size: var(--pp-fs-13, 13px); color: var(--pp-text-primary);
-}
-.pp-datagrid__colmenu-item:hover { background: var(--pp-bg-hover); }
-.pp-datagrid__colmenu-reset {
-  appearance: none; cursor: pointer; font-family: inherit; font-size: var(--pp-fs-12);
-  margin-top: var(--pp-space-1); padding: 5px var(--pp-space-1);
-  border: 0; border-top: 1px solid var(--pp-border-subtle);
-  background: transparent; color: var(--pp-text-secondary); text-align: left;
-}
-.pp-datagrid__colmenu-reset:hover { color: var(--pp-brand-primary); }
+.pp-datagrid__colreset:hover { color: var(--pp-brand-primary); background: var(--pp-bg-hover); }
 .pp-datagrid__toolbar-hint { font-size: var(--pp-fs-12); color: var(--pp-text-tertiary); margin-left: auto; }
-.pp-datagrid__backdrop { position: fixed; inset: 0; z-index: 15; background: transparent; }
 
 /* Reorder/Resize am Spaltenkopf (Kopf-th ist sticky = positionierter Anker) */
 .pp-datagrid__cell--th.is-draggable { cursor: grab; }

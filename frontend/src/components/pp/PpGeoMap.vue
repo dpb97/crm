@@ -1,4 +1,4 @@
-<!-- PP_REV: PpGeoMap@3 -->
+<!-- PP_REV: PpGeoMap@4 -->
 <!--
   PpGeoMap.vue — echte Landkarte (Leaflet + OpenStreetMap, SSOT-Baustein, Regeln 13/21).
 
@@ -24,6 +24,12 @@
       der Seite steuern ihn; Marker-Layer werden bei Wechsel neu aufgebaut).
     · Reicher Hover-Tooltip (Nr. + Bezeichnung + Firma + Typ + Status + Wert) — XSS-
       sicher als DOM mit textContent, KEIN HTML aus Daten.
+
+  @4 (26.07.2026, Konsistenz-Sweep F29) — Wiederhol-/Bounds-Härtung (der volle
+  OSM/Territorien-Umbau folgt in einer späteren Etappe nach Klickdummy-K4):
+    · TileLayer `noWrap:true` → keine horizontale Kachel-Wiederholung.
+    · `maxBounds [[-85,-180],[85,180]]` + `maxBoundsViscosity:1` → Karte bleibt in
+      der einen Welt (kein endloses Panning), `worldCopyJump:false`.
 
   Bewusste Entscheidungen (Wahrheit ist Pflicht):
     · Leaflet als echte yarn-Dependency (KEIN CDN); CSS lokal importiert.
@@ -224,14 +230,19 @@ onMounted(() => {
     amber:   resolveColor("var(--pp-accent-amber)", mapEl.value),
   };
 
-  map = L.map(mapEl.value, { scrollWheelZoom: true });
+  map = L.map(mapEl.value, {
+    scrollWheelZoom: true,
+    worldCopyJump: false,                    // @4 F29: kein Sprung in die Kachel-Kopie
+    maxBounds: [[-85, -180], [85, 180]],     // @4 F29: eine Welt, kein endloses Panning
+    maxBoundsViscosity: 1,                   // @4 F29: harte Kante an den Bounds
+  });
   const geoBase = {
     "Standard": L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",
-      { maxZoom: 19, attribution: "© OpenStreetMap-Mitwirkende" }),
+      { maxZoom: 19, noWrap: true, attribution: "© OpenStreetMap-Mitwirkende" }),
     "Gelände (Höhenlinien)": L.tileLayer("https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",
-      { maxZoom: 17, attribution: "© OpenStreetMap-Mitwirkende, SRTM · Kartendarstellung © OpenTopoMap (CC-BY-SA)" }),
+      { maxZoom: 17, noWrap: true, attribution: "© OpenStreetMap-Mitwirkende, SRTM · Kartendarstellung © OpenTopoMap (CC-BY-SA)" }),
     "Satellit": L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-      { maxZoom: 19, attribution: "Tiles © Esri — Source: Esri, Maxar, Earthstar Geographics" }),
+      { maxZoom: 19, noWrap: true, attribution: "Tiles © Esri — Source: Esri, Maxar, Earthstar Geographics" }),
   };
   geoBase["Standard"].addTo(map);
 
@@ -253,7 +264,7 @@ onMounted(() => {
             ["Verantwortlich", mk.wer || "unbesetzt"], ["Länder", mk.laender || "—"],
             ["Aktive Leads", mk.leads || "—"], ["Projekte im Gebiet", mk.proj || "—"],
             ["Pipeline", mk.pipe || "—"],
-            ["Gebietsstatus", mk.wer ? "besetzt — Chancen laufen direkt an den Verantwortlichen" : "unbesetzt — eingehende Chancen ans Sales Meeting"],
+            ["Gebietsstatus", mk.wer ? "besetzt — Chancen laufen direkt an den Verantwortlichen" : "unbesetzt — eingehende Chancen an die Vertriebsbesprechung"],
           ],
         });
       });
