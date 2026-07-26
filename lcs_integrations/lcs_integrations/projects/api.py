@@ -1137,3 +1137,159 @@ def get_contact_email_counts(contacts) -> dict:
         as_dict=True,
     )
     return {r.contact: r.n for r in rows}
+
+
+# --------------------------------------------------------------------------- #
+#  Sales Meeting — committee view (agenda + the three funnel stages)          #
+# --------------------------------------------------------------------------- #
+
+_SM_ACTIVE_PROJECT = ["Qualified", "Budget", "Richtpreis", "Offer", "Negotiation"]
+_SM_ACTIVE_LEAD = ["New", "Contacted", "Nurture", "Qualified"]
+
+
+def _sm_meeting_date(meeting_date=None):
+    """Resolve the meeting date: explicit arg, else the most recent agenda date,
+    else today."""
+    if meeting_date:
+        return frappe.utils.getdate(meeting_date)
+    last = frappe.get_all(
+        "LCS Sales Meeting Agenda", fields=["meeting_date"],
+        order_by="meeting_date desc", limit=1,
+    )
+    return frappe.utils.getdate(last[0].meeting_date) if last else frappe.utils.today()
+
+
+@frappe.whitelist()
+def get_sales_meeting_agenda(meeting_date=None):
+    """Committee view for the weekly sales meeting: the agenda for one meeting
+    (decide-directly-at-the-point flow) plus the three funnel stages
+    (opportunities / leads / sales projects) as compact cards, the last
+    decisions and the meeting frame for the inspector default content."""
+    mdate = _sm_meeting_date(meeting_date)
+
+    items = frappe.get_all(
+        "LCS Sales Meeting Agenda",
+        filters={"meeting_date": mdate},
+        fields=["name", "sort_index", "status", "topic", "reference_object",
+                "reference_doctype", "reference_name", "responsible",
+                "decision", "decided_on"],
+        order_by="sort_index asc, creation asc",
+        limit_page_length=0,
+    )
+    agenda, archived_count = [], 0
+    for i, a in enumerate(items):
+        if a.status == "Archived":
+            archived_count += 1
+            continue
+        agenda.append({
+            "name": a.name, "nr": len(agenda) + 1, "topic": a.topic,
+            "object": a.reference_object or "", "responsible": a.responsible or "",
+            "status": a.status, "decision": a.decision or "",
+            "ref_doctype": a.reference_doctype or "", "ref_name": a.reference_name or "",
+        })
+
+    # Last decisions (across the whole doctype, for the inspector timeline).
+    decided = frappe.get_all(
+        "LCS Sales Meeting Agenda",
+        filters={"status": ["in", ["Decided", "Archived"]], "decided_on": ["is", "set"]},
+        fields=["topic", "reference_object", "decision", "decided_on"],
+        order_by="decided_on desc", limit=6,
+    )
+    decisions = [{
+        "topic": d.topic, "object": d.reference_object or "",
+        "decision": d.decision or "", "on": str(d.decided_on) if d.decided_on else "",
+    } for d in decided]
+
+    # Stage 1 — opportunities (CRM Deal, open).
+    deals = frappe.get_all(
+        "CRM Deal",
+        filters={"status": ["not in", ["Won", "Lost"]]},
+        fields=["name", "organization", "annual_revenue", "status", "deal_owner"],
+        order_by="annual_revenue desc", limit=6,
+    )
+    chancen = [{
+        "id": d.name, "name": d.organization or d.name, "org": d.organization or "",
+        "value": d.annual_revenue or 0, "status": d.status or "", "owner": d.deal_owner or "",
+    } for d in deals]
+
+    # Stage 2 — leads (CRM Lead, active).
+    lead_rows = frappe.get_all(
+        "CRM Lead",
+        filters={"status": ["in", _SM_ACTIVE_LEAD]},
+        fields=["name", "lead_name", "organization", "status", "lead_owner"],
+        order_by="modified desc", limit=6,
+    )
+    leads = [{
+        "id": l.name, "name": l.lead_name or l.organization or l.name,
+        "org": l.organization or "", "status": l.status or "", "owner": l.lead_owner or "",
+    } for l in lead_rows]
+
+    # Stage 3 — sales projects (LCS Project, active phases).
+    proj_rows = frappe.get_all(
+        "LCS Project",
+        filters={"phase": ["in", _SM_ACTIVE_PROJECT]},
+        fields=["name", "project_name", "project_number", "phase", "estimated_value"],
+        order_by="estimated_value desc", limit=6,
+    )
+    projekte = [{
+        "id": p.name, "nr": p.project_number or "", "name": p.project_name or p.name,
+        "phase": p.phase or "", "value": p.estimated_value or 0,
+    } for p in proj_rows]
+
+    # Meeting frame (KV shown as inspector default content) — raw values,
+    # the SPA composes the (i18n) labels.
+    frame = {
+        "meeting_date": str(mdate),
+        "open_points": len(agenda),
+        "decided_points": len([a for a in agenda if a["status"] == "Decided"]),
+        "archived_points": archived_count,
+        "opportunities": len(chancen),
+        "leads": len(leads),
+        "projects": len(projekte),
+    }
+
+    return {
+        "meeting_date": str(mdate), "agenda": agenda, "archived_count": archived_count,
+        "chancen": chancen, "leads": leads, "projekte": projekte,
+        "decisions": decisions, "frame": frame,
+    }
+
+
+@frappe.whitelist()
+def sales_meeting_add(topic, meeting_date=None, reference_object=None,
+                      responsible=None, reference_doctype=None, reference_name=None):
+    """Create a new open agenda point for a meeting."""
+    doc = frappe.get_doc({
+        "doctype": "LCS Sales Meeting Agenda",
+        "meeting_date": frappe.utils.getdate(meeting_date) if meeting_date else frappe.utils.today(),
+        "topic": topic,
+        "reference_object": reference_object,
+        "reference_doctype": reference_doctype,
+        "reference_name": reference_name,
+        "responsible": responsible or frappe.session.user,
+        "status": "Open",
+    })
+    doc.insert()
+    return {"name": doc.name}
+
+
+@frappe.whitelist()
+def sales_meeting_decide(name, decision=None):
+    """Mark an agenda point as decided and append the decision to the minutes.
+    Archiving stays a manual, separate step (the salesperson decides)."""
+    doc = frappe.get_doc("LCS Sales Meeting Agenda", name)
+    doc.status = "Decided"
+    if decision is not None:
+        doc.decision = decision
+    doc.save()
+    return {"name": doc.name, "status": doc.status, "decided_on": str(doc.decided_on or "")}
+
+
+@frappe.whitelist()
+def sales_meeting_archive(name):
+    """Archive a decided agenda point (removes it from the live list; the
+    counter stays visible)."""
+    doc = frappe.get_doc("LCS Sales Meeting Agenda", name)
+    doc.status = "Archived"
+    doc.save()
+    return {"name": doc.name, "status": doc.status}

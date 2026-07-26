@@ -1,0 +1,147 @@
+{
+ "actions": [],
+ "autoname": "hash",
+ "creation": "2026-07-26 00:00:00",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "meeting_date",
+  "sort_index",
+  "column_break_head",
+  "status",
+  "responsible",
+  "section_break_topic",
+  "topic",
+  "reference_object",
+  "reference_doctype",
+  "reference_name",
+  "section_break_decision",
+  "decision",
+  "decided_on"
+ ],
+ "fields": [
+  {
+   "default": "Today",
+   "fieldname": "meeting_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Meeting Date",
+   "reqd": 1
+  },
+  {
+   "default": "0",
+   "description": "Order within the meeting agenda (ascending).",
+   "fieldname": "sort_index",
+   "fieldtype": "Int",
+   "label": "Sort Index"
+  },
+  {
+   "fieldname": "column_break_head",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Open",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Open\nDecided\nArchived",
+   "reqd": 1
+  },
+  {
+   "fieldname": "responsible",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Responsible",
+   "options": "User"
+  },
+  {
+   "fieldname": "section_break_topic",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "topic",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Topic",
+   "reqd": 1
+  },
+  {
+   "description": "Free-text label of the object under discussion (deal, project, customer).",
+   "fieldname": "reference_object",
+   "fieldtype": "Data",
+   "label": "Reference Object"
+  },
+  {
+   "description": "Optional link target so the agenda point can open the record.",
+   "fieldname": "reference_doctype",
+   "fieldtype": "Link",
+   "label": "Reference Doctype",
+   "options": "DocType"
+  },
+  {
+   "fieldname": "reference_name",
+   "fieldtype": "Dynamic Link",
+   "label": "Reference Name",
+   "options": "reference_doctype"
+  },
+  {
+   "fieldname": "section_break_decision",
+   "fieldtype": "Section Break"
+  },
+  {
+   "description": "The decision taken on this point (added to the minutes).",
+   "fieldname": "decision",
+   "fieldtype": "Small Text",
+   "label": "Decision"
+  },
+  {
+   "fieldname": "decided_on",
+   "fieldtype": "Datetime",
+   "label": "Decided On",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-07-26 00:00:00",
+ "modified_by": "Administrator",
+ "module": "LCS Integrations",
+ "name": "LCS Sales Meeting Agenda",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Sales Manager",
+   "write": 1
+  },
+  {
+   "create": 1,
+   "read": 1,
+   "role": "Sales User",
+   "write": 1
+  }
+ ],
+ "sort_field": "sort_index",
+ "sort_order": "ASC",
+ "states": [],
+ "track_changes": 1
+}
