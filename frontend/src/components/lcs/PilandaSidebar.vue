@@ -291,6 +291,7 @@ function onNavigate(payload) {
 // path segment of the /app|/desk target; title/desc feed the placeholder page.
 const COMING_SOON = {
   'product-portfolio': { title: 'Produktportfolio', desc: 'Produktübersicht & Lebenszyklus (PLM)' },
+  'pilot-workbench': { title: 'Pilot', desc: 'Ausschreibungs-Scout — liefert Chancen in den Vertriebsfluss' },
 }
 function comingSoonFor(target) {
   const m = /\/(?:app|desk)\/([a-z0-9-]+)/i.exec(target || '')
