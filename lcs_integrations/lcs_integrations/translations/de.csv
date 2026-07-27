@@ -308,3 +308,71 @@ Won,Auftrag
 worked at,war bei
 Working on it,Bearbeiter
 works at,arbeitet bei
+
+Contact made,Kontakt aufgenommen
+Chance,Chance
+Chance No,Chance-Nr.
+Chancen,Chancen
+Sales decision,Entscheid des Verkäufers
+No chance,Keine Chance
+No chance (quarter),Keine Chance (Quartal)
+No chances,Keine Chancen
+Loading chances …,Chancen werden geladen …
+"Chances from the Pilot scout, enquiries and referrals appear here.","Chancen aus dem Pilot-Scout, Anfragen und Empfehlungen erscheinen hier."
+double click = open chance,Doppelklick = Chance öffnen
+Open chance,Chance öffnen
+Chance not found,Chance nicht gefunden
+Source,Quelle
+Enquiry (mail/phone),Anfrage (Mail/Telefon)
+Referral,Empfehlung
+Note (internal),Notiz (intern)
+"Search person, company or object","Person, Firma oder Objekt suchen"
+row = details in the inspector,Zeile = Details im Inspektor
+Deadline,Frist
+Client,Auftraggeber
+Open lead,Lead öffnen
+Lead created,Lead erstellt
+Could not create the lead.,Lead konnte nicht angelegt werden.
+Dismissed,Verworfen
+Could not save.,Konnte nicht gespeichert werden.
+Tender,Ausschreibung
+Scout evaluation,Scoutbewertung
+"Score, relevance and reasoning come from the Pilot (pilanda_salesbot)","Score, Relevanz und Begründung kommen aus dem Pilot (pilanda_salesbot)"
+External ID,Externe ID
+CPV Codes,CPV-Codes
+Order Value,Auftragswert
+Published On,Veröffentlicht am
+Relevance,Relevanz
+Reasoning,Begründung
+Summary (DE),Zusammenfassung (DE)
+Description (Original),Beschreibung (Original)
+Coordinates,Koordinaten
+Geo Confidence,Geo-Konfidenz
+Show on projects map,Auf der Projektlandkarte zeigen
+Sales Note,Notiz (Vertrieb)
+CRM Lead,CRM-Lead
+Last Synced,Zuletzt eingespielt
+"created on “Contacted”","entsteht bei „Kontakt aufgenommen“"
+Sales,Vertrieb
+overdue by,überfällig seit
+Direction,Richtung
+Duration,Dauer
+Result,Ergebnis
+Object,Objekt
+outgoing,ausgehend
+incoming,eingehend
+Open object,Objekt öffnen
+Loading calls …,Anrufe werden geladen …
+No calls,Keine Anrufe
+"Call logs appear here as calls are made.","Anrufprotokolle erscheinen hier, sobald Anrufe geführt werden."
+Initiated,Eingeleitet
+Ringing,Klingelt
+In progress,In Bearbeitung
+Completed,Abgeschlossen
+Busy,Besetzt
+No answer,Keine Antwort
+Failed,Fehlgeschlagen
+Queued,In Warteschlange
+Canceled,Abgebrochen
+Coming soon,Bald verfügbar
+"This module is not live yet — we roll out module by module. It will appear here as soon as it is available.","Dieses Modul ist noch nicht live — wir rollen Modul für Modul aus. Es erscheint hier, sobald es verfügbar ist."

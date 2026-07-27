@@ -17,7 +17,7 @@
         ]" />
       </template>
       <template #right-header>
-        <Button v-if="c && !c.crm_lead" variant="solid" :label="`${__('Contacted')} → Lead`" iconLeft="user-plus" :loading="converting" @click="toLead" />
+        <Button v-if="c && !c.crm_lead" variant="solid" :label="`${__('Contact made')} → Lead`" iconLeft="user-plus" :loading="converting" @click="toLead" />
         <Button v-else-if="c?.crm_lead" :label="__('Open lead')" iconLeft="external-link" @click="$router.push({ name: 'Lead', params: { leadId: c.crm_lead } })" />
       </template>
     </LayoutHeader>

@@ -22,10 +22,19 @@
       </div>
       <!-- Ein durchgehender Pilanda-Base-Hintergrund für Header + Seite; weiße
            Karten (--pp-bg-surface) schweben darauf. Verhindert den weiß/grau-
-           Bruch zwischen Shell-Chrome und den getokenten Seiten-Canvasen. -->
-      <div class="lcs-pilanda-content flex-1 flex flex-col h-full overflow-auto min-w-0">
-        <AppHeader />
-        <slot />
+           Bruch zwischen Shell-Chrome und den getokenten Seiten-Canvasen.
+           Positionierter Canvas → die absolute PpFunctionBar (Burger im
+           Inspektor-Kopf) überlagert oben, ohne mitzuscrollen. -->
+      <div class="lcs-pilanda-canvas flex-1 flex min-w-0">
+        <PpFunctionBar
+          v-model:open="funcbarOpen"
+          :page-groups="funcbarGroups || {}"
+          @action="onFuncbarAction"
+        />
+        <div class="lcs-pilanda-content flex-1 flex flex-col h-full overflow-auto min-w-0">
+          <AppHeader />
+          <slot />
+        </div>
       </div>
       <PpInspector
         v-if="inspSpec || inspView || inspPanel"
@@ -33,6 +42,9 @@
         :spec="inspSpec"
         :collapsed="inspCollapsed"
         title="Spezifikation"
+        :funcbar-open="funcbarOpen"
+        :funcbar-available="funcbarAvailable"
+        @update:funcbar-open="funcbarOpen = $event"
         @update:collapsed="setInspCollapsed"
       >
         <!-- Custom-Panel (interaktive Komponente, z. B. ProjectInspector) oder
@@ -93,15 +105,18 @@ import LCSBrandHeader from '@/components/lcs/LCSBrandHeader.vue'
 import PilandaSidebar from '@/components/lcs/PilandaSidebar.vue'
 import PpAppbar from '@/components/pp/PpAppbar.vue'
 import PpInspector from '@/components/pp/PpInspector.vue'
+import PpFunctionBar from '@/components/pp/PpFunctionBar.vue'
 import PpInspectorNodeView from '@/components/lcs/PpInspectorNodeView.vue'
 import { usePilandaMode } from '@/composables/usePilandaMode'
 import { usePilandaInspect } from '@/composables/usePilandaInspect'
+import { usePilandaFuncbar } from '@/composables/usePilandaFuncbar'
 import { sessionStore } from '@/stores/session'
 import { usersStore } from '@/stores/users'
 import { useOnboarding } from 'frappe-ui/frappe'
 
 const { pilandaMode } = usePilandaMode()
 const { spec: inspSpec, view: inspView, panel: inspPanel, collapsed: inspCollapsed, setCollapsed: setInspCollapsed } = usePilandaInspect()
+const { open: funcbarOpen, groups: funcbarGroups, available: funcbarAvailable, runAction: onFuncbarAction } = usePilandaFuncbar()
 
 // Logo-SSOT pilanda_theme (Laufzeit-URL, von Frappe serviert — wie im Desk).
 const BRAND_MARK = '/assets/pilanda_theme/logo/pilanda-mark.svg'
@@ -154,6 +169,9 @@ setUp(
    so the token-gray page canvases and the shell chrome no longer clash white vs.
    gray. White cards (--pp-bg-surface) float on this base. */
 .lcs-pilanda-content { background: var(--pp-bg-base); }
+/* Positioned canvas so the absolute PpFunctionBar overlays the top of the
+   content area (it fills the top edge of its positioned parent). */
+.lcs-pilanda-canvas { position: relative; }
 
 /* Master rule 5: fixed 28px status bar (Marke · LCS Group · Benutzer · Stand). */
 .lcs-statusbar { height: 28px; flex: none; display: flex; align-items: center; gap: var(--pp-space-3);
