@@ -169,6 +169,7 @@ import { statusesStore } from '@/stores/statuses'
 import { useRouter } from 'vue-router'
 import { usePilandaMode } from '@/composables/usePilandaMode'
 import { usePilandaInspect } from '@/composables/usePilandaInspect'
+import { useListFuncbar } from '@/composables/useListFuncbar'
 import { usersStore } from '@/stores/users'
 
 const statusStore = statusesStore()
@@ -228,6 +229,8 @@ const dealsRes = createListResource({
 function reload() {
   dealsRes.reload()
 }
+
+useListFuncbar({ title: __('Deals'), meaning: __('Opportunities in the pipeline.'), count: () => boardDeals.value.length, reload })
 
 // Lokaler, mutierbarer Board-Zustand (Klon) für optimistisches Verschieben.
 const boardDeals = ref([])

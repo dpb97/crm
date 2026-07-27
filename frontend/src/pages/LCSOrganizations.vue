@@ -113,6 +113,7 @@ import IconSearchX from '~icons/lucide/search-x'
 import IconInbox from '~icons/lucide/inbox'
 import { usePilandaMode } from '@/composables/usePilandaMode'
 import { usePilandaInspect } from '@/composables/usePilandaInspect'
+import { useListFuncbar } from '@/composables/useListFuncbar'
 import { usePagination } from '@/composables/usePagination'
 
 const router = useRouter()
@@ -135,6 +136,8 @@ const orgsRes = createResource({
 const orgs = computed(() => orgsRes.data || [])
 const loading = computed(() => orgsRes.loading)
 function reload() { orgsRes.reload() }
+
+useListFuncbar({ title: __('Organizations'), meaning: __('Companies in the CRM.'), count: () => orgs.value.length, reload })
 
 function fmtDate(v) {
   if (!v) return '—'

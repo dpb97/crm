@@ -144,6 +144,7 @@ import IconList from '~icons/lucide/list'
 import IconGrid from '~icons/lucide/layout-grid'
 import { usePilandaMode } from '@/composables/usePilandaMode'
 import { usePilandaInspect } from '@/composables/usePilandaInspect'
+import { useListFuncbar } from '@/composables/useListFuncbar'
 import { usePagination } from '@/composables/usePagination'
 
 const router = useRouter()
@@ -167,6 +168,8 @@ const contactsRes = createResource({
 const contacts = computed(() => contactsRes.data || [])
 const loading = computed(() => contactsRes.loading)
 function reload() { contactsRes.reload() }
+
+useListFuncbar({ title: __('Contacts'), meaning: __('Contacts in the CRM.'), count: () => contacts.value.length, reload })
 
 // --- E-Mail-Anzahl je Kontakt (LCS-API) -----------------------------------
 const emailCounts = ref({})

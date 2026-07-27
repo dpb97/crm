@@ -222,6 +222,7 @@ import IconList from '~icons/lucide/list'
 import IconColumns from '~icons/lucide/columns-3'
 import { usePilandaMode } from '@/composables/usePilandaMode'
 import { usePilandaInspect } from '@/composables/usePilandaInspect'
+import { useListFuncbar } from '@/composables/useListFuncbar'
 import { usePagination } from '@/composables/usePagination'
 
 const router = useRouter()
@@ -249,6 +250,8 @@ watch(() => leadsRes.data, (d) => { boardLeads.value = (d || []).map((x) => ({ .
 const leads = computed(() => boardLeads.value)
 const loading = computed(() => leadsRes.loading)
 function reload() { leadsRes.reload(); statusRes.reload() }
+
+useListFuncbar({ title: __('Leads'), meaning: __('Leads in the sales funnel.'), count: () => leads.value.length, reload })
 
 // List ⇄ Kanban (Befund 18: SSOT-Liste, one renderer, same descent contract).
 const viewMode = useStorage('lcs-leads-view-mode', 'list')

@@ -456,6 +456,7 @@ import { useOfflineList } from '@/composables/useOfflineList'
 import { useUserPreferences } from '@/composables/useUserPreferences'
 import { usePilandaMode } from '@/composables/usePilandaMode'
 import { usePilandaInspect } from '@/composables/usePilandaInspect'
+import { useListFuncbar } from '@/composables/useListFuncbar'
 import BacklogImportDialog from '@/components/lcs/BacklogImportDialog.vue'
 import ColumnPicker from '@/components/lcs/ColumnPicker.vue'
 import ProjectInspector from '@/components/lcs/ProjectInspector.vue'
@@ -714,6 +715,8 @@ const {
 
 const totalCount = computed(() => projectsData.value?.length || 0)
 const projectList = computed(() => projectsData.value || [])
+
+useListFuncbar({ title: __('Projects'), meaning: __('Sales projects (Deal = Project).'), count: () => projectList.value.length, reload: reloadProjects })
 
 const cacheAgeLabel = computed(() => {
   if (!projectsCachedAt.value) return ''

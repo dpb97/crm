@@ -34,7 +34,7 @@
 
         <!-- Karte „Anrufe" -->
         <PpTableCard :title="__('Calls')" :shown="filtered.length" :total="rows.length">
-          <PpDataGrid v-if="filtered.length" :columns="columns" :rows="filtered" @row-click="openCall">
+          <PpDataGrid v-if="filtered.length" :columns="columns" :rows="filtered" pickable v-model:pick-mode="selectMode" v-model:picked="picked" @row-click="openCall">
             <template #cell-date="{ value }">{{ fmtDate(value) }}</template>
             <template #cell-person="{ row }">
               <span class="pp-cell-strong">{{ row.person }}</span>
@@ -65,9 +65,9 @@
 </template>
 
 <script setup>
-import { ref, computed, onBeforeUnmount } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { createResource, Breadcrumbs, Button } from 'frappe-ui'
+import { createResource, toast, Breadcrumbs, Button } from 'frappe-ui'
 import LayoutHeader from '@/components/LayoutHeader.vue'
 import PpDataGrid from '@/components/pp/PpDataGrid.vue'
 import PpEmptyState from '@/components/pp/PpEmptyState.vue'
@@ -76,12 +76,17 @@ import PpTableCard from '@/components/pp/PpTableCard.vue'
 import PpPill from '@/components/pp/PpPill.vue'
 import IconPhone from '~icons/lucide/phone'
 import { usePilandaInspect } from '@/composables/usePilandaInspect'
+import { useListFuncbar } from '@/composables/useListFuncbar'
 
 const router = useRouter()
 const { inspectNode } = usePilandaInspect()
 
 const board = createResource({ url: 'lcs_integrations.projects.api.get_call_logs', auto: true })
 const rows = computed(() => board.data?.rows || [])
+
+// Auswahl-Modus (Werkzeug „Auswählen") + Export.
+const selectMode = ref(false)
+const picked = ref([])
 
 // --- Filter: Richtung + Freitext -------------------------------------------
 const DIRS = [
@@ -149,7 +154,28 @@ function openRef(r) {
   else if (r.ref_doctype === 'CRM Deal') router.push({ name: 'Deal', params: { dealId: r.ref_name } })
   else if (r.ref_doctype === 'LCS Project') router.push({ name: 'LCS Project', params: { id: r.ref_name } })
 }
-onBeforeUnmount(() => inspectNode(null))
+// CSV-Export der (ausgewählten) Zeilen.
+function exportRows() {
+  const src = picked.value.length ? filtered.value.filter((r) => picked.value.includes(r.id)) : filtered.value
+  if (!src.length) { toast({ title: __('Nothing to export.'), icon: 'alert-circle' }); return }
+  const head = ['Datum', 'Person', 'Firma', 'Richtung', 'Dauer (s)', 'Ergebnis', 'Objekt']
+  const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`
+  const lines = [head.map(esc).join(',')]
+  src.forEach((r) => lines.push([r.date, r.person, r.company, r.direction, r.duration, statusLabel(r.status), r.object].map(esc).join(',')))
+  const blob = new Blob(['﻿' + lines.join('\n')], { type: 'text/csv;charset=utf-8;' })
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'anrufe.csv'; a.click(); URL.revokeObjectURL(a.href)
+  toast({ title: `${src.length} ${__('exported')}`, icon: 'check-circle', iconClasses: 'text-green-500' })
+}
+
+useListFuncbar({
+  title: __('Calls'),
+  meaning: __('Call logs across all leads.'),
+  count: () => rows.value.length,
+  reload: () => board.reload(),
+  exportRows,
+  selectMode,
+  pickedCount: () => picked.value.length,
+})
 
 // --- Formathelfer ----------------------------------------------------------
 function fmtDate(v) {
