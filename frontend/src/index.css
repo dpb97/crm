@@ -32,6 +32,16 @@
   --lcs-danger:     #DC2626;
   --lcs-muted:      #6B7280;
 
+  /* State colours — taken 1:1 from the klickdummy design master (its
+     --live / --cus / --frp / --danger). The CRM's pp-tokens use OKLCH
+     approximations that read slightly off; override the final --pp-state-*
+     (and the -500 primitives) so pills, score bars and status dots match the
+     dummy exactly. color-mix soft backgrounds inherit from these. */
+  --pp-state-success-500: #12a15f;  --pp-state-success: #12a15f;  /* dummy --live  (green) */
+  --pp-state-warning-500: #c9861c;  --pp-state-warning: #c9861c;  /* dummy --cus   (amber) */
+  --pp-state-info-500:    #2f6fed;  --pp-state-info:    #2f6fed;  /* dummy --frp   (blue)  */
+  --pp-state-danger-500:  #c0392b;  --pp-state-danger:  #c0392b;  /* dummy --danger (red)  */
+
   /* Surfaces */
   --lcs-surface:    #F8FAFC;
   --lcs-card-bg:    #FFFFFF;
@@ -60,6 +70,12 @@ html[data-theme="dark"] {
   --lcs-card-bg:    #111827;
   --lcs-card-border:#1F2937;
   --lcs-muted:      #9CA3AF;
+
+  /* State colours — klickdummy dark variants (--live / --cus / --frp / --danger). */
+  --pp-state-success-500: #3fbe7f;  --pp-state-success: #3fbe7f;
+  --pp-state-warning-500: #e0a63a;  --pp-state-warning: #e0a63a;
+  --pp-state-info-500:    #6b9bff;  --pp-state-info:    #6b9bff;
+  --pp-state-danger-500:  #ff6b5e;  --pp-state-danger:  #ff6b5e;
 }
 
 /* ============================================================
