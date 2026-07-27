@@ -208,7 +208,9 @@ const allgemeinDisplay = computed(() => {
     return { ...it, label: it.n, icon, children: kids.map((k) => leaf(k)).filter(Boolean) }
   }
   return [
-    { label: 'News', icon: 'newspaper', moduleId: 'news' },
+    // News is hardcoded (not part of the Allgemein SSOT list) — gate it on the
+    // module being live so the phased rollout hides it with the rest.
+    ...(moduleById('news') ? [{ label: 'News', icon: 'newspaper', moduleId: 'news' }] : []),
     leaf('Projekt', 'folder-kanban'),
     leaf('Artikel', 'boxes'),
     parent('Aufgaben', 'circle-check', ['Team-Arbeitspakete', 'Meine Arbeitspakete', 'Meine To-dos']),
@@ -219,6 +221,10 @@ const allgemeinDisplay = computed(() => {
   ].filter(Boolean)
 })
 const wissenDisplay = computed(() => {
+  // Phased rollout: the Wissen block is hardcoded here (with fallback labels),
+  // so it must be gated on the module being live — otherwise it would show even
+  // after the Wissen modules are filtered out of the nav.
+  if (!moduleById('wissen')) return []
   const wivio = (allgemein.value || []).find((x) => x.n === 'Wivio')
   // Labels/Icons aus den echten Wissen-Modulen (bereits lokalisiert), mit
   // Rückfall auf die Desk-Literale; Struktur folgt WISSEN aus der SSOT.

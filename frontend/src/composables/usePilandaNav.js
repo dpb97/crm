@@ -52,6 +52,19 @@ export function usePilandaNav() {
       }
       allgemein.value = data?.allgemein || []
       wissen.value = data?.wissen || []
+
+      // Phased rollout (26.07.2026): only the Vertrieb module is live today.
+      // Hide every other module — plus the now-empty zones and the
+      // cross-module "Allgemein" / "Wissen" blocks — until each module is
+      // actually rolled out. Reversible: add its id to VISIBLE_MODULES when it
+      // goes live. Quick Note stays because it is injected into Vertrieb above.
+      const VISIBLE_MODULES = new Set(['vertrieb'])
+      modules.value = modules.value.filter((m) => VISIBLE_MODULES.has(m.id))
+      const zonesInUse = new Set(modules.value.map((m) => m.zone).filter((z) => z != null))
+      zones.value = zones.value.filter((z) => zonesInUse.has(z.code) || zonesInUse.has(z.key))
+      allgemein.value = []
+      wissen.value = []
+
       loaded.value = true
     } catch (e) {
       available.value = false
