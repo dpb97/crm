@@ -242,6 +242,12 @@ const routes = [
     alias: '/call-logs',
     path: '/call-logs/view/:viewType?',
     name: 'Call Logs',
+    component: () => import('@/pages/LCSCallLogs.vue'),
+  },
+  {
+    alias: '/call-logs-upstream',
+    path: '/call-logs-upstream/view/:viewType?',
+    name: 'Call Logs Upstream',
     component: () => import('@/pages/CallLogs.vue'),
   },
   {

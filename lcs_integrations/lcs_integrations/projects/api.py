@@ -1222,3 +1222,73 @@ def sales_meeting_archive(name):
     doc.status = "Archived"
     doc.save()
     return {"name": doc.name, "status": doc.status}
+
+
+# --------------------------------------------------------------------------- #
+#  Call logs (Calls page — klickdummy "Anrufe" design)                        #
+# --------------------------------------------------------------------------- #
+
+def _resolve_call_party(value):
+    """Resolve the external party of a call (a phone/e-mail) to a contact
+    name + company. Returns (person, company). Falls back to the raw value."""
+    if not value:
+        return "", ""
+    # A Frappe User (e.g. the internal caller "Administrator") → full name.
+    if frappe.db.exists("User", value):
+        return frappe.db.get_value("User", value, "full_name") or value, ""
+    # Contact by e-mail or phone/mobile.
+    fields = ["first_name", "last_name", "company_name"]
+    row = None
+    if "@" in value:
+        hit = frappe.get_all("Contact Email", filters={"email_id": value}, fields=["parent"], limit=1)
+        if hit:
+            row = frappe.db.get_value("Contact", hit[0].parent, fields, as_dict=True)
+    else:
+        hit = frappe.get_all("Contact Phone", filters={"phone": value}, fields=["parent"], limit=1)
+        if hit:
+            row = frappe.db.get_value("Contact", hit[0].parent, fields, as_dict=True)
+    if row:
+        person = " ".join(p for p in [row.first_name, row.last_name] if p) or value
+        return person, row.company_name or ""
+    return value, ""
+
+
+@frappe.whitelist()
+def get_call_logs(limit=200):
+    """Call-log board for the Calls page: one row per CRM Call Log with the
+    external person + company, direction, duration, the telephony status as the
+    result pill and the linked object (deal/lead/project)."""
+    logs = frappe.get_all(
+        "CRM Call Log",
+        fields=["name", "type", "status", "duration", "from", "to", "start_time",
+                "reference_doctype", "reference_docname"],
+        order_by="start_time desc",
+        limit_page_length=int(limit or 200),
+    )
+    rows = []
+    for c in logs:
+        outgoing = (c.type or "").lower() == "outgoing"
+        party = c.get("to") if outgoing else c.get("from")
+        person, company = _resolve_call_party(party)
+
+        # Linked object → a readable label (project number / lead / deal name).
+        obj = ""
+        if c.reference_docname:
+            if c.reference_doctype == "LCS Project":
+                obj = frappe.db.get_value("LCS Project", c.reference_docname, "project_number") or c.reference_docname
+            else:
+                obj = c.reference_docname
+
+        rows.append({
+            "id": c.name,
+            "date": str(c.start_time) if c.start_time else "",
+            "person": person,
+            "company": company,
+            "direction": "ausgehend" if outgoing else "eingehend",
+            "duration": int(c.duration) if c.duration else 0,
+            "status": c.status or "",
+            "object": obj,
+            "ref_doctype": c.reference_doctype or "",
+            "ref_name": c.reference_docname or "",
+        })
+    return {"rows": rows, "total": len(rows)}
