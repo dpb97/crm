@@ -93,6 +93,9 @@ import IconUserPlus from '~icons/lucide/user-plus'
 import IconStickyNote from '~icons/lucide/sticky-note'
 import IconClipboardCheck from '~icons/lucide/clipboard-check'
 import IconCalendarDays from '~icons/lucide/calendar-days'
+import IconActivity from '~icons/lucide/activity'
+import IconGlobe from '~icons/lucide/globe'
+import IconShare2 from '~icons/lucide/share-2'
 
 
 const ICON_MAP = {
@@ -106,6 +109,10 @@ const ICON_MAP = {
   'layout-dashboard': IconLayoutDashboard, 'circle-check': IconCircleCheck,
   ticket: IconTicket, plane: IconPlane, boxes: IconBoxes,
   'layout-grid': IconLayoutGrid, apps: IconLayoutGrid, 'file-text': IconFileText,
+  // Vertrieb nav (klickdummy IA): explicit level-1 icons.
+  activity: IconActivity, globe: IconGlobe, 'share-2': IconShare2,
+  'user-plus': IconUserPlus, target: IconTarget, 'folder-kanban': IconFolderKanban,
+  radar: IconRadar, 'trending-up': IconTrendingUp,
 }
 
 // Schlüsselwort-Fallback (Port des Desk-iconFor) für Items ohne icon-Feld.

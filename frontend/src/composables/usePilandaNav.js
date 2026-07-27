@@ -38,17 +38,31 @@ export function usePilandaNav() {
         target: m.target || m.path,
         g: m.groups || m.g || [],
       }))
-      // CRM-owned tool the shell nav-spec doesn't list yet — keep Quick Note reachable.
+      // Vertrieb nav = the klickdummy design master IA (pilanda-navigation.html,
+      // Vertrieb module). The backend get_nav_v2 is still on the older flat
+      // ordering, so override the Vertrieb module's groups here to match the
+      // master: sub:1 marks a child of the preceding level-1 item; PpSidebar's
+      // buildTree renders the nesting and keeps icons on level 1 only.
+      // "#" targets (Chancen, Verkäufer & Agenten) are master placeholders.
       const _vt = modules.value.find((m) => m.id === 'vertrieb')
       if (_vt) {
-        if (!_vt.g || !_vt.g.length) _vt.g = [{ sec: '', items: [] }]
-        const _items = _vt.g[0].items || (_vt.g[0].items = [])
-        if (!_items.some((i) => (i.t || i.target) === '/crm/quick-note')) {
-          const _at = _items.findIndex((i) => (i.t || i.target) === '/crm/sales-meeting')
-          _items.splice(_at >= 0 ? _at + 1 : _items.length, 0, {
-            n: 'Quick Note', t: '/crm/quick-note', k: 'cust', x: true, d: 'Schnellnotiz',
-          })
-        }
+        _vt.g = [{ sec: '', items: [
+          { n: 'Pilot',               t: '/app/pilot-workbench',   icon: 'radar',         k: 'cust', x: true, d: 'Ausschreibungs-Scout — liefert Chancen in den Vertriebsfluss' },
+          { n: 'Chancen',             t: '#',                      icon: 'activity',      k: 'cust',         d: 'Alle Chancen mit Quelle als Info — daraus entstehen Leads' },
+          { n: 'Leads',               t: '/crm/leads',             icon: 'user-plus',     k: 'cust', x: true, d: 'Phase Lead' },
+          { n: 'Calls',               t: '/crm/call-logs',         k: 'cust', x: true, sub: 1, d: 'Anruf-Protokolle über alle Leads' },
+          { n: 'Notizen',             t: '/crm/notes',             k: 'cust', x: true, sub: 1, d: 'Notizen über Leads, Deals und Projekte' },
+          { n: 'Sales Meeting',       t: '/crm/sales-meeting',     k: 'cust', x: true, sub: 1, d: 'Vertriebsbesprechung mit Forecast-Einblicken' },
+          { n: 'Vertriebsprojekte',   t: '/crm/projects',          icon: 'folder-kanban', k: 'cust', x: true, d: 'Vertriebsprojekte (Deal=Projekt)' },
+          { n: 'Markteinteilung',     t: '/crm/market-assignment', icon: 'globe',         k: 'cust', x: true, d: 'Territorien mit genau EINER verantwortlichen Person' },
+          { n: 'Projektlandkarte',    t: '/crm/projects-map',      k: 'cust', x: true, sub: 1, d: 'Anlagen & Projekte auf der Landkarte' },
+          { n: 'Verkäufer & Agenten', t: '#',                      k: 'cust',         sub: 1, d: 'Verkäufer, Agenten und JV je Territorium' },
+          { n: 'Prognose',            t: '/crm/forecasting',       icon: 'trending-up',   k: 'cust', x: true, d: 'Umsatz-Forecast über die Pipeline' },
+          { n: 'Netzwerk',            t: '/crm/network',           icon: 'share-2',       k: 'cust', x: true, d: 'Kontaktnetzwerk — Netzwerk-Ansicht im CRM' },
+          { n: 'Firmen',              t: '/crm/organizations',     k: 'cust', x: true, sub: 1, d: 'Firmen im CRM' },
+          { n: 'Personen',            t: '/crm/contacts',          k: 'cust', x: true, sub: 1, d: 'Ansprechpartner im CRM' },
+          { n: 'Produktportfolio',    t: '/app/product-portfolio', icon: 'radar',         k: 'cust', x: true, d: 'Produktübersicht & Lebenszyklus (PLM)' },
+        ] }]
       }
       allgemein.value = data?.allgemein || []
       wissen.value = data?.wissen || []
