@@ -1394,3 +1394,73 @@ def get_notes(limit=200):
 
     rows.sort(key=lambda r: r["time"], reverse=True)
     return {"rows": rows[:lim], "total": len(rows)}
+
+
+# --------------------------------------------------------------------------- #
+#  Chancen (funnel entry — opportunities from the Pilot scout / inbound)       #
+# --------------------------------------------------------------------------- #
+
+_CHANCE_LIST_FIELDS = [
+    "name", "chance_no", "title", "source", "source_detail", "client", "company",
+    "country", "order_value", "deadline", "score", "relevance", "status",
+    "responsible", "crm_lead",
+]
+
+
+@frappe.whitelist()
+def get_chances(source=None):
+    """List Chancen for the funnel-entry table (Chance → Lead → Projekt)."""
+    filters = {"status": ["!=", "Keine Chance"]}
+    if source and source != "Alle":
+        filters["source"] = source
+    rows = frappe.get_all(
+        "LCS Chance", filters=filters, fields=_CHANCE_LIST_FIELDS,
+        order_by="score desc", limit_page_length=0,
+    )
+    for r in rows:
+        r["id"] = r["name"]
+    # "Keine Chance (Quartal)" — dismissed chances in the last 90 days.
+    dismissed = frappe.db.count(
+        "LCS Chance",
+        {"status": "Keine Chance", "modified": [">=", frappe.utils.add_days(frappe.utils.today(), -90)]},
+    )
+    return {"rows": rows, "total": len(rows), "dismissed_quarter": dismissed}
+
+
+@frappe.whitelist()
+def get_chance(name):
+    """Full detail of one Chance (Ausschreibung · Scoutbewertung · Geo · Vertrieb)."""
+    doc = frappe.get_doc("LCS Chance", name)
+    return doc.as_dict()
+
+
+@frappe.whitelist()
+def chance_to_lead(name):
+    """The salesperson took contact → create a CRM Lead from the Chance, link it
+    and flip the status. Idempotent: returns the existing lead if already made."""
+    doc = frappe.get_doc("LCS Chance", name)
+    if doc.crm_lead and frappe.db.exists("CRM Lead", doc.crm_lead):
+        return {"lead": doc.crm_lead, "status": doc.status, "created": False}
+
+    lead = frappe.new_doc("CRM Lead")
+    lead.organization = doc.company or doc.client or doc.title
+    lead.lead_name = doc.title
+    if doc.country:
+        lead.territory = None  # keep territory routing to the shell; country is on the org
+    lead.status = "New"
+    lead.source = "Existing Customer" if doc.source == "Empfehlung" else None
+    lead.insert(ignore_permissions=True)
+
+    doc.crm_lead = lead.name
+    doc.status = "Kontakt aufgenommen"
+    doc.save(ignore_permissions=True)
+    return {"lead": lead.name, "status": doc.status, "created": True}
+
+
+@frappe.whitelist()
+def chance_dismiss(name):
+    """Mark a Chance as 'Keine Chance' (drops out of the live list; still counted)."""
+    doc = frappe.get_doc("LCS Chance", name)
+    doc.status = "Keine Chance"
+    doc.save(ignore_permissions=True)
+    return {"name": doc.name, "status": doc.status}
