@@ -22,20 +22,20 @@
 
     <!-- Existing bindings -->
     <div class="overflow-x-auto rounded-lg border">
-      <table class="w-full min-w-[46rem] text-sm">
-        <thead class="bg-gray-50 text-left text-[11px] font-medium uppercase text-gray-500">
+      <table class="pp-table min-w-[46rem]">
+        <thead>
           <tr class="border-b">
-            <th class="px-3 py-2">{{ __('CRM User') }}</th>
-            <th class="px-3 py-2">{{ __('Graph Mailbox (UPN)') }}</th>
-            <th class="px-3 py-2 text-center">{{ __('Active') }}</th>
-            <th class="px-3 py-2 text-center">{{ __('Only known') }}</th>
-            <th class="px-3 py-2">{{ __('Last sync') }}</th>
-            <th class="px-3 py-2 text-right">{{ __('Actions') }}</th>
+            <th >{{ __('CRM User') }}</th>
+            <th >{{ __('Graph Mailbox (UPN)') }}</th>
+            <th class="text-center">{{ __('Active') }}</th>
+            <th class="text-center">{{ __('Only known') }}</th>
+            <th >{{ __('Last sync') }}</th>
+            <th class="text-right">{{ __('Actions') }}</th>
           </tr>
         </thead>
         <tbody>
           <tr v-for="b in bindings" :key="b.name" class="border-b align-middle hover:bg-gray-50">
-            <td class="px-3 py-2">
+            <td >
               <Link
                 doctype="User"
                 :filters="{ user_type: 'System User', enabled: 1 }"
@@ -43,7 +43,7 @@
                 @update:modelValue="(v) => saveField(b, 'user', v)"
               />
             </td>
-            <td class="px-3 py-2">
+            <td >
               <FormControl
                 type="text"
                 size="sm"
@@ -52,17 +52,17 @@
                 @update:modelValue="(v) => saveField(b, 'graph_mailbox', v)"
               />
             </td>
-            <td class="px-3 py-2 text-center">
+            <td class="text-center">
               <input type="checkbox" :checked="b.is_active" @change="saveField(b, 'is_active', $event.target.checked ? 1 : 0)" />
             </td>
-            <td class="px-3 py-2 text-center">
+            <td class="text-center">
               <input type="checkbox" :checked="b.import_only_known_domains" @change="saveField(b, 'import_only_known_domains', $event.target.checked ? 1 : 0)" />
             </td>
-            <td class="px-3 py-2 text-xs text-gray-500">
+            <td class="text-xs text-gray-500">
               <span v-if="b.last_error" class="text-red-500" :title="b.last_error">⚠ {{ __('error') }}</span>
               <span v-else>{{ b.last_sync ? shortTime(b.last_sync) : '—' }}</span>
             </td>
-            <td class="px-3 py-2">
+            <td >
               <div class="flex items-center justify-end gap-1">
                 <Button size="sm" variant="ghost" iconLeft="zap" :label="__('Test')" :loading="testing === b.name" @click="test(b)" />
                 <Button size="sm" variant="ghost" iconLeft="download-cloud" :label="__('History')" @click="openBackfill(b)" />

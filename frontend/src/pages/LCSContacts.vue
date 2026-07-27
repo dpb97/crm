@@ -21,23 +21,25 @@
       </template>
     </LayoutHeader>
 
-    <div class="crmc">
-      <div class="crmc-inner">
+    <div class="pp-listpage">
+      <div class="pp-listpage__inner">
         <PpPageHead
           :title="__('Contacts')"
-          :subtitle="`${filtered.length} ${__('of')} ${contacts.length} ${__('Contacts')} · ${__('click a row to open the profile')}`"
+          :subtitle="__('click a row to open the profile')"
+        />
+
+        <!-- Filterleiste: Suche + Listen-/Karten-Umschalter (Referenz: Calls) -->
+        <PpFilterBar
+          v-model:search="q"
+          :placeholder="__('Search / filter by company') + ' …'"
         >
           <template #actions>
             <div class="crmc-viewtoggle">
               <button type="button" class="crmc-vt-btn" :class="{ 'is-active': viewMode === 'list' }" :title="__('List')" @click="viewMode = 'list'"><IconList /></button>
               <button type="button" class="crmc-vt-btn" :class="{ 'is-active': viewMode === 'cards' }" :title="__('Cards')" @click="viewMode = 'cards'"><IconGrid /></button>
             </div>
-            <div class="crmc-search-wrap">
-              <IconSearch class="crmc-search-ico" />
-              <input v-model="q" type="search" class="crmc-search" :placeholder="__('Search / filter by company') + ' …'" />
-            </div>
           </template>
-        </PpPageHead>
+        </PpFilterBar>
 
         <!-- KPI-Karten = klickbare Segment-Filter (Master Regel 9: keine
              separate Deko-Filterzeile; Firma-Filtern via Suche). -->
@@ -55,16 +57,14 @@
         </section>
 
         <!-- Tabelle ODER Leerzustand -->
-        <section class="crmc-card">
-          <template v-if="rows.length">
-          <div class="crmc-scroll">
-          <PpDataGrid v-if="viewMode === 'list'" :columns="columns" :rows="pagedRows" @row-click="openContact">
+        <PpTableCard :title="__('Contacts')" :shown="filtered.length" :total="contacts.length">
+          <PpDataGrid v-if="rows.length && viewMode === 'list'" :columns="columns" :rows="pagedRows" @row-click="openContact">
             <template #cell-name="{ row }">
-              <span class="crmc-name">{{ row.name }}</span>
-              <span class="crmc-id">{{ row.email || '—' }}</span>
+              <span class="pp-cell-strong">{{ row.name }}</span>
+              <span class="pp-cell-sub">{{ row.email || '—' }}</span>
             </template>
             <template #cell-company_name="{ value }">
-              <span :class="{ 'crmc-muted': !value }">{{ value || '—' }}</span>
+              <span :class="{ 'pp-cell-muted': !value }">{{ value || '—' }}</span>
             </template>
             <template #cell-mobile_no="{ value }">
               <span class="crmc-contact-line crmc-contact-line--muted">
@@ -75,29 +75,23 @@
               <span class="crmc-count" :data-zero="value === '0' ? 'true' : 'false'">{{ value }}</span>
             </template>
             <template #cell-modified="{ value }">
-              <span class="crmc-muted">{{ fmtDate(value) }}</span>
+              <span class="pp-cell-muted">{{ fmtDate(value) }}</span>
             </template>
           </PpDataGrid>
+
           <!-- Karten-Ansicht (Theme PpContactCards als reiner Renderer; eigene
                Toolbar per CSS aus, meine Suche/KPI/Pagination bleiben). -->
-          <PpContactCards
-            v-else
-            class="crmc-cards"
-            :people="cardPeople"
-            view="cards"
-            :searchable="false"
-            :action-label="__('Open')"
-            @select="(p) => openContact(p.id)"
-            @action="(p) => openDetail(p.id)"
-          />
+          <div v-else-if="rows.length" class="crmc-scroll">
+            <PpContactCards
+              class="crmc-cards"
+              :people="cardPeople"
+              view="cards"
+              :searchable="false"
+              :action-label="__('Open')"
+              @select="(p) => openContact(p.id)"
+              @action="(p) => openDetail(p.id)"
+            />
           </div>
-          <LcsPagination
-            v-if="rowTotal > 25"
-            :from="pgFrom" :to="pgTo" :total="rowTotal"
-            :page="page" :page-count="pageCount" :page-size="pageSize"
-            @prev="pgPrev" @next="pgNext" @page-size="setPageSize"
-          />
-          </template>
 
           <PpEmptyState
             v-else-if="hasFilter"
@@ -115,7 +109,15 @@
             :title="loading ? __('Loading …') : __('No contacts yet')"
             :hint="loading ? '' : __('Contacts created in the CRM will appear here.')"
           />
-        </section>
+
+          <template v-if="rows.length && rowTotal > 25" #footer>
+            <LcsPagination
+              :from="pgFrom" :to="pgTo" :total="rowTotal"
+              :page="page" :page-count="pageCount" :page-size="pageSize"
+              @prev="pgPrev" @next="pgNext" @page-size="setPageSize"
+            />
+          </template>
+        </PpTableCard>
       </div>
     </div>
   </div>
@@ -130,13 +132,14 @@ import PpPageHead from '@/components/pp/PpPageHead.vue'
 import PpStatTile from '@/components/pp/PpStatTile.vue'
 import PpDataGrid from '@/components/pp/PpDataGrid.vue'
 import PpEmptyState from '@/components/pp/PpEmptyState.vue'
+import PpFilterBar from '@/components/pp/PpFilterBar.vue'
+import PpTableCard from '@/components/pp/PpTableCard.vue'
 import PpContactCards from '@/components/pp/PpContactCards.vue'
 import ContactInspector from '@/components/lcs/ContactInspector.vue'
 import LcsPagination from '@/components/lcs/LcsPagination.vue'
 import IconSearchX from '~icons/lucide/search-x'
 import IconInbox from '~icons/lucide/inbox'
 import IconPhone from '~icons/lucide/phone'
-import IconSearch from '~icons/lucide/search'
 import IconList from '~icons/lucide/list'
 import IconGrid from '~icons/lucide/layout-grid'
 import { usePilandaMode } from '@/composables/usePilandaMode'
@@ -314,12 +317,7 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-/* Vollbreiten-Canvas (kein max-width), token-only — Idiom von LCSLeads. */
-/* Fixed viewport-height layout: header/KPIs/filter stay put, the table scrolls
-   inside its own region so the page never grows taller than the screen. */
-.crmc { flex: 1; min-height: 0; overflow: hidden; background: var(--pp-bg-base); display: flex; flex-direction: column; }
-.crmc-inner { flex: 1; min-height: 0; padding: var(--pp-space-6) var(--pp-space-6) var(--pp-space-6);
-  display: flex; flex-direction: column; gap: var(--pp-space-5); }
+/* Karten-Ansicht scrollt in ihrem eigenen Bereich (die Tabelle bringt ihren mit). */
 .crmc-scroll { flex: 1; min-height: 0; overflow: auto; }
 
 .crmc-btn { appearance: none; cursor: pointer; font-family: inherit; font-size: var(--pp-fs-13, 13px);
@@ -340,15 +338,6 @@ onBeforeUnmount(() => {
   box-shadow: 0 0 0 2px color-mix(in oklab, var(--pp-brand-primary) 30%, transparent); }
 .crmc-kpi:focus-visible > :deep(.pp-kpi) { box-shadow: var(--pp-shadow-focus-ring, 0 0 0 3px rgb(var(--pp-brand-primary-rgb) / 0.3)); }
 
-/* Kompakte Kopf-Suche (statt Filterzeile) */
-.crmc-search-wrap { position: relative; display: flex; align-items: center; }
-.crmc-search-ico { position: absolute; left: 9px; width: 15px; height: 15px; color: var(--pp-text-tertiary); pointer-events: none; }
-.crmc-search { appearance: none; font-family: inherit; font-size: var(--pp-fs-13, 13px); color: var(--pp-text-primary);
-  padding: 7px 11px 7px 30px; border: 1px solid var(--pp-border-default); border-radius: var(--pp-radius-ui);
-  background: var(--pp-bg-surface); min-width: 260px; }
-.crmc-search:focus { outline: none; border-color: var(--pp-brand-primary);
-  box-shadow: 0 0 0 3px rgb(var(--pp-brand-primary-rgb) / 0.15); }
-
 /* Listen-/Karten-Umschalter */
 .crmc-viewtoggle { display: inline-flex; gap: 2px; padding: 2px; border-radius: var(--pp-radius-ui);
   background: var(--pp-bg-base); border: 1px solid var(--pp-border-subtle); }
@@ -360,13 +349,7 @@ onBeforeUnmount(() => {
 /* PpContactCards als reiner Karten-Renderer: eigene Toolbar aus. */
 .crmc-cards :deep(.pp-contacts__bar) { display: none; }
 
-.crmc-card { background: var(--pp-bg-surface); border: 1px solid var(--pp-border-subtle);
-  border-radius: var(--pp-radius-ui); box-shadow: var(--pp-shadow-xs); padding: var(--pp-space-2);
-  flex: 1; min-height: 0; display: flex; flex-direction: column; }
-
-.crmc-name { display: block; font-weight: var(--pp-weight-medium); color: var(--pp-text-primary); }
-.crmc-id { display: block; font-size: 11px; color: var(--pp-text-tertiary); }
-.crmc-muted { color: var(--pp-text-tertiary); }
+/* Zell-Renderer, die über die gemeinsamen pp-cell-* Rollen hinausgehen. */
 .crmc-contact-line { display: inline-flex; align-items: center; gap: 5px; font-size: var(--pp-fs-12);
   color: var(--pp-text-secondary); font-variant-numeric: tabular-nums;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

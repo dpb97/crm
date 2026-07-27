@@ -69,22 +69,20 @@
                   <span class="crmsm-important-title">{{ it.label }}</span>
                   <span class="crmsm-important-sub">{{ it.sub }}<template v-if="it.person"> · {{ shortUser(it.person) }}</template></span>
                 </span>
-                <span v-if="it.status" class="crmsm-pill" data-tone="info"><i class="crmsm-dot" />{{ it.status }}</span>
+                <PpPill v-if="it.status" tone="info">{{ it.status }}</PpPill>
                 <span v-if="it.value" class="crmsm-important-val">{{ money(it.value) }}</span>
               </button>
             </div>
           </section>
 
           <!-- Agenda: Entscheid direkt am Punkt -->
-          <section class="crmsm-card">
-            <header class="crmsm-ch">
-              {{ __('Agenda') }} {{ meetingDateLabel }}
-              <span class="crmsm-ch-m">{{ __('Decide at the point · done items are archived manually · row = detail in the inspector') }}</span>
-            </header>
-
+          <PpTableCard
+            :title="`${__('Agenda')} ${meetingDateLabel}`"
+            :note="__('Decide at the point · done items are archived manually · row = detail in the inspector')"
+          >
             <PpDataGrid v-if="agenda.length" :columns="agendaCols" :rows="agendaRows" @row-click="onAgendaClick">
               <template #cell-status="{ value }">
-                <span class="crmsm-pill" :data-tone="statusTone(value)"><i class="crmsm-dot" />{{ statusLabel(value) }}</span>
+                <PpPill :tone="statusTone(value)">{{ statusLabel(value) }}</PpPill>
               </template>
               <template #cell-entscheid="{ row }">
                 <button v-if="row.status === 'Decided'" type="button" class="crmsm-btn" @click.stop="archive(row)">
@@ -103,10 +101,10 @@
               :hint="board.loading ? '' : __('Add a point via the actions bar to start the meeting.')"
             />
 
-            <p v-if="archivedCount" class="crmsm-note">
+            <template v-if="archivedCount" #footer>
               {{ archivedCount }} {{ __('archived point(s)') }} — {{ __('archive via the “Minutes” action.') }}
-            </p>
-          </section>
+            </template>
+          </PpTableCard>
 
           <!-- Drei Stufen (kompakte Karten) -->
           <div class="crmsm-stages">
@@ -117,7 +115,7 @@
                     @click="selectStage('deal', c)" @keydown.enter="selectStage('deal', c)">
                   <span class="crmsm-rowname">{{ c.name }}</span>
                   <span class="crmsm-rowval">{{ money(c.value) }}</span>
-                  <span class="crmsm-pill" :data-tone="dealTone(c.status)"><i class="crmsm-dot" />{{ c.status }}</span>
+                  <PpPill :tone="dealTone(c.status)">{{ c.status }}</PpPill>
                 </li>
                 <li v-if="!chancen.length" class="crmsm-row crmsm-row--empty">{{ __('No open opportunities.') }}</li>
               </ul>
@@ -130,7 +128,7 @@
                     @click="selectStage('lead', l)" @keydown.enter="selectStage('lead', l)">
                   <span class="crmsm-rowname">{{ l.name }}</span>
                   <span class="crmsm-rowsub">{{ l.org }}</span>
-                  <span class="crmsm-pill" data-tone="info"><i class="crmsm-dot" />{{ l.status }}</span>
+                  <PpPill tone="info">{{ l.status }}</PpPill>
                 </li>
                 <li v-if="!leads.length" class="crmsm-row crmsm-row--empty">{{ __('No active leads.') }}</li>
               </ul>
@@ -143,7 +141,7 @@
                     @click="selectStage('project', p)" @keydown.enter="selectStage('project', p)">
                   <span class="crmsm-rowname">{{ p.name }}</span>
                   <span class="crmsm-rowval">{{ money(p.value) }}</span>
-                  <span class="crmsm-pill" data-tone="success"><i class="crmsm-dot" />{{ p.phase }}</span>
+                  <PpPill tone="success">{{ p.phase }}</PpPill>
                 </li>
                 <li v-if="!projekte.length" class="crmsm-row crmsm-row--empty">{{ __('No active sales projects.') }}</li>
               </ul>
@@ -193,6 +191,8 @@ import { createResource, Breadcrumbs, Button } from 'frappe-ui'
 import LayoutHeader from '@/components/LayoutHeader.vue'
 import PpPageHead from '@/components/pp/PpPageHead.vue'
 import PpDataGrid from '@/components/pp/PpDataGrid.vue'
+import PpTableCard from '@/components/pp/PpTableCard.vue'
+import PpPill from '@/components/pp/PpPill.vue'
 import PpEmptyState from '@/components/pp/PpEmptyState.vue'
 import PpFunctionBar from '@/components/pp/PpFunctionBar.vue'
 import PpModal from '@/components/pp/PpModal.vue'
@@ -465,13 +465,6 @@ function fmtDate(d) {
 .crmsm-btn.is-primary { background: var(--pp-brand-primary); border-color: var(--pp-brand-primary); color: #fff; }
 .crmsm-btn.is-primary:hover { color: #fff; opacity: 0.92; }
 
-.crmsm-pill { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: var(--pp-weight-semibold);
-  padding: 2px var(--pp-space-2); border-radius: var(--pp-radius-full); white-space: nowrap; flex-shrink: 0; }
-.crmsm-dot { width: 6px; height: 6px; border-radius: var(--pp-radius-full); flex-shrink: 0; background: currentColor; }
-.crmsm-pill[data-tone="info"]    { background: color-mix(in oklab, var(--pp-state-info) 14%, transparent); color: var(--pp-state-info); }
-.crmsm-pill[data-tone="warning"] { background: color-mix(in oklab, var(--pp-state-warning) 16%, transparent); color: var(--pp-state-warning); }
-.crmsm-pill[data-tone="success"] { background: color-mix(in oklab, var(--pp-state-success) 16%, transparent); color: var(--pp-state-success); }
-.crmsm-pill[data-tone="muted"]   { background: var(--pp-bg-sunken); color: var(--pp-text-tertiary); }
 
 /* Modal-Formular */
 .crmsm-form { display: flex; flex-direction: column; gap: var(--pp-space-4); }

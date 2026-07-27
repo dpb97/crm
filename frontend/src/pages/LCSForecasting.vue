@@ -95,44 +95,33 @@
         />
 
         <!-- Top Opportunities table -->
-        <div class="lcsfc-card lcsfc-card--flush">
-          <div class="lcsfc-card-head">
-            <h3 class="lcsfc-card-title">
-              <FeatherIcon name="zap" class="h-3.5 w-3.5" />
-              {{ __('Top Weighted Opportunities') }}
-            </h3>
-          </div>
-          <div class="overflow-x-auto"><table class="lcsfc-table w-full min-w-[40rem] text-sm">
-            <thead>
-              <tr class="lcsfc-thead text-left text-xs font-medium uppercase">
-                <th>{{ __('Project') }}</th>
-                <th>{{ __('Phase') }}</th>
-                <th>{{ __('Responsible') }}</th>
-                <th class="text-right">{{ __('Value') }}</th>
-                <th class="text-right">{{ __('Prob.') }}</th>
-                <th class="text-right">{{ __('Weighted') }}</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                v-for="p in topOpportunities"
-                :key="p.name"
-                class="lcsfc-row cursor-pointer"
-                @click="$router.push({ name: 'LCS Project', params: { id: p.name } })"
-              >
-                <td>
-                  <div class="lcsfc-proj-name">{{ p.project_name }}</div>
-                  <div class="lcsfc-proj-meta">{{ p.project_number }} • {{ p.project_type }}</div>
-                </td>
-                <td class="lcsfc-td-mut">{{ __(p.phase) }}</td>
-                <td class="lcsfc-td-mut">{{ shortUser(p.salesperson) }}</td>
-                <td class="text-right tabular-nums lcsfc-td-num">{{ formatCurrency(p.value) }}</td>
-                <td class="text-right tabular-nums" :class="probabilityClass(p.probability)">{{ Math.round(p.probability || 0) }}%</td>
-                <td class="text-right tabular-nums lcsfc-td-strong">{{ formatCurrency(p.weighted) }}</td>
-              </tr>
-            </tbody>
-          </table></div>
-        </div>
+        <PpTableCard
+          :title="__('Top Weighted Opportunities')"
+          :shown="topOpportunities.length"
+          :total="topOpportunities.length"
+          :hint="''"
+          :grow="false"
+        >
+          <PpDataGrid
+            :columns="oppColumns"
+            :rows="oppRows"
+            @row-click="(id) => $router.push({ name: 'LCS Project', params: { id } })"
+          >
+            <template #cell-project="{ row }">
+              <span class="pp-cell-strong">{{ row.project }}</span>
+              <span class="pp-cell-sub">{{ row.meta }}</span>
+            </template>
+            <template #cell-phase="{ value }"><span class="pp-cell-soft">{{ __(value) }}</span></template>
+            <template #cell-owner="{ value }"><span class="pp-cell-soft">{{ value }}</span></template>
+            <template #cell-value="{ row }">{{ formatCurrency(row.value) }}</template>
+            <template #cell-probability="{ value }">
+              <span :class="probabilityClass(value)">{{ Math.round(value || 0) }}%</span>
+            </template>
+            <template #cell-weighted="{ row }">
+              <span class="lcsfc-td-strong">{{ formatCurrency(row.weighted) }}</span>
+            </template>
+          </PpDataGrid>
+        </PpTableCard>
 
         <!-- Source analytics donut -->
         <div v-if="sourceData.length" class="lcsfc-card">
@@ -193,6 +182,8 @@ import PpPageHead from '@/components/pp/PpPageHead.vue'
 import PpStatTile from '@/components/pp/PpStatTile.vue'
 import PpEmptyState from '@/components/pp/PpEmptyState.vue'
 import PpForecast from '@/components/pp/PpForecast.vue'
+import PpDataGrid from '@/components/pp/PpDataGrid.vue'
+import PpTableCard from '@/components/pp/PpTableCard.vue'
 import IconTrendingUp from '~icons/lucide/trending-up'
 import { sessionStore } from '@/stores/session'
 import { useUserPreferences } from '@/composables/useUserPreferences'
@@ -277,6 +268,29 @@ const topOpportunities = computed(() => {
   filteredBuckets.value.forEach(b => all.push(...b.projects))
   return all.sort((a, b) => (b.weighted || 0) - (a.weighted || 0)).slice(0, 8)
 })
+
+// Grid shape for the shared table blocks (id = LCS Project name, so a row
+// click can route straight to the project).
+const oppColumns = [
+  { key: 'project', label: __('Project'), pin: true, width: 300 },
+  { key: 'phase', label: __('Phase'), width: 150 },
+  { key: 'owner', label: __('Responsible'), width: 170 },
+  { key: 'value', label: __('Value'), align: 'right', width: 140 },
+  { key: 'probability', label: __('Prob.'), align: 'right', width: 100 },
+  { key: 'weighted', label: __('Weighted'), align: 'right', width: 140 },
+]
+const oppRows = computed(() =>
+  topOpportunities.value.map((p) => ({
+    id: p.name,
+    project: p.project_name,
+    meta: `${p.project_number} • ${p.project_type}`,
+    phase: p.phase,
+    owner: shortUser(p.salesperson),
+    value: p.value,
+    probability: p.probability,
+    weighted: p.weighted,
+  })),
+)
 
 // Source analytics
 const sourceData = computed(() => sourceResource.data || [])
@@ -365,26 +379,13 @@ function formatPeriod(key) {
 /* Cards */
 .lcsfc-card { background: var(--pp-bg-surface); border: 1px solid var(--pp-border-subtle);
   border-radius: var(--pp-radius-ui); box-shadow: var(--pp-shadow-xs); padding: var(--pp-space-5); }
-.lcsfc-card--flush { padding: 0; }
-.lcsfc-card-head { padding: var(--pp-space-3) var(--pp-space-5); border-bottom: 1px solid var(--pp-border-subtle); }
 .lcsfc-card-title { margin: 0 0 var(--pp-space-4); display: flex; align-items: center; gap: var(--pp-space-2);
   font-size: var(--pp-fs-12); font-weight: var(--pp-weight-bold); letter-spacing: 0.04em;
   text-transform: uppercase; color: var(--pp-text-tertiary); }
-.lcsfc-card--flush .lcsfc-card-title { margin: 0; }
 .lcsfc-card-title-sub { margin-left: var(--pp-space-2); font-weight: var(--pp-weight-regular);
   text-transform: none; letter-spacing: 0; color: var(--pp-text-tertiary); }
 
-/* Top opportunities table */
-.lcsfc-table th { padding: var(--pp-space-2) var(--pp-space-4); }
-.lcsfc-table td { padding: 10px var(--pp-space-4); }
-.lcsfc-thead { border-bottom: 1px solid var(--pp-border-subtle); background: var(--pp-bg-sunken);
-  color: var(--pp-text-tertiary); }
-.lcsfc-row { border-bottom: 1px solid var(--pp-border-subtle); }
-.lcsfc-row:hover { background: var(--pp-bg-hover); }
-.lcsfc-proj-name { font-weight: var(--pp-weight-medium); color: var(--pp-text-primary); }
-.lcsfc-proj-meta { font-size: var(--pp-fs-12); color: var(--pp-text-tertiary); }
-.lcsfc-td-mut { color: var(--pp-text-secondary); }
-.lcsfc-td-num { color: var(--pp-text-primary); }
+/* Weighted total in the opportunities grid. */
 .lcsfc-td-strong { font-weight: var(--pp-weight-semibold); color: var(--pp-brand-primary); }
 
 /* Donut + source breakdown */

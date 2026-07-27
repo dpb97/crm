@@ -18,19 +18,18 @@
       </template>
     </LayoutHeader>
 
-    <div class="crmo">
-      <div class="crmo-inner">
+    <div class="pp-listpage">
+      <div class="pp-listpage__inner">
         <PpPageHead
           :title="__('Organizations')"
-          :subtitle="`${filtered.length} ${__('of')} ${orgs.length} ${__('Organizations')} · ${__('click a row to open the profile')}`"
-        >
-          <template #actions>
-            <div class="crmo-search-wrap">
-              <IconSearch class="crmo-search-ico" />
-              <input v-model="q" type="search" class="crmo-search" :placeholder="__('Search / filter by industry') + ' …'" />
-            </div>
-          </template>
-        </PpPageHead>
+          :subtitle="__('click a row to open the profile')"
+        />
+
+        <!-- Filterleiste (Referenz: Calls) -->
+        <PpFilterBar
+          v-model:search="q"
+          :placeholder="__('Search / filter by industry') + ' …'"
+        />
 
         <!-- KPI-Karten = klickbare Segment-Filter (Master Regel 9). -->
         <section class="crmo-kpis">
@@ -46,36 +45,26 @@
           </button>
         </section>
 
-        <section class="crmo-card">
-          <template v-if="rows.length">
-          <div class="crmo-scroll">
-          <PpDataGrid :columns="columns" :rows="pagedRows" @row-click="openOrg">
+        <PpTableCard :title="__('Organizations')" :shown="filtered.length" :total="orgs.length">
+          <PpDataGrid v-if="rows.length" :columns="columns" :rows="pagedRows" @row-click="openOrg">
             <template #cell-name="{ row }">
-              <span class="crmo-name">{{ row.name }}</span>
-              <span class="crmo-id">{{ row.industry || '—' }}</span>
+              <span class="pp-cell-strong">{{ row.name }}</span>
+              <span class="pp-cell-sub">{{ row.industry || '—' }}</span>
             </template>
             <template #cell-website="{ value }">
               <span v-if="value" class="crmo-link">{{ value }}</span>
-              <span v-else class="crmo-muted">—</span>
+              <span v-else class="pp-cell-muted">—</span>
             </template>
             <template #cell-territory="{ value }">
-              <span :class="{ 'crmo-muted': !value }">{{ value || '—' }}</span>
+              <span :class="{ 'pp-cell-muted': !value }">{{ value || '—' }}</span>
             </template>
             <template #cell-no_of_employees="{ value }">
               <span class="crmo-num">{{ value || '—' }}</span>
             </template>
             <template #cell-modified="{ value }">
-              <span class="crmo-muted">{{ fmtDate(value) }}</span>
+              <span class="pp-cell-muted">{{ fmtDate(value) }}</span>
             </template>
           </PpDataGrid>
-          </div>
-          <LcsPagination
-            v-if="rowTotal > 25"
-            :from="pgFrom" :to="pgTo" :total="rowTotal"
-            :page="page" :page-count="pageCount" :page-size="pageSize"
-            @prev="pgPrev" @next="pgNext" @page-size="setPageSize"
-          />
-          </template>
 
           <PpEmptyState
             v-else-if="hasFilter"
@@ -93,7 +82,15 @@
             :title="loading ? __('Loading …') : __('No organizations yet')"
             :hint="loading ? '' : __('Companies created in the CRM will appear here.')"
           />
-        </section>
+
+          <template v-if="rows.length && rowTotal > 25" #footer>
+            <LcsPagination
+              :from="pgFrom" :to="pgTo" :total="rowTotal"
+              :page="page" :page-count="pageCount" :page-size="pageSize"
+              @prev="pgPrev" @next="pgNext" @page-size="setPageSize"
+            />
+          </template>
+        </PpTableCard>
       </div>
     </div>
   </div>
@@ -108,11 +105,12 @@ import PpPageHead from '@/components/pp/PpPageHead.vue'
 import PpStatTile from '@/components/pp/PpStatTile.vue'
 import PpDataGrid from '@/components/pp/PpDataGrid.vue'
 import PpEmptyState from '@/components/pp/PpEmptyState.vue'
+import PpFilterBar from '@/components/pp/PpFilterBar.vue'
+import PpTableCard from '@/components/pp/PpTableCard.vue'
 import OrganizationInspector from '@/components/lcs/OrganizationInspector.vue'
 import LcsPagination from '@/components/lcs/LcsPagination.vue'
 import IconSearchX from '~icons/lucide/search-x'
 import IconInbox from '~icons/lucide/inbox'
-import IconSearch from '~icons/lucide/search'
 import { usePilandaMode } from '@/composables/usePilandaMode'
 import { usePilandaInspect } from '@/composables/usePilandaInspect'
 import { usePagination } from '@/composables/usePagination'
@@ -246,12 +244,7 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-/* Fixed viewport-height layout: table scrolls in its own region (see LCSContacts). */
-.crmo { flex: 1; min-height: 0; overflow: hidden; background: var(--pp-bg-base); display: flex; flex-direction: column; }
-.crmo-inner { flex: 1; min-height: 0; padding: var(--pp-space-6) var(--pp-space-6) var(--pp-space-6);
-  display: flex; flex-direction: column; gap: var(--pp-space-5); }
-.crmo-scroll { flex: 1; min-height: 0; overflow: auto; }
-
+/* Reset-Filter button in the empty state. */
 .crmo-btn { appearance: none; cursor: pointer; font-family: inherit; font-size: var(--pp-fs-13, 13px);
   padding: 6px var(--pp-space-3); border-radius: var(--pp-radius-ui);
   border: 1px solid var(--pp-border-default); background: var(--pp-bg-surface); color: var(--pp-text-primary); }
@@ -270,22 +263,7 @@ onBeforeUnmount(() => {
   box-shadow: 0 0 0 2px color-mix(in oklab, var(--pp-brand-primary) 30%, transparent); }
 .crmo-kpi:focus-visible > :deep(.pp-kpi) { box-shadow: var(--pp-shadow-focus-ring, 0 0 0 3px rgb(var(--pp-brand-primary-rgb) / 0.3)); }
 
-/* Kompakte Kopf-Suche (statt Filterzeile) */
-.crmo-search-wrap { position: relative; display: flex; align-items: center; }
-.crmo-search-ico { position: absolute; left: 9px; width: 15px; height: 15px; color: var(--pp-text-tertiary); pointer-events: none; }
-.crmo-search { appearance: none; font-family: inherit; font-size: var(--pp-fs-13, 13px); color: var(--pp-text-primary);
-  padding: 7px 11px 7px 30px; border: 1px solid var(--pp-border-default); border-radius: var(--pp-radius-ui);
-  background: var(--pp-bg-surface); min-width: 260px; }
-.crmo-search:focus { outline: none; border-color: var(--pp-brand-primary);
-  box-shadow: 0 0 0 3px rgb(var(--pp-brand-primary-rgb) / 0.15); }
-
-.crmo-card { background: var(--pp-bg-surface); border: 1px solid var(--pp-border-subtle);
-  border-radius: var(--pp-radius-ui); box-shadow: var(--pp-shadow-xs); padding: var(--pp-space-2);
-  flex: 1; min-height: 0; display: flex; flex-direction: column; }
-
-.crmo-name { display: block; font-weight: var(--pp-weight-medium); color: var(--pp-text-primary); }
-.crmo-id { display: block; font-size: 11px; color: var(--pp-text-tertiary); }
-.crmo-muted { color: var(--pp-text-tertiary); }
+/* Zell-Renderer, die über die gemeinsamen pp-cell-* Rollen hinausgehen. */
 .crmo-link { color: var(--pp-brand-primary); font-size: var(--pp-fs-12);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .crmo-num { font-variant-numeric: tabular-nums; color: var(--pp-text-primary); }

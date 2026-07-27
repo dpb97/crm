@@ -98,6 +98,19 @@ _GEO_STATE = {
 _GEO_TYP = {"SB": "SB", "WI": "WI", "SK": "SK"}
 
 
+def _coord(value):
+    """A mast coordinate, or None when it is not really set. Frappe Float
+    fields default to 0.0, so an unfilled mast reads as 0°/0° — the Null Island
+    point in the Gulf of Guinea, never a cable-crane location. Without this the
+    whole map collapses onto that one spot and no project ever falls back to
+    its country pin."""
+    try:
+        f = float(value)
+    except (TypeError, ValueError):
+        return None
+    return f if f else None
+
+
 @frappe.whitelist()
 def get_project_geo():
     """Cable-route map data for PpGeoMap. Projects that carry both mast
@@ -118,10 +131,9 @@ def get_project_geo():
 
     masten, pins = [], []
     for p in projects:
-        has_route = (
-            p.valley_mast_latitude is not None and p.valley_mast_longitude is not None
-            and p.mountain_mast_latitude is not None and p.mountain_mast_longitude is not None
-        )
+        tal_lat, tal_lng = _coord(p.valley_mast_latitude), _coord(p.valley_mast_longitude)
+        berg_lat, berg_lng = _coord(p.mountain_mast_latitude), _coord(p.mountain_mast_longitude)
+        has_route = None not in (tal_lat, tal_lng, berg_lat, berg_lng)
         if has_route:
             m = {
                 "nr": p.project_number or p.name,
@@ -131,8 +143,8 @@ def get_project_geo():
                 "state": _GEO_STATE.get(p.phase, "akquise"),
                 "wert": p.estimated_value or 0,
                 "wer": p.salesperson or "",
-                "tal": [p.valley_mast_latitude, p.valley_mast_longitude],
-                "berg": [p.mountain_mast_latitude, p.mountain_mast_longitude],
+                "tal": [tal_lat, tal_lng],
+                "berg": [berg_lat, berg_lng],
             }
             typ = _GEO_TYP.get(p.project_type)
             if typ:
@@ -141,8 +153,43 @@ def get_project_geo():
         else:
             coords = get_coords(p.country)
             if coords:
-                pins.append({"t": p.project_name or p.name, "ll": [coords[0], coords[1]]})
-    return {"masten": masten, "pins": pins}
+                pins.append({
+                    "t": p.project_name or p.name,
+                    "ll": [coords[0], coords[1]],
+                    "rows": [
+                        [_("Project no."), p.project_number or p.name],
+                        [_("Company / customer"), p.organization or "—"],
+                        [_("Phase"), p.phase or "—"],
+                        [_("Estimated value"), p.estimated_value or "—"],
+                        [_("Responsible"), p.salesperson or "—"],
+                        [_("Country"), p.country or "—"],
+                    ],
+                })
+    return {"masten": masten, "pins": _spread(pins)}
+
+
+def _spread(pins):
+    """Pull pins that share a country centroid apart onto a small ring. Without
+    it every project of a country stacks on the exact same point and only the
+    topmost one can be clicked."""
+    import math
+    from collections import defaultdict
+
+    by_pos = defaultdict(list)
+    for pin in pins:
+        by_pos[(pin["ll"][0], pin["ll"][1])].append(pin)
+
+    for (lat, lng), group in by_pos.items():
+        if len(group) < 2:
+            continue
+        radius = 0.25 + 0.03 * len(group)   # degrees; keeps the group inside its country
+        for i, pin in enumerate(group):
+            angle = 2 * math.pi * i / len(group)
+            pin["ll"] = [
+                round(lat + radius * math.sin(angle), 6),
+                round(lng + radius * math.cos(angle) / max(math.cos(math.radians(lat)), 0.1), 6),
+            ]
+    return pins
 
 
 @frappe.whitelist()

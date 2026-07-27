@@ -22,51 +22,33 @@
       </template>
     </LayoutHeader>
 
-    <div class="crmc">
-      <div class="crmc-inner">
+    <div class="pp-listpage">
+      <div class="pp-listpage__inner">
         <!-- Filterleiste: Richtung-Segmente + Suche -->
-        <section class="crmc-filter">
-          <span class="crmc-filter-cap">{{ __('Filter') }}</span>
-          <div class="crmc-seg" role="tablist">
-            <button
-              v-for="s in DIRS"
-              :key="s.key"
-              type="button"
-              class="crmc-seg-btn"
-              :class="{ 'is-active': dir === s.key }"
-              :aria-pressed="dir === s.key"
-              @click="dir = s.key"
-            >{{ s.label }}</button>
-          </div>
-          <div class="crmc-search">
-            <input v-model="q" type="search" class="crmc-input" :placeholder="__('Search person, company or object') + ' …'" />
-          </div>
-        </section>
+        <PpFilterBar
+          v-model="dir"
+          v-model:search="q"
+          :segments="DIRS"
+          :placeholder="__('Search person, company or object') + ' …'"
+        />
 
         <!-- Karte „Anrufe" -->
-        <section class="crmc-card">
-          <header class="crmc-ch">
-            <span class="crmc-ch-title">{{ __('Calls') }}</span>
-            <span class="crmc-ch-note">
-              {{ filtered.length }} {{ __('of') }} {{ rows.length }} · {{ __('row = details in the inspector') }}
-            </span>
-          </header>
-
+        <PpTableCard :title="__('Calls')" :shown="filtered.length" :total="rows.length">
           <PpDataGrid v-if="filtered.length" :columns="columns" :rows="filtered" @row-click="openCall">
             <template #cell-date="{ value }">{{ fmtDate(value) }}</template>
             <template #cell-person="{ row }">
-              <span class="crmc-person">{{ row.person }}</span>
-              <span v-if="row.company" class="crmc-company">{{ row.company }}</span>
+              <span class="pp-cell-strong">{{ row.person }}</span>
+              <span v-if="row.company" class="pp-cell-sub">{{ row.company }}</span>
             </template>
             <template #cell-direction="{ value }">
-              <span class="crmc-dir">{{ value === 'ausgehend' ? __('outgoing') : __('incoming') }}</span>
+              <span class="pp-cell-soft">{{ value === 'ausgehend' ? __('outgoing') : __('incoming') }}</span>
             </template>
             <template #cell-duration="{ value }">{{ fmtDuration(value) }}</template>
             <template #cell-status="{ value }">
-              <span class="crmc-pill" :data-tone="statusTone(value)"><i class="crmc-dot" />{{ statusLabel(value) }}</span>
+              <PpPill :tone="statusTone(value)">{{ statusLabel(value) }}</PpPill>
             </template>
             <template #cell-object="{ value }">
-              <span :class="{ 'crmc-muted': !value }">{{ value || '—' }}</span>
+              <span :class="{ 'pp-cell-muted': !value }">{{ value || '—' }}</span>
             </template>
           </PpDataGrid>
 
@@ -76,7 +58,7 @@
             :title="board.loading ? __('Loading calls …') : __('No calls')"
             :hint="board.loading ? '' : (q || dir !== 'all' ? __('No matches for the current filter/search.') : __('Call logs appear here as calls are made.'))"
           />
-        </section>
+        </PpTableCard>
       </div>
     </div>
   </div>
@@ -89,6 +71,9 @@ import { createResource, Breadcrumbs, Button } from 'frappe-ui'
 import LayoutHeader from '@/components/LayoutHeader.vue'
 import PpDataGrid from '@/components/pp/PpDataGrid.vue'
 import PpEmptyState from '@/components/pp/PpEmptyState.vue'
+import PpFilterBar from '@/components/pp/PpFilterBar.vue'
+import PpTableCard from '@/components/pp/PpTableCard.vue'
+import PpPill from '@/components/pp/PpPill.vue'
 import IconPhone from '~icons/lucide/phone'
 import { usePilandaInspect } from '@/composables/usePilandaInspect'
 
@@ -181,52 +166,3 @@ function fmtDuration(sec) {
 }
 </script>
 
-<style scoped>
-.crmc { flex: 1; min-height: 0; overflow: hidden; background: var(--pp-bg-base); display: flex; flex-direction: column; }
-.crmc-inner { flex: 1; min-height: 0; padding: var(--pp-space-6);
-  display: flex; flex-direction: column; gap: var(--pp-space-4); }
-
-/* Filterleiste */
-.crmc-filter { display: flex; align-items: center; gap: var(--pp-space-3); flex-wrap: wrap;
-  padding: var(--pp-space-3) var(--pp-space-4); background: var(--pp-bg-surface);
-  border: 1px solid var(--pp-border-subtle); border-radius: var(--pp-radius-ui); box-shadow: var(--pp-shadow-xs); }
-.crmc-filter-cap { font-size: 10px; font-weight: var(--pp-weight-bold); letter-spacing: var(--pp-tracking-wide, 0.04em);
-  text-transform: uppercase; color: var(--pp-text-tertiary); }
-.crmc-seg { display: inline-flex; gap: 2px; padding: 2px; border-radius: var(--pp-radius-full);
-  background: var(--pp-bg-base); border: 1px solid var(--pp-border-default); }
-.crmc-seg-btn { appearance: none; cursor: pointer; font-family: inherit; font-size: var(--pp-fs-13, 13px);
-  padding: 4px 14px; border: none; border-radius: var(--pp-radius-full); background: transparent; color: var(--pp-text-secondary); }
-.crmc-seg-btn:hover { color: var(--pp-brand-primary); }
-.crmc-seg-btn.is-active { background: var(--pp-brand-primary); color: var(--pp-text-on-accent); font-weight: var(--pp-weight-semibold); }
-.crmc-search { flex: 1; min-width: 200px; }
-.crmc-input { appearance: none; width: 100%; font-family: inherit; font-size: var(--pp-fs-13, 13px); color: var(--pp-text-primary);
-  padding: 7px var(--pp-space-3); border: 1px solid var(--pp-border-default); border-radius: var(--pp-radius-ui); background: var(--pp-bg-base); }
-.crmc-input:focus { outline: none; border-color: var(--pp-brand-primary); box-shadow: 0 0 0 3px rgb(var(--pp-brand-primary-rgb) / 0.15); }
-
-/* Karte */
-.crmc-card { flex: 1; min-height: 0; display: flex; flex-direction: column;
-  background: var(--pp-bg-surface); border: 1px solid var(--pp-border-subtle);
-  border-radius: var(--pp-radius-ui); box-shadow: var(--pp-shadow-xs); overflow: hidden; }
-.crmc-ch { display: flex; align-items: baseline; justify-content: space-between; gap: var(--pp-space-3);
-  padding: var(--pp-space-3) var(--pp-space-4); border-bottom: 1px solid var(--pp-border-subtle); }
-.crmc-ch-title { font-size: var(--pp-fs-14, 14px); font-weight: var(--pp-weight-bold); color: var(--pp-text-primary); }
-.crmc-ch-note { font-size: 11px; color: var(--pp-text-tertiary); }
-
-/* Zellen */
-.crmc-person { display: block; font-weight: var(--pp-weight-medium); color: var(--pp-text-primary); }
-.crmc-company { display: block; font-size: 11px; color: var(--pp-text-tertiary); }
-.crmc-dir { color: var(--pp-text-secondary); }
-.crmc-muted { color: var(--pp-text-tertiary); }
-
-.crmc-pill { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: var(--pp-weight-semibold);
-  padding: 2px var(--pp-space-2); border-radius: var(--pp-radius-full); white-space: nowrap; }
-.crmc-dot { width: 6px; height: 6px; border-radius: var(--pp-radius-full); flex-shrink: 0; background: currentColor; }
-.crmc-pill[data-tone="info"]    { background: color-mix(in oklab, var(--pp-state-info) 14%, transparent);    color: var(--pp-state-info); }
-.crmc-pill[data-tone="success"] { background: color-mix(in oklab, var(--pp-state-success) 16%, transparent); color: var(--pp-state-success); }
-.crmc-pill[data-tone="warning"] { background: color-mix(in oklab, var(--pp-state-warning) 16%, transparent); color: var(--pp-state-warning); }
-.crmc-pill[data-tone="danger"]  { background: color-mix(in oklab, var(--pp-state-danger) 16%, transparent);  color: var(--pp-state-danger); }
-.crmc-pill[data-tone="neutral"] { background: var(--pp-bg-sunken); color: var(--pp-text-secondary); }
-
-/* Interner Tabellen-Scroll im fixierten Viewport-Layout */
-.crmc-card :deep(.pp-datagrid) { flex: 1; min-height: 0; }
-</style>

@@ -43,7 +43,7 @@ export function usePilandaNav() {
       // ordering, so override the Vertrieb module's groups here to match the
       // master: sub:1 marks a child of the preceding level-1 item; PpSidebar's
       // buildTree renders the nesting and keeps icons on level 1 only.
-      // "#" targets (Chancen, Verkäufer & Agenten) are master placeholders.
+      // "#" targets are master placeholders still awaiting a page (Chancen).
       const _vt = modules.value.find((m) => m.id === 'vertrieb')
       if (_vt) {
         _vt.g = [{ sec: '', items: [
@@ -56,7 +56,7 @@ export function usePilandaNav() {
           { n: 'Vertriebsprojekte',   t: '/crm/projects',          icon: 'folder-kanban', k: 'cust', x: true, d: 'Vertriebsprojekte (Deal=Projekt)' },
           { n: 'Markteinteilung',     t: '/crm/market-assignment', icon: 'globe',         k: 'cust', x: true, d: 'Territorien mit genau EINER verantwortlichen Person' },
           { n: 'Projektlandkarte',    t: '/crm/projects-map',      k: 'cust', x: true, sub: 1, d: 'Anlagen & Projekte auf der Landkarte' },
-          { n: 'Verkäufer & Agenten', t: '#',                      k: 'cust',         sub: 1, d: 'Verkäufer, Agenten und JV je Territorium' },
+          { n: 'Verkäufer & Agenten', t: '/crm/sales-agents',       k: 'cust', x: true, sub: 1, d: 'Verkäufer, Agenten und JV je Territorium' },
           { n: 'Prognose',            t: '/crm/forecasting',       icon: 'trending-up',   k: 'cust', x: true, d: 'Umsatz-Forecast über die Pipeline' },
           { n: 'Netzwerk',            t: '/crm/network',           icon: 'share-2',       k: 'cust', x: true, d: 'Kontaktnetzwerk — Netzwerk-Ansicht im CRM' },
           { n: 'Firmen',              t: '/crm/organizations',     k: 'cust', x: true, sub: 1, d: 'Firmen im CRM' },

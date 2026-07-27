@@ -56,13 +56,13 @@
           </div>
 
           <div class="max-h-64 overflow-y-auto rounded border bg-white">
-            <table class="w-full text-xs">
-              <thead class="sticky top-0 bg-gray-50">
+            <table class="pp-table">
+              <thead class="sticky top-0">
                 <tr class="border-b text-left text-gray-500">
-                  <th class="px-3 py-2 font-medium">{{ __('BSM Project') }}</th>
-                  <th class="px-3 py-2 font-medium">{{ __('Type') }}</th>
-                  <th class="px-3 py-2 font-medium">{{ __('Organization') }}</th>
-                  <th class="px-3 py-2 font-medium">{{ __('Country') }}</th>
+                  <th class="font-medium">{{ __('BSM Project') }}</th>
+                  <th class="font-medium">{{ __('Type') }}</th>
+                  <th class="font-medium">{{ __('Organization') }}</th>
+                  <th class="font-medium">{{ __('Country') }}</th>
                 </tr>
               </thead>
               <tbody>

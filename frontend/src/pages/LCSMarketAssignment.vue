@@ -101,25 +101,25 @@
         </section>
 
         <!-- Territorien -->
-        <section class="crmt-section">
-          <div class="crmt-section-head">
-            <h3 class="crmt-section-title">{{ __('Territories') }}</h3>
-            <div class="crmt-filters">
-              <div class="crmt-search">
-                <FeatherIcon name="search" class="crmt-search-ico" />
-                <input v-model="search" type="search" class="crmt-input crmt-input--search" :placeholder="__('Territory / country …')" />
-              </div>
-              <select v-model="region" class="crmt-input">
-                <option value="">{{ __('All regions') }}</option>
-                <option v-for="r in regionOptions" :key="r" :value="r">{{ r }}</option>
-              </select>
-            </div>
-          </div>
-          <div class="crmt-card">
+        <PpFilterBar v-model:search="search" :placeholder="__('Territory / country …')">
+          <template #actions>
+            <select v-model="region" class="crmt-input">
+              <option value="">{{ __('All regions') }}</option>
+              <option v-for="r in regionOptions" :key="r" :value="r">{{ r }}</option>
+            </select>
+          </template>
+        </PpFilterBar>
+
+        <PpTableCard
+          :title="__('Territories')"
+          :shown="filteredRows.length"
+          :total="territories.length"
+          :grow="false"
+        >
             <PpDataGrid v-if="filteredRows.length" :columns="columns" :rows="gridRows" @row-click="selectTerritory">
               <template #cell-territory="{ row }">
-                <span class="crmt-terr-name">{{ row.territory }}</span>
-                <span v-if="row.sub_region" class="crmt-terr-sub">{{ row.sub_region }}</span>
+                <span class="pp-cell-strong">{{ row.territory }}</span>
+                <span v-if="row.sub_region" class="pp-cell-sub">{{ row.sub_region }}</span>
               </template>
               <template #cell-manager="{ row }">
                 <div v-if="canManage" class="crmt-reassign" @click.stop>
@@ -137,7 +137,7 @@
                 </span>
               </template>
               <template #cell-priority="{ value }">
-                <span class="crmt-prio-chip" :data-tone="PRIO_TONE[value]"><i class="crmt-legend-dot" :class="'is-' + PRIO_TONE[value]" />{{ prioLabel(value) }}</span>
+                <PpPill :tone="PRIO_TONE[value]">{{ prioLabel(value) }}</PpPill>
               </template>
               <template #cell-leads="{ value }"><span :class="{ 'crmt-zero': !value }">{{ value }}</span></template>
               <template #cell-deals="{ value }"><span :class="{ 'crmt-zero': !value }">{{ value }}</span></template>
@@ -149,21 +149,21 @@
               :title="board.loading ? __('Loading territories …') : __('No territories')"
               :hint="board.loading ? '' : __('No matches for the current filter/search.')"
             />
-          </div>
-        </section>
+        </PpTableCard>
 
         <!-- Segment-Zuständigkeit -->
-        <section v-if="segments.length" class="crmt-section">
-          <div class="crmt-section-head">
-            <h3 class="crmt-section-title">{{ __('Segment Responsibility') }}</h3>
-          </div>
-          <div class="crmt-card">
-            <PpDataGrid :columns="segColumns" :rows="segRows">
-              <template #cell-lead_code="{ value }"><span class="crmt-mgr"><i class="crmt-legend-dot" :class="'is-' + mgrKind(value)" />{{ value || '—' }}</span></template>
-              <template #cell-deputy_code="{ value }"><span :class="{ 'crmt-zero': !value }">{{ value || '—' }}</span></template>
-            </PpDataGrid>
-          </div>
-        </section>
+        <PpTableCard
+          v-if="segments.length"
+          :title="__('Segment Responsibility')"
+          :shown="segRows.length"
+          :total="segRows.length"
+          :hint="''"
+        >
+          <PpDataGrid :columns="segColumns" :rows="segRows">
+            <template #cell-lead_code="{ value }"><span class="crmt-mgr"><i class="crmt-legend-dot" :class="'is-' + mgrKind(value)" />{{ value || '—' }}</span></template>
+            <template #cell-deputy_code="{ value }"><span :class="{ 'crmt-zero': !value }">{{ value || '—' }}</span></template>
+          </PpDataGrid>
+        </PpTableCard>
       </div>
     </div>
   </div>
@@ -357,20 +357,15 @@ async function reassign(row, code) {
 .crmt-active { margin: 0; font-size: var(--pp-fs-13, 13px); color: var(--pp-text-secondary); }
 .crmt-active strong { color: var(--pp-text-primary); font-weight: var(--pp-weight-semibold); }
 
-.crmt-filters { display: flex; align-items: center; gap: var(--pp-space-2); flex-wrap: wrap; }
 .crmt-input { appearance: none; font-family: inherit; font-size: var(--pp-fs-13, 13px); color: var(--pp-text-primary);
   padding: 6px var(--pp-space-3); border: 1px solid var(--pp-border-default); border-radius: var(--pp-radius-ui); background: var(--pp-bg-base); }
 .crmt-input:focus { outline: none; border-color: var(--pp-brand-primary); box-shadow: 0 0 0 3px rgb(var(--pp-brand-primary-rgb) / 0.15); }
-.crmt-search { position: relative; display: flex; align-items: center; }
-.crmt-search-ico { position: absolute; left: 9px; width: 15px; height: 15px; color: var(--pp-text-tertiary); pointer-events: none; }
 .crmt-input--search { padding-left: 30px; min-width: 180px; }
 
 .crmt-card { background: var(--pp-bg-surface); border: 1px solid var(--pp-border-subtle);
   border-radius: var(--pp-radius-ui); box-shadow: var(--pp-shadow-xs); padding: var(--pp-space-2); }
 .crmt-map-empty { display: flex; align-items: center; justify-content: center; min-height: 240px; }
 
-.crmt-terr-name { display: block; font-weight: var(--pp-weight-medium); color: var(--pp-text-primary); }
-.crmt-terr-sub { display: block; font-size: 11px; color: var(--pp-text-tertiary); }
 .crmt-mgr { display: inline-flex; align-items: center; gap: 6px; font-size: var(--pp-fs-13, 13px); color: var(--pp-text-primary); }
 .crmt-mgr-inline { color: var(--pp-text-secondary); }
 .crmt-reassign { min-width: 9rem; }
@@ -392,7 +387,5 @@ async function reassign(row, code) {
   .crmt-kpis { grid-template-columns: 1fr; }
   .crmt-mgrs { grid-template-columns: 1fr; }
   .crmt-input--search { min-width: 0; width: 100%; }
-  .crmt-search { flex: 1; }
-  .crmt-filters { width: 100%; }
-}
+  }
 </style>

@@ -29,13 +29,16 @@
       </template>
     </LayoutHeader>
 
-    <div class="lcsd">
-      <div class="lcsd-inner">
+    <div class="pp-listpage">
+      <div class="pp-listpage__inner">
         <PpPageHead
           :eyebrow="__('Sales / CRM')"
           :title="__('Deals')"
           :subtitle="subtitle"
-        >
+        />
+
+        <!-- Filterleiste: Listen-/Board-Umschalter (Referenz: Calls) -->
+        <PpFilterBar>
           <template #actions>
             <div class="lcsd-viewseg" role="tablist">
               <button
@@ -52,30 +55,35 @@
               </button>
             </div>
           </template>
-        </PpPageHead>
+        </PpFilterBar>
 
         <section class="lcsd-kpis">
           <PpStatTile v-for="k in kpis" :key="k.label" v-bind="k" />
         </section>
 
-        <section class="lcsd-board">
+        <!-- Liste: gleicher Abstiegs-Vertrag (Klick → Inspektor, Doppelklick
+             → öffnen) über openDeal; Phasen-Wechsel bleibt dem Board vorbehalten. -->
+        <PpTableCard
+          v-if="statuses.length && viewMode === 'list'"
+          :title="__('Deals')"
+          :shown="listRows.length"
+          :total="listRows.length"
+        >
+          <PpDataGrid :columns="listColumns" :rows="listRows" @row-click="openDeal">
+            <template #cell-phase="{ row }">
+              <PpPill :tone="row.tone">{{ statusLabel(row.phase) }}</PpPill>
+            </template>
+            <template #cell-value="{ row }">{{ row.valueFmt }}</template>
+            <template #cell-prob="{ value }">{{ value }} %</template>
+            <template #cell-owner="{ value }">
+              <span :class="{ 'pp-cell-muted': !value }">{{ value || __('unassigned') }}</span>
+            </template>
+          </PpDataGrid>
+        </PpTableCard>
+
+        <section v-else class="lcsd-board">
           <div v-if="!statuses.length" class="lcsd-empty">
             {{ dealsRes.loading || statusStore.dealStatuses.loading ? __('Loading opportunities …') : __('No open opportunities') }}
-          </div>
-
-          <!-- Liste: gleicher Abstiegs-Vertrag (Klick → Inspektor, Doppelklick
-               → öffnen) über openDeal; Phasen-Wechsel bleibt dem Board vorbehalten. -->
-          <div v-else-if="viewMode === 'list'" class="lcsd-listcard">
-            <PpDataGrid :columns="listColumns" :rows="listRows" @row-click="openDeal">
-              <template #cell-phase="{ row }">
-                <span class="lcsd-pill" :data-tone="row.tone"><i class="lcsd-dot" />{{ statusLabel(row.phase) }}</span>
-              </template>
-              <template #cell-value="{ row }">{{ row.valueFmt }}</template>
-              <template #cell-prob="{ value }">{{ value }} %</template>
-              <template #cell-owner="{ value }">
-                <span :class="{ 'lcsd-muted': !value }">{{ value || __('unassigned') }}</span>
-              </template>
-            </PpDataGrid>
           </div>
 
           <PpKanban
@@ -150,6 +158,9 @@ import PpStatTile from '@/components/pp/PpStatTile.vue'
 import PpKanban from '@/components/pp/PpKanban.vue'
 import PpDataGrid from '@/components/pp/PpDataGrid.vue'
 import PpDrawer from '@/components/pp/PpDrawer.vue'
+import PpFilterBar from '@/components/pp/PpFilterBar.vue'
+import PpTableCard from '@/components/pp/PpTableCard.vue'
+import PpPill from '@/components/pp/PpPill.vue'
 import IconList from '~icons/lucide/list'
 import IconColumns from '~icons/lucide/columns-3'
 import DealInspector from '@/components/lcs/DealInspector.vue'
@@ -456,15 +467,6 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-/* Vollbreiten-Canvas (kein max-width-Zentrieren), token-only. */
-.lcsd { flex: 1; min-height: 0; overflow: auto; background: var(--pp-bg-base); }
-.lcsd-inner {
-  display: flex;
-  flex-direction: column;
-  gap: var(--pp-space-5);
-  padding: var(--pp-space-6) var(--pp-space-6) var(--pp-space-12);
-}
-
 .lcsd-kpis {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -483,16 +485,6 @@ onBeforeUnmount(() => {
   font-weight: var(--pp-weight-semibold); box-shadow: var(--pp-shadow-xs); }
 .lcsd-viewseg-ico { width: 14px; height: 14px; }
 
-/* Listen-Karte + Zell-Renderer */
-.lcsd-listcard { background: var(--pp-bg-surface); border: 1px solid var(--pp-border-subtle);
-  border-radius: var(--pp-radius-ui); box-shadow: var(--pp-shadow-xs); padding: var(--pp-space-2); }
-.lcsd-muted { color: var(--pp-text-tertiary); font-style: italic; }
-.lcsd-pill { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: var(--pp-weight-semibold);
-  padding: 2px var(--pp-space-2); border-radius: var(--pp-radius-full); white-space: nowrap; }
-.lcsd-dot { width: 6px; height: 6px; border-radius: var(--pp-radius-full); flex-shrink: 0; background: currentColor; }
-.lcsd-pill[data-tone="info"]    { background: color-mix(in oklab, var(--pp-state-info) 14%, transparent);    color: var(--pp-state-info); }
-.lcsd-pill[data-tone="success"] { background: color-mix(in oklab, var(--pp-state-success) 16%, transparent); color: var(--pp-state-success); }
-.lcsd-pill[data-tone="danger"]  { background: color-mix(in oklab, var(--pp-state-danger) 16%, transparent);  color: var(--pp-state-danger); }
 /* Phasen-Summe im Spaltenkopf (#column-meta-Slot) — dezent, token-only. */
 .lcsd-col-sum {
   font-size: var(--pp-fs-12);

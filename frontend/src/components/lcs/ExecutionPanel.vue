@@ -72,14 +72,14 @@
         {{ __('No tasks yet — add some in the ERPNext Project view.') }}
       </div>
       <div v-else class="overflow-hidden rounded-lg border bg-white">
-        <table class="w-full text-sm">
-          <thead class="bg-gray-50">
+        <table class="pp-table">
+          <thead>
             <tr class="border-b text-left text-xs font-medium uppercase text-gray-500">
-              <th class="px-3 py-2">{{ __('Subject') }}</th>
-              <th class="px-3 py-2">{{ __('Status') }}</th>
-              <th class="px-3 py-2">{{ __('Priority') }}</th>
-              <th class="px-3 py-2">{{ __('Due') }}</th>
-              <th class="px-3 py-2 text-right">{{ __('Progress') }}</th>
+              <th >{{ __('Subject') }}</th>
+              <th >{{ __('Status') }}</th>
+              <th >{{ __('Priority') }}</th>
+              <th >{{ __('Due') }}</th>
+              <th class="text-right">{{ __('Progress') }}</th>
             </tr>
           </thead>
           <tbody>
@@ -89,15 +89,15 @@
               class="cursor-pointer border-b last:border-0 hover:bg-gray-50"
               @click="openTask(t.name)"
             >
-              <td class="px-3 py-2 font-medium text-gray-900">{{ t.subject }}</td>
-              <td class="px-3 py-2">
+              <td class="font-medium text-gray-900">{{ t.subject }}</td>
+              <td >
                 <span :class="taskStatusClass(t.status)" class="rounded-full px-2 py-0.5 text-[10px] font-semibold">
                   {{ t.status }}
                 </span>
               </td>
-              <td class="px-3 py-2 text-gray-600">{{ t.priority || '—' }}</td>
-              <td class="px-3 py-2 text-gray-600">{{ formatDate(t.exp_end_date) || '—' }}</td>
-              <td class="px-3 py-2 text-right tabular-nums text-gray-700">
+              <td class="text-gray-600">{{ t.priority || '—' }}</td>
+              <td class="text-gray-600">{{ formatDate(t.exp_end_date) || '—' }}</td>
+              <td class="text-right tabular-nums text-gray-700">
                 {{ t.progress != null ? Math.round(t.progress) + '%' : '—' }}
               </td>
             </tr>
@@ -116,23 +116,23 @@
         </span>
       </h3>
       <div class="overflow-hidden rounded-lg border bg-white">
-        <table class="w-full text-sm">
-          <thead class="bg-gray-50">
+        <table class="pp-table">
+          <thead>
             <tr class="border-b text-left text-xs font-medium uppercase text-gray-500">
-              <th class="px-3 py-2">{{ __('Employee') }}</th>
-              <th class="px-3 py-2">{{ __('Activity') }}</th>
-              <th class="px-3 py-2">{{ __('From') }}</th>
-              <th class="px-3 py-2 text-right">{{ __('Hours') }}</th>
-              <th class="px-3 py-2 text-right">{{ __('Cost') }}</th>
+              <th >{{ __('Employee') }}</th>
+              <th >{{ __('Activity') }}</th>
+              <th >{{ __('From') }}</th>
+              <th class="text-right">{{ __('Hours') }}</th>
+              <th class="text-right">{{ __('Cost') }}</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="l in data.time_logs" :key="l.name" class="border-b last:border-0 hover:bg-gray-50">
-              <td class="px-3 py-2 font-medium text-gray-900">{{ l.employee_name || l.employee || '—' }}</td>
-              <td class="px-3 py-2 text-gray-600">{{ l.activity_type || '—' }}</td>
-              <td class="px-3 py-2 text-xs text-gray-500">{{ formatDateTime(l.from_time) }}</td>
-              <td class="px-3 py-2 text-right tabular-nums">{{ Number(l.hours || 0).toFixed(2) }}</td>
-              <td class="px-3 py-2 text-right tabular-nums text-gray-700">
+              <td class="font-medium text-gray-900">{{ l.employee_name || l.employee || '—' }}</td>
+              <td class="text-gray-600">{{ l.activity_type || '—' }}</td>
+              <td class="text-xs text-gray-500">{{ formatDateTime(l.from_time) }}</td>
+              <td class="text-right tabular-nums">{{ Number(l.hours || 0).toFixed(2) }}</td>
+              <td class="text-right tabular-nums text-gray-700">
                 {{ formatCurrency(l.costing_amount) }}
               </td>
             </tr>

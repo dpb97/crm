@@ -6,9 +6,13 @@ import { ref } from 'vue'
 
 const KEY = 'crm_pilanda_mode'
 
+// Pilanda mode is the robust default: only a CURRENT `?mode=crm` in the URL
+// turns it off (persisted for that session). Any other load — plain /crm or
+// `?mode=pilanda` — clears a stale off-flag, so an accidentally persisted
+// CRM-only switch can never keep the shell hidden. (Dominik, 27.07.2026.)
 const _url = new URLSearchParams(window.location.search).get('mode')
-if (_url === 'pilanda') localStorage.removeItem(KEY)
-else if (_url === 'crm') localStorage.setItem(KEY, '0')
+if (_url === 'crm') localStorage.setItem(KEY, '0')
+else localStorage.removeItem(KEY)
 
 // Module-level singleton so every consumer shares one reactive flag.
 const pilandaMode = ref(localStorage.getItem(KEY) !== '0')

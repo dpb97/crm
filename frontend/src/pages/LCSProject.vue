@@ -74,11 +74,9 @@
         >
           <template #actions>
             <Tooltip :text="typeFullName(doc.project_type)">
-              <span class="crmw-pill shrink-0" :data-tone="typeTone(doc.project_type)">{{ doc.project_type }}</span>
+              <PpPill class="shrink-0" :tone="typeTone(doc.project_type)" :dot="false">{{ doc.project_type }}</PpPill>
             </Tooltip>
-            <span class="crmw-pill" :data-tone="statusTone(doc.status)">
-              <i class="crmw-dot" />{{ __(doc.status || 'Open') }}
-            </span>
+            <PpPill :tone="statusTone(doc.status)">{{ __(doc.status || 'Open') }}</PpPill>
             <button class="crmw-btn" @click="activeTab = T.ACT">{{ __('Activity') }}</button>
             <button class="crmw-btn crmw-btn--primary" @click="showNewOfferDialog = true">{{ __('Create Offer') }}</button>
           </template>
@@ -225,10 +223,10 @@
             <PpDataGrid v-else :columns="offerCols" :rows="offerRows" @row-click="openOffer">
               <template #cell-wert="{ row }">
                 <MoneyDual v-if="row._offer.value" class="items-end text-right" :amount="row._offer.value" :currency="row._offer.currency" :value-eur="row._offer.value_eur" :rate="row._offer.exchange_rate_to_eur" :frozen-at="row._offer.rate_frozen_at" size="sm" />
-                <span v-else class="text-gray-300">—</span>
+                <span v-else class="pp-cell-muted">—</span>
               </template>
               <template #cell-status="{ value }">
-                <span class="crmw-pill" :data-tone="offerTone(value)"><i class="crmw-dot" />{{ __(value) }}</span>
+                <PpPill :tone="offerTone(value)">{{ __(value) }}</PpPill>
               </template>
             </PpDataGrid>
             <p class="text-[11px] text-gray-400">{{ __('Open an offer to change its status, versions and outcome.') }}</p>
@@ -411,6 +409,7 @@ import PpTabs from '@/components/pp/PpTabs.vue'
 import PpTimeline from '@/components/pp/PpTimeline.vue'
 import PpComments from '@/components/pp/PpComments.vue'
 import PpDataGrid from '@/components/pp/PpDataGrid.vue'
+import PpPill from '@/components/pp/PpPill.vue'
 import PpDocList from '@/components/pp/PpDocList.vue'
 import PpEmptyState from '@/components/pp/PpEmptyState.vue'
 import { queueMutation, cachePut, listMutations, onQueueChange } from '@/utils/offlineDB'
@@ -983,16 +982,6 @@ function formatRelativeTime(dateStr) {
 .crmw-btn--primary:hover { filter: brightness(1.05); color: var(--pp-text-on-accent); }
 
 /* Token pills (type / status) */
-.crmw-pill { display: inline-flex; align-items: center; gap: 5px; font-size: 11px;
-  font-weight: var(--pp-weight-semibold); padding: 3px var(--pp-space-2);
-  border-radius: var(--pp-radius-full); white-space: nowrap; }
-.crmw-dot { width: 6px; height: 6px; border-radius: var(--pp-radius-full); flex-shrink: 0; background: currentColor; }
-.crmw-pill[data-tone="info"]    { background: color-mix(in oklab, var(--pp-state-info) 14%, transparent);    color: var(--pp-state-info); }
-.crmw-pill[data-tone="brand"]   { background: color-mix(in oklab, var(--pp-brand-primary) 14%, transparent); color: var(--pp-brand-primary); }
-.crmw-pill[data-tone="success"] { background: color-mix(in oklab, var(--pp-state-success) 16%, transparent); color: var(--pp-state-success); }
-.crmw-pill[data-tone="warning"] { background: color-mix(in oklab, var(--pp-state-warning) 16%, transparent); color: var(--pp-state-warning); }
-.crmw-pill[data-tone="danger"]  { background: color-mix(in oklab, var(--pp-state-danger) 16%, transparent);  color: var(--pp-state-danger); }
-.crmw-pill[data-tone="neutral"] { background: var(--pp-bg-sunken); color: var(--pp-text-secondary); }
 
 .crmw-stepper { background: var(--pp-bg-surface); border: 1px solid var(--pp-border-subtle);
   border-radius: var(--pp-radius-ui); box-shadow: var(--pp-shadow-xs); padding: var(--pp-space-4); }
@@ -1009,15 +998,6 @@ function formatRelativeTime(dateStr) {
 .crmw-sec-title:first-child { margin-top: 0; }
 .crmw-desc { margin: 0; font-size: var(--pp-fs-14); color: var(--pp-text-secondary); line-height: var(--pp-lh-relaxed, 1.6); white-space: pre-wrap; }
 
-.crmw-pill { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: var(--pp-weight-semibold);
-  padding: 2px var(--pp-space-2); border-radius: var(--pp-radius-full); white-space: nowrap; }
-.crmw-dot { width: 6px; height: 6px; border-radius: var(--pp-radius-full); flex-shrink: 0; background: currentColor; }
-.crmw-pill[data-tone="brand"]   { background: color-mix(in oklab, var(--pp-brand-primary) 14%, transparent); color: var(--pp-brand-primary); }
-.crmw-pill[data-tone="info"]    { background: color-mix(in oklab, var(--pp-state-info) 14%, transparent); color: var(--pp-state-info); }
-.crmw-pill[data-tone="success"] { background: color-mix(in oklab, var(--pp-state-success) 14%, transparent); color: var(--pp-state-success); }
-.crmw-pill[data-tone="warning"] { background: color-mix(in oklab, var(--pp-state-warning) 16%, transparent); color: var(--pp-state-warning); }
-.crmw-pill[data-tone="danger"]  { background: color-mix(in oklab, var(--pp-state-danger) 14%, transparent); color: var(--pp-state-danger); }
-.crmw-pill[data-tone="neutral"] { background: var(--pp-bg-sunken); color: var(--pp-text-secondary); }
 
 @media (max-width: 1080px) {
   .crmw-kpis { grid-template-columns: repeat(2, 1fr); }

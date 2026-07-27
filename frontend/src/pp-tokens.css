@@ -523,3 +523,69 @@ img.rounded-full,
     --pp-pls-seg-col: #6f9fd8;
     --pp-pls-gate-col: #2f6aa8;
 }
+
+/* =============================================================
+ * CRM list-page shell — the frame every table page shares.
+ * Master: LCSCallLogs.vue (Klickdummy „Anrufe"). Lives here so the
+ * pages do not each carry their own near-copy and drift apart.
+ * Use with PpFilterBar + PpTableCard.
+ * ============================================================= */
+.pp-listpage {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    background: var(--pp-bg-base);
+}
+.pp-listpage__inner {
+    flex: 1;
+    min-height: 0;
+    padding: var(--pp-space-6);
+    display: flex;
+    flex-direction: column;
+    gap: var(--pp-space-4);
+}
+
+/* Table cell text roles — the two-line "name over company" cell and the
+ * muted/secondary variants every CRM table needs. Master: LCSCallLogs.vue. */
+.pp-cell-strong { display: block; font-weight: var(--pp-weight-medium); color: var(--pp-text-primary); }
+.pp-cell-sub    { display: block; font-size: 11px; color: var(--pp-text-tertiary); }
+.pp-cell-soft   { color: var(--pp-text-secondary); }
+.pp-cell-muted  { color: var(--pp-text-tertiary); }
+
+/* =============================================================
+ * .pp-table — the PpDataGrid look for hand-rolled <table>s.
+ * Master: LCSCallLogs.vue / Klickdummy „Anrufe". Used where a table
+ * cannot become a PpDataGrid: server-side sorting + pagination
+ * (LCSProjects) or small dialog/panel tables. Same metrics, same
+ * tokens, same header — so every table in the CRM reads alike.
+ * ============================================================= */
+.pp-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: var(--pp-fs-14);
+    color: var(--pp-text-primary);
+}
+.pp-table thead th {
+    padding: var(--pp-space-2) var(--pp-space-4);
+    background: var(--pp-bg-sunken);
+    font-size: 11px;
+    font-weight: var(--pp-weight-bold);
+    letter-spacing: var(--pp-tracking-wide);
+    text-transform: uppercase;
+    color: var(--pp-text-tertiary);
+    border-bottom: 1px solid var(--pp-border-default);
+    text-align: left;
+    white-space: nowrap;
+}
+.pp-table tbody td {
+    padding: 11px var(--pp-space-4);
+    border-bottom: 1px solid var(--pp-border-subtle);
+    vertical-align: middle;
+}
+.pp-table tbody tr:hover td { background: var(--pp-bg-hover); }
+.pp-table tbody tr:last-child td { border-bottom: 0; }
+.pp-table .text-right { text-align: right; }
+.pp-table .text-center { text-align: center; }

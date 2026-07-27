@@ -162,6 +162,11 @@ const routes = [
     component: () => import('@/pages/LCSMarketAssignment.vue'),
   },
   {
+    path: '/sales-agents',
+    name: 'LCS Sales Agents',
+    component: () => import('@/pages/LCSSalesAgents.vue'),
+  },
+  {
     path: '/sales-meeting',
     name: 'LCS Sales Meeting',
     component: () => import('@/pages/LCSSalesMeeting.vue'),

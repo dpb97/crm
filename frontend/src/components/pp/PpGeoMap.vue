@@ -76,6 +76,7 @@ let didFit = false;
 let T = null;                 // aufgelöste Token-Farben
 let indivLayer = null;        // Einzel-Anlagen
 let clusterLayer = null;      // Cluster-Bläschen
+let pinLayer = null;          // Pins + Routen (nachbaubar, s. buildPins)
 let projBounds = [];          // alle Mast-Punkte (für „Auf Projekte zoomen")
 let allBounds = [];           // alles inkl. Pins/Routes (für initiales fitBounds)
 
@@ -148,6 +149,32 @@ function fitOnce() {
     map.fitBounds(allBounds, { padding: [40, 40], maxZoom: 11 });
     didFit = true;
   }
+}
+
+/* Pins + Routen auf-/neu bauen. Eigener Layer, weil die Daten asynchron
+   nachlaufen (createResource): beim Mount sind pins/routes noch leer, ein
+   einmaliges Zeichnen dort ließe die Karte dauerhaft leer. */
+function buildPins() {
+  if (pinLayer) { map.removeLayer(pinLayer); pinLayer = null; }
+  pinLayer = L.layerGroup();
+  props.pins.forEach((p) => {
+    if (!Array.isArray(p.ll) || p.ll.length < 2) return;
+    const col = p.c === "ok" ? T.success : (p.c === "warn" ? T.warning : T.brand);
+    const rows = [["Position", p.ll[0].toFixed(3) + ", " + p.ll[1].toFixed(3)]];
+    (p.rows || []).forEach((r) => rows.unshift(r));
+    L.circleMarker(p.ll, { radius: 7, color: col, weight: 2, fillColor: col, fillOpacity: 0.35 })
+      .bindTooltip(textTip(p.t))
+      .on("click", () => emit("inspect", { title: p.t, rows }))
+      .addTo(pinLayer);
+    allBounds.push(p.ll);
+  });
+  props.routes.forEach((r) => {
+    L.polyline(r.pts, { color: T.brand, weight: 3, opacity: 0.75, dashArray: r.dash === false ? null : "7 7" })
+      .bindTooltip(textTip(r.t))
+      .addTo(pinLayer);
+    r.pts.forEach((x) => allBounds.push(x));
+  });
+  pinLayer.addTo(map);
 }
 
 /* Einzel-Anlagen + Cluster (segment-gefiltert) auf-/neu bauen. */
@@ -276,19 +303,7 @@ onMounted(() => {
   L.control.scale({ imperial: false, metric: true, position: "bottomleft" }).addTo(map);
 
   allBounds = [];
-  props.pins.forEach((p) => {
-    const col = p.c === "ok" ? T.success : (p.c === "warn" ? T.warning : T.brand);
-    L.circleMarker(p.ll, { radius: 7, color: col, weight: 2, fillColor: col, fillOpacity: 0.35 })
-      .addTo(map).bindTooltip(textTip(p.t))
-      .on("click", () => emit("inspect", { title: p.t, rows: [["Position", p.ll[0].toFixed(3) + ", " + p.ll[1].toFixed(3)]] }));
-    allBounds.push(p.ll);
-  });
-  props.routes.forEach((r) => {
-    L.polyline(r.pts, { color: T.brand, weight: 3, opacity: 0.75, dashArray: r.dash === false ? null : "7 7" })
-      .addTo(map).bindTooltip(textTip(r.t));
-    r.pts.forEach((x) => allBounds.push(x));
-  });
-
+  buildPins();
   buildMasten();
   props.masten.forEach((pj) => { allBounds.push(pj.tal); allBounds.push(pj.berg); });
 
@@ -324,6 +339,18 @@ watch(() => props.segment, () => {
   if (!map) return;
   buildMasten();
   if (projBounds.length) map.fitBounds(projBounds, { padding: [40, 40], maxZoom: 12 });
+});
+
+// Nachlaufende Daten (createResource lädt asynchron): alles neu zeichnen und
+// erneut einpassen, sonst bleibt die Karte auf dem leeren Mount-Stand stehen.
+watch(() => [props.pins, props.routes, props.masten], () => {
+  if (!map) return;
+  allBounds = [];
+  buildPins();
+  buildMasten();
+  props.masten.forEach((pj) => { allBounds.push(pj.tal); allBounds.push(pj.berg); });
+  didFit = false;
+  fitOnce();
 });
 
 onBeforeUnmount(() => {

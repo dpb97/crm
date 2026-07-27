@@ -233,17 +233,16 @@
       </div>
 
       <!-- Data table — H2: Match real world (German currency, familiar table layout) -->
-      <table v-else class="w-full text-sm">
+      <table v-else class="pp-table">
         <thead class="lcsp-thead sticky top-0 z-10">
-          <tr class="border-b text-left text-xs font-medium uppercase tracking-wide">
+          <tr>
             <th
               v-for="col in visibleColumns"
               :key="col.key"
-              class="px-4 py-3 select-none"
+              class="select-none"
               :class="[
                 col.align === 'right' ? 'text-right' : '',
-                col.sortable ? 'cursor-pointer transition hover:bg-gray-100 hover:text-gray-900' : '',
-                col.key === 'project_number' ? 'px-5' : '',
+                col.sortable ? 'lcsp-th--sortable' : '',
               ]"
               :title="col.sortable ? __('Click to sort') : undefined"
               :aria-sort="col.sortable && sortField === col.key ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'"
@@ -258,7 +257,7 @@
           <tr
             v-for="(p, index) in projectList"
             :key="p.name"
-            class="lcsp-row group cursor-pointer border-b transition-colors"
+            class="lcsp-row group cursor-pointer transition-colors"
             :class="{ 'lcsp-row--sel': selectedIndex === index || selectedProject?.name === p.name }"
             @click="selectProject(p)"
             @dblclick="navigateToProject(p)"
@@ -268,52 +267,48 @@
           >
             <template v-for="col in visibleColumns" :key="col.key">
               <!-- Bespoke cells keep their original renderers -->
-              <td v-if="col.key === 'project_number'" class="px-5 py-3.5 font-mono text-xs text-gray-500">{{ p.project_number }}</td>
+              <td v-if="col.key === 'project_number'" class="lcsp-td-num">{{ p.project_number }}</td>
 
-              <td v-else-if="col.key === 'project_name'" class="px-4 py-3.5">
+              <td v-else-if="col.key === 'project_name'">
                 <div class="flex items-center gap-2">
-                  <span class="font-medium text-gray-900 group-hover:text-lcs-primary">{{ p.project_name }}</span>
+                  <span class="pp-cell-strong">{{ p.project_name }}</span>
                   <Tooltip v-if="p.notes" :text="notesPreview(p.notes)">
-                    <span class="flex items-center rounded-full bg-amber-100 px-1 py-0.5 text-amber-700" @click.stop>
+                    <span class="lcsp-noteflag" @click.stop>
                       <FeatherIcon name="edit-3" class="h-2.5 w-2.5" />
                     </span>
                   </Tooltip>
                 </div>
-                <div v-if="p.organization && !selectedColumns.includes('organization')" class="mt-0.5 text-xs text-gray-400">{{ p.organization }}</div>
+                <span v-if="p.organization && !selectedColumns.includes('organization')" class="pp-cell-sub">{{ p.organization }}</span>
               </td>
 
-              <td v-else-if="col.key === 'project_type'" class="px-4 py-3.5">
+              <td v-else-if="col.key === 'project_type'">
                 <Tooltip :text="typeFullName(p.project_type)">
-                  <span class="lcsp-pill" :data-tone="typeTone(p.project_type)">{{ p.project_type }}</span>
+                  <PpPill :tone="typeTone(p.project_type)" :dot="false">{{ p.project_type }}</PpPill>
                 </Tooltip>
               </td>
 
-              <td v-else-if="col.key === 'phase'" class="px-4 py-3.5">
-                <span class="lcsp-pill" :data-tone="phaseTone(p.phase)">
-                  <i class="lcsp-dot" />{{ __(p.phase) }}
-                </span>
+              <td v-else-if="col.key === 'phase'">
+                <PpPill :tone="phaseTone(p.phase)">{{ __(p.phase) }}</PpPill>
               </td>
 
-              <td v-else-if="col.key === 'status'" class="px-4 py-3.5">
-                <span class="lcsp-pill" :data-tone="statusTone(p.status)">
-                  <i class="lcsp-dot" />{{ __(p.status || 'Open') }}
-                </span>
+              <td v-else-if="col.key === 'status'">
+                <PpPill :tone="statusTone(p.status)">{{ __(p.status || 'Open') }}</PpPill>
               </td>
 
-              <td v-else-if="col.key === 'probability'" class="px-4 py-3.5 text-right">
-                <span v-if="p.probability" :class="probabilityClass(p.probability)" class="text-sm font-medium tabular-nums">
+              <td v-else-if="col.key === 'probability'" class="text-right">
+                <span v-if="p.probability" :class="probabilityClass(p.probability)" class="font-medium tabular-nums">
                   {{ Math.round(p.probability) }}%
                 </span>
-                <span v-else class="text-gray-300">—</span>
+                <span v-else class="pp-cell-muted">—</span>
               </td>
 
-              <td v-else-if="col.key === 'estimated_value'" class="px-4 py-3.5 text-right font-medium tabular-nums text-gray-900">
+              <td v-else-if="col.key === 'estimated_value'" class="lcsp-td-money text-right">
                 <span v-if="p.estimated_value">{{ formatCurrency(p.estimated_value) }}</span>
-                <span v-else class="text-gray-300">—</span>
+                <span v-else class="pp-cell-muted">—</span>
               </td>
 
               <!-- Generic cell: dates formatted, everything else as text -->
-              <td v-else class="px-4 py-3.5 text-gray-600" :class="col.align === 'right' ? 'text-right' : ''">
+              <td v-else class="pp-cell-soft" :class="col.align === 'right' ? 'text-right' : ''">
                 {{ col.date ? formatDateCell(p[col.key]) : (p[col.key] || '—') }}
               </td>
             </template>
@@ -470,6 +465,7 @@ import LayoutHeader from '@/components/LayoutHeader.vue'
 import PpPageHead from '@/components/pp/PpPageHead.vue'
 import PpStatTile from '@/components/pp/PpStatTile.vue'
 import PpEmptyState from '@/components/pp/PpEmptyState.vue'
+import PpPill from '@/components/pp/PpPill.vue'
 import PpKanban from '@/components/pp/PpKanban.vue'
 import IconFolder from '~icons/lucide/folder'
 import IconSearchX from '~icons/lucide/search-x'
@@ -882,23 +878,19 @@ async function createProject() {
   gap: var(--pp-space-3); padding: var(--pp-space-4) var(--pp-space-5) 0; }
 .lcsp-state { padding: var(--pp-space-10, 40px) var(--pp-space-5); }
 
-/* Table chrome */
-.lcsp-thead { background: var(--pp-bg-sunken); color: var(--pp-text-tertiary); }
-.lcsp-row { border-color: var(--pp-border-subtle); }
-.lcsp-row:hover { background: var(--pp-bg-hover); }
-.lcsp-row--sel { background: var(--pp-accent-soft); }
+/* Chrome comes from the global .pp-table utility. This list keeps its own
+   <table> (instead of PpDataGrid) because it sorts and paginates SERVER-side
+   via order_by — the grid would only sort the page it happens to hold. */
+.lcsp-th--sortable { cursor: pointer; }
+.lcsp-th--sortable:hover { color: var(--pp-text-secondary); background: var(--pp-bg-hover); }
+.lcsp-row--sel td { background: rgb(var(--pp-brand-primary-rgb) / 0.10); }
 
-/* Token pills (phase / status / type) */
-.lcsp-pill { display: inline-flex; align-items: center; gap: 5px; font-size: 11px;
-  font-weight: var(--pp-weight-semibold); padding: 2px var(--pp-space-2);
-  border-radius: var(--pp-radius-full); white-space: nowrap; }
-.lcsp-dot { width: 6px; height: 6px; border-radius: var(--pp-radius-full); flex-shrink: 0; background: currentColor; }
-.lcsp-pill[data-tone="info"]    { background: color-mix(in oklab, var(--pp-state-info) 14%, transparent);    color: var(--pp-state-info); }
-.lcsp-pill[data-tone="brand"]   { background: color-mix(in oklab, var(--pp-brand-primary) 14%, transparent); color: var(--pp-brand-primary); }
-.lcsp-pill[data-tone="success"] { background: color-mix(in oklab, var(--pp-state-success) 16%, transparent); color: var(--pp-state-success); }
-.lcsp-pill[data-tone="warning"] { background: color-mix(in oklab, var(--pp-state-warning) 16%, transparent); color: var(--pp-state-warning); }
-.lcsp-pill[data-tone="danger"]  { background: color-mix(in oklab, var(--pp-state-danger) 16%, transparent);  color: var(--pp-state-danger); }
-.lcsp-pill[data-tone="neutral"] { background: var(--pp-bg-sunken); color: var(--pp-text-secondary); }
+.lcsp-td-num { font-family: var(--pp-font-mono, monospace); font-size: var(--pp-fs-12); color: var(--pp-text-tertiary); }
+.lcsp-td-money { font-weight: var(--pp-weight-medium); color: var(--pp-text-primary); font-variant-numeric: tabular-nums; }
+.lcsp-noteflag { display: inline-flex; align-items: center; padding: 2px 4px;
+  border-radius: var(--pp-radius-full);
+  background: color-mix(in oklab, var(--pp-accent-amber) 18%, transparent);
+  color: var(--pp-accent-amber); }
 
 @media (max-width: 900px) {
   .lcsp-kpis { grid-template-columns: repeat(2, 1fr); }

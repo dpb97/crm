@@ -20,51 +20,33 @@
       </template>
     </LayoutHeader>
 
-    <div class="crmn">
-      <div class="crmn-inner">
+    <div class="pp-listpage">
+      <div class="pp-listpage__inner">
         <!-- Filterleiste: Art-Segmente + Suche -->
-        <section class="crmn-filter">
-          <span class="crmn-filter-cap">{{ __('Filter') }}</span>
-          <div class="crmn-seg" role="tablist">
-            <button
-              v-for="s in ARTS"
-              :key="s.key"
-              type="button"
-              class="crmn-seg-btn"
-              :class="{ 'is-active': art === s.key }"
-              :aria-pressed="art === s.key"
-              @click="art = s.key"
-            >{{ s.label }}</button>
-          </div>
-          <div class="crmn-search">
-            <input v-model="q" type="search" class="crmn-input" :placeholder="__('Search content, object or author') + ' …'" />
-          </div>
-        </section>
+        <PpFilterBar
+          v-model="art"
+          v-model:search="q"
+          :segments="ARTS"
+          :placeholder="__('Search content, object or author') + ' …'"
+        />
 
         <!-- Karte „Notizen" -->
-        <section class="crmn-card">
-          <header class="crmn-ch">
-            <span class="crmn-ch-title">{{ __('Notes') }}</span>
-            <span class="crmn-ch-note">
-              {{ filtered.length }} {{ __('of') }} {{ rows.length }} · {{ __('row = details in the inspector') }}
-            </span>
-          </header>
-
+        <PpTableCard :title="__('Notes')" :shown="filtered.length" :total="rows.length">
           <PpDataGrid v-if="filtered.length" :columns="columns" :rows="filtered" @row-click="openNote">
             <template #cell-title="{ row }">
-              <span class="crmn-title">{{ row.title }}</span>
-              <span v-if="row.object" class="crmn-object">{{ row.object }}</span>
+              <span class="pp-cell-strong">{{ row.title }}</span>
+              <span v-if="row.object" class="pp-cell-sub crmn-object">{{ row.object }}</span>
             </template>
             <template #cell-art="{ value }">
-              <span class="crmn-pill" :data-tone="value === 'voice' ? 'brand' : 'success'">
-                <i class="crmn-dot" />{{ value === 'voice' ? __('Voice note') : __('Text note') }}
-              </span>
+              <PpPill :tone="value === 'voice' ? 'brand' : 'success'">
+                {{ value === 'voice' ? __('Voice note') : __('Text note') }}
+              </PpPill>
             </template>
             <template #cell-author="{ value }">
-              <span :class="{ 'crmn-muted': !value }">{{ value || '—' }}</span>
+              <span :class="{ 'pp-cell-muted': !value }">{{ value || '—' }}</span>
             </template>
             <template #cell-time="{ value }">
-              <span class="crmn-muted">{{ relTime(value) }}</span>
+              <span class="pp-cell-muted">{{ relTime(value) }}</span>
             </template>
           </PpDataGrid>
 
@@ -74,7 +56,7 @@
             :title="board.loading ? __('Loading notes …') : __('No notes')"
             :hint="board.loading ? '' : (q || art !== 'all' ? __('No matches for the current filter/search.') : __('Notes and voice notes appear here as they are captured.'))"
           />
-        </section>
+        </PpTableCard>
       </div>
     </div>
   </div>
@@ -87,6 +69,9 @@ import { createResource, Breadcrumbs, Button } from 'frappe-ui'
 import LayoutHeader from '@/components/LayoutHeader.vue'
 import PpDataGrid from '@/components/pp/PpDataGrid.vue'
 import PpEmptyState from '@/components/pp/PpEmptyState.vue'
+import PpFilterBar from '@/components/pp/PpFilterBar.vue'
+import PpTableCard from '@/components/pp/PpTableCard.vue'
+import PpPill from '@/components/pp/PpPill.vue'
 import IconStickyNote from '~icons/lucide/sticky-note'
 import { usePilandaInspect } from '@/composables/usePilandaInspect'
 
@@ -161,46 +146,6 @@ function relTime(v) {
 </script>
 
 <style scoped>
-.crmn { flex: 1; min-height: 0; overflow: hidden; background: var(--pp-bg-base); display: flex; flex-direction: column; }
-.crmn-inner { flex: 1; min-height: 0; padding: var(--pp-space-6);
-  display: flex; flex-direction: column; gap: var(--pp-space-4); }
-
-/* Filterleiste */
-.crmn-filter { display: flex; align-items: center; gap: var(--pp-space-3); flex-wrap: wrap;
-  padding: var(--pp-space-3) var(--pp-space-4); background: var(--pp-bg-surface);
-  border: 1px solid var(--pp-border-subtle); border-radius: var(--pp-radius-ui); box-shadow: var(--pp-shadow-xs); }
-.crmn-filter-cap { font-size: 10px; font-weight: var(--pp-weight-bold); letter-spacing: var(--pp-tracking-wide, 0.04em);
-  text-transform: uppercase; color: var(--pp-text-tertiary); }
-.crmn-seg { display: inline-flex; gap: 2px; padding: 2px; border-radius: var(--pp-radius-full);
-  background: var(--pp-bg-base); border: 1px solid var(--pp-border-default); }
-.crmn-seg-btn { appearance: none; cursor: pointer; font-family: inherit; font-size: var(--pp-fs-13, 13px);
-  padding: 4px 14px; border: none; border-radius: var(--pp-radius-full); background: transparent; color: var(--pp-text-secondary); }
-.crmn-seg-btn:hover { color: var(--pp-brand-primary); }
-.crmn-seg-btn.is-active { background: var(--pp-brand-primary); color: var(--pp-text-on-accent); font-weight: var(--pp-weight-semibold); }
-.crmn-search { flex: 1; min-width: 200px; }
-.crmn-input { appearance: none; width: 100%; font-family: inherit; font-size: var(--pp-fs-13, 13px); color: var(--pp-text-primary);
-  padding: 7px var(--pp-space-3); border: 1px solid var(--pp-border-default); border-radius: var(--pp-radius-ui); background: var(--pp-bg-base); }
-.crmn-input:focus { outline: none; border-color: var(--pp-brand-primary); box-shadow: 0 0 0 3px rgb(var(--pp-brand-primary-rgb) / 0.15); }
-
-/* Karte */
-.crmn-card { flex: 1; min-height: 0; display: flex; flex-direction: column;
-  background: var(--pp-bg-surface); border: 1px solid var(--pp-border-subtle);
-  border-radius: var(--pp-radius-ui); box-shadow: var(--pp-shadow-xs); overflow: hidden; }
-.crmn-ch { display: flex; align-items: baseline; justify-content: space-between; gap: var(--pp-space-3);
-  padding: var(--pp-space-3) var(--pp-space-4); border-bottom: 1px solid var(--pp-border-subtle); }
-.crmn-ch-title { font-size: var(--pp-fs-14, 14px); font-weight: var(--pp-weight-bold); color: var(--pp-text-primary); }
-.crmn-ch-note { font-size: 11px; color: var(--pp-text-tertiary); }
-
-/* Zellen */
-.crmn-title { display: block; font-weight: var(--pp-weight-medium); color: var(--pp-text-primary); }
-.crmn-object { display: block; font-size: 11px; color: var(--pp-text-tertiary); font-variant-numeric: tabular-nums; }
-.crmn-muted { color: var(--pp-text-tertiary); }
-
-.crmn-pill { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: var(--pp-weight-semibold);
-  padding: 2px var(--pp-space-2); border-radius: var(--pp-radius-full); white-space: nowrap; }
-.crmn-dot { width: 6px; height: 6px; border-radius: var(--pp-radius-full); flex-shrink: 0; background: currentColor; }
-.crmn-pill[data-tone="brand"]   { background: color-mix(in oklab, var(--pp-brand-primary) 14%, transparent); color: var(--pp-brand-primary); }
-.crmn-pill[data-tone="success"] { background: color-mix(in oklab, var(--pp-state-success) 16%, transparent); color: var(--pp-state-success); }
-
-.crmn-card :deep(.pp-datagrid) { flex: 1; min-height: 0; }
+/* Object reference under the note title — tabular digits on top of pp-cell-sub. */
+.crmn-object { font-variant-numeric: tabular-nums; }
 </style>

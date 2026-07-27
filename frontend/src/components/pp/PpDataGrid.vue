@@ -715,8 +715,10 @@ function sortState(key) {
 .pp-datagrid__table.is-fixed { table-layout: fixed; }
 
 /* ---- Zellen-Basis --------------------------------------------- */
+/* Zeilenhoehe nach dem Klickdummy-Master (Anrufe): luftiger als das frühere
+   space-2, damit zweizeilige Zellen (Name über Firma) nicht kleben. */
 .pp-datagrid__cell {
-  padding: var(--pp-space-2) var(--pp-space-3);
+  padding: 11px var(--pp-space-4);
   border-bottom: 1px solid var(--pp-border-subtle);
   text-align: left; vertical-align: middle;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
@@ -730,6 +732,7 @@ function sortState(key) {
 .pp-datagrid__head th {
   position: sticky; top: 0; z-index: 2;
   background: var(--pp-bg-sunken);
+  padding: var(--pp-space-2) var(--pp-space-4);
   font-size: 11px; font-weight: var(--pp-weight-bold);
   letter-spacing: var(--pp-tracking-wide); text-transform: uppercase;
   color: var(--pp-text-tertiary);
@@ -748,8 +751,11 @@ function sortState(key) {
 .pp-datagrid__th-label { overflow: hidden; text-overflow: ellipsis; }
 .pp-datagrid__sort { display: inline-flex; flex: 0 0 auto; color: var(--pp-brand-primary); }
 .pp-datagrid__sort :deep(svg) { width: 13px; height: 13px; display: block; }
-.pp-datagrid__sort--idle { color: var(--pp-text-disabled); }
-.pp-datagrid__cell--th:hover .pp-datagrid__sort--idle { color: var(--pp-text-tertiary); }
+/* Ruhe-Chevron erst beim Hover zeigen — der Master-Kopf (Klickdummy „Anrufe")
+   traegt reine Beschriftungen; ein Pfeil in JEDER Spalte macht ihn unruhig.
+   Die aktive Sortierspalte behaelt ihren Pfeil sichtbar. */
+.pp-datagrid__sort--idle { color: var(--pp-text-disabled); opacity: 0; }
+.pp-datagrid__cell--th:hover .pp-datagrid__sort--idle { color: var(--pp-text-tertiary); opacity: 1; }
 
 /* Uebergruppen-Kopf */
 .pp-datagrid__th-group {
@@ -766,15 +772,12 @@ function sortState(key) {
 }
 /* Kopf-Pin liegt ueber Zeilen-Pin (sticky in beide Richtungen) */
 .pp-datagrid__head .pp-datagrid__pin { z-index: 4; background: var(--pp-bg-sunken); }
-/* Schatten-/Trennkante rechts der fixierten Spalte */
-.pp-datagrid__pin::after {
-  content: ""; position: absolute; top: 0; bottom: -1px; right: 0;
-  width: 1px; background: var(--pp-border-default);
-}
+/* Keine Trennkante an der fixierten Spalte: im Master (Klickdummy „Anrufe")
+   laeuft die Zeile durch. Die Kante gehoert zu horizontalem Scroll, nicht zum
+   Ruhezustand — und stand hier permanent mitten in der Tabelle. */
 
-/* ---- Datenzeilen: Zebra + Hover ------------------------------- */
-.pp-datagrid__row:nth-child(even of .pp-datagrid__row) td { background: var(--pp-bg-sunken); }
-.pp-datagrid__row:nth-child(even of .pp-datagrid__row) td.pp-datagrid__pin { background: var(--pp-bg-sunken); }
+/* ---- Datenzeilen: nur Trennlinie + Hover ---------------------- */
+/* Kein Zebra — der Master trennt die Zeilen ausschliesslich per Linie. */
 .pp-datagrid__row { cursor: pointer; }
 .pp-datagrid__row:hover td { background: var(--pp-bg-hover); }
 .pp-datagrid__row.is-selected td { background: rgb(var(--pp-brand-primary-rgb) / 0.10); }

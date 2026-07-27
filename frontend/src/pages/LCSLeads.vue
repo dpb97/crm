@@ -29,17 +29,19 @@
       </template>
     </LayoutHeader>
 
-    <div class="crml">
-      <div class="crml-inner">
+    <div class="pp-listpage">
+      <div class="pp-listpage__inner">
         <PpPageHead
           :title="__('Leads')"
-          :subtitle="`${filtered.length} ${__('of')} ${leads.length} ${__('Leads')} · ${__('click a row to open the profile')}`"
+          :subtitle="__('click a row to open the profile')"
+        />
+
+        <!-- Filterleiste: Suche + Listen-/Board-Umschalter (Referenz: Calls) -->
+        <PpFilterBar
+          v-model:search="q"
+          :placeholder="__('Search / filter by status') + ' …'"
         >
           <template #actions>
-            <div class="crml-search-wrap">
-              <IconSearch class="crml-search-ico" />
-              <input v-model="q" type="search" class="crml-search" :placeholder="__('Search / filter by status') + ' …'" />
-            </div>
             <div class="crml-viewseg" role="tablist">
               <button
                 v-for="v in VIEWS"
@@ -55,7 +57,7 @@
               </button>
             </div>
           </template>
-        </PpPageHead>
+        </PpFilterBar>
 
         <!-- KPI-Karten = klickbare Segment-Filter (Master Regel 9). -->
         <section class="crml-kpis">
@@ -72,22 +74,23 @@
         </section>
 
         <!-- Tabelle ODER ehrlicher Leerzustand -->
-        <section v-if="viewMode === 'list'" class="crml-card">
-          <template v-if="rows.length">
-          <div class="crml-scroll">
-          <PpDataGrid :columns="columns" :rows="pagedRows" @row-click="openLead">
+        <PpTableCard
+          v-if="viewMode === 'list'"
+          :title="__('Leads')"
+          :shown="filtered.length"
+          :total="leads.length"
+        >
+          <PpDataGrid v-if="rows.length" :columns="columns" :rows="pagedRows" @row-click="openLead">
             <template #cell-name="{ row }">
-              <span class="crml-name">{{ row.name }}</span>
-              <span class="crml-id">{{ row.id }}</span>
+              <span class="pp-cell-strong">{{ row.name }}</span>
+              <span class="pp-cell-sub">{{ row.id }}</span>
             </template>
             <template #cell-organization="{ value }">
-              <span :class="{ 'crml-muted': !value }">{{ value || '—' }}</span>
+              <span :class="{ 'pp-cell-muted': !value }">{{ value || '—' }}</span>
             </template>
             <template #cell-status="{ row }">
-              <span v-if="row.status" class="crml-pill" :data-tone="statusTone(row.status)">
-                <i class="crml-dot"></i>{{ __(row.status) }}
-              </span>
-              <span v-else class="crml-muted">—</span>
+              <PpPill v-if="row.status" :tone="statusTone(row.status)">{{ __(row.status) }}</PpPill>
+              <span v-else class="pp-cell-muted">—</span>
             </template>
             <template #cell-email="{ value }">
               <span class="crml-contact-line">
@@ -100,17 +103,9 @@
               </span>
             </template>
             <template #cell-modified="{ value }">
-              <span class="crml-muted">{{ fmtDate(value) }}</span>
+              <span class="pp-cell-muted">{{ fmtDate(value) }}</span>
             </template>
           </PpDataGrid>
-          </div>
-          <LcsPagination
-            v-if="rowTotal > 25"
-            :from="pgFrom" :to="pgTo" :total="rowTotal"
-            :page="page" :page-count="pageCount" :page-size="pageSize"
-            @prev="pgPrev" @next="pgNext" @page-size="setPageSize"
-          />
-          </template>
 
           <!-- Leerzustand: leer nach Filter vs. gar keine Daten -->
           <PpEmptyState
@@ -129,7 +124,15 @@
             :title="loading ? __('Loading …') : __('No leads yet')"
             :hint="loading ? '' : __('Leads created in the CRM will appear here.')"
           />
-        </section>
+
+          <template v-if="rows.length && rowTotal > 25" #footer>
+            <LcsPagination
+              :from="pgFrom" :to="pgTo" :total="rowTotal"
+              :page="page" :page-count="pageCount" :page-size="pageSize"
+              @prev="pgPrev" @next="pgNext" @page-size="setPageSize"
+            />
+          </template>
+        </PpTableCard>
 
         <!-- Kanban nach Status (gleicher Abstiegs-Vertrag: Klick → Inspektor,
              Doppelklick → öffnen; Drag verschiebt den Status). -->
@@ -159,9 +162,7 @@
       <div v-if="sel" class="crml-detail">
         <div class="crml-detail-head">
           <h3 class="crml-detail-name">{{ displayName(sel) }}</h3>
-          <span v-if="sel.status" class="crml-pill" :data-tone="statusTone(sel.status)">
-            <i class="crml-dot"></i>{{ __(sel.status) }}
-          </span>
+          <PpPill v-if="sel.status" :tone="statusTone(sel.status)">{{ __(sel.status) }}</PpPill>
         </div>
 
         <dl class="crml-meta">
@@ -179,7 +180,7 @@
           <a v-if="sel.mobile_no" class="crml-contact-line crml-contact-line--muted" :href="`tel:${sel.mobile_no}`">
             <IconPhone class="crml-contact-ico" />{{ sel.mobile_no }}
           </a>
-          <p v-if="!sel.email && !sel.mobile_no" class="crml-muted">—</p>
+          <p v-if="!sel.email && !sel.mobile_no" class="pp-cell-muted">—</p>
         </section>
       </div>
 
@@ -208,13 +209,15 @@ import PpDataGrid from '@/components/pp/PpDataGrid.vue'
 import PpKanban from '@/components/pp/PpKanban.vue'
 import PpEmptyState from '@/components/pp/PpEmptyState.vue'
 import PpDrawer from '@/components/pp/PpDrawer.vue'
+import PpFilterBar from '@/components/pp/PpFilterBar.vue'
+import PpTableCard from '@/components/pp/PpTableCard.vue'
+import PpPill from '@/components/pp/PpPill.vue'
 import LeadInspector from '@/components/lcs/LeadInspector.vue'
 import LcsPagination from '@/components/lcs/LcsPagination.vue'
 import IconSearchX from '~icons/lucide/search-x'
 import IconInbox from '~icons/lucide/inbox'
 import IconMail from '~icons/lucide/mail'
 import IconPhone from '~icons/lucide/phone'
-import IconSearch from '~icons/lucide/search'
 import IconList from '~icons/lucide/list'
 import IconColumns from '~icons/lucide/columns-3'
 import { usePilandaMode } from '@/composables/usePilandaMode'
@@ -444,12 +447,6 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-/* Vollbreiten-Canvas — KEIN zentrierendes max-width (Shell-2.0-Vorgabe). */
-/* Fixed viewport-height layout: table scrolls in its own region (see LCSContacts). */
-.crml { flex: 1; min-height: 0; overflow: hidden; background: var(--pp-bg-base); display: flex; flex-direction: column; }
-.crml-inner { flex: 1; min-height: 0; padding: var(--pp-space-6) var(--pp-space-6) var(--pp-space-6);
-  display: flex; flex-direction: column; gap: var(--pp-space-5); }
-.crml-scroll { flex: 1; min-height: 0; overflow: auto; }
 
 /* Buttons */
 .crml-btn { appearance: none; cursor: pointer; font-family: inherit; font-size: var(--pp-fs-13, 13px);
@@ -471,15 +468,6 @@ onBeforeUnmount(() => {
   box-shadow: 0 0 0 2px color-mix(in oklab, var(--pp-brand-primary) 30%, transparent); }
 .crml-kpi:focus-visible > :deep(.pp-kpi) { box-shadow: var(--pp-shadow-focus-ring, 0 0 0 3px rgb(var(--pp-brand-primary-rgb) / 0.3)); }
 
-/* Kompakte Kopf-Suche (statt Filterzeile) */
-.crml-search-wrap { position: relative; display: flex; align-items: center; }
-.crml-search-ico { position: absolute; left: 9px; width: 15px; height: 15px; color: var(--pp-text-tertiary); pointer-events: none; }
-.crml-search { appearance: none; font-family: inherit; font-size: var(--pp-fs-13, 13px); color: var(--pp-text-primary);
-  padding: 7px 11px 7px 30px; border: 1px solid var(--pp-border-default); border-radius: var(--pp-radius-ui);
-  background: var(--pp-bg-surface); min-width: 260px; }
-.crml-search:focus { outline: none; border-color: var(--pp-brand-primary);
-  box-shadow: 0 0 0 3px rgb(var(--pp-brand-primary-rgb) / 0.15); }
-
 /* Ansicht-Umschalter Liste ⇄ Kanban (Befund 18) */
 .crml-viewseg { display: inline-flex; gap: 2px; padding: 2px; border-radius: var(--pp-radius-ui);
   background: var(--pp-bg-base); border: 1px solid var(--pp-border-default); }
@@ -494,25 +482,8 @@ onBeforeUnmount(() => {
 /* Kanban-Board (eigener Scroll-Bereich im fixierten Viewport-Layout) */
 .crml-board { flex: 1; min-height: 0; overflow: auto; }
 
-/* Karte um die Tabelle */
-.crml-card { background: var(--pp-bg-surface); border: 1px solid var(--pp-border-subtle);
-  border-radius: var(--pp-radius-ui); box-shadow: var(--pp-shadow-xs); padding: var(--pp-space-2);
-  flex: 1; min-height: 0; display: flex; flex-direction: column; }
 
-/* Zell-Renderer */
-.crml-name { display: block; font-weight: var(--pp-weight-medium); color: var(--pp-text-primary); }
-.crml-id { display: block; font-size: 11px; color: var(--pp-text-tertiary); font-variant-numeric: tabular-nums; }
-.crml-muted { color: var(--pp-text-tertiary); }
 
-.crml-pill { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: var(--pp-weight-semibold);
-  padding: 2px var(--pp-space-2); border-radius: var(--pp-radius-full); white-space: nowrap; }
-.crml-dot { width: 6px; height: 6px; border-radius: var(--pp-radius-full); flex-shrink: 0; background: currentColor; }
-.crml-pill[data-tone="info"]    { background: color-mix(in oklab, var(--pp-state-info) 14%, transparent);    color: var(--pp-state-info); }
-.crml-pill[data-tone="brand"]   { background: color-mix(in oklab, var(--pp-brand-primary) 14%, transparent); color: var(--pp-brand-primary); }
-.crml-pill[data-tone="success"] { background: color-mix(in oklab, var(--pp-state-success) 16%, transparent); color: var(--pp-state-success); }
-.crml-pill[data-tone="warning"] { background: color-mix(in oklab, var(--pp-state-warning) 16%, transparent); color: var(--pp-state-warning); }
-.crml-pill[data-tone="danger"]  { background: color-mix(in oklab, var(--pp-state-danger) 16%, transparent);  color: var(--pp-state-danger); }
-.crml-pill[data-tone="neutral"] { background: var(--pp-bg-sunken); color: var(--pp-text-secondary); }
 
 .crml-contact-line { display: inline-flex; align-items: center; gap: 5px; font-size: var(--pp-fs-12);
   color: var(--pp-text-secondary); text-decoration: none; font-variant-numeric: tabular-nums;
