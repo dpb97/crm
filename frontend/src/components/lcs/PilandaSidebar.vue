@@ -263,11 +263,31 @@ function onNavigate(payload) {
     window.open(target, '_blank', 'noopener') // externe Ziele (Sharefile, Vault, Wivio …)
     return
   }
+  // Phased rollout: some Vertrieb nav items point to Desk apps that are not
+  // installed yet (e.g. Produktportfolio → /app/product-portfolio, app
+  // pilanda_productportfolio). Show an in-SPA "Coming soon" instead of handing
+  // off to a broken Desk route. Extend COMING_SOON as features go live.
+  const cs = comingSoonFor(target)
+  if (cs) {
+    router.push({ name: 'Coming Soon', query: { feature: cs.title, desc: cs.desc } })
+    return
+  }
+
   if (target.startsWith('/crm')) {
     router.push(target.replace(/^\/crm/, '') || '/') // stay in the SPA
   } else {
     window.location.href = target // hand off to the Pilanda Desk
   }
+}
+
+// Desk targets that are not live yet → in-SPA "Coming soon". Keyed by the last
+// path segment of the /app|/desk target; title/desc feed the placeholder page.
+const COMING_SOON = {
+  'product-portfolio': { title: 'Produktportfolio', desc: 'Produktübersicht & Lebenszyklus (PLM)' },
+}
+function comingSoonFor(target) {
+  const m = /\/(?:app|desk)\/([a-z0-9-]+)/i.exec(target || '')
+  return m && COMING_SOON[m[1]] ? COMING_SOON[m[1]] : null
 }
 
 // ---------------------------------------------------------------

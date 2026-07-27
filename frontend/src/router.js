@@ -139,6 +139,13 @@ const routes = [
     component: () => import('@/pages/LCSProjectsMap.vue'),
   },
   {
+    // Phased rollout placeholder for features that are not live yet
+    // (e.g. Produktportfolio → /app/product-portfolio). Fed a title/desc via query.
+    path: '/coming-soon',
+    name: 'Coming Soon',
+    component: () => import('@/pages/LCSComingSoon.vue'),
+  },
+  {
     path: '/projects/:id',
     name: 'LCS Project',
     component: () => import('@/pages/LCSProject.vue'),
