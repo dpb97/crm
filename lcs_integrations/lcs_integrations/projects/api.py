@@ -1292,3 +1292,58 @@ def get_call_logs(limit=200):
             "ref_name": c.reference_docname or "",
         })
     return {"rows": rows, "total": len(rows)}
+
+
+# --------------------------------------------------------------------------- #
+#  Notes (Notizen page — klickdummy design; text notes + voice notes)         #
+# --------------------------------------------------------------------------- #
+
+def _user_name(user):
+    return frappe.db.get_value("User", user, "full_name") or user if user else ""
+
+
+@frappe.whitelist()
+def get_notes(limit=200):
+    """Notes board for the Notizen page: a union of FCRM Note (Textnotiz) and
+    LCS Audio Transcription Job (Sprachnotiz) so the Art column is real. One row
+    per note with title, linked object, author and creation time."""
+    lim = int(limit or 200)
+    rows = []
+
+    for n in frappe.get_all(
+        "FCRM Note",
+        fields=["name", "title", "content", "owner", "creation",
+                "reference_doctype", "reference_docname"],
+        order_by="creation desc", limit_page_length=lim,
+    ):
+        obj = ""
+        if n.reference_docname:
+            if n.reference_doctype == "LCS Project":
+                obj = frappe.db.get_value("LCS Project", n.reference_docname, "project_number") or n.reference_docname
+            else:
+                obj = n.reference_docname
+        rows.append({
+            "id": n.name, "doctype": "FCRM Note", "art": "text",
+            "title": n.title or (frappe.utils.strip_html(n.content or "")[:80]) or _("Untitled"),
+            "object": obj, "author": _user_name(n.owner), "time": str(n.creation),
+            "ref_doctype": n.reference_doctype or "", "ref_name": n.reference_docname or "",
+        })
+
+    for j in frappe.get_all(
+        "LCS Audio Transcription Job",
+        fields=["name", "comment", "new_transcript", "original_transcript",
+                "owner", "creation", "project"],
+        order_by="creation desc", limit_page_length=lim,
+    ):
+        transcript = j.new_transcript or j.original_transcript or ""
+        title = j.comment or (transcript[:80] if transcript else _("Voice note"))
+        obj = frappe.db.get_value("LCS Project", j.project, "project_number") or j.project if j.project else ""
+        rows.append({
+            "id": j.name, "doctype": "LCS Audio Transcription Job", "art": "voice",
+            "title": title, "object": obj or "", "author": _user_name(j.owner),
+            "time": str(j.creation),
+            "ref_doctype": "LCS Project" if j.project else "", "ref_name": j.project or "",
+        })
+
+    rows.sort(key=lambda r: r["time"], reverse=True)
+    return {"rows": rows[:lim], "total": len(rows)}

@@ -186,6 +186,12 @@ const routes = [
     alias: '/notes',
     path: '/notes/view/:viewType?',
     name: 'Notes',
+    component: () => import('@/pages/LCSNotes.vue'),
+  },
+  {
+    alias: '/notes-upstream',
+    path: '/notes-upstream/view/:viewType?',
+    name: 'Notes Upstream',
     component: () => import('@/pages/Notes.vue'),
   },
   {
