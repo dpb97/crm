@@ -146,6 +146,17 @@ const routes = [
     component: () => import('@/pages/LCSComingSoon.vue'),
   },
   {
+    path: '/chances',
+    name: 'LCS Chances',
+    component: () => import('@/pages/LCSChances.vue'),
+  },
+  {
+    path: '/chances/:id',
+    name: 'LCS Chance',
+    component: () => import('@/pages/LCSChance.vue'),
+    props: true,
+  },
+  {
     path: '/projects/:id',
     name: 'LCS Project',
     component: () => import('@/pages/LCSProject.vue'),

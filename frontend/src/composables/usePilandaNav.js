@@ -48,7 +48,7 @@ export function usePilandaNav() {
       if (_vt) {
         _vt.g = [{ sec: '', items: [
           { n: 'Pilot',               t: '/app/pilot-workbench',   icon: 'radar',         k: 'cust', x: true, d: 'Ausschreibungs-Scout — liefert Chancen in den Vertriebsfluss' },
-          { n: 'Chancen',             t: '#',                      icon: 'activity',      k: 'cust',         d: 'Alle Chancen mit Quelle als Info — daraus entstehen Leads' },
+          { n: 'Chancen',             t: '/crm/chances',           icon: 'activity',      k: 'cust', x: true, d: 'Alle Chancen mit Quelle als Info — daraus entstehen Leads' },
           { n: 'Leads',               t: '/crm/leads',             icon: 'user-plus',     k: 'cust', x: true, d: 'Phase Lead' },
           { n: 'Calls',               t: '/crm/call-logs',         k: 'cust', x: true, sub: 1, d: 'Anruf-Protokolle über alle Leads' },
           { n: 'Notizen',             t: '/crm/notes',             k: 'cust', x: true, sub: 1, d: 'Notizen über Leads, Deals und Projekte' },
