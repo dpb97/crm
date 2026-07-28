@@ -685,3 +685,145 @@ Title,Titel
 Total,Gesamt
 Won,Gewonnen
 Year,Jahr
+Sales Order,Auftrag
+Sales Projects,Vertriebsprojekte
+Sales project,Vertriebsprojekt
+Sales projects,Vertriebsprojekte
+Satellite,Satellit
+Save,Speichern
+Save Preferences,Einstellungen speichern
+Save failed,Speichern fehlgeschlagen
+Saved,Gespeichert
+Saved notes,Gespeicherte Notizen
+Saved offline,Offline gespeichert
+Saving…,Speichere…
+Segment,Segment
+Segments,Segmente
+Selected,Ausgewählt
+Send,Senden
+Sending...,Sende...
+Service,Service
+Show all projects,Alle Projekte zeigen
+Show only projects assigned to me,Nur mir zugewiesene Projekte zeigen
+Start from Template,Aus Vorlage starten
+Status Flow,Status-Fluss
+Status updated,Status aktualisiert
+Stop recording,Aufnahme stoppen
+Strong,Stark
+Strong match,Starke Übereinstimmung
+Subject,Betreff
+Suggested projects,Vorgeschlagene Projekte
+Sync now,Jetzt synchronisieren
+Syncing,Synchronisiere
+Syncing...,Synchronisiere...
+System,System
+Table,Tabelle
+Task,Aufgabe
+Tasks & Time,Aufgaben & Zeit
+Teams,Teams
+Teams Channel,Teams-Kanal
+Template applied,Vorlage angewendet
+Test,Test
+Theme,Design
+Time Logs,Zeiterfassung
+Time range,Zeitraum
+Total contacts,Kontakte gesamt
+Total leads,Leads gesamt
+Total organizations,Firmen gesamt
+Try again,Erneut versuchen
+Try adjusting your filters.,Passe deine Filter an.
+Type Distribution,Typverteilung
+Type a message…,Nachricht eingeben…
+Unfollow,Nicht mehr folgen
+Unknown,Unbekannt
+Unlink,Verknüpfung lösen
+Unlinked,Verknüpfung gelöst
+Updated,Aktualisiert
+Updated this week,Diese Woche aktualisiert
+Valid Until,Gültig bis
+Value (EUR),Wert (EUR)
+Value (€),Wert (€)
+Value Progression,Wertverlauf
+Version,Version
+Visible columns,Sichtbare Spalten
+Voice input,Spracheingabe
+Watch,Beobachten
+Weak,Schwach
+Website,Website
+Weighted Forecast,Gewichtete Prognose
+Weighted Value,Gewichteter Wert
+Weighted value,Gewichteter Wert
+Win Probability,Gewinnwahrscheinlichkeit
+Win Probability (%),Gewinnwahrscheinlichkeit (%)
+Win probability,Gewinnwahrscheinlichkeit
+With company,Mit Firma
+With email,Mit E-Mail
+With territory,Mit Territorium
+With website,Mit Website
+Withdraw,Zurückziehen
+Won deals,Gewonnene Chancen
+Won Notes,Gewinn-Notizen
+Workspace,Arbeitsbereich
+active,aktiv
+active builds,aktive Bauten
+ago,her
+all countries,alle Länder
+all project types,alle Projekttypen
+assigned countries,zugewiesene Länder
+assigned market,zugewiesener Markt
+awaiting first contact,wartet auf Erstkontakt
+cached,zwischengespeichert
+closed orders,abgeschlossene Aufträge
+closed out,abgeschlossen
+countries,Länder
+day,Tag
+error,Fehler
+errors,Fehler
+estimated pipeline,geschätzte Pipeline
+failed,fehlgeschlagen
+in the CRM,im CRM
+in the funnel,im Trichter
+in the pipeline,in der Pipeline
+items,Einträge
+markets covered,abgedeckte Märkte
+new,neu
+new LCS Projects,neue LCS-Projekte
+none active,keine aktiv
+note,Notiz
+notes,Notizen
+open,offen
+open defects,offene Mängel
+open pipeline,offene Pipeline
+open points,offene Punkte
+opportunities,Chancen
+order booked,Auftrag gebucht
+pending,ausstehend
+periods,Perioden
+pins,Pins
+probability,Wahrscheinlichkeit
+projects,Projekte
+projects created,angelegte Projekte
+ready for offer stage,bereit für die Angebotsphase
+responsibility matrix,Verantwortungsmatrix
+routes,Trassen
+team members,Teammitglieder
+territories located,verortete Territorien
+today,heute
+total,gesamt
+weighted,gewichtet
+weighted pipeline,gewichtete Pipeline
+with responsibility,mit Verantwortung
+yesterday,gestern
+across all projects,über alle Projekte
+across open phases,über offene Phasen
+"across projects, leads and opportunities","über Projekte, Leads und Chancen"
+estimated order value,geschätzter Auftragswert
+markets covered,abgedeckte Märkte
+Total,Gesamt
+Save,Speichern
+"Σ value × P(win)",Σ Wert × P(Gewinn)
+value × probability,Wert × Wahrscheinlichkeit
+{0} d ago,vor {0} T
+{0} days ago,vor {0} Tagen
+{0} h ago,vor {0} Std
+{0} min ago,vor {0} Min
