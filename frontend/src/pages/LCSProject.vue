@@ -114,6 +114,18 @@
           <div class="crmw-content">
           <!-- Übersicht -->
           <div v-if="activeTab === T.OV" class="crmw-tabpane space-y-5">
+            <!-- Chancen-Matrix direkt in der Übersicht. -->
+            <section v-if="canShow('show_opportunity_matrix')" class="rounded-xl border bg-white p-4">
+              <h3 class="mb-3 text-sm font-semibold text-gray-900">{{ __('Opportunity Matrix') }}</h3>
+              <OpportunityMatrix
+                :technical-fit="matrixValues.technical_fit"
+                :commercial-fit="matrixValues.commercial_fit"
+                :relationship="matrixValues.relationship_strength"
+                :competition="matrixValues.competition_level"
+                :strategic-importance="matrixValues.strategic_importance"
+                @update="onMatrixUpdate"
+              />
+            </section>
             <!-- Notizen — angepinnt, immer sichtbar -->
             <section class="rounded-xl border border-amber-200 bg-amber-50/50 p-4">
               <div class="mb-2 flex items-center justify-between">
@@ -296,14 +308,20 @@
 
           <!-- Chancen-Matrix -->
           <div v-else-if="activeTab === T.MTX" class="crmw-tabpane">
-            <OpportunityMatrix
-              :technical-fit="matrixValues.technical_fit"
-              :commercial-fit="matrixValues.commercial_fit"
-              :relationship="matrixValues.relationship_strength"
-              :competition="matrixValues.competition_level"
-              :strategic-importance="matrixValues.strategic_importance"
-              @update="onMatrixUpdate"
-            />
+            <section class="flex items-center justify-between rounded-xl border bg-white p-5">
+              <div>
+                <h3 class="text-sm font-semibold text-gray-900">{{ __('Engineering') }}</h3>
+                <p class="mt-0.5 text-xs text-gray-500">{{ __('Mark the engineering step as done for now.') }}</p>
+              </div>
+              <button
+                class="crmw-btn"
+                :class="projektierungDone ? 'crmw-btn--done' : 'crmw-btn--primary'"
+                @click="toggleProjektierungDone"
+              >
+                <FeatherIcon :name="projektierungDone ? 'check-circle' : 'circle'" class="h-4 w-4" />
+                {{ projektierungDone ? __('Done') : __('Mark as done') }}
+              </button>
+            </section>
           </div>
           </div>
         </section>
@@ -512,7 +530,7 @@ const SECTIONS = computed(() => {
     { label: __('Contacts'), key: T.CON, icon: 'users' },
     { label: __('Documents'), key: T.DOC, icon: 'folder' },
   ]
-  return all.filter((s) => s.key !== T.MTX || canShow('show_opportunity_matrix'))
+  return all
 })
 
 // ---- Phasen-Stepper (echte LCS-Phasen → Oberstufen) ----
@@ -871,7 +889,18 @@ const matrixFilled = computed(() =>
   Object.values(matrixValues.value).some((v) => (Number(v) || 0) > 0),
 )
 function goToMatrixTab() {
-  if (canShow('show_opportunity_matrix')) activeTab.value = T.MTX
+  // Matrix now lives on the Overview tab.
+  activeTab.value = T.OV
+}
+
+// Projektierung step — lightweight "done" marker (persisted per browser for now).
+const projektierungDone = ref(false)
+watch(projectId, (id) => {
+  projektierungDone.value = id ? localStorage.getItem(`lcs-proj-${id}-eng-done`) === '1' : false
+}, { immediate: true })
+function toggleProjektierungDone() {
+  projektierungDone.value = !projektierungDone.value
+  if (projectId.value) localStorage.setItem(`lcs-proj-${projectId.value}-eng-done`, projektierungDone.value ? '1' : '0')
 }
 
 // Aktivitäten / Kommentare (echtes Frappe-Comment-System)
@@ -1027,6 +1056,8 @@ function formatRelativeTime(dateStr) {
 .crmw-btn:hover { background: var(--pp-bg-hover); border-color: var(--pp-brand-primary); color: var(--pp-brand-primary); }
 .crmw-btn--primary { background: var(--pp-brand-primary); border-color: var(--pp-brand-primary); color: var(--pp-text-on-accent); }
 .crmw-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.crmw-btn--done { background: var(--pp-state-success); border-color: var(--pp-state-success); color: var(--pp-text-on-accent); }
+.crmw-btn { display: inline-flex; align-items: center; gap: 6px; }
 .crmw-btn--primary:hover { filter: brightness(1.05); color: var(--pp-text-on-accent); }
 
 /* Token pills (type / status) */
