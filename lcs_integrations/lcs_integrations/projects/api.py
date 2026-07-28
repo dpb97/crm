@@ -98,6 +98,57 @@ _GEO_STATE = {
 _GEO_TYP = {"SB": "SB", "WI": "WI", "SK": "SK"}
 
 
+def _typ_from_number(number):
+    """Plant type from the project number prefix (LCS-SB-…/-SK-…/-WI-…) when the
+    project_type field is empty — the number always carries it."""
+    parts = str(number or "").split("-")
+    return parts[1] if len(parts) > 1 and parts[1] in _GEO_TYP else None
+
+
+def _typ_from_name(name):
+    """Last-resort plant type from keywords in the project name."""
+    n = str(name or "").lower()
+    if "seilkran" in n or "kranbahn" in n or "kran" in n:
+        return "SK"
+    if "winde" in n or "vorschub" in n:
+        return "WI"
+    if "seilbahn" in n:  # incl. Material-/Lastenseilbahn
+        return "SB"
+    return None
+
+
+def _approx_routes(items):
+    """Turn single-location projects (no surveyed masts) into schematic 2-point
+    routes so every construction site shows as a valley↔mountain pair, not a lone
+    dot. Valley = country centroid (ringed apart when several share a country),
+    mountain = a small fixed offset. Flagged `approx` so the map draws them
+    dashed and without a (meaningless) span length."""
+    import math
+    from collections import defaultdict
+
+    by = defaultdict(list)
+    for it in items:
+        by[tuple(it["_c"])].append(it)
+
+    out = []
+    for (lat, lng), grp in by.items():
+        n = len(grp)
+        for i, it in enumerate(grp):
+            if n > 1:
+                r = 0.22 + 0.03 * n
+                ang = 2 * math.pi * i / n
+                tlat = round(lat + r * math.sin(ang), 6)
+                tlng = round(lng + r * math.cos(ang) / max(math.cos(math.radians(lat)), 0.1), 6)
+            else:
+                tlat, tlng = round(lat, 6), round(lng, 6)
+            it.pop("_c", None)
+            it["tal"] = [tlat, tlng]
+            it["berg"] = [round(tlat + 0.05, 6), round(tlng + 0.035, 6)]
+            it["approx"] = True
+            out.append(it)
+    return out
+
+
 def _coord(value):
     """A mast coordinate, or None when it is not really set. Frappe Float
     fields default to 0.0, so an unfilled mast reads as 0°/0° — the Null Island
@@ -129,43 +180,33 @@ def get_project_geo():
     )
     from lcs_integrations.projects.country_coords import get_coords
 
-    masten, pins = [], []
+    masten, approx = [], []
     for p in projects:
         tal_lat, tal_lng = _coord(p.valley_mast_latitude), _coord(p.valley_mast_longitude)
         berg_lat, berg_lng = _coord(p.mountain_mast_latitude), _coord(p.mountain_mast_longitude)
-        has_route = None not in (tal_lat, tal_lng, berg_lat, berg_lng)
-        if has_route:
-            m = {
-                "nr": p.project_number or p.name,
-                "n": p.project_name or p.name,
-                "firma": p.organization or "",
-                "phase": p.phase or "",
-                "state": _GEO_STATE.get(p.phase, "akquise"),
-                "wert": p.estimated_value or 0,
-                "wer": p.salesperson or "",
-                "tal": [tal_lat, tal_lng],
-                "berg": [berg_lat, berg_lng],
-            }
-            typ = _GEO_TYP.get(p.project_type)
-            if typ:
-                m["typ"] = typ
-            masten.append(m)
+        base = {
+            "nr": p.project_number or p.name,
+            "n": p.project_name or p.name,
+            "firma": p.organization or "",
+            "phase": p.phase or "",
+            "state": _GEO_STATE.get(p.phase, "akquise"),
+            "wert": p.estimated_value or 0,
+            "wer": p.salesperson or "",
+        }
+        typ = _GEO_TYP.get(p.project_type) or _typ_from_number(p.project_number) or _typ_from_name(p.project_name)
+        if typ:
+            base["typ"] = typ
+
+        if None not in (tal_lat, tal_lng, berg_lat, berg_lng):
+            masten.append({**base, "tal": [tal_lat, tal_lng], "berg": [berg_lat, berg_lng]})
         else:
             coords = get_coords(p.country)
             if coords:
-                pins.append({
-                    "t": p.project_name or p.name,
-                    "ll": [coords[0], coords[1]],
-                    "rows": [
-                        [_("Project no."), p.project_number or p.name],
-                        [_("Company / customer"), p.organization or "—"],
-                        [_("Phase"), p.phase or "—"],
-                        [_("Estimated value"), p.estimated_value or "—"],
-                        [_("Responsible"), p.salesperson or "—"],
-                        [_("Country"), p.country or "—"],
-                    ],
-                })
-    return {"masten": masten, "pins": _spread(pins)}
+                approx.append({**base, "_c": [coords[0], coords[1]]})
+
+    # Every remaining project becomes a schematic 2-point route (min. 2 points).
+    masten += _approx_routes(approx)
+    return {"masten": masten, "pins": []}
 
 
 def _spread(pins):

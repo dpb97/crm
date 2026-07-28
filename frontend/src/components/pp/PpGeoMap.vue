@@ -189,8 +189,13 @@ function buildMasten() {
   visible.forEach((pj) => {
     const col = mastColor(pj), glyph = typGlyph(pj.typ);
     const tipLines = [pj.n, pj.firma || "—", typName(pj.typ) + " · " + stateLabel(pj.state) + " · " + (pj.wert || "—")];
-    const line = L.polyline(geoBow(pj.tal, pj.berg), { color: col, weight: 3.5, opacity: 0.95, lineCap: "round" });
-    line.bindTooltip("≈" + geoKm(pj.tal, pj.berg) + " km", { permanent: true, direction: "center", className: "pp-geo__span" });
+    // approx = schematic location (no surveyed masts): dashed line, no span km.
+    const line = L.polyline(geoBow(pj.tal, pj.berg), {
+      color: col, weight: 3.5, opacity: 0.95, lineCap: "round",
+      dashArray: pj.approx ? "6 9" : null,
+    });
+    if (pj.approx) line.bindTooltip(pj.n + " · Standort ca.", { direction: "center", className: "pp-geo__span" });
+    else line.bindTooltip("≈" + geoKm(pj.tal, pj.berg) + " km", { permanent: true, direction: "center", className: "pp-geo__span" });
     const mi = (fill) => L.divIcon({
       className: "",
       html: '<span class="pp-geo-mast ' + (fill ? "is-berg" : "is-tal") + '" style="border-color:' + col + ";" +
@@ -206,10 +211,13 @@ function buildMasten() {
       rows: [
         ["Projekt-Nr.", pj.nr || "—"], ["Bezeichnung", pj.n], ["Firma / Kunde", pj.firma || "—"],
         ["Anlagentyp", typName(pj.typ)], ["Status", stateLabel(pj.state)], ["Auftragswert", pj.wert || "—"],
-        ["Verantwortlich", pj.wer || "—"], ["Hinweis", pj.info || "—"],
-        ["Endmast Tal", pj.tal[0].toFixed(4) + ", " + pj.tal[1].toFixed(4)],
-        ["Endmast Berg", pj.berg[0].toFixed(4) + ", " + pj.berg[1].toFixed(4)],
-        ["Spannweite (horiz.)", "≈" + geoKm(pj.tal, pj.berg) + " km"],
+        ["Verantwortlich", pj.wer || "—"],
+        ["Hinweis", pj.approx ? "Schematischer Standort (Landmitte) — Masten noch nicht vermessen" : (pj.info || "—")],
+        ...(pj.approx ? [] : [
+          ["Endmast Tal", pj.tal[0].toFixed(4) + ", " + pj.tal[1].toFixed(4)],
+          ["Endmast Berg", pj.berg[0].toFixed(4) + ", " + pj.berg[1].toFixed(4)],
+          ["Spannweite (horiz.)", "≈" + geoKm(pj.tal, pj.berg) + " km"],
+        ]),
       ],
     });
     [line, talM, bergM].forEach((x) => { x.on("click", det); indivLayer.addLayer(x); });
