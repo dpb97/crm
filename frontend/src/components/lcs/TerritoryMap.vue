@@ -22,6 +22,8 @@ const props = defineProps({
   markers: { type: Array, default: () => [] }, // [{ id, lat, lon, label, kind }]
   // Territory areas drawn as filled country polygons, coloured by sales manager.
   polygons: { type: Array, default: () => [] }, // [{ id, countries:[name], kind, label }]
+  // Project locations overlaid on the polygons (Markteinteilung shows projects too).
+  pins: { type: Array, default: () => [] }, // [{ t, ll:[lat,lng] }]
   activeId: { type: [String, Number, null], default: null },
   heightClass: { type: String, default: 'h-full' },
 })
@@ -32,6 +34,7 @@ const loading = ref(true)
 let map = null
 let layers = []
 let polyLayers = []
+let pinLayer = []
 
 // Sales-manager tone → colour. CSS var() resolves inside the divIcon DOM style,
 // so markers match the legend tones exactly (SSOT --pp-*).
@@ -119,6 +122,23 @@ async function renderPolygons(L) {
   }
 }
 
+// Project locations as small dots over the territory polygons.
+function renderPins(L) {
+  pinLayer.forEach((l) => map.removeLayer(l))
+  pinLayer = []
+  props.pins.forEach((p) => {
+    const ll = p.ll || (p.lat != null ? [p.lat, p.lon] : null)
+    if (!ll) return
+    const m = L.circleMarker(ll, {
+      radius: 5, weight: 2, color: '#fff',
+      fillColor: 'var(--pp-brand-primary)', fillOpacity: 1,
+    })
+    if (p.t) m.bindTooltip(String(p.t), { direction: 'top' })
+    m.addTo(map)
+    pinLayer.push(m)
+  })
+}
+
 function renderMarkers(L) {
   layers.forEach((m) => map.removeLayer(m))
   layers = []
@@ -178,6 +198,7 @@ async function build() {
     map.invalidateSize()
     renderMarkers(L)
     await renderPolygons(L)
+    renderPins(L)
   } catch (err) {
     console.error('Territory map init failed:', err)
   } finally {
@@ -188,13 +209,14 @@ async function build() {
 onMounted(build)
 
 watch(
-  () => [props.markers, props.polygons],
+  () => [props.markers, props.polygons, props.pins],
   async () => {
     if (!map) { await build(); return }
     const L = await import('leaflet')
     map.invalidateSize()
     renderMarkers(L)
     await renderPolygons(L)
+    renderPins(L)
   },
   { deep: true },
 )

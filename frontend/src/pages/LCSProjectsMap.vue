@@ -36,6 +36,9 @@
               @click="segment = s.key"
             >{{ s.label }}</button>
           </div>
+          <button type="button" class="lcspm-seg-btn lcspm-legbtn" :class="{ 'is-active': showLegend }" @click="showLegend = !showLegend">
+            {{ __('Legend') }}
+          </button>
           <Button :loading="geo.loading || market.loading" @click="reloadActive">
             <template #prefix><LucideRefreshCw class="h-4 w-4" /></template>
             {{ __('Refresh') }}
@@ -46,8 +49,35 @@
 
     <div class="lcspm-body flex-1 min-h-0 overflow-hidden p-3">
       <PpGeoMap v-if="layer === 'projekte'" :masten="masten" :pins="pins" :segment="segment" height="100%" @inspect="onInspect" />
-      <TerritoryMap v-else-if="territoryPolygons.length" :polygons="territoryPolygons" :active-id="activeId" height-class="h-full" @marker-click="pickMarker" />
+      <TerritoryMap v-else-if="territoryPolygons.length" :polygons="territoryPolygons" :pins="pins" :active-id="activeId" height-class="h-full" @marker-click="pickMarker" />
       <div v-else class="lcspm-empty">{{ market.loading ? __('Loading …') : __('No territories with countries yet') }}</div>
+
+      <!-- Legende (einblendbar) -->
+      <div v-if="showLegend" class="lcspm-legend">
+        <div class="lcspm-legend-head">
+          <span>{{ __('Legend') }}</span>
+          <button type="button" class="lcspm-legend-x" @click="showLegend = false">×</button>
+        </div>
+        <template v-if="layer === 'projekte'">
+          <div class="lcspm-legend-sec">{{ __('Plant type') }}</div>
+          <div class="lcspm-legend-row"><span class="lcspm-gly">▲</span>{{ __('Cable crane') }}</div>
+          <div class="lcspm-legend-row"><span class="lcspm-gly">●</span>{{ __('Material ropeway') }}</div>
+          <div class="lcspm-legend-row"><span class="lcspm-gly">◆</span>{{ __('Winch') }}</div>
+          <div class="lcspm-legend-sec">{{ __('Status') }}</div>
+          <div class="lcspm-legend-row"><i class="lcspm-dot" style="background:var(--pp-state-warning)" />{{ __('Building') }}</div>
+          <div class="lcspm-legend-row"><i class="lcspm-dot" style="background:var(--pp-state-success)" />{{ __('Operating') }}</div>
+          <div class="lcspm-legend-row"><i class="lcspm-dot" style="background:var(--pp-state-danger)" />{{ __('Service due') }}</div>
+          <div class="lcspm-legend-row"><i class="lcspm-dot" style="background:var(--pp-brand-primary)" />{{ __('Acquisition') }}</div>
+        </template>
+        <template v-else>
+          <div class="lcspm-legend-sec">{{ __('Territory by sales manager') }}</div>
+          <div v-for="m in legendManagers" :key="m.code" class="lcspm-legend-row">
+            <i class="lcspm-dot" :style="{ background: toneColor(m.kind) }" />{{ m.code }}<template v-if="m.user_name"> · {{ m.user_name }}</template>
+          </div>
+          <div class="lcspm-legend-sec">{{ __('Projects') }}</div>
+          <div class="lcspm-legend-row"><i class="lcspm-dot" style="background:var(--pp-brand-primary)" />{{ __('Project location') }}</div>
+        </template>
+      </div>
     </div>
 
     <footer class="lcspm-foot">
@@ -114,6 +144,19 @@ const mgrKindMap = computed(() => {
   managers.value.forEach((m, i) => { if (m.code && m.code !== '—') map[m.code] = PALETTE[i % PALETTE.length] })
   return map
 })
+
+// Legende (einblendbar): Symbole/Farben erklären. Tone → CSS-Var wie TerritoryMap.
+const showLegend = ref(false)
+const TONE_VAR = {
+  brand: 'var(--pp-brand-primary)', info: 'var(--pp-state-info)', success: 'var(--pp-state-success)',
+  warning: 'var(--pp-state-warning)', danger: 'var(--pp-state-danger)', neutral: 'var(--pp-text-tertiary)',
+}
+function toneColor(kind) { return TONE_VAR[kind] || TONE_VAR.neutral }
+const legendManagers = computed(() =>
+  managers.value
+    .filter((m) => m.code && m.code !== '—')
+    .map((m) => ({ code: m.code, user_name: m.user_name, kind: mgrKindMap.value[m.code] || 'neutral' })),
+)
 // Territories as filled country polygons, coloured by responsible sales manager.
 const territoryPolygons = computed(() =>
   territories.value
@@ -156,7 +199,24 @@ onBeforeUnmount(() => {
 .lcspm { background: var(--pp-bg-base); }
 .lcspm-head { padding: var(--pp-space-5) var(--pp-space-5) var(--pp-space-4);
   background: var(--pp-bg-surface); border-bottom: 1px solid var(--pp-border-subtle); }
-.lcspm-body { background: var(--pp-bg-base); }
+.lcspm-body { background: var(--pp-bg-base); position: relative; }
+
+/* Legende (Overlay auf der Karte) */
+.lcspm-legbtn { border: 1px solid var(--pp-border-subtle); }
+.lcspm-legend { position: absolute; top: var(--pp-space-4); right: var(--pp-space-4); z-index: 500;
+  min-width: 170px; background: var(--pp-bg-surface); border: 1px solid var(--pp-border-default);
+  border-radius: var(--pp-radius-ui); box-shadow: var(--pp-shadow-md); padding: var(--pp-space-3);
+  font-size: var(--pp-fs-12, 12px); color: var(--pp-text-primary); }
+.lcspm-legend-head { display: flex; align-items: center; justify-content: space-between;
+  font-weight: var(--pp-weight-semibold); margin-bottom: var(--pp-space-2); }
+.lcspm-legend-x { appearance: none; cursor: pointer; border: 0; background: transparent;
+  font-size: 16px; line-height: 1; color: var(--pp-text-tertiary); padding: 0 2px; }
+.lcspm-legend-x:hover { color: var(--pp-text-primary); }
+.lcspm-legend-sec { font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--pp-text-tertiary); font-weight: var(--pp-weight-semibold); margin: var(--pp-space-2) 0 4px; }
+.lcspm-legend-row { display: flex; align-items: center; gap: 8px; padding: 2px 0; }
+.lcspm-dot { width: 10px; height: 10px; border-radius: var(--pp-radius-full); flex-shrink: 0; }
+.lcspm-gly { width: 12px; text-align: center; color: var(--pp-brand-primary); }
 .lcspm-foot { display: flex; align-items: center; justify-content: space-between;
   padding: var(--pp-space-2) var(--pp-space-4); font-size: var(--pp-fs-12);
   color: var(--pp-text-tertiary); background: var(--pp-bg-surface);
