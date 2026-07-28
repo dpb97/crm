@@ -47,3 +47,5 @@ lcs_integrations.patches.seed_lcs_chances
 lcs_integrations.patches.set_pilanda_brand_teal
 # Extends the Projekt funnel group with Ausführung + Abgeschlossen.
 lcs_integrations.patches.extend_funnel_execution_completed
+# Demo-data cleanup: logical project numbers/names + type for the deal-projects.
+lcs_integrations.patches.rename_demo_projects
