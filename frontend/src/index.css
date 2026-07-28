@@ -29,6 +29,14 @@
   --pp-brand-primary:   #008b8b;
   --pp-brand-primary-d: #0a6f6f;
   --lcs-primary:    rgb(var(--pp-brand-primary-rgb, 0 139 139));
+
+  /* All text black (light mode) — the slate-tinted grays read too light.
+     Primary + secondary pure black; tertiary near-black so tiny uppercase
+     captions keep a hair of hierarchy. Dark mode keeps its light text (the
+     theme's [data-theme="dark"] block wins by specificity). */
+  --pp-text-primary:   #000000;
+  --pp-text-secondary: #000000;
+  --pp-text-tertiary:  #1f2937;
   --lcs-secondary:  var(--pp-brand-primary);   /* link/secondary accent -> Brand-Cyan (SSOT pp-tokens --pp-brand-primary; vormals Fremd-Blau) */
   --lcs-accent:     #F5A524;   /* signal yellow */
 
