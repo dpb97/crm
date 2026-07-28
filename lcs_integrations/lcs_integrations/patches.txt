@@ -45,3 +45,5 @@ lcs_integrations.patches.seed_sales_meeting_agenda
 lcs_integrations.patches.seed_lcs_chances
 # Pins the Pilanda brand colour to LCS teal (theme settings shipped stale navy).
 lcs_integrations.patches.set_pilanda_brand_teal
+# Extends the Projekt funnel group with Ausführung + Abgeschlossen.
+lcs_integrations.patches.extend_funnel_execution_completed

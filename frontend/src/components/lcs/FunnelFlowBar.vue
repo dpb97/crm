@@ -326,12 +326,15 @@ const STAGES = [
   { label: 'Angebot', group: 'Angebot' },
   { label: 'Verhandlung', group: 'Angebot' },
   { label: 'Auftrag', group: 'Projekt' },
+  { label: 'Ausführung', group: 'Projekt' },
+  { label: 'Abgeschlossen', group: 'Projekt' },
 ]
 
 // Display-only: German key → English msgid (de.po maps it back to German).
 const STAGE_MSGID = {
   Neu: 'New', Kontaktiert: 'Contacted', Qualifiziert: 'Qualified', Budget: 'Budget',
   Richtpreis: 'Richtpreis', Angebot: 'Offer', Verhandlung: 'Negotiation', Auftrag: 'Order',
+  Ausführung: 'Execution', Abgeschlossen: 'Completed',
 }
 const GROUP_MSGID = { Lead: 'Lead', Angebot: 'Offer', Projekt: 'Project' }
 const stageLabel = (l) => __(STAGE_MSGID[l] || l || '')
@@ -352,10 +355,10 @@ const GROUPS = computed(() => {
 })
 
 const LEAD_MAP = { New: 0, Contacted: 1, Nurture: 1, Qualified: 2, Converted: 3 }
-const PROJECT_MAP = { Qualified: 2, Budget: 3, Richtpreis: 4, Offer: 5, Negotiation: 6, Won: 7, Execution: 7, Completed: 7 }
+const PROJECT_MAP = { Qualified: 2, Budget: 3, Richtpreis: 4, Offer: 5, Negotiation: 6, Won: 7, Execution: 8, Completed: 9 }
 const LOST = ['Lost', 'Unqualified', 'Junk', 'Closed Lost']
 // funnel index -> project phase (for click-to-advance on a project)
-const IDX_TO_PHASE = { 2: 'Qualified', 3: 'Budget', 4: 'Richtpreis', 5: 'Offer', 6: 'Negotiation', 7: 'Won' }
+const IDX_TO_PHASE = { 2: 'Qualified', 3: 'Budget', 4: 'Richtpreis', 5: 'Offer', 6: 'Negotiation', 7: 'Won', 8: 'Execution', 9: 'Completed' }
 
 function dealIdx(status) {
   const s = (status || '').toLowerCase()

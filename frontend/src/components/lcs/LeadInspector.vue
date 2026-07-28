@@ -28,6 +28,7 @@
           <IconPhone class="li-ico" />{{ lead.mobile_no }}
         </a>
         <p v-if="!lead.email && !lead.mobile_no" class="li-muted">—</p>
+        <QuickContactActions :email="lead.email" :phone="lead.mobile_no" class="li-actions" />
       </section>
 
       <div class="li-foot">
@@ -44,6 +45,7 @@ import { computed } from 'vue'
 import { Button } from 'frappe-ui'
 import IconMail from '~icons/lucide/mail'
 import IconPhone from '~icons/lucide/phone'
+import QuickContactActions from '@/components/lcs/QuickContactActions.vue'
 
 const props = defineProps({
   lead: { type: Object, default: null },
@@ -82,5 +84,6 @@ const displayName = computed(() => {
 .li-line:hover { color: var(--pp-brand-primary); }
 .li-ico { width: 14px; height: 14px; flex-shrink: 0; }
 
+.li-actions { margin-top: var(--pp-space-2); }
 .li-foot { margin-top: var(--pp-space-1); }
 </style>
