@@ -361,7 +361,7 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="pp-geo">
-    <div ref="mapEl" class="pp-geo__map" :style="{ height }"></div>
+    <div ref="mapEl" class="pp-geo__map" :style="{ minHeight: height === '100%' ? '320px' : height }"></div>
     <p class="pp-geo__hint">
       Kartenkacheln &copy; OpenStreetMap-Mitwirkende (Internet erforderlich) &mdash; Rad = zoomen,
       Ziehen = verschieben, Klick auf Seillinie/Mast/Pin/Marktfl&auml;che = Details im Inspektor.
@@ -370,9 +370,14 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-.pp-geo { border: 1px solid var(--pp-border-subtle); border-radius: var(--pp-radius-ui);
+/* Fülle den Elterncontainer: der einzige Consumer (LCSProjectsMap) gibt
+   height="100%", das aber an der Karten-div hing und mangels Wrapper-Höhe auf 0
+   kollabierte (leere graue Fläche). Als Flex-Spalte trägt der Wrapper die Höhe,
+   die Karte nimmt den Rest, der Hinweis bleibt darunter. */
+.pp-geo { display: flex; flex-direction: column; height: 100%; min-height: 0;
+  border: 1px solid var(--pp-border-subtle); border-radius: var(--pp-radius-ui);
   overflow: hidden; background: var(--pp-bg-surface); }
-.pp-geo__map { width: 100%; background: var(--pp-bg-base); z-index: 0; }
+.pp-geo__map { width: 100%; flex: 1 1 auto; min-height: 0; background: var(--pp-bg-base); z-index: 0; }
 .pp-geo__map :deep(.leaflet-container) { font: inherit; background: var(--pp-bg-base); }
 .pp-geo__map.is-fs { position: fixed; inset: 0; height: 100vh !important; width: 100vw;
   border-radius: 0; z-index: 2000; }
