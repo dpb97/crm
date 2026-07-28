@@ -43,3 +43,5 @@ lcs_integrations.patches.add_contact_company_quick_filter
 lcs_integrations.patches.seed_sales_meeting_agenda
 # Seeds the 3 demo Chancen from the klickdummy (idempotent, skips if any exist).
 lcs_integrations.patches.seed_lcs_chances
+# Pins the Pilanda brand colour to LCS teal (theme settings shipped stale navy).
+lcs_integrations.patches.set_pilanda_brand_teal
