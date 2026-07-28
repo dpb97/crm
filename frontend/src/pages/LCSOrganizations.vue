@@ -46,7 +46,7 @@
         </section>
 
         <PpTableCard :title="__('Organizations')" :shown="filtered.length" :total="orgs.length">
-          <PpDataGrid v-if="rows.length" :columns="columns" :rows="pagedRows" @row-click="openOrg">
+          <PpDataGrid v-if="rows.length" :columns="columns" :rows="pagedRows" pickable v-model:pick-mode="selectMode" v-model:picked="picked" @row-click="openOrg">
             <template #cell-name="{ row }">
               <span class="pp-cell-strong">{{ row.name }}</span>
               <span class="pp-cell-sub">{{ row.industry || '—' }}</span>
@@ -99,7 +99,7 @@
 <script setup>
 import { ref, computed, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
-import { createResource, Breadcrumbs, Button } from 'frappe-ui'
+import { createResource, toast, Breadcrumbs, Button } from 'frappe-ui'
 import LayoutHeader from '@/components/LayoutHeader.vue'
 import PpPageHead from '@/components/pp/PpPageHead.vue'
 import PpStatTile from '@/components/pp/PpStatTile.vue'
@@ -137,7 +137,19 @@ const orgs = computed(() => orgsRes.data || [])
 const loading = computed(() => orgsRes.loading)
 function reload() { orgsRes.reload() }
 
-useListFuncbar({ title: __('Organizations'), meaning: __('Companies in the CRM.'), count: () => orgs.value.length, reload })
+const selectMode = ref(false)
+const picked = ref([])
+function exportRows() {
+  const src = picked.value.length ? rows.value.filter((r) => picked.value.includes(r.id)) : rows.value
+  if (!src.length) { toast({ title: __('Nothing to export.'), icon: 'alert-circle' }); return }
+  const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`
+  const lines = [['Firma', 'Branche', 'Territorium', 'Website', 'Mitarbeiter'].map(esc).join(',')]
+  src.forEach((r) => lines.push([r.name, r.industry, r.territory, r.website, r.no_of_employees].map(esc).join(',')))
+  const blob = new Blob(['﻿' + lines.join('\n')], { type: 'text/csv;charset=utf-8;' })
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'firmen.csv'; a.click(); URL.revokeObjectURL(a.href)
+  toast({ title: `${src.length} ${__('exported')}`, icon: 'check-circle', iconClasses: 'text-green-500' })
+}
+useListFuncbar({ title: __('Organizations'), meaning: __('Companies in the CRM.'), count: () => orgs.value.length, reload, exportRows, selectMode, pickedCount: () => picked.value.length })
 
 function fmtDate(v) {
   if (!v) return '—'

@@ -58,7 +58,7 @@
 
         <!-- Tabelle ODER Leerzustand -->
         <PpTableCard :title="__('Contacts')" :shown="filtered.length" :total="contacts.length">
-          <PpDataGrid v-if="rows.length && viewMode === 'list'" :columns="columns" :rows="pagedRows" @row-click="openContact">
+          <PpDataGrid v-if="rows.length && viewMode === 'list'" :columns="columns" :rows="pagedRows" pickable v-model:pick-mode="selectMode" v-model:picked="picked" @row-click="openContact">
             <template #cell-name="{ row }">
               <span class="pp-cell-strong">{{ row.name }}</span>
               <span class="pp-cell-sub">{{ row.email || '—' }}</span>
@@ -126,7 +126,7 @@
 <script setup>
 import { ref, computed, watch, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
-import { createResource, call, Breadcrumbs, Button } from 'frappe-ui'
+import { createResource, call, toast, Breadcrumbs, Button } from 'frappe-ui'
 import LayoutHeader from '@/components/LayoutHeader.vue'
 import PpPageHead from '@/components/pp/PpPageHead.vue'
 import PpStatTile from '@/components/pp/PpStatTile.vue'
@@ -169,7 +169,19 @@ const contacts = computed(() => contactsRes.data || [])
 const loading = computed(() => contactsRes.loading)
 function reload() { contactsRes.reload() }
 
-useListFuncbar({ title: __('Contacts'), meaning: __('Contacts in the CRM.'), count: () => contacts.value.length, reload })
+const selectMode = ref(false)
+const picked = ref([])
+function exportRows() {
+  const src = picked.value.length ? rows.value.filter((r) => picked.value.includes(r.id)) : rows.value
+  if (!src.length) { toast({ title: __('Nothing to export.'), icon: 'alert-circle' }); return }
+  const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`
+  const lines = [['Person', 'Firma', 'E-Mail', 'Telefon'].map(esc).join(',')]
+  src.forEach((r) => lines.push([r.name, r.company_name, r.email, r.mobile_no].map(esc).join(',')))
+  const blob = new Blob(['﻿' + lines.join('\n')], { type: 'text/csv;charset=utf-8;' })
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'personen.csv'; a.click(); URL.revokeObjectURL(a.href)
+  toast({ title: `${src.length} ${__('exported')}`, icon: 'check-circle', iconClasses: 'text-green-500' })
+}
+useListFuncbar({ title: __('Contacts'), meaning: __('Contacts in the CRM.'), count: () => contacts.value.length, reload, exportRows, selectMode, pickedCount: () => picked.value.length })
 
 // --- E-Mail-Anzahl je Kontakt (LCS-API) -----------------------------------
 const emailCounts = ref({})

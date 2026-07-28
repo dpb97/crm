@@ -80,7 +80,7 @@
           :shown="filtered.length"
           :total="leads.length"
         >
-          <PpDataGrid v-if="rows.length" :columns="columns" :rows="pagedRows" @row-click="openLead">
+          <PpDataGrid v-if="rows.length" :columns="columns" :rows="pagedRows" pickable v-model:pick-mode="selectMode" v-model:picked="picked" @row-click="openLead">
             <template #cell-name="{ row }">
               <span class="pp-cell-strong">{{ row.name }}</span>
               <span class="pp-cell-sub">{{ row.id }}</span>
@@ -251,7 +251,19 @@ const leads = computed(() => boardLeads.value)
 const loading = computed(() => leadsRes.loading)
 function reload() { leadsRes.reload(); statusRes.reload() }
 
-useListFuncbar({ title: __('Leads'), meaning: __('Leads in the sales funnel.'), count: () => leads.value.length, reload })
+const selectMode = ref(false)
+const picked = ref([])
+function exportRows() {
+  const src = picked.value.length ? rows.value.filter((r) => picked.value.includes(r.id)) : rows.value
+  if (!src.length) { toast({ title: __('Nothing to export.'), icon: 'alert-circle' }); return }
+  const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`
+  const lines = [['Lead', 'Firma', 'Status', 'E-Mail', 'Telefon'].map(esc).join(',')]
+  src.forEach((r) => lines.push([r.name, r.organization, r.status, r.email, r.mobile_no].map(esc).join(',')))
+  const blob = new Blob(['﻿' + lines.join('\n')], { type: 'text/csv;charset=utf-8;' })
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'leads.csv'; a.click(); URL.revokeObjectURL(a.href)
+  toast({ title: `${src.length} ${__('exported')}`, icon: 'check-circle', iconClasses: 'text-green-500' })
+}
+useListFuncbar({ title: __('Leads'), meaning: __('Leads in the sales funnel.'), count: () => leads.value.length, reload, exportRows, selectMode, pickedCount: () => picked.value.length })
 
 // List ⇄ Kanban (Befund 18: SSOT-Liste, one renderer, same descent contract).
 const viewMode = useStorage('lcs-leads-view-mode', 'list')
