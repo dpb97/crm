@@ -240,21 +240,47 @@
         />
       </div>
 
-      <!-- Attachments -->
-      <div v-if="attachments.data?.length" class="lcsod-card">
-        <div class="lcsod-card-title mb-2">
-          <FeatherIcon name="paperclip" class="h-3 w-3" />
-          {{ __('Attachments') }} ({{ attachments.data.length }})
+      <!-- Angebot-Versionen (PDF-Upload + Versionshistorie) -->
+      <div class="lcsod-card">
+        <div class="lcsod-card-title mb-2 flex items-center justify-between">
+          <span class="flex items-center gap-1">
+            <FeatherIcon name="file-text" class="h-3 w-3" />
+            {{ __('Offer versions') }} ({{ attachments.data?.length || 0 }})
+          </span>
+          <button class="lcsod-upl" :disabled="uploading" @click="triggerOfferUpload">
+            <FeatherIcon name="upload" class="h-3.5 w-3.5" />
+            {{ uploading ? __('Uploading …') : __('Upload PDF') }}
+          </button>
+          <input ref="offerFileInput" type="file" accept="application/pdf" class="hidden" @change="onOfferFile" />
         </div>
-        <ul class="lcsod-files">
+        <ul v-if="attachments.data?.length" class="lcsod-files">
           <li v-for="f in attachments.data" :key="f.name">
-            <FeatherIcon name="file" class="lcsod-file-ico" />
+            <span class="lcsod-ver">v{{ versionOf(f) }}</span>
             <a :href="f.file_url" target="_blank" rel="noopener" class="lcsod-file-link">
               {{ f.file_name || f.file_url }}
             </a>
-            <span class="lcsod-file-size">{{ (f.file_size / 1024).toFixed(0) }} KB</span>
+            <span class="lcsod-file-size">{{ (f.file_size / 1024).toFixed(0) }} KB · {{ formatDate(f.creation) }}</span>
           </li>
         </ul>
+        <p v-else class="text-xs text-gray-400">{{ __('No offer PDF uploaded yet.') }}</p>
+      </div>
+
+      <!-- Kommentare -->
+      <div class="lcsod-card">
+        <div class="lcsod-card-title mb-2">
+          <FeatherIcon name="message-square" class="h-3 w-3" />
+          {{ __('Comments') }} ({{ comments.data?.length || 0 }})
+        </div>
+        <ul v-if="comments.data?.length" class="lcsod-comments">
+          <li v-for="c in comments.data" :key="c.name" class="lcsod-comment">
+            <div class="lcsod-comment-meta">{{ c.comment_by || c.owner }} · {{ relTime(c.creation) }}</div>
+            <div class="lcsod-comment-body" v-html="c.content" />
+          </li>
+        </ul>
+        <div class="mt-2 flex gap-2">
+          <textarea v-model="newComment" rows="2" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" :placeholder="__('Write a comment …')" />
+          <button class="lcsod-upl self-end" :disabled="!newComment.trim() || postingComment" @click="postComment">{{ __('Post') }}</button>
+        </div>
       </div>
     </div>
   </div>
@@ -421,15 +447,99 @@ function save(fieldname, value) {
   })
 }
 
-// Attachments
+// Attachments = Angebot-Versionen (PDF-Upload + Versionshistorie)
 const attachments = createListResource({
   doctype: 'File',
   filters: { attached_to_doctype: 'LCS Offer', attached_to_name: props.id },
-  fields: ['name', 'file_url', 'file_name', 'file_size'],
+  fields: ['name', 'file_url', 'file_name', 'file_size', 'creation'],
   orderBy: 'creation desc',
-  pageLength: 20,
+  pageLength: 50,
   auto: true,
 })
+// Version number = position in creation-ascending order (oldest = v1).
+const versionMap = computed(() => {
+  const asc = [...(attachments.data || [])].sort((a, b) => String(a.creation).localeCompare(String(b.creation)))
+  const m = {}
+  asc.forEach((f, i) => { m[f.name] = i + 1 })
+  return m
+})
+function versionOf(f) { return versionMap.value[f.name] || '?' }
+
+const offerFileInput = ref(null)
+const uploading = ref(false)
+function triggerOfferUpload() { offerFileInput.value?.click() }
+async function onOfferFile(ev) {
+  const file = ev.target.files?.[0]
+  ev.target.value = ''
+  if (!file) return
+  uploading.value = true
+  try {
+    const form = new FormData()
+    form.append('file', file, file.name)
+    form.append('is_private', '1')
+    form.append('folder', 'Home/Attachments')
+    form.append('doctype', 'LCS Offer')
+    form.append('docname', props.id)
+    form.append('attached_to_doctype', 'LCS Offer')
+    form.append('attached_to_name', props.id)
+    const csrf = window.csrf_token || ''
+    const res = await window.fetch('/api/method/upload_file', {
+      method: 'POST', credentials: 'include',
+      headers: csrf ? { 'X-Frappe-CSRF-Token': csrf } : {},
+      body: form,
+    })
+    if (!res.ok) throw new Error(__('Upload failed:') + ' ' + res.status)
+    toast({ title: __('Offer PDF uploaded'), icon: 'check-circle', iconClasses: 'text-green-500' })
+    attachments.reload()
+  } catch (err) {
+    toast({ title: __('Could not attach PDF'), text: err?.message || '', icon: 'alert-circle', iconClasses: 'text-red-500' })
+  } finally {
+    uploading.value = false
+  }
+}
+
+// Kommentare (echtes Frappe-Comment-System)
+const comments = createListResource({
+  doctype: 'Comment',
+  filters: { reference_doctype: 'LCS Offer', reference_name: props.id, comment_type: 'Comment' },
+  fields: ['name', 'content', 'comment_by', 'owner', 'creation'],
+  orderBy: 'creation desc',
+  pageLength: 50,
+  auto: true,
+})
+const newComment = ref('')
+const postingComment = ref(false)
+async function postComment() {
+  const text = newComment.value.trim()
+  if (!text) return
+  postingComment.value = true
+  try {
+    await createResource({ url: 'frappe.client.insert' }).submit({
+      doc: {
+        doctype: 'Comment', comment_type: 'Comment',
+        reference_doctype: 'LCS Offer', reference_name: props.id,
+        content: text,
+      },
+    })
+    newComment.value = ''
+    comments.reload()
+  } catch (err) {
+    toast({ title: __('Could not post comment'), text: err?.messages?.[0] || '', icon: 'alert-circle', iconClasses: 'text-red-500' })
+  } finally {
+    postingComment.value = false
+  }
+}
+function relTime(v) {
+  if (!v) return ''
+  const d = new Date(String(v).replace(' ', 'T')).getTime()
+  if (isNaN(d)) return String(v)
+  const min = Math.floor((Date.now() - d) / 60000)
+  if (min < 1) return __('just now')
+  if (min < 60) return `vor ${min} Min.`
+  const h = Math.floor(min / 60)
+  if (h < 24) return `vor ${h} Std.`
+  return new Intl.DateTimeFormat('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(d)
+}
 
 // --- Style helpers (token-based tones) ---
 const TONE_VAR = {
@@ -574,6 +684,18 @@ function _relTime(iso) {
 .lcsod-file-link { color: var(--pp-brand-primary); text-decoration: none; }
 .lcsod-file-link:hover { text-decoration: underline; }
 .lcsod-file-size { font-size: var(--pp-fs-12); color: var(--pp-text-tertiary); }
+.lcsod-upl { appearance: none; cursor: pointer; font-family: inherit; font-size: var(--pp-fs-12);
+  display: inline-flex; align-items: center; gap: 5px; padding: 5px 10px; border-radius: var(--pp-radius-ui);
+  border: 1px solid var(--pp-brand-primary); background: var(--pp-brand-primary); color: var(--pp-text-on-accent); }
+.lcsod-upl:hover:not(:disabled) { filter: brightness(1.05); }
+.lcsod-upl:disabled { opacity: 0.6; cursor: default; }
+.lcsod-ver { flex-shrink: 0; font-size: 11px; font-weight: var(--pp-weight-bold); font-variant-numeric: tabular-nums;
+  color: var(--pp-text-on-accent); background: var(--pp-brand-primary); padding: 1px 7px; border-radius: var(--pp-radius-full); }
+.lcsod-comments { margin: 0 0 var(--pp-space-2); padding: 0; list-style: none; display: flex; flex-direction: column; gap: var(--pp-space-3); }
+.lcsod-comment { border-bottom: 1px solid var(--pp-border-subtle); padding-bottom: var(--pp-space-2); }
+.lcsod-comment:last-child { border-bottom: 0; }
+.lcsod-comment-meta { font-size: 11px; color: var(--pp-text-tertiary); margin-bottom: 2px; }
+.lcsod-comment-body { font-size: var(--pp-fs-13, 13px); color: var(--pp-text-primary); }
 </style>
 
 <style>
