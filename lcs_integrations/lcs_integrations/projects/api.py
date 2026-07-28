@@ -1549,3 +1549,63 @@ def get_chance_by_lead(lead):
     for f in _CHANCE_MATRIX_FIELDS:
         out[f] = doc.get(f) or 0
     return out
+
+
+@frappe.whitelist()
+def get_sales_dashboard():
+    """Aggregates for the sales landing dashboard: the six KPI cards, the
+    weighted pipeline-by-phase bars and the projects-by-type donut. Pilot,
+    activities and markets widgets use their own existing endpoints."""
+    q_start = frappe.utils.add_days(frappe.utils.today(), -90)
+
+    pilot_hits = frappe.db.count("LCS Chance", {"source": "Pilot-Scout"})
+    chances_open = frappe.db.count("LCS Chance", {"status": ["in", ["Neu", "Relevant"]]})
+    lost_lead = ["Lost", "Junk", "Unqualified", "Do Not Contact", "Converted"]
+    leads_active = frappe.db.count("CRM Lead", {"status": ["not in", lost_lead]})
+    projects_total = frappe.db.count("LCS Project")
+    no_chance = frappe.db.count(
+        "LCS Chance", {"status": "Keine Chance", "modified": [">=", q_start]}
+    )
+    lost_projects = frappe.db.count(
+        "LCS Project", {"phase": "Lost", "modified": [">=", q_start]}
+    )
+
+    projects = frappe.get_all(
+        "LCS Project",
+        fields=["phase", "project_type", "estimated_value", "probability"],
+        limit_page_length=0,
+    )
+    PHASE_BUCKET = {
+        "Qualified": "Projektierung", "Budget": "Projektierung", "Richtpreis": "Projektierung",
+        "Offer": "Angebot", "Negotiation": "Verhandlung", "Won": "Gewonnen",
+    }
+    BUCKET_ORDER = ["Projektierung", "Angebot", "Verhandlung", "Gewonnen"]
+    TYPE_LABELS = {"SB": "Seilbahn", "SK": "Seilkran", "WI": "Winde", "LL": "Lift", "Other": "Sonstige"}
+    buckets = {b: 0.0 for b in BUCKET_ORDER}
+    types: dict[str, int] = {}
+    pipeline_weighted = 0.0
+    for p in projects:
+        w = (p.estimated_value or 0) * (p.probability or 0) / 100.0
+        if p.phase not in ("Lost", "Completed"):
+            pipeline_weighted += w
+        bucket = PHASE_BUCKET.get(p.phase)
+        if bucket:
+            buckets[bucket] += w
+        label = TYPE_LABELS.get(p.project_type, p.project_type or "Sonstige")
+        types[label] = types.get(label, 0) + 1
+
+    return {
+        "kpis": {
+            "pilot_hits": pilot_hits,
+            "chances_open": chances_open,
+            "leads_active": leads_active,
+            "projects_total": projects_total,
+            "pipeline_weighted": pipeline_weighted,
+            "no_chance": no_chance,
+            "lost": lost_projects,
+        },
+        "pipeline_by_phase": [{"label": b, "weighted": buckets[b]} for b in BUCKET_ORDER],
+        "projects_by_type": [
+            {"label": k, "count": v} for k, v in sorted(types.items(), key=lambda x: -x[1])
+        ],
+    }
