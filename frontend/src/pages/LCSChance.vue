@@ -39,20 +39,20 @@
           </dl>
         </section>
 
-        <!-- Scoutbewertung -->
+        <!-- Chancen-Matrix (statt Scoutbewertung — direkt an der Chance pflegbar) -->
         <section class="chd-card">
-          <header class="chd-ch">{{ __('Scout evaluation') }}<span class="chd-ch-m">{{ __('Score, relevance and reasoning come from the Pilot (pilanda_salesbot)') }}</span></header>
-          <div class="chd-scorerow">
-            <span class="chd-scorebar"><i :style="{ width: Math.min(100, c.score) + '%', background: scoreColor(c.score) }" /></span>
-            <b class="chd-scoreval">{{ c.score }} / 100</b>
-            <span v-if="c.relevance" class="chd-rel"><i class="chd-dot" />{{ __('Relevance') }}: {{ c.relevance }}</span>
-            <span v-if="c.category" class="chd-cat">{{ c.category }}</span>
-          </div>
-          <dl class="chd-kv chd-kv--wide">
-            <div><dt>{{ __('Reasoning') }}</dt><dd>{{ c.reasoning || '—' }}</dd></div>
-            <div><dt>{{ __('Summary (DE)') }}</dt><dd>{{ c.summary_de || '—' }}</dd></div>
-            <div><dt>{{ __('Description (Original)') }}</dt><dd>{{ c.description_original || '—' }}</dd></div>
-          </dl>
+          <header class="chd-ch">{{ __('Opportunity Matrix') }}<span class="chd-ch-m">{{ __('Rate each dimension from 0 (weak) to 100 (strong). Use mouse or arrow keys.') }}</span></header>
+          <OpportunityMatrix
+            :technical-fit="c.technical_fit || 0"
+            :commercial-fit="c.commercial_fit || 0"
+            :relationship="c.relationship_strength || 0"
+            :competition="c.competition_level || 0"
+            :strategic-importance="c.strategic_importance || 0"
+            @update="onMatrixUpdate"
+          />
+          <p v-if="c.summary_de || c.reasoning" class="chd-scoutnote">
+            <span class="chd-scoutnote-cap">{{ __('Note from the Pilot') }}:</span> {{ c.summary_de || c.reasoning }}
+          </p>
         </section>
 
         <div class="chd-2col">
@@ -96,6 +96,7 @@ import { useRouter } from 'vue-router'
 import { createResource, call, toast, Breadcrumbs, Button } from 'frappe-ui'
 import LayoutHeader from '@/components/LayoutHeader.vue'
 import PpPill from '@/components/pp/PpPill.vue'
+import OpportunityMatrix from '@/components/lcs/OpportunityMatrix.vue'
 
 const props = defineProps({ id: { type: String, required: true } })
 const router = useRouter()
@@ -114,6 +115,13 @@ function toLead() {
       if (res?.lead) router.push({ name: 'Lead', params: { leadId: res.lead } })
     })
     .catch((e) => toast({ title: __('Could not create the lead.'), text: e?.messages?.[0] || e?.message || '', icon: 'alert-circle', iconClasses: 'text-red-500' }))
+}
+
+// Chancen-Matrix: Regler → optimistisch lokal + auf der LCS Chance speichern.
+function onMatrixUpdate({ field, value }) {
+  if (c.value) c.value[field] = value
+  call('frappe.client.set_value', { doctype: 'LCS Chance', name: props.id, fieldname: field, value })
+    .catch((e) => toast({ title: __('Could not save.'), text: e?.messages?.[0] || e?.message || '', icon: 'alert-circle', iconClasses: 'text-red-500' }))
 }
 
 function statusTone(s) {
@@ -166,6 +174,8 @@ function dueLabel(v) {
 .chd-dot { width: 6px; height: 6px; border-radius: var(--pp-radius-full); background: currentColor; }
 .chd-cat { font-size: var(--pp-fs-13, 13px); color: var(--pp-text-secondary); }
 
+.chd-scoutnote { margin: var(--pp-space-3) 0 0; font-size: var(--pp-fs-12, 12px); color: var(--pp-text-tertiary); }
+.chd-scoutnote-cap { font-weight: var(--pp-weight-semibold); color: var(--pp-text-secondary); }
 .chd-actions { margin-top: var(--pp-space-3); }
 .chd-link { cursor: pointer; color: var(--pp-brand-primary); font-weight: var(--pp-weight-medium); }
 .chd-link:hover { text-decoration: underline; }
