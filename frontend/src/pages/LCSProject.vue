@@ -97,7 +97,9 @@
 
         <!-- Projekt-Workspace: linke Sub-Navigation + Inhaltsbereich -->
         <section class="crmw-workspace">
-          <nav class="crmw-subnav" role="tablist">
+          <!-- In Pilanda mode the shell sidebar shows the steps (replaces the
+               main menu); the in-page sub-nav is only needed in CRM-only mode. -->
+          <nav v-if="!pilandaMode" class="crmw-subnav" role="tablist">
             <button
               v-for="s in SECTIONS"
               :key="s.key"
@@ -422,7 +424,9 @@
 
 <script setup>
 import { ref, computed, watch, nextTick, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
+import { PROJECT_STEPS } from '@/lib/projectSteps'
+import { usePilandaMode } from '@/composables/usePilandaMode'
 import {
   createDocumentResource, createListResource, createResource,
   Breadcrumbs, Button, Dropdown, Dialog, Tooltip, FeatherIcon, FormControl,
@@ -516,6 +520,23 @@ const T = {
   KALK: __('Calculation'),
 }
 const activeTab = ref(T.OV)
+
+// Project step ⇄ URL (?step=slug) so the shell sidebar can drive the workspace
+// (it shows the steps instead of the main menu while a project is open).
+const route = useRoute()
+const { pilandaMode } = usePilandaMode()
+const SLUG_TO_TAB = Object.fromEntries(PROJECT_STEPS.map((s) => [s.slug, T[s.t]]))
+const TAB_TO_SLUG = Object.fromEntries(PROJECT_STEPS.map((s) => [T[s.t], s.slug]))
+watch(() => route.query.step, (slug) => {
+  const tab = slug && SLUG_TO_TAB[slug]
+  if (tab && tab !== activeTab.value) activeTab.value = tab
+}, { immediate: true })
+watch(activeTab, (tab) => {
+  const slug = TAB_TO_SLUG[tab]
+  if (slug && route.query.step !== slug) {
+    router.replace({ query: { ...route.query, step: slug } }).catch(() => {})
+  }
+})
 // Linke Projekt-Sub-Navigation (Workspace): die Vertriebsfluss-Stationen als
 // eigene Seiten (Übersicht · Projektierung · Kalkulation · Angebote ·
 // Verhandlungen · Projektübergabe) plus Kontakte/Dokumente.

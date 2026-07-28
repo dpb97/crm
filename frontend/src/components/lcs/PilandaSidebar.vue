@@ -31,10 +31,10 @@
     </button>
     <PpSidebar
       class="pilanda-sb-main"
-      :modules="modules"
-      :zones="zones"
-      :allgemein="allgemeinDisplay"
-      :wissen="wissenDisplay"
+      :modules="displayModules"
+      :zones="displayZones"
+      :allgemein="inProjectWorkspace ? [] : allgemeinDisplay"
+      :wissen="inProjectWorkspace ? [] : wissenDisplay"
       :icon-resolver="iconResolver"
       v-model:active-id="activeId"
       v-model:active-key="activeKey"
@@ -52,7 +52,8 @@
 
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
+import { PROJECT_STEPS } from '@/lib/projectSteps'
 import PpSidebar from '@/components/pp/PpSidebar.vue'
 import { usePilandaNav } from '@/composables/usePilandaNav'
 import IconArrowLeft from '~icons/lucide/arrow-left'
@@ -148,9 +149,30 @@ function iconResolver(nameOrKeyword) {
 }
 
 const router = useRouter()
+const route = useRoute()
 const { modules, zones, allgemein, wissen, load } = usePilandaNav()
 
 onMounted(load)
+
+// While a project is open the sidebar shows the PROJECT STEPS instead of the
+// main Vertrieb menu (the workspace sub-navigation moves into the shell). The
+// step items drive the project page via ?step=<slug>; a back item returns to
+// the project list.
+const inProjectWorkspace = computed(() => route.name === 'LCS Project')
+const projectModule = computed(() => {
+  const id = route.params.id
+  return {
+    id: 'project-ws',
+    label: __('Project'),
+    icon: 'folder-kanban',
+    g: [{ sec: '', items: [
+      { n: __('Back to Sales'), t: '/crm/projects', icon: 'arrow-left' },
+      ...PROJECT_STEPS.map((s) => ({ n: __(s.label), t: `/crm/projects/${id}?step=${s.slug}`, icon: s.icon })),
+    ] }],
+  }
+})
+const displayModules = computed(() => (inProjectWorkspace.value ? [projectModule.value] : modules.value))
+const displayZones = computed(() => (inProjectWorkspace.value ? [] : zones.value))
 
 // ---------------------------------------------------------------
 // Zurück-Zeile (Master Regel 3): schlichter Pfeil über dem Dropdown,
