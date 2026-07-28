@@ -1003,6 +1003,36 @@ def reassign_territory(territory: str, sales_manager_code: str | None = None, sa
 
 
 @frappe.whitelist()
+def reassign_country(country: str, target_territory: str) -> dict:
+    """Move a single country to another Sales Territory (per-country market
+    reassignment, finer than reassign_territory). Removes the country from every
+    other active territory and adds it to the target; idempotent. The controller
+    on_update clears the country->territory cache so new records route to the new
+    owner. Managers + System Managers only; existing records are NOT reassigned.
+    """
+    frappe.only_for(["System Manager", "Sales Manager"])
+    if not frappe.db.exists("LCS Sales Territory", target_territory):
+        frappe.throw(_("Territory not found."))
+
+    for terr in frappe.get_all("LCS Sales Territory", filters={"is_active": 1}, pluck="name"):
+        if terr == target_territory:
+            continue
+        doc = frappe.get_doc("LCS Sales Territory", terr)
+        keep = [c for c in doc.countries if c.country != country]
+        if len(keep) != len(doc.countries):
+            doc.set("countries", keep)
+            doc.save(ignore_permissions=True)
+
+    target = frappe.get_doc("LCS Sales Territory", target_territory)
+    if not any(c.country == country for c in target.countries):
+        target.append("countries", {"country": country})
+        target.save(ignore_permissions=True)
+    frappe.db.commit()
+    return {"ok": True, "country": country, "territory": target_territory,
+            "sales_manager_code": target.sales_manager_code}
+
+
+@frappe.whitelist()
 def get_organization_emails(organization: str) -> list[dict]:
     """Communications linked to a CRM Organization — the mailbox-synced customer
     mail. The upstream Organization page has no email view, so this backs the

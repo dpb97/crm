@@ -130,6 +130,41 @@
             />
         </PpTableCard>
 
+        <!-- Länder-Zuordnung: Marktaufteilung auch je LAND anpassbar (nicht nur
+             ganzes Gebiet) — ein Land in ein anderes Gebiet verschieben. -->
+        <PpTableCard
+          :title="__('Country assignment')"
+          :shown="countryRows.length"
+          :total="countryRows.length"
+          :hint="canManage ? __('Move a country to another territory') : ''"
+        >
+          <PpDataGrid v-if="countryRows.length" :columns="countryColumns" :rows="countryRows">
+            <template #cell-territory="{ row }">
+              <div v-if="canManage" class="crmt-reassign" @click.stop>
+                <FormControl
+                  type="select"
+                  size="sm"
+                  :options="territoryOptions"
+                  :modelValue="row.territory"
+                  @update:modelValue="(v) => reassignCountry(row, v)"
+                />
+              </div>
+              <span v-else>{{ row.territory }}</span>
+            </template>
+            <template #cell-code="{ row }">
+              <span class="crmt-mgr">
+                <i class="crmt-legend-dot" :class="'is-' + mgrKind(row.code)" />{{ row.code || '—' }}
+                <span v-if="row.user_name" class="crmt-mgr-inline">· {{ row.user_name }}</span>
+              </span>
+            </template>
+          </PpDataGrid>
+          <PpEmptyState
+            v-else
+            :icon="IconMapPin"
+            :title="board.loading ? __('Loading …') : __('No countries assigned')"
+          />
+        </PpTableCard>
+
         <!-- Segment-Zuständigkeit -->
         <PpTableCard
           v-if="segments.length"
@@ -254,6 +289,37 @@ async function reassign(row, code) {
   } catch (e) {
     Object.assign(row, prev)
     toast.error(e?.messages?.[0] || __('Territory could not be reassigned.'))
+  }
+}
+
+// Länder-Zuordnung: Marktaufteilung je LAND (feiner als je Gebiet). Eine Zeile
+// pro Land mit aktuellem Gebiet/Manager; Select verschiebt das Land in ein
+// anderes Gebiet (und damit zum dortigen Verantwortlichen).
+const countryColumns = [
+  { key: 'country', label: __('Country'), pin: true, width: 220 },
+  { key: 'territory', label: __('Territory'), width: 260 },
+  { key: 'code', label: __('Sales manager'), width: 200 },
+]
+const countryRows = computed(() => {
+  const rows = []
+  for (const t of territories.value) {
+    for (const c of (t.countries || [])) {
+      rows.push({ id: c + '@@' + t.territory, country: c, territory: t.territory, code: t.code, user_name: t.user_name })
+    }
+  }
+  return rows.sort((a, b) => String(a.country).localeCompare(String(b.country), 'de'))
+})
+const territoryOptions = computed(() =>
+  territories.value.map((t) => ({ label: t.territory + (t.code ? ' · ' + t.code : ''), value: t.territory })),
+)
+async function reassignCountry(row, targetTerritory) {
+  if (!targetTerritory || targetTerritory === row.territory) return
+  try {
+    await call('lcs_integrations.projects.api.reassign_country', { country: row.country, target_territory: targetTerritory })
+    toast.success(__('Country moved to') + ' ' + targetTerritory)
+    board.reload()
+  } catch (e) {
+    toast.error(e?.messages?.[0] || __('Country could not be moved.'))
   }
 }
 </script>
