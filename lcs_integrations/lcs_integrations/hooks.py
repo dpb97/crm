@@ -93,6 +93,7 @@ doc_events = {
         "validate": "lcs_integrations.projects.notifications.on_high_probability",
     },
     "LCS Offer": {
+        "validate": "lcs_integrations.projects.api.on_offer_approval_validate",
         "on_update": "lcs_integrations.erpnext_sync.quotation_sync.on_offer_updated",
     },
     "Sales Order": {

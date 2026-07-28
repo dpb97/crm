@@ -956,3 +956,15 @@ Questionaire uploaded,Questionaire hochgeladen
 Please upload the questionaire before moving to Budget.,Bitte das Questionaire vor dem Wechsel zu Budget hochladen.
 Enter the project budget or mark it as unknown before Richtpreis.,"Projektbudget eintragen oder als nicht bekannt markieren, bevor es zu Richtpreis geht."
 Enter the Richtpreis or mark it as not possible before the Offer phase.,"Richtpreis eintragen oder als nicht möglich markieren, bevor es zur Angebot-Phase geht."
+Release & signature,Freigabe & Unterschrift
+Offer value,Angebotswert
+Owner sign-off required (≥ 2M €),Eigentümer-Freigabe nötig (≥ 2 Mio €)
+Approved by CEO,Freigabe CEO
+Approved by CFO/COO,Freigabe CFO/COO
+Approved by owner,Freigabe Eigentümer
+Signed,Unterschrieben
+CEO approver,CEO-Freigeber
+CFO/COO approver,CFO/COO-Freigeber
+Owner approver,Eigentümer-Freigeber
+Cannot sign — missing approval:,Unterschrift nicht möglich — fehlende Freigabe:
+owner,Eigentümer

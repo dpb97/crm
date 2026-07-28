@@ -1774,3 +1774,49 @@ def enforce_phase_gates(doc, method=None):
         frappe.throw(_("Enter the project budget or mark it as unknown before Richtpreis."))
     if new_idx >= 3 and old_idx < 3 and not (doc.get("richtpreis") or doc.get("richtpreis_impossible")):
         frappe.throw(_("Enter the Richtpreis or mark it as not possible before the Offer phase."))
+
+
+# --------------------------------------------------------------- Offer approvals
+
+_OWNER_THRESHOLD_EUR = 2_000_000
+
+
+def offer_needs_owner(doc):
+    """Owner sign-off is required above EUR 2m (value_eur is the FX-frozen EUR
+    amount; falls back to the raw value)."""
+    return (doc.get("value_eur") or doc.get("value") or 0) >= _OWNER_THRESHOLD_EUR
+
+
+def on_offer_approval_validate(doc, method=None):
+    """Release + signature workflow for a binding offer:
+      · ticking an approval stamps WHO approved (session user); unticking clears it,
+      · owner approval is mandatory above EUR 2m,
+      · the offer can only be marked signed once every required approval is in.
+    """
+    user = frappe.session.user
+    for chk, by in (
+        ("approval_ceo", "approval_ceo_by"),
+        ("approval_cfo_coo", "approval_cfo_coo_by"),
+        ("approval_owner", "approval_owner_by"),
+    ):
+        if doc.get(chk):
+            if not doc.get(by):
+                doc.set(by, user)
+        else:
+            doc.set(by, None)
+
+    needs_owner = offer_needs_owner(doc)
+    if doc.get("signed"):
+        missing = []
+        if not doc.get("approval_ceo"):
+            missing.append(_("CEO"))
+        if not doc.get("approval_cfo_coo"):
+            missing.append(_("CFO/COO"))
+        if needs_owner and not doc.get("approval_owner"):
+            missing.append(_("owner"))
+        if missing:
+            frappe.throw(_("Cannot sign — missing approval:") + " " + ", ".join(missing))
+        if not doc.get("signed_on"):
+            doc.signed_on = frappe.utils.now_datetime()
+    elif doc.get("signed_on"):
+        doc.signed_on = None

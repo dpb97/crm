@@ -240,6 +240,42 @@
         />
       </div>
 
+      <!-- Freigabe & Unterschrift (Angebot-Freigabe-Workflow) -->
+      <div class="lcsod-card">
+        <div class="lcsod-card-title mb-2">
+          <FeatherIcon name="shield" class="h-3 w-3" />
+          {{ __('Release & signature') }}
+        </div>
+        <p class="mb-2 text-xs text-gray-500">
+          {{ __('Offer value') }}: {{ formatCurrency(doc.value_eur || doc.value || 0) }}
+          <span v-if="needsOwner" class="ml-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
+            {{ __('Owner sign-off required (≥ 2M €)') }}
+          </span>
+        </p>
+        <div class="space-y-1.5">
+          <label class="lcsod-appr">
+            <input type="checkbox" :checked="!!doc.approval_ceo" @change="save('approval_ceo', $event.target.checked ? 1 : 0)" />
+            <span>{{ __('Approved by CEO') }}</span>
+            <span v-if="doc.approval_ceo_by" class="lcsod-appr-by">· {{ doc.approval_ceo_by }}</span>
+          </label>
+          <label class="lcsod-appr">
+            <input type="checkbox" :checked="!!doc.approval_cfo_coo" @change="save('approval_cfo_coo', $event.target.checked ? 1 : 0)" />
+            <span>{{ __('Approved by CFO/COO') }}</span>
+            <span v-if="doc.approval_cfo_coo_by" class="lcsod-appr-by">· {{ doc.approval_cfo_coo_by }}</span>
+          </label>
+          <label v-if="needsOwner" class="lcsod-appr">
+            <input type="checkbox" :checked="!!doc.approval_owner" @change="save('approval_owner', $event.target.checked ? 1 : 0)" />
+            <span>{{ __('Approved by owner') }}</span>
+            <span v-if="doc.approval_owner_by" class="lcsod-appr-by">· {{ doc.approval_owner_by }}</span>
+          </label>
+          <label class="lcsod-appr lcsod-appr--sign">
+            <input type="checkbox" :checked="!!doc.signed" @change="save('signed', $event.target.checked ? 1 : 0)" />
+            <span>{{ __('Signed') }}</span>
+            <span v-if="doc.signed_on" class="lcsod-appr-by">· {{ formatDate(doc.signed_on) }}</span>
+          </label>
+        </div>
+      </div>
+
       <!-- Angebot-Versionen (PDF-Upload + Versionshistorie) -->
       <div class="lcsod-card">
         <div class="lcsod-card-title mb-2 flex items-center justify-between">
@@ -361,6 +397,8 @@ const offer = createDocumentResource({
 })
 if (!offer.doc) offer.get.fetch()
 const doc = computed(() => offer.doc || {})
+// Owner sign-off is required above EUR 2m (value_eur is the FX-frozen amount).
+const needsOwner = computed(() => (doc.value.value_eur || doc.value.value || 0) >= 2_000_000)
 
 // Live FX rate via Frankfurter.dev (cached server-side, 6h TTL).
 // Re-fetches whenever the document's currency changes.
@@ -696,6 +734,10 @@ function _relTime(iso) {
 .lcsod-comment:last-child { border-bottom: 0; }
 .lcsod-comment-meta { font-size: 11px; color: var(--pp-text-tertiary); margin-bottom: 2px; }
 .lcsod-comment-body { font-size: var(--pp-fs-13, 13px); color: var(--pp-text-primary); }
+.lcsod-appr { display: flex; align-items: center; gap: 8px; font-size: var(--pp-fs-13, 13px); color: var(--pp-text-primary); cursor: pointer; }
+.lcsod-appr input { width: 15px; height: 15px; accent-color: var(--pp-brand-primary); }
+.lcsod-appr-by { color: var(--pp-text-tertiary); font-size: var(--pp-fs-12, 12px); }
+.lcsod-appr--sign { margin-top: 4px; padding-top: 8px; border-top: 1px solid var(--pp-border-subtle); font-weight: var(--pp-weight-semibold); }
 </style>
 
 <style>
