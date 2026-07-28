@@ -42,6 +42,7 @@
     </template>
   </LayoutHeader>
   <FunnelFlowBar v-if="doc.name" entity="lead" :status="doc.status" doctype="CRM Lead" :record="doc" />
+  <LeadProjectStrip v-if="doc.name" :lead="doc" />
   <div v-if="doc.name" class="flex h-full overflow-hidden">
     <Tabs
       v-model="tabIndex"
@@ -271,6 +272,7 @@ import LostReasonModal from '@/components/Modals/LostReasonModal.vue'
 import LayoutHeader from '@/components/LayoutHeader.vue'
 import FollowButton from '@/components/lcs/FollowButton.vue'
 import FunnelFlowBar from '@/components/lcs/FunnelFlowBar.vue'
+import LeadProjectStrip from '@/components/lcs/LeadProjectStrip.vue'
 import Activities from '@/components/Activities/Activities.vue'
 import AssignTo from '@/components/AssignTo.vue'
 import FilesUploader from '@/components/FilesUploader/FilesUploader.vue'

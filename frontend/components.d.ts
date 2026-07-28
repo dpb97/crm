@@ -220,6 +220,7 @@ declare module 'vue' {
     LCSThemeToggle: typeof import('./src/components/lcs/LCSThemeToggle.vue')['default']
     LeadInspector: typeof import('./src/components/lcs/LeadInspector.vue')['default']
     LeadModal: typeof import('./src/components/Modals/LeadModal.vue')['default']
+    LeadProjectStrip: typeof import('./src/components/lcs/LeadProjectStrip.vue')['default']
     LeadsIcon: typeof import('./src/components/Icons/LeadsIcon.vue')['default']
     LeadsListView: typeof import('./src/components/ListViews/LeadsListView.vue')['default']
     LeadSyncSourceForm: typeof import('./src/components/Settings/LeadSyncing/LeadSyncSourceForm.vue')['default']
