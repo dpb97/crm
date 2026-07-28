@@ -63,7 +63,32 @@ def org_for_domain(domain: str) -> str | None:
         {"p1": f"%//{domain}%", "p2": f"%.{domain}%"},
         as_dict=True,
     )
-    return row[0]["name"] if row else None
+    if row:
+        return row[0]["name"]
+
+    # Last resort — match the domain's main label against an organization name
+    # (many customers have neither email_domain nor website filled). Conservative:
+    # the label must be ≥6 chars and be contained in the normalized org name.
+    return _org_by_name_label(domain)
+
+
+def _norm(text: str) -> str:
+    return "".join(ch for ch in str(text or "").lower() if ch.isalnum())
+
+
+def _org_by_name_label(domain: str) -> str | None:
+    import re
+
+    label = domain.split(".")[0]
+    label = re.sub(r"(^|[-_])(www|mail|demo|test|kontakt|office|info)([-_]|$)", "", label)
+    label = _norm(label)
+    if len(label) < 6:
+        return None
+    for o in frappe.get_all("CRM Organization", fields=["name", "organization_name"], limit=0):
+        norm = _norm(o.organization_name or o.name)
+        if label in norm or norm[: len(label)] == label:
+            return o.name
+    return None
 
 
 def active_project_for_org(org: str) -> str | None:
@@ -97,13 +122,23 @@ def _has_org_link(contact, org: str) -> bool:
 def bind_contact_to_org(contact_name: str, org: str, *, add_to_project: bool = True) -> bool:
     """Link a Contact to a CRM Organization and (optionally) its active
     project. Idempotent — returns True only when something changed.
+
+    Also fills the VISIBLE `company_name` field (never overriding a manual one)
+    so the contact actually shows its customer — the Dynamic Link alone left the
+    company field blank in the UI.
     """
     contact = frappe.get_doc("Contact", contact_name)
     changed = False
+    org_label = frappe.db.get_value("CRM Organization", org, "organization_name") or org
 
-    if not _has_org_link(contact, org):
-        contact.append("links", {"link_doctype": "CRM Organization", "link_name": org})
-        # Skip the Outlook push echo for a pure link change.
+    need_link = not _has_org_link(contact, org)
+    need_company = not (contact.company_name or "").strip()
+    if need_link or need_company:
+        if need_link:
+            contact.append("links", {"link_doctype": "CRM Organization", "link_name": org})
+        if need_company:
+            contact.company_name = org_label
+        # Skip the Outlook push echo for a pure link/company change.
         setattr(contact, "_lcs_skip_push", True)
         contact.save(ignore_permissions=True)
         changed = True
@@ -154,6 +189,21 @@ def on_contact_change(doc: Any, method: str | None = None) -> None:
         bind_contact_by_domain(doc.name)
     except Exception as exc:  # noqa: BLE001 — never block a Contact save
         frappe.log_error(title="domain_binding", message=f"{doc.name}: {exc}")
+
+
+def backfill_all() -> dict[str, int]:
+    """Bind EVERY existing Contact to its customer by mail domain (fills the
+    visible company_name + the Dynamic Link). Idempotent — safe to re-run."""
+    names = frappe.get_all("Contact", pluck="name")
+    bound = 0
+    for name in names:
+        try:
+            if bind_contact_by_domain(name):
+                bound += 1
+        except Exception as exc:  # noqa: BLE001 — log, keep going
+            frappe.log_error(title="domain_binding backfill", message=f"{name}: {exc}")
+    frappe.db.commit()
+    return {"contacts": len(names), "bound": bound}
 
 
 # ----------------------------------------------------------- Reconcile

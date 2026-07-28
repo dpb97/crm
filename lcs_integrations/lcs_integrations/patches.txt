@@ -49,3 +49,5 @@ lcs_integrations.patches.set_pilanda_brand_teal
 lcs_integrations.patches.extend_funnel_execution_completed
 # Demo-data cleanup: logical project numbers/names + type for the deal-projects.
 lcs_integrations.patches.rename_demo_projects
+# Backfill: bind existing contacts to their customer by mail domain (+company_name).
+lcs_integrations.patches.backfill_contact_domain_binding
