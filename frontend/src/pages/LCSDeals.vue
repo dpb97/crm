@@ -69,7 +69,7 @@
           :shown="listRows.length"
           :total="listRows.length"
         >
-          <PpDataGrid :columns="listColumns" :rows="listRows" @row-click="openDeal">
+          <PpDataGrid :columns="listColumns" :rows="listRows" pickable v-model:pick-mode="selectMode" v-model:picked="picked" @row-click="openDeal">
             <template #cell-phase="{ row }">
               <PpPill :tone="row.tone">{{ statusLabel(row.phase) }}</PpPill>
             </template>
@@ -230,7 +230,9 @@ function reload() {
   dealsRes.reload()
 }
 
-useListFuncbar({ title: __('Deals'), meaning: __('Opportunities in the pipeline.'), count: () => boardDeals.value.length, reload })
+const selectMode = ref(false)
+const picked = ref([])
+useListFuncbar({ title: __('Deals'), meaning: __('Opportunities in the pipeline.'), count: () => boardDeals.value.length, reload, selectMode, pickedCount: () => picked.value.length })
 
 // Lokaler, mutierbarer Board-Zustand (Klon) für optimistisches Verschieben.
 const boardDeals = ref([])
