@@ -51,3 +51,5 @@ lcs_integrations.patches.extend_funnel_execution_completed
 lcs_integrations.patches.rename_demo_projects
 # Backfill: bind existing contacts to their customer by mail domain (+company_name).
 lcs_integrations.patches.backfill_contact_domain_binding
+# Cross-org / person relationships (Partner/Zulieferer, Arbeitgeber-Historie, Freunde).
+lcs_integrations.patches.add_cross_org_relations

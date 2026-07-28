@@ -1,0 +1,42 @@
+{
+ "actions": [],
+ "creation": "2026-07-28 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "istable": 1,
+ "editable_grid": 1,
+ "field_order": ["related_organization", "relation_type", "note"],
+ "fields": [
+  {
+   "fieldname": "related_organization",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Related organization",
+   "options": "CRM Organization",
+   "reqd": 1
+  },
+  {
+   "fieldname": "relation_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Relation",
+   "options": "Partner\nZulieferer",
+   "default": "Partner"
+  },
+  {
+   "fieldname": "note",
+   "fieldtype": "Data",
+   "label": "Note"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-07-28 00:00:00",
+ "modified_by": "Administrator",
+ "module": "LCS Integrations",
+ "name": "LCS Org Relation",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC"
+}

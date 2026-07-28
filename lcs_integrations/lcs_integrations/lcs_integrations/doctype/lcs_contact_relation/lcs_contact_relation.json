@@ -1,0 +1,42 @@
+{
+ "actions": [],
+ "creation": "2026-07-28 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "istable": 1,
+ "editable_grid": 1,
+ "field_order": ["related_contact", "relation_type", "note"],
+ "fields": [
+  {
+   "fieldname": "related_contact",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Related person",
+   "options": "Contact",
+   "reqd": 1
+  },
+  {
+   "fieldname": "relation_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Relation",
+   "options": "Freund\nKollege\nBekannt\nFamilie",
+   "default": "Freund"
+  },
+  {
+   "fieldname": "note",
+   "fieldtype": "Data",
+   "label": "Note"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-07-28 00:00:00",
+ "modified_by": "Administrator",
+ "module": "LCS Integrations",
+ "name": "LCS Contact Relation",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC"
+}
