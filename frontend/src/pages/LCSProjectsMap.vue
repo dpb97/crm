@@ -46,8 +46,8 @@
 
     <div class="lcspm-body flex-1 min-h-0 overflow-hidden p-3">
       <PpGeoMap v-if="layer === 'projekte'" :masten="masten" :pins="pins" :segment="segment" height="100%" @inspect="onInspect" />
-      <TerritoryMap v-else-if="markers.length" :markers="markers" :active-id="activeId" height-class="h-full" @marker-click="pickMarker" />
-      <div v-else class="lcspm-empty">{{ market.loading ? __('Loading …') : __('No territories with coordinates yet') }}</div>
+      <TerritoryMap v-else-if="territoryPolygons.length" :polygons="territoryPolygons" :active-id="activeId" height-class="h-full" @marker-click="pickMarker" />
+      <div v-else class="lcspm-empty">{{ market.loading ? __('Loading …') : __('No territories with countries yet') }}</div>
     </div>
 
     <footer class="lcspm-foot">
@@ -56,7 +56,7 @@
         {{ masten.length + pins.length }} {{ __('total') }}
       </span>
       <span v-else>
-        {{ markers.length }} {{ __('territories') }} · {{ managerCount }} {{ __('sales managers') }}
+        {{ territoryPolygons.length }} {{ __('territories') }} · {{ managerCount }} {{ __('sales managers') }}
       </span>
       <span v-if="geo.loading || market.loading" class="lcspm-foot-muted">{{ __('Loading …') }}</span>
     </footer>
@@ -114,10 +114,11 @@ const mgrKindMap = computed(() => {
   managers.value.forEach((m, i) => { if (m.code && m.code !== '—') map[m.code] = PALETTE[i % PALETTE.length] })
   return map
 })
-const markers = computed(() =>
+// Territories as filled country polygons, coloured by responsible sales manager.
+const territoryPolygons = computed(() =>
   territories.value
-    .filter((t) => t.latitude != null && t.longitude != null)
-    .map((t) => ({ id: t.territory, lat: t.latitude, lon: t.longitude,
+    .filter((t) => (t.countries || []).length)
+    .map((t) => ({ id: t.territory, countries: t.countries,
       label: `${t.territory} · ${t.code || '—'}`, kind: mgrKindMap.value[t.code] || 'neutral' })),
 )
 const activeId = ref(null)
@@ -129,8 +130,9 @@ function pickMarker(id) {
       title: t.territory,
       rows: [
         { label: __('Region'), value: t.region || '—' },
-        { label: __('Sales manager'), value: t.sales_manager || t.code || '—' },
-        { label: __('Country'), value: t.country || '—' },
+        { label: __('Sales manager'), value: t.user_name || t.sales_manager || t.code || '—' },
+        { label: __('Countries'), value: (t.countries || []).join(', ') || '—' },
+        { label: __('Projects'), value: String(t.projects ?? 0) },
       ],
     })
   }

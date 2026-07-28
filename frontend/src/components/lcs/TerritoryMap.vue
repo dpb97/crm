@@ -20,6 +20,8 @@ import { ref, onMounted, watch, onUnmounted, nextTick } from 'vue'
 
 const props = defineProps({
   markers: { type: Array, default: () => [] }, // [{ id, lat, lon, label, kind }]
+  // Territory areas drawn as filled country polygons, coloured by sales manager.
+  polygons: { type: Array, default: () => [] }, // [{ id, countries:[name], kind, label }]
   activeId: { type: [String, Number, null], default: null },
   heightClass: { type: String, default: 'h-full' },
 })
@@ -29,6 +31,7 @@ const mapContainer = ref(null)
 const loading = ref(true)
 let map = null
 let layers = []
+let polyLayers = []
 
 // Sales-manager tone → colour. CSS var() resolves inside the divIcon DOM style,
 // so markers match the legend tones exactly (SSOT --pp-*).
@@ -62,6 +65,58 @@ async function ensureMap() {
     .layers({ [__('Map')]: street, [__('Satellite')]: satellite }, {}, { position: 'topright', collapsed: false })
     .addTo(map)
   return L
+}
+
+// Frappe country names → the geojson's `name` property where they differ.
+const COUNTRY_ALIAS = {
+  'United States': 'United States of America',
+  'Serbia': 'Republic of Serbia',
+  'Tanzania': 'United Republic of Tanzania',
+  'North Macedonia': 'Macedonia',
+}
+let countryIndex = null
+async function loadCountryIndex() {
+  if (countryIndex) return countryIndex
+  const geo = (await import('@/assets/geo/countries.geo.json')).default
+  countryIndex = new Map()
+  geo.features.forEach((f) => countryIndex.set(f.properties.name, f))
+  return countryIndex
+}
+function featureFor(name, idx) {
+  return idx.get(name) || idx.get(COUNTRY_ALIAS[name]) || null
+}
+
+// Draw each territory as its member countries' filled polygons, coloured by the
+// responsible sales manager's tone. Click → emits marker-click(id) like a marker.
+async function renderPolygons(L) {
+  polyLayers.forEach((l) => map.removeLayer(l))
+  polyLayers = []
+  if (!props.polygons?.length) return
+  const idx = await loadCountryIndex()
+  const bounds = []
+  props.polygons.forEach((terr) => {
+    const feats = (terr.countries || []).map((c) => featureFor(c, idx)).filter(Boolean)
+    if (!feats.length) return
+    const color = toneColor(terr.kind)
+    const active = props.activeId != null && terr.id === props.activeId
+    const base = active ? 0.5 : 0.32
+    const gj = L.geoJSON(
+      { type: 'FeatureCollection', features: feats },
+      { style: { color, weight: active ? 2.5 : 1, opacity: 0.9, fillColor: color, fillOpacity: base } },
+    )
+    gj.bindTooltip(terr.label || String(terr.id), { sticky: true })
+    gj.on('click', () => emit('marker-click', terr.id))
+    gj.on('mouseover', () => gj.setStyle({ fillOpacity: 0.55 }))
+    gj.on('mouseout', () => gj.setStyle({ fillOpacity: base }))
+    gj.addTo(map)
+    polyLayers.push(gj)
+    bounds.push(gj.getBounds())
+  })
+  if (bounds.length) {
+    let b = bounds[0]
+    for (let i = 1; i < bounds.length; i++) b = b.extend(bounds[i])
+    map.fitBounds(b, { padding: [30, 30], maxZoom: 6 })
+  }
 }
 
 function renderMarkers(L) {
@@ -122,6 +177,7 @@ async function build() {
     await nextTick()
     map.invalidateSize()
     renderMarkers(L)
+    await renderPolygons(L)
   } catch (err) {
     console.error('Territory map init failed:', err)
   } finally {
@@ -132,12 +188,13 @@ async function build() {
 onMounted(build)
 
 watch(
-  () => props.markers,
+  () => [props.markers, props.polygons],
   async () => {
     if (!map) { await build(); return }
     const L = await import('leaflet')
     map.invalidateSize()
     renderMarkers(L)
+    await renderPolygons(L)
   },
   { deep: true },
 )
@@ -147,6 +204,7 @@ watch(
     if (!map) return
     const L = await import('leaflet')
     renderMarkers(L)
+    await renderPolygons(L)
   },
 )
 

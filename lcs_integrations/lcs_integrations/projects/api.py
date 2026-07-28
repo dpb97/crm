@@ -803,6 +803,7 @@ def get_market_assignment():
             "agent": t.agent_name,
             "latitude": lat,
             "longitude": lon,
+            "countries": countries,
             "country_count": len(countries),
             "segment_count": segcount_by_terr.get(t.name, 0),
             "leads": leads,
