@@ -22,6 +22,9 @@
 
     <div class="pp-listpage">
       <div class="pp-listpage__inner">
+        <!-- Schnellerfassung (tippen/sprechen + Auto-Mapping) — erster Block. -->
+        <LcsNoteComposer @saved="board.reload()" />
+
         <!-- Filterleiste: Art-Segmente + Suche -->
         <PpFilterBar
           v-model="art"
@@ -71,6 +74,7 @@ import PpDataGrid from '@/components/pp/PpDataGrid.vue'
 import PpEmptyState from '@/components/pp/PpEmptyState.vue'
 import PpFilterBar from '@/components/pp/PpFilterBar.vue'
 import PpTableCard from '@/components/pp/PpTableCard.vue'
+import LcsNoteComposer from '@/components/lcs/LcsNoteComposer.vue'
 import PpPill from '@/components/pp/PpPill.vue'
 import IconStickyNote from '~icons/lucide/sticky-note'
 import { usePilandaInspect } from '@/composables/usePilandaInspect'
