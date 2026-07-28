@@ -249,6 +249,17 @@
         <table class="pp-table">
         <thead class="lcsp-thead sticky top-0 z-10">
           <tr>
+            <th class="lcsp-th-sel">
+              <input
+                type="checkbox"
+                class="lcsp-check"
+                :checked="allSelected"
+                :indeterminate.prop="someSelected"
+                :aria-label="__('Select all')"
+                @change="toggleSelectAll"
+              />
+              <span v-if="selectedRows.size" class="lcsp-selcount">{{ selectedRows.size }}</span>
+            </th>
             <th
               v-for="col in visibleColumns"
               :key="col.key"
@@ -256,10 +267,17 @@
               :class="[
                 col.align === 'right' ? 'text-right' : '',
                 col.sortable ? 'lcsp-th--sortable' : '',
+                'lcsp-th--drag',
+                { 'is-dragover': dragOverCol === col.key },
               ]"
-              :title="col.sortable ? __('Click to sort') : undefined"
+              :title="__('Drag to reorder · click to sort')"
               :aria-sort="col.sortable && sortField === col.key ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'"
+              draggable="true"
               @click="col.sortable && toggleSort(col.key)"
+              @dragstart="onColDragStart(col.key)"
+              @dragover.prevent="dragOverCol = col.key"
+              @drop.prevent="onColDrop(col.key)"
+              @dragend="dragCol = null; dragOverCol = null"
             >
               {{ col.label }}
               <SortIcon v-if="col.sortable" :active="sortField === col.key" :direction="sortDirection" />
@@ -278,6 +296,15 @@
             tabindex="0"
             :aria-label="`${p.project_name} — ${p.phase}`"
           >
+            <td class="lcsp-td-sel" @click.stop>
+              <input
+                type="checkbox"
+                class="lcsp-check"
+                :checked="selectedRows.has(p.name)"
+                :aria-label="__('Select row')"
+                @change="toggleSelectRow(p.name)"
+              />
+            </td>
             <template v-for="col in visibleColumns" :key="col.key">
               <!-- Bespoke cells keep their original renderers -->
               <td v-if="col.key === 'project_number'">
@@ -726,9 +753,51 @@ watch(
   },
   { immediate: true },
 )
+// Per-user column order (drag headers to reorder), reconciled with the catalog
+// so new/removed columns are handled. Persisted in the browser.
+const columnOrder = useStorage('lcs-projects-col-order', COLUMN_CATALOG.map((c) => c.key))
+const orderedCatalog = computed(() => {
+  const ord = columnOrder.value
+  const known = COLUMN_CATALOG.map((c) => c.key)
+  const kept = ord.filter((k) => known.includes(k))
+  const rest = known.filter((k) => !kept.includes(k))
+  return [...kept, ...rest].map((k) => COLUMN_CATALOG.find((c) => c.key === k)).filter(Boolean)
+})
 const visibleColumns = computed(() =>
-  COLUMN_CATALOG.filter((c) => selectedColumns.value.includes(c.key)),
+  orderedCatalog.value.filter((c) => selectedColumns.value.includes(c.key)),
 )
+
+// Drag-and-drop column reordering.
+const dragCol = ref(null)
+const dragOverCol = ref(null)
+function onColDragStart(key) { dragCol.value = key }
+function onColDrop(targetKey) {
+  const from = dragCol.value
+  dragOverCol.value = null
+  if (!from || from === targetKey) { dragCol.value = null; return }
+  const keys = orderedCatalog.value.map((c) => c.key)
+  const fi = keys.indexOf(from)
+  const ti = keys.indexOf(targetKey)
+  if (fi >= 0 && ti >= 0) { keys.splice(ti, 0, keys.splice(fi, 1)[0]); columnOrder.value = keys }
+  dragCol.value = null
+}
+
+// Row selection (checkbox column; independent of the inspector row-click).
+const selectedRows = ref(new Set())
+const allSelected = computed(() =>
+  projectList.value.length > 0 && projectList.value.every((p) => selectedRows.value.has(p.name)),
+)
+const someSelected = computed(() =>
+  projectList.value.some((p) => selectedRows.value.has(p.name)) && !allSelected.value,
+)
+function toggleSelectRow(id) {
+  const next = new Set(selectedRows.value)
+  next.has(id) ? next.delete(id) : next.add(id)
+  selectedRows.value = next
+}
+function toggleSelectAll() {
+  selectedRows.value = allSelected.value ? new Set() : new Set(projectList.value.map((p) => p.name))
+}
 function formatDateCell(v) {
   if (!v) return ''
   const d = new Date(v)
@@ -960,6 +1029,17 @@ async function createProject() {
 .lcsp-th--sortable { cursor: pointer; }
 .lcsp-th--sortable:hover { color: var(--pp-text-secondary); background: var(--pp-bg-hover); }
 .lcsp-row--sel td { background: rgb(var(--pp-brand-primary-rgb) / 0.10); }
+
+/* Spalten per Drag umsortieren */
+.lcsp-th--drag { cursor: grab; }
+.lcsp-th--drag.is-dragover { box-shadow: inset 3px 0 0 var(--pp-brand-primary); }
+
+/* Auswahl-Spalte (Checkboxen) */
+.lcsp-th-sel, .lcsp-td-sel { width: 40px; text-align: center; white-space: nowrap; }
+.lcsp-check { width: 15px; height: 15px; accent-color: var(--pp-brand-primary); cursor: pointer; vertical-align: middle; }
+.lcsp-selcount { display: inline-block; margin-left: 4px; vertical-align: middle; font-size: 10px;
+  font-weight: var(--pp-weight-bold); color: var(--pp-text-on-accent); background: var(--pp-brand-primary);
+  padding: 1px 6px; border-radius: var(--pp-radius-full); letter-spacing: 0; }
 
 /* Project number — brand-teal, bold (design master) + "heute gelöst" badge. */
 .lcsp-num { font-family: var(--pp-font-mono, monospace); font-size: var(--pp-fs-13, 13px);
