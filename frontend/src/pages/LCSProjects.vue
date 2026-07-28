@@ -45,6 +45,29 @@
     <!-- H1: Visibility of system status — result count + active filters indicator -->
     <div class="lcsp-filterbar flex flex-wrap items-center justify-between gap-y-2 border-b px-5 py-3">
       <div class="flex flex-wrap items-center gap-2 sm:gap-4">
+        <!-- ANSICHT: Liste ⇄ Phasenboard (design master) -->
+        <div class="flex items-center gap-2">
+          <span class="lcsp-cap">{{ __('View') }}</span>
+          <div class="flex items-center rounded-lg border bg-gray-50 p-0.5">
+            <button
+              v-for="view in VIEW_MODES"
+              :key="view.key"
+              type="button"
+              class="rounded-md px-3 py-1 text-xs font-medium transition"
+              :class="viewMode === view.key ? 'bg-white text-lcs-primary shadow-sm' : 'text-gray-500 hover:text-gray-700'"
+              :aria-pressed="viewMode === view.key"
+              @click="viewMode = view.key"
+            >{{ view.label }}</button>
+          </div>
+        </div>
+        <!-- Spalten (per-user column selection) -->
+        <ColumnPicker
+          v-if="viewMode === 'list'"
+          table-key="lcs_projects"
+          :catalog="COLUMN_CATALOG"
+          :defaults="DEFAULT_COLUMNS"
+          v-model="selectedColumns"
+        />
         <!-- My Projects toggle — personalized view -->
         <div class="flex rounded-lg border bg-white p-0.5">
           <Tooltip :text="__('Show all projects')">
@@ -114,38 +137,20 @@
             {{ __('cached') }}
           </span>
         </Tooltip>
-        <span v-if="viewMode === 'list' && !projectsLoading">
+        <span v-if="viewMode === 'list' && !projectsLoading" class="lcsp-stats">
           {{ projectList.length }} {{ __('of') }} {{ totalCount }} {{ __('Projects') }}
+          <template v-if="lostQuarter.count">
+            · {{ __('Lost (quarter)') }}: <b>{{ lostQuarter.count }}</b> ({{ moneyShort(lostQuarter.value) }})
+          </template>
         </span>
-        <!-- View toggle: list | map | dashboard -->
-        <div class="flex items-center rounded-lg border bg-gray-50 p-0.5">
-          <Tooltip v-for="view in VIEW_MODES" :key="view.key" :text="view.label">
-            <button
-              class="flex items-center rounded-md px-2 py-1 transition"
-              :class="viewMode === view.key ? 'bg-white text-lcs-primary shadow-sm' : 'text-gray-400 hover:text-gray-600'"
-              :aria-pressed="viewMode === view.key"
-              @click="viewMode = view.key"
-            >
-              <FeatherIcon :name="view.icon" class="h-3.5 w-3.5" />
-            </button>
-          </Tooltip>
-        </div>
         <Tooltip :text="__('Refresh list (Ctrl+R)')">
           <Button
             variant="ghost"
             icon="refresh-cw"
-            @click="['map', 'dashboard'].includes(viewMode) ? mapData.reload() : reloadProjects()"
-            :class="{ 'animate-spin': ['map', 'dashboard'].includes(viewMode) ? mapData.loading : projectsLoading }"
+            @click="reloadProjects()"
+            :class="{ 'animate-spin': projectsLoading }"
           />
         </Tooltip>
-        <!-- Per-user column selection — persisted in LCS User Preferences -->
-        <ColumnPicker
-          v-if="viewMode === 'list'"
-          table-key="lcs_projects"
-          :catalog="COLUMN_CATALOG"
-          :defaults="DEFAULT_COLUMNS"
-          v-model="selectedColumns"
-        />
       </div>
     </div>
 
@@ -232,8 +237,16 @@
         </PpEmptyState>
       </div>
 
-      <!-- Data table — H2: Match real world (German currency, familiar table layout) -->
-      <table v-else class="pp-table">
+      <!-- Data table — card "Vertriebsprojekte" per the design master -->
+      <div v-else class="lcsp-tablecard">
+        <div class="lcsp-cardhead">
+          <div class="lcsp-cardhead-l">
+            <h3 class="lcsp-cardtitle">{{ __('Sales Projects') }}</h3>
+            <span class="lcsp-cardcount">{{ projectList.length }} / {{ totalCount }}</span>
+          </div>
+          <span class="lcsp-cardsub">{{ __('Row = details in the inspector · double-click opens the sales project') }}</span>
+        </div>
+        <table class="pp-table">
         <thead class="lcsp-thead sticky top-0 z-10">
           <tr>
             <th
@@ -267,7 +280,10 @@
           >
             <template v-for="col in visibleColumns" :key="col.key">
               <!-- Bespoke cells keep their original renderers -->
-              <td v-if="col.key === 'project_number'" class="lcsp-td-num">{{ p.project_number }}</td>
+              <td v-if="col.key === 'project_number'">
+                <span class="lcsp-num">{{ p.project_number }}</span>
+                <span v-if="isCreatedToday(p)" class="lcsp-badge-today">{{ __('Resolved today') }}</span>
+              </td>
 
               <td v-else-if="col.key === 'project_name'">
                 <div class="flex items-center gap-2">
@@ -278,7 +294,7 @@
                     </span>
                   </Tooltip>
                 </div>
-                <span v-if="p.organization && !selectedColumns.includes('organization')" class="pp-cell-sub">{{ p.organization }}</span>
+                <span class="pp-cell-sub">{{ __('Double-click opens the sales project') }}</span>
               </td>
 
               <td v-else-if="col.key === 'project_type'">
@@ -303,8 +319,17 @@
               </td>
 
               <td v-else-if="col.key === 'estimated_value'" class="lcsp-td-money text-right">
-                <span v-if="p.estimated_value">{{ formatCurrency(p.estimated_value) }}</span>
+                <span v-if="p.estimated_value">{{ moneyShort(p.estimated_value) }}</span>
                 <span v-else class="pp-cell-muted">—</span>
+              </td>
+
+              <td v-else-if="col.key === 'weighted'" class="lcsp-td-money text-right">
+                <span v-if="p.estimated_value && p.probability">{{ moneyShort(weightedValue(p)) }}</span>
+                <span v-else class="pp-cell-muted">—</span>
+              </td>
+
+              <td v-else-if="col.key === 'expected_close_date'" class="pp-cell-soft text-right">
+                {{ formatClosing(p) }}
               </td>
 
               <!-- Generic cell: dates formatted, everything else as text -->
@@ -314,7 +339,8 @@
             </template>
           </tr>
         </tbody>
-      </table>
+        </table>
+      </div>
       </template>
     </div>
   </div>
@@ -573,16 +599,27 @@ const overviewMoney = computed(() => {
   if (n >= 1_000) return '€' + Math.round(n / 1_000) + 'k'
   return '€' + n
 })
+// Lost this quarter — count + summed value (design master header stat).
+const lostQuarter = computed(() => {
+  const q = new Date(); q.setMonth(q.getMonth() - 3)
+  const lost = (projectList.value || []).filter((p) => {
+    if (p.phase !== 'Lost') return false
+    const d = new Date(String(p.modified || '').replace(' ', 'T'))
+    return isNaN(d) ? true : d >= q
+  })
+  return { count: lost.length, value: lost.reduce((s, p) => s + (Number(p.estimated_value) || 0), 0) }
+})
 const sortField = ref('modified')
 const sortDirection = ref('desc')
 
-// View mode: list | map | dashboard — persisted per browser
+// View mode: Liste ⇄ Phasenboard (design master). The territory/portfolio maps
+// live on their own nav page (Projektlandkarte), so the in-list toggle is just
+// the two views the master shows.
 const viewMode = useStorage('lcs-projects-view-mode', 'list')
+if (!['list', 'kanban'].includes(viewMode.value)) viewMode.value = 'list'
 const VIEW_MODES = [
-  { key: 'list', icon: 'list', label: __('List') },
-  { key: 'kanban', icon: 'columns', label: __('Board') },
-  { key: 'map', icon: 'map', label: __('Map') },
-  { key: 'dashboard', icon: 'bar-chart-2', label: __('Dashboard') },
+  { key: 'list', label: __('List') },
+  { key: 'kanban', label: __('Phase board') },
 ]
 
 // Map/dashboard data: full portfolio with country centroid coordinates
@@ -592,7 +629,7 @@ const mapData = createResource({
 watch(
   viewMode,
   (mode) => {
-    if (mode !== 'list' && !mapData.data && !mapData.loading) mapData.fetch()
+    if (['map', 'dashboard'].includes(mode) && !mapData.data && !mapData.loading) mapData.fetch()
   },
   { immediate: true },
 )
@@ -653,23 +690,28 @@ const orderBy = computed(() => `${sortField.value} ${sortDirection.value}`)
 // Catalog = every field the list API provides. Cells with bespoke
 // renderers keep them (v-if by key in the template); anything else
 // falls back to the generic text/date cell.
+// Order follows the klickdummy design master: Projektnummer · Vertriebsprojekt ·
+// Firma · Phase · Wert · Wahrsch. · Gewichtet · Abschluss · Verkäufer.
+// visibleColumns filters this list preserving THIS order, so the catalog order
+// is the on-screen order. Extra fields below are opt-in via the column picker.
 const COLUMN_CATALOG = [
-  { key: 'project_number', label: __('Project #'), sortable: true },
-  { key: 'project_name', label: __('Name'), sortable: true },
+  { key: 'project_number', label: __('Project number'), sortable: true },
+  { key: 'project_name', label: __('Sales project'), sortable: true },
+  { key: 'organization', label: __('Company') },
+  { key: 'phase', label: __('Phase') },
+  { key: 'estimated_value', label: __('Value'), sortable: true, align: 'right' },
+  { key: 'probability', label: __('Prob.'), sortable: true, align: 'right' },
+  { key: 'weighted', label: __('Weighted'), align: 'right' },
+  { key: 'expected_close_date', label: __('Closing'), align: 'right' },
+  { key: 'salesperson', label: __('Seller') },
   { key: 'project_type', label: __('Type') },
   { key: 'country', label: __('Country') },
-  { key: 'phase', label: __('Phase') },
   { key: 'status', label: __('Status') },
-  { key: 'salesperson', label: __('Salesperson') },
-  { key: 'organization', label: __('Organization') },
-  { key: 'expected_close_date', label: __('Expected Close'), date: true },
   { key: 'modified', label: __('Last Modified'), date: true },
-  { key: 'probability', label: __('Prob.'), sortable: true, align: 'right' },
-  { key: 'estimated_value', label: __('Value'), sortable: true, align: 'right' },
 ]
 const DEFAULT_COLUMNS = [
-  'project_number', 'project_name', 'project_type', 'country',
-  'phase', 'status', 'salesperson', 'probability', 'estimated_value',
+  'project_number', 'project_name', 'organization', 'phase',
+  'estimated_value', 'probability', 'weighted', 'expected_close_date', 'salesperson',
 ]
 const selectedColumns = ref([...DEFAULT_COLUMNS])
 // Hydrate from the user's saved preference once prefs are loaded
@@ -705,7 +747,7 @@ const {
   fields: [
     'name', 'project_name', 'project_number', 'project_type',
     'country', 'phase', 'status', 'salesperson', 'organization',
-    'probability', 'estimated_value', 'notes', 'modified',
+    'probability', 'estimated_value', 'notes', 'modified', 'creation',
     'expected_close_date', 'is_important',
   ],
   filters: activeFilters,
@@ -831,6 +873,37 @@ function formatCurrency(val) {
   }).format(val)
 }
 
+// Compact money (design master: "2,6 M€" / "820 k€").
+function moneyShort(val) {
+  const n = Number(val) || 0
+  if (!n) return '—'
+  if (n >= 1_000_000) return (n / 1_000_000).toLocaleString('de-DE', { maximumFractionDigits: 1 }) + ' M€'
+  if (n >= 1_000) return Math.round(n / 1_000).toLocaleString('de-DE') + ' k€'
+  return Math.round(n).toLocaleString('de-DE') + ' €'
+}
+// Weighted value = estimated value × win probability.
+function weightedValue(p) {
+  return (Number(p.estimated_value) || 0) * (Number(p.probability) || 0) / 100
+}
+// Closing date as "Dez 2026"; Won/Completed show "gewonnen MM/YYYY".
+function formatClosing(p) {
+  const v = p.expected_close_date
+  if (['Won', 'Completed'].includes(p.phase) && v) {
+    const d = new Date(v)
+    if (!isNaN(d)) return __('won') + ' ' + String(d.getMonth() + 1).padStart(2, '0') + '/' + d.getFullYear()
+  }
+  if (!v) return '—'
+  const d = new Date(v)
+  return isNaN(d) ? String(v) : new Intl.DateTimeFormat('de-DE', { month: 'short', year: 'numeric' }).format(d)
+}
+// "Resolved today" badge — project created today (freshly converted from a lead).
+function isCreatedToday(p) {
+  if (!p.creation) return false
+  const d = new Date(String(p.creation).replace(' ', 'T'))
+  const now = new Date()
+  return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate()
+}
+
 // H4: Closure — clear feedback on success/failure
 async function createProject() {
   if (!isNewProjectValid.value) return
@@ -888,12 +961,36 @@ async function createProject() {
 .lcsp-th--sortable:hover { color: var(--pp-text-secondary); background: var(--pp-bg-hover); }
 .lcsp-row--sel td { background: rgb(var(--pp-brand-primary-rgb) / 0.10); }
 
-.lcsp-td-num { font-family: var(--pp-font-mono, monospace); font-size: var(--pp-fs-12); color: var(--pp-text-tertiary); }
+/* Project number — brand-teal, bold (design master) + "heute gelöst" badge. */
+.lcsp-num { font-family: var(--pp-font-mono, monospace); font-size: var(--pp-fs-13, 13px);
+  font-weight: var(--pp-weight-semibold); color: var(--pp-brand-primary); }
+.lcsp-badge-today { margin-left: var(--pp-space-2); display: inline-flex; align-items: center;
+  font-size: 10px; font-weight: var(--pp-weight-semibold); padding: 1px var(--pp-space-2);
+  border-radius: var(--pp-radius-full);
+  background: color-mix(in oklab, var(--pp-state-success) 16%, transparent); color: var(--pp-state-success); }
 .lcsp-td-money { font-weight: var(--pp-weight-medium); color: var(--pp-text-primary); font-variant-numeric: tabular-nums; }
 .lcsp-noteflag { display: inline-flex; align-items: center; padding: 2px 4px;
   border-radius: var(--pp-radius-full);
   background: color-mix(in oklab, var(--pp-accent-amber) 18%, transparent);
   color: var(--pp-accent-amber); }
+
+/* Toolbar caption ("ANSICHT") + result stats. */
+.lcsp-cap { font-size: 10px; font-weight: var(--pp-weight-bold); letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--pp-text-tertiary); }
+.lcsp-stats { color: var(--pp-text-secondary); font-variant-numeric: tabular-nums; }
+.lcsp-stats b { color: var(--pp-text-primary); font-weight: var(--pp-weight-semibold); }
+
+/* "Vertriebsprojekte" card wrapping the table. */
+.lcsp-tablecard { margin: var(--pp-space-4) var(--pp-space-5) var(--pp-space-6);
+  background: var(--pp-bg-surface); border: 1px solid var(--pp-border-subtle);
+  border-radius: var(--pp-radius-ui); box-shadow: var(--pp-shadow-xs); overflow: hidden; }
+.lcsp-cardhead { display: flex; align-items: center; justify-content: space-between; gap: var(--pp-space-3);
+  flex-wrap: wrap; padding: var(--pp-space-3) var(--pp-space-4);
+  border-bottom: 1px solid var(--pp-border-subtle); background: var(--pp-bg-sunken); }
+.lcsp-cardhead-l { display: flex; align-items: baseline; gap: var(--pp-space-2); }
+.lcsp-cardtitle { margin: 0; font-size: var(--pp-fs-15, 15px); font-weight: var(--pp-weight-semibold); color: var(--pp-text-primary); }
+.lcsp-cardcount { font-size: var(--pp-fs-12, 12px); color: var(--pp-text-tertiary); font-variant-numeric: tabular-nums; }
+.lcsp-cardsub { font-size: var(--pp-fs-12, 12px); color: var(--pp-text-tertiary); }
 
 @media (max-width: 900px) {
   .lcsp-kpis { grid-template-columns: repeat(2, 1fr); }
