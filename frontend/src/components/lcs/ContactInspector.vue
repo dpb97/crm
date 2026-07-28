@@ -23,7 +23,20 @@
       </div>
 
       <dl class="ci-meta">
-        <div><dt>{{ __('Company') }}</dt><dd>{{ c.company_name || '—' }}</dd></div>
+        <div>
+          <dt>{{ __('Company') }}</dt>
+          <dd>
+            <span v-if="c.company_name">{{ c.company_name }}</span>
+            <button
+              v-else-if="c.email_id"
+              type="button"
+              class="ci-linkbtn"
+              :disabled="linkingCompany"
+              @click="linkCompany"
+            >{{ linkingCompany ? __('Linking …') : __('Link via email domain') }}</button>
+            <span v-else class="ci-muted">—</span>
+          </dd>
+        </div>
         <div>
           <dt>{{ __('Email') }}</dt>
           <dd>
@@ -70,6 +83,24 @@ const phone = ref('')
 
 // Kontakt → Chance: create a fresh opportunity prefilled from this contact and
 // open it so the salesperson can rate the Opportunity Matrix right away.
+// Kontakt → Firma über die Mail-Domain verknüpfen (Website-Match, sonst Firma
+// von Kontakten gleicher Domain). Persistiert company_name serverseitig.
+const linkingCompany = ref(false)
+async function linkCompany() {
+  if (!props.contactId) return
+  linkingCompany.value = true
+  try {
+    const res = await call('lcs_integrations.projects.api.link_company_by_domain', { contact: props.contactId })
+    const r = res?.message || res || {}
+    if (r.linked) { toast.success(__('Company linked') + ': ' + r.company); await load() }
+    else toast.error(__('No company found for this email domain.'))
+  } catch (e) {
+    toast.error(e?.messages?.[0] || e?.message || __('Linking failed.'))
+  } finally {
+    linkingCompany.value = false
+  }
+}
+
 const creatingChance = ref(false)
 async function createChance() {
   if (!props.contactId) return
@@ -124,6 +155,12 @@ watch(() => props.contactId, load, { immediate: true })
 .ci-meta dd { margin: 2px 0 0; font-size: var(--pp-fs-14); color: var(--pp-text-primary); }
 .ci-link { color: var(--pp-brand-primary); text-decoration: none; }
 .ci-link:hover { text-decoration: underline; }
+.ci-linkbtn { appearance: none; cursor: pointer; font-family: inherit; font-size: var(--pp-fs-12, 12px);
+  padding: 3px var(--pp-space-2); border: 1px dashed var(--pp-border-default); border-radius: var(--pp-radius-ui);
+  background: transparent; color: var(--pp-brand-primary); }
+.ci-linkbtn:hover:not(:disabled) { border-style: solid; border-color: var(--pp-brand-primary);
+  background: color-mix(in oklab, var(--pp-brand-primary) 8%, transparent); }
+.ci-linkbtn:disabled { opacity: 0.6; cursor: default; }
 
 .ci-foot { margin-top: var(--pp-space-1); }
 </style>

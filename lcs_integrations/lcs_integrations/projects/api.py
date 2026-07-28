@@ -1609,3 +1609,62 @@ def get_sales_dashboard():
             {"label": k, "count": v} for k, v in sorted(types.items(), key=lambda x: -x[1])
         ],
     }
+
+
+_FREE_MAIL = {
+    "gmail.com", "googlemail.com", "outlook.com", "hotmail.com", "yahoo.com",
+    "gmx.de", "gmx.net", "web.de", "t-online.de", "icloud.com", "me.com", "aol.com",
+}
+
+
+def _email_domain(email):
+    """Company-identifying domain of an email, or '' for free-mail / no address."""
+    email = (email or "").strip().lower()
+    if "@" not in email:
+        return ""
+    dom = email.rsplit("@", 1)[1]
+    return "" if dom in _FREE_MAIL else dom
+
+
+@frappe.whitelist()
+def link_company_by_domain(contact):
+    """Connect a contact to its company via the email domain: match a CRM
+    Organization whose website carries the domain, else adopt the company_name
+    other contacts on the same domain already use. Persists company_name (and a
+    CRM Organization dynamic link when an org matched)."""
+    doc = frappe.get_doc("Contact", contact)
+    email = doc.email_id or (doc.email_ids[0].email_id if doc.email_ids else "")
+    dom = _email_domain(email)
+    if not dom:
+        return {"linked": False, "reason": "no_domain"}
+
+    org_name = company = via = None
+    for o in frappe.get_all("CRM Organization", fields=["name", "organization_name", "website"], limit=0):
+        w = (o.website or "").lower()
+        if w and dom in w:
+            org_name, company, via = o.name, o.organization_name, "website"
+            break
+    if not company:
+        counts = {}
+        for p in frappe.get_all(
+            "Contact",
+            filters={"email_id": ["like", "%@" + dom], "company_name": ["is", "set"]},
+            fields=["company_name"], limit=0,
+        ):
+            if p.company_name and p.company_name != (doc.company_name or ""):
+                counts[p.company_name] = counts.get(p.company_name, 0) + 1
+        if counts:
+            company = max(counts, key=counts.get)
+            via = "peers"
+            org_name = frappe.db.get_value("CRM Organization", {"organization_name": company}, "name")
+
+    if not company:
+        return {"linked": False, "reason": "no_match", "domain": dom}
+
+    doc.company_name = company
+    if org_name and not any(
+        l.link_doctype == "CRM Organization" and l.link_name == org_name for l in (doc.links or [])
+    ):
+        doc.append("links", {"link_doctype": "CRM Organization", "link_name": org_name})
+    doc.save(ignore_permissions=True)
+    return {"linked": True, "company": company, "organization": org_name, "via": via, "domain": dom}
