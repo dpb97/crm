@@ -276,7 +276,8 @@ function exportRows() {
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'leads.csv'; a.click(); URL.revokeObjectURL(a.href)
   toast({ title: `${src.length} ${__('exported')}`, icon: 'check-circle', iconClasses: 'text-green-500' })
 }
-useListFuncbar({ title: __('Leads'), meaning: __('Leads in the sales funnel.'), count: () => leads.value.length, reload, exportRows, selectMode, pickedCount: () => picked.value.length })
+useListFuncbar({ title: __('Leads'), meaning: __('Leads in the sales funnel.'), count: () => leads.value.length, reload, exportRows, selectMode, pickedCount: () => picked.value.length,
+  taskRef: () => sel.value ? { doctype: 'CRM Lead', name: sel.value.name, title: sel.value.lead_name || sel.value.organization || sel.value.name } : null })
 
 // List ⇄ Kanban (Befund 18: SSOT-Liste, one renderer, same descent contract).
 const viewMode = useStorage('lcs-leads-view-mode', 'list')

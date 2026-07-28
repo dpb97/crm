@@ -827,7 +827,8 @@ const {
 const totalCount = computed(() => projectsData.value?.length || 0)
 const projectList = computed(() => projectsData.value || [])
 
-useListFuncbar({ title: __('Projects'), meaning: __('Sales projects (Deal = Project).'), count: () => projectList.value.length, reload: reloadProjects })
+useListFuncbar({ title: __('Projects'), meaning: __('Sales projects (Deal = Project).'), count: () => projectList.value.length, reload: reloadProjects,
+  taskRef: () => selectedProject.value ? { doctype: 'LCS Project', name: selectedProject.value.name, title: selectedProject.value.project_name || selectedProject.value.name } : null })
 
 const cacheAgeLabel = computed(() => {
   if (!projectsCachedAt.value) return ''

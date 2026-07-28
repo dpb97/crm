@@ -372,6 +372,7 @@ declare module 'vue' {
     SyncStatusBadge: typeof import('./src/components/lcs/SyncStatusBadge.vue')['default']
     TableMultiselectInput: typeof import('./src/components/Controls/TableMultiselectInput.vue')['default']
     TaskArea: typeof import('./src/components/Activities/TaskArea.vue')['default']
+    TaskCreateModal: typeof import('./src/components/lcs/TaskCreateModal.vue')['default']
     TaskIcon: typeof import('./src/components/Icons/TaskIcon.vue')['default']
     TaskPanel: typeof import('./src/components/Telephony/TaskPanel.vue')['default']
     TaskPriorityIcon: typeof import('./src/components/Icons/TaskPriorityIcon.vue')['default']

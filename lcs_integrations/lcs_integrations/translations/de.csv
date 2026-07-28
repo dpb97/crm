@@ -304,13 +304,11 @@ Voice note,Sprachnotiz
 Weighted,Gewichtet
 What needs doing? (e.g. nachfassen),Was ist zu tun? (z. B. nachfassen)
 Win chance,Gewinn-Wahrscheinlichkeit
-Won,Auftrag
+Won,Gewonnen
 worked at,war bei
 Working on it,Bearbeiter
 works at,arbeitet bei
-
 Contact made,Kontakt aufgenommen
-Chance,Chance
 Chance No,Chance-Nr.
 Chancen,Chancen
 Sales decision,Entscheid des Verkäufers
@@ -326,8 +324,6 @@ Source,Quelle
 Enquiry (mail/phone),Anfrage (Mail/Telefon)
 Referral,Empfehlung
 Note (internal),Notiz (intern)
-"Search person, company or object","Person, Firma oder Objekt suchen"
-row = details in the inspector,Zeile = Details im Inspektor
 Deadline,Frist
 Client,Auftraggeber
 Open lead,Lead öffnen
@@ -352,36 +348,26 @@ Show on projects map,Auf der Projektlandkarte zeigen
 Sales Note,Notiz (Vertrieb)
 CRM Lead,CRM-Lead
 Last Synced,Zuletzt eingespielt
-"created on “Contacted”","entsteht bei „Kontakt aufgenommen“"
+created on “Contacted”,entsteht bei „Kontakt aufgenommen“
 Sales,Vertrieb
 overdue by,überfällig seit
-Direction,Richtung
-Duration,Dauer
-Result,Ergebnis
-Object,Objekt
-outgoing,ausgehend
-incoming,eingehend
 Open object,Objekt öffnen
 Loading calls …,Anrufe werden geladen …
 No calls,Keine Anrufe
-"Call logs appear here as calls are made.","Anrufprotokolle erscheinen hier, sobald Anrufe geführt werden."
+Call logs appear here as calls are made.,"Anrufprotokolle erscheinen hier, sobald Anrufe geführt werden."
 Initiated,Eingeleitet
 Ringing,Klingelt
 In progress,In Bearbeitung
-Completed,Abgeschlossen
 Busy,Besetzt
 No answer,Keine Antwort
 Failed,Fehlgeschlagen
 Queued,In Warteschlange
 Canceled,Abgebrochen
 Coming soon,Bald verfügbar
-"This module is not live yet — we roll out module by module. It will appear here as soon as it is available.","Dieses Modul ist noch nicht live — wir rollen Modul für Modul aus. Es erscheint hier, sobald es verfügbar ist."
-Projects,Projekte
+This module is not live yet — we roll out module by module. It will appear here as soon as it is available.,"Dieses Modul ist noch nicht live — wir rollen Modul für Modul aus. Es erscheint hier, sobald es verfügbar ist."
 Market assignment,Markteinteilung
-territories,Territorien
 sales managers,Vertriebsmanager
 No territories with coordinates yet,Noch keine Territorien mit Koordinaten
-Sales manager,Vertriebsmanager
 Capture chance,Chance erfassen
 Select,Auswählen
 Export,Exportieren
@@ -401,9 +387,6 @@ Companies in the CRM.,Firmen im CRM.
 Opportunities in the pipeline.,Chancen in der Pipeline.
 Sales projects (Deal = Project).,Vertriebsprojekte (Deal = Projekt).
 Call logs across all leads.,Anrufprotokolle über alle Leads.
-Contacts,Kontakte
-Organizations,Firmen
-Region,Region
 (no subject),(kein Betreff)
 Access Profile,Zugriffsprofil
 Acquisition,Akquise
@@ -681,9 +664,7 @@ Rough internal estimate,Grobe interne Schätzung
 Sales / CRM,Vertrieb / CRM
 Start,Start
 Status,Status
-Title,Titel
 Total,Gesamt
-Won,Gewonnen
 Year,Jahr
 Sales Order,Auftrag
 Sales Projects,Vertriebsprojekte
@@ -818,10 +799,7 @@ across all projects,über alle Projekte
 across open phases,über offene Phasen
 "across projects, leads and opportunities","über Projekte, Leads und Chancen"
 estimated order value,geschätzter Auftragswert
-markets covered,abgedeckte Märkte
-Total,Gesamt
-Save,Speichern
-"Σ value × P(win)",Σ Wert × P(Gewinn)
+Σ value × P(win),Σ Wert × P(Gewinn)
 value × probability,Wert × Wahrscheinlichkeit
 {0} d ago,vor {0} T
 {0} days ago,vor {0} Tagen
@@ -881,14 +859,6 @@ Resync all bindings,Alle Bindungen neu synchronisieren
 Resyncing...,Synchronisiere neu...
 Richtpreis (Internal),Richtpreis (intern)
 Warm — Good Chance,Warm — gute Chance
-Strong match,Starke Übereinstimmung
-Total contacts,Kontakte gesamt
-Total leads,Leads gesamt
-Total organizations,Firmen gesamt
-Won deals,Gewonnene Chancen
-Execution,Ausführung
-Completed,Abgeschlossen
-Documents,Dokumente
 Calculation,Kalkulation
 Engineering,Projektierung
 Negotiations,Verhandlungen
@@ -942,7 +912,6 @@ live from the phase board,live aus dem Phasenboard
 Visible projects by type,Sichtbare Projekte nach Typ
 Pilot · latest hits,Pilot · neueste Treffer
 Salesperson's rating in Pilot,Wertung des Verkäufers im Pilot
-Territory assignment,Territorien-Zuordnung
 No data yet.,Noch keine Daten.
 No hits yet.,Noch keine Treffer.
 No activities today.,Heute keine Aktivitäten.
@@ -974,3 +943,4 @@ Mark as done,Als erledigt markieren
 Done,Erledigt
 Mark the engineering step as done for now.,Projektierungs-Schritt vorerst als erledigt markieren.
 Back to Sales,Zurück zum Vertrieb
+,

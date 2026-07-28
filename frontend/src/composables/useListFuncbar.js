@@ -15,10 +15,12 @@
 import { watch, onMounted, onBeforeUnmount } from 'vue'
 import { usePilandaInspect } from './usePilandaInspect'
 import { usePilandaFuncbar } from './usePilandaFuncbar'
+import { useCreateTask } from './useCreateTask'
 
 export function useListFuncbar(opts) {
   const { inspectNode } = usePilandaInspect()
   const { registerFuncbar, clearFuncbar } = usePilandaFuncbar()
+  const { openTask } = useCreateTask()
   const extra = opts.actions || []
 
   function buildGroups() {
@@ -28,6 +30,9 @@ export function useListFuncbar(opts) {
       aktionen.push({ id: 'export', label: n ? `${n} ${__('selected')} · ${__('Export')}` : __('Export'), primary: true })
     }
     aktionen.push({ id: 'refresh', label: __('Refresh'), primary: !opts.exportRows })
+    // "Neue Aufgabe" everywhere — creates a CRM Task, prefilled from the current
+    // selection (opts.taskRef) when the page provides it.
+    aktionen.push({ id: 'new-task', label: __('New task') })
     const werkzeuge = opts.selectMode ? [{ id: 'select', label: __('Select') }] : []
     extra.forEach((a) => (a.group === 'werkzeuge' ? werkzeuge : aktionen).push({ id: a.id, label: a.label, primary: a.primary }))
     return { aktionen, werkzeuge }
@@ -37,6 +42,7 @@ export function useListFuncbar(opts) {
     if (id === 'export') opts.exportRows && opts.exportRows()
     else if (id === 'refresh') opts.reload && opts.reload()
     else if (id === 'select' && opts.selectMode) opts.selectMode.value = !opts.selectMode.value
+    else if (id === 'new-task') openTask(opts.taskRef ? opts.taskRef() : (opts.title ? { title: opts.title } : null))
     else { const a = extra.find((x) => x.id === id); if (a && a.run) a.run() }
   }
 
