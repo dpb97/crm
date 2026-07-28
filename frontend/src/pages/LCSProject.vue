@@ -95,10 +95,23 @@
           <PpStatTile v-for="k in kpis" :key="k.label" v-bind="k" />
         </section>
 
-        <!-- Tabs -->
-        <section class="crmw-tabs-wrap">
-          <PpTabs v-model="activeTab" :tabs="tabs" />
+        <!-- Projekt-Workspace: linke Sub-Navigation + Inhaltsbereich -->
+        <section class="crmw-workspace">
+          <nav class="crmw-subnav" role="tablist">
+            <button
+              v-for="s in SECTIONS"
+              :key="s.key"
+              type="button"
+              class="crmw-subnav-btn"
+              :class="{ 'is-active': activeTab === s.key }"
+              :aria-selected="activeTab === s.key"
+              @click="activeTab = s.key"
+            >
+              <FeatherIcon :name="s.icon" class="crmw-subnav-ico" />{{ s.label }}
+            </button>
+          </nav>
 
+          <div class="crmw-content">
           <!-- Übersicht -->
           <div v-if="activeTab === T.OV" class="crmw-tabpane space-y-5">
             <!-- Notizen — angepinnt, immer sichtbar -->
@@ -150,7 +163,10 @@
               </div>
             </section>
 
-            <!-- Wert-Progression (editierbar: Budget → Richtpreis → Angebot) -->
+          </div>
+
+          <!-- Kalkulation (Wert-Progression Budget → Richtpreis → Angebot) -->
+          <div v-else-if="activeTab === T.KALK" class="crmw-tabpane space-y-5">
             <section v-if="canShow('show_pricing_details')">
               <h4 class="crmw-sec-title">
                 {{ __('Value Progression') }}
@@ -178,6 +194,7 @@
                 </div>
               </div>
             </section>
+            <PpEmptyState v-else :title="__('Pricing hidden')" :hint="__('Pricing is hidden by your profile.')" />
           </div>
 
           <!-- Aktivitäten -->
@@ -287,6 +304,7 @@
               :strategic-importance="matrixValues.strategic_importance"
               @update="onMatrixUpdate"
             />
+          </div>
           </div>
         </section>
       </div>
@@ -475,13 +493,24 @@ const budgetVsAngebot = computed(() => {
 const T = {
   OV: __('Overview'), ACT: __('Activities'), OFF: __('Offers'), DOC: __('Documents'),
   EXE: __('Tasks & Time'), CON: __('Contacts'), PLM: __('PLM / BOM'), MTX: __('Opportunity Matrix'),
+  KALK: __('Calculation'),
 }
 const activeTab = ref(T.OV)
-const tabs = computed(() => {
-  const list = [T.OV, T.ACT, T.OFF, T.DOC, T.EXE, T.CON]
-  // PLM / BOM tab hidden on request (the pane/loader stay in code, unreachable).
-  if (canShow('show_opportunity_matrix')) list.push(T.MTX)
-  return list
+// Linke Projekt-Sub-Navigation (Workspace): die Vertriebsfluss-Stationen als
+// eigene Seiten (Übersicht · Projektierung · Kalkulation · Angebote ·
+// Verhandlungen · Projektübergabe) plus Kontakte/Dokumente.
+const SECTIONS = computed(() => {
+  const all = [
+    { label: __('Overview'), key: T.OV, icon: 'grid' },
+    { label: 'Projektierung', key: T.MTX, icon: 'compass' },
+    { label: 'Kalkulation', key: T.KALK, icon: 'dollar-sign' },
+    { label: __('Offers'), key: T.OFF, icon: 'file-text' },
+    { label: 'Verhandlungen', key: T.ACT, icon: 'calendar' },
+    { label: 'Projektübergabe', key: T.EXE, icon: 'award' },
+    { label: __('Contacts'), key: T.CON, icon: 'users' },
+    { label: __('Documents'), key: T.DOC, icon: 'folder' },
+  ]
+  return all.filter((s) => s.key !== T.MTX || canShow('show_opportunity_matrix'))
 })
 
 // ---- Phasen-Stepper (echte LCS-Phasen → Oberstufen) ----
@@ -992,7 +1021,27 @@ function formatRelativeTime(dateStr) {
 
 .crmw-tabs-wrap { background: var(--pp-bg-surface); border: 1px solid var(--pp-border-subtle);
   border-radius: var(--pp-radius-ui); box-shadow: var(--pp-shadow-xs); padding: var(--pp-space-4); }
-.crmw-tabpane { padding-top: var(--pp-space-4); }
+
+/* Projekt-Workspace: linke Sub-Navigation + Inhaltsbereich */
+.crmw-workspace { display: flex; align-items: stretch; gap: 0;
+  background: var(--pp-bg-surface); border: 1px solid var(--pp-border-subtle);
+  border-radius: var(--pp-radius-ui); box-shadow: var(--pp-shadow-xs); overflow: hidden; min-height: 420px; }
+.crmw-subnav { flex: 0 0 220px; display: flex; flex-direction: column; gap: 2px;
+  padding: var(--pp-space-3); border-right: 1px solid var(--pp-border-subtle); background: var(--pp-bg-base); }
+.crmw-subnav-btn { appearance: none; cursor: pointer; font-family: inherit; text-align: left;
+  display: flex; align-items: center; gap: var(--pp-space-2); padding: 8px var(--pp-space-3);
+  border: none; border-radius: var(--pp-radius-ui); background: transparent;
+  font-size: var(--pp-fs-14, 14px); font-weight: var(--pp-weight-medium); color: var(--pp-text-secondary); }
+.crmw-subnav-btn:hover { background: var(--pp-bg-hover); color: var(--pp-text-primary); }
+.crmw-subnav-btn.is-active { background: var(--pp-accent-soft); color: var(--pp-brand-primary); font-weight: var(--pp-weight-semibold); }
+.crmw-subnav-ico { width: 16px; height: 16px; flex-shrink: 0; }
+.crmw-content { flex: 1; min-width: 0; padding: var(--pp-space-4); overflow: auto; }
+
+.crmw-tabpane { padding-top: 0; }
+@media (max-width: 900px) {
+  .crmw-workspace { flex-direction: column; }
+  .crmw-subnav { flex-basis: auto; flex-direction: row; overflow-x: auto; border-right: none; border-bottom: 1px solid var(--pp-border-subtle); }
+}
 .crmw-sec-title { margin: var(--pp-space-2) 0 0; font-size: var(--pp-fs-12); font-weight: var(--pp-weight-bold);
   letter-spacing: var(--pp-tracking-wide, 0.04em); text-transform: uppercase; color: var(--pp-text-tertiary); }
 .crmw-sec-title:first-child { margin-top: 0; }
