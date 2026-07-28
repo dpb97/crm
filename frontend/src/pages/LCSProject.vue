@@ -211,8 +211,14 @@
             <PpEmptyState v-else :title="__('Pricing hidden')" :hint="__('Pricing is hidden by your profile.')" />
           </div>
 
-          <!-- Aktivitäten -->
+          <!-- Aktivitäten / Verhandlung -->
           <div v-else-if="activeTab === T.ACT" class="crmw-tabpane space-y-4">
+            <!-- Alle Mails des Kunden (org-weit), nicht nur projektbezogen. -->
+            <h4 class="crmw-sec-title">{{ __('Customer mails') }}</h4>
+            <MailActivityWidget v-if="doc.organization" :organization="doc.organization" :limit="100" />
+            <p v-else class="text-xs text-gray-400">{{ __('No customer linked to this project.') }}</p>
+
+            <h4 class="crmw-sec-title">{{ __('Project mail activity') }}</h4>
             <MailActivityWidget :project="projectId" />
 
             <h4 class="crmw-sec-title">{{ __('Offer Versions') }}</h4>
