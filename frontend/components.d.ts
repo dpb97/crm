@@ -215,6 +215,7 @@ declare module 'vue' {
     KeyboardShortcut: typeof import('./src/components/KeyboardShortcut.vue')['default']
     LayoutHeader: typeof import('./src/components/LayoutHeader.vue')['default']
     LCSBrandHeader: typeof import('./src/components/lcs/LCSBrandHeader.vue')['default']
+    LcsNoteComposer: typeof import('./src/components/lcs/LcsNoteComposer.vue')['default']
     LcsPagination: typeof import('./src/components/lcs/LcsPagination.vue')['default']
     LCSThemeToggle: typeof import('./src/components/lcs/LCSThemeToggle.vue')['default']
     LeadInspector: typeof import('./src/components/lcs/LeadInspector.vue')['default']

@@ -108,8 +108,8 @@ just now,gerade eben
 Last comment,Letzter Kommentar
 Last sync,Letzter Sync
 Latest from my projects,Neueste Aktivität meiner Projekte
-Lead,Interessent
-Leads,Interessent
+Lead,Lead
+Leads,Leads
 live,live
 Loading...,Lädt …
 locations,Standorte
@@ -901,3 +901,7 @@ Select from existing or create new,Aus Bestand wählen oder neu anlegen
 Company created,Firma angelegt
 Contact created,Kontakt angelegt
 Please enter a name.,Bitte einen Namen eingeben.
+Action,Aktion
+Lead since,Lead seit
+Questionaire,Fragebogen
+Start project,Projekt starten

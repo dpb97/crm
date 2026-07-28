@@ -88,22 +88,27 @@
             <template #cell-organization="{ value }">
               <span :class="{ 'pp-cell-muted': !value }">{{ value || '—' }}</span>
             </template>
+            <template #cell-owner="{ value }">
+              <span :class="{ 'pp-cell-muted': !value }">{{ value || '—' }}</span>
+            </template>
+            <template #cell-modified="{ value }">
+              <span class="pp-cell-muted">{{ relDate(value) }}</span>
+            </template>
             <template #cell-status="{ row }">
               <PpPill v-if="row.status" :tone="statusTone(row.status)">{{ __(row.status) }}</PpPill>
               <span v-else class="pp-cell-muted">—</span>
             </template>
-            <template #cell-email="{ value }">
-              <span class="crml-contact-line">
-                <IconMail v-if="value" class="crml-contact-ico" />{{ value || '—' }}
+            <template #cell-questionaire="{ value }">
+              <span class="crml-q">
+                <span class="crml-q-track"><i :style="{ width: value + '%', background: `var(--pp-state-${qTone(value)})` }" /></span>
+                <b>{{ value }} %</b>
               </span>
             </template>
-            <template #cell-mobile_no="{ value }">
-              <span class="crml-contact-line crml-contact-line--muted">
-                <IconPhone v-if="value" class="crml-contact-ico" />{{ value || '—' }}
+            <template #cell-action="{ row }">
+              <span class="crml-act">
+                <button type="button" class="crml-abtn" @click.stop="openLead(row.id)">{{ __('Open lead') }} →</button>
+                <button type="button" class="crml-abtn is-primary" :disabled="starting === row.id" @click.stop="startProject(row.id)">{{ __('Start project') }}</button>
               </span>
-            </template>
-            <template #cell-modified="{ value }">
-              <span class="pp-cell-muted">{{ fmtDate(value) }}</span>
             </template>
           </PpDataGrid>
 
@@ -134,22 +139,31 @@
           </template>
         </PpTableCard>
 
-        <!-- Kanban nach Status (gleicher Abstiegs-Vertrag: Klick → Inspektor,
-             Doppelklick → öffnen; Drag verschiebt den Status). -->
-        <section v-else class="crml-board">
-          <PpKanban
-            v-if="kanbanColumns.length"
-            :columns="kanbanColumns"
-            :cards="kanbanCards"
-            @card-click="openLead"
-            @move="onLeadMove"
-          />
-          <PpEmptyState
-            v-else
-            :icon="IconInbox"
-            :title="loading ? __('Loading …') : __('No lead statuses')"
-            :hint="loading ? '' : __('Lead statuses configured in the CRM appear as columns here.')"
-          />
+        <!-- Cards (Referenz Screenshot 2): reiche Karten je Lead, Klick → Inspektor. -->
+        <section v-else class="crml-cards">
+          <article v-for="l in filtered" :key="l.name" class="crml-card" @click="openLead(l.name)">
+            <header class="crml-card-head">
+              <div class="crml-card-title">
+                <span class="crml-card-name">{{ displayName(l) }}</span>
+                <span class="crml-card-id">{{ l.name }}</span>
+              </div>
+              <PpPill v-if="l.status" :tone="statusTone(l.status)">{{ __(l.status) }}</PpPill>
+            </header>
+            <div v-if="l.organization" class="crml-card-firma">{{ l.organization }}</div>
+            <div class="crml-card-tags">
+              <span class="crml-tag">{{ __('Salesperson') }}: {{ shortUser(l.lead_owner) || '—' }}</span>
+              <span class="crml-tag">{{ __('Lead since') }} {{ relDate(l.modified) }}</span>
+            </div>
+            <div class="crml-card-q">
+              <span class="crml-q-track"><i :style="{ width: questionairePct(l.status) + '%', background: `var(--pp-state-${qTone(questionairePct(l.status))})` }" /></span>
+              <b>{{ __('Questionaire') }} {{ questionairePct(l.status) }} %</b>
+            </div>
+            <footer class="crml-card-foot">
+              <button type="button" class="crml-abtn" @click.stop="openLead(l.name)">{{ __('Open lead') }} →</button>
+              <button type="button" class="crml-abtn is-primary" :disabled="starting === l.name" @click.stop="startProject(l.name)">{{ __('Start project') }}</button>
+            </footer>
+          </article>
+          <PpEmptyState v-if="!filtered.length" :icon="IconInbox" :title="loading ? __('Loading …') : __('No leads yet')" :hint="loading ? '' : __('Leads created in the CRM will appear here.')" />
         </section>
       </div>
     </div>
@@ -206,7 +220,6 @@ import LayoutHeader from '@/components/LayoutHeader.vue'
 import PpPageHead from '@/components/pp/PpPageHead.vue'
 import PpStatTile from '@/components/pp/PpStatTile.vue'
 import PpDataGrid from '@/components/pp/PpDataGrid.vue'
-import PpKanban from '@/components/pp/PpKanban.vue'
 import PpEmptyState from '@/components/pp/PpEmptyState.vue'
 import PpDrawer from '@/components/pp/PpDrawer.vue'
 import PpFilterBar from '@/components/pp/PpFilterBar.vue'
@@ -219,7 +232,7 @@ import IconInbox from '~icons/lucide/inbox'
 import IconMail from '~icons/lucide/mail'
 import IconPhone from '~icons/lucide/phone'
 import IconList from '~icons/lucide/list'
-import IconColumns from '~icons/lucide/columns-3'
+import IconLayoutGrid from '~icons/lucide/layout-grid'
 import { usePilandaMode } from '@/composables/usePilandaMode'
 import { usePilandaInspect } from '@/composables/usePilandaInspect'
 import { useListFuncbar } from '@/composables/useListFuncbar'
@@ -267,9 +280,11 @@ useListFuncbar({ title: __('Leads'), meaning: __('Leads in the sales funnel.'), 
 
 // List ⇄ Kanban (Befund 18: SSOT-Liste, one renderer, same descent contract).
 const viewMode = useStorage('lcs-leads-view-mode', 'list')
+// Normalize a legacy stored value (e.g. old "kanban") to a supported mode.
+if (viewMode.value !== 'list' && viewMode.value !== 'cards') viewMode.value = 'list'
 const VIEWS = [
   { key: 'list', label: __('List'), icon: IconList },
-  { key: 'kanban', label: __('Board'), icon: IconColumns },
+  { key: 'cards', label: __('Cards'), icon: IconLayoutGrid },
 ]
 
 // --- Status-Stammdaten inkl. Farbe (für farbige Status-Pillen + Filter) ----
@@ -369,54 +384,62 @@ const kpis = computed(() => {
   ]
 })
 
-// --- Tabelle ---------------------------------------------------------------
+// --- Tabelle (Referenz Screenshot 1) --------------------------------------
 const columns = [
-  { key: 'name', label: __('Lead'), pin: true, width: 240 },
-  { key: 'organization', label: __('Organization'), width: 220 },
-  { key: 'status', label: __('Status'), width: 150 },
-  { key: 'email', label: __('Email'), width: 220 },
-  { key: 'mobile_no', label: __('Phone'), width: 160 },
-  { key: 'modified', label: __('Last modified'), align: 'right', width: 150 },
+  { key: 'name', label: __('Lead'), pin: true, width: 280 },
+  { key: 'organization', label: __('Company'), width: 200 },
+  { key: 'owner', label: __('Salesperson'), width: 150 },
+  { key: 'modified', label: __('Lead since'), width: 130 },
+  { key: 'status', label: __('Status'), width: 130 },
+  { key: 'questionaire', label: __('Questionaire'), width: 160 },
+  { key: 'action', label: __('Action'), width: 230 },
 ]
 const rows = computed(() =>
   filtered.value.map((l) => ({
     id: l.name,
     name: displayName(l),
     organization: l.organization,
+    owner: shortUser(l.lead_owner),
     status: l.status,
-    email: l.email,
-    mobile_no: l.mobile_no,
+    questionaire: questionairePct(l.status),
     modified: l.modified,
   })),
 )
 
-// --- Kanban (nach Status; gefiltert wie die Liste) -------------------------
-const kanbanColumns = computed(() => statusList.value.map((s) => ({ key: s.name, label: __(s.name) })))
-const kanbanCards = computed(() =>
-  filtered.value
-    .filter((l) => l.status)
-    .map((l) => ({
-      id: l.name,
-      col: l.status,
-      title: displayName(l),
-      badges: l.organization ? [{ label: l.organization, tone: 'neutral' }] : [],
-      assignee: l.lead_owner || null,
-    })),
-)
-// Drag → Status persistieren (optimistisch + Rollback + Toast). Lead-Status hat
-// keinen Pflicht-Grund wie „Lost" bei Deals, daher direkte Ablage.
-async function onLeadMove({ cardId, fromCol, toCol }) {
-  if (fromCol === toCol) return
-  const lead = boardLeads.value.find((l) => l.name === cardId)
-  if (!lead) return
-  lead.status = toCol
-  try {
-    await call('frappe.client.set_value', { doctype: 'CRM Lead', name: cardId, fieldname: { status: toCol } })
-    toast({ title: __('Status updated'), icon: 'check-circle', iconClasses: 'text-green-500' })
-  } catch (e) {
-    lead.status = fromCol
-    toast({ title: __('Could not save. Please try again.'), text: e?.messages?.[0] || e?.message || '', icon: 'alert-circle', iconClasses: 'text-red-500' })
-  }
+// Questionaire-Fortschritt aus dem Lead-Status abgeleitet (kein eigenes Feld).
+function questionairePct(status) {
+  const s = (status || '').toLowerCase()
+  if (/qualif/.test(s)) return 60
+  if (/nurtur|pflege/.test(s)) return 45
+  if (/contact|kontakt/.test(s)) return 35
+  return 15
+}
+function shortUser(u) { return (u || '').split('@')[0] }
+function qTone(p) { return p >= 60 ? 'success' : p >= 35 ? 'warning' : 'danger' }
+function relDate(v) {
+  if (!v) return '—'
+  const d = new Date(String(v).replace(' ', 'T')).getTime()
+  if (isNaN(d)) return String(v)
+  const days = Math.floor((Date.now() - d) / 86400000)
+  if (days <= 0) return 'heute'
+  if (days === 1) return 'gestern'
+  if (days < 7) return `vor ${days} Tagen`
+  if (days < 14) return 'vor 1 Woche'
+  return new Intl.DateTimeFormat('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(d)
+}
+
+// „Projekt starten" — Lead → Vertriebsprojekt (create_project_from_lead).
+const starting = ref(null)
+function startProject(id) {
+  starting.value = id
+  call('lcs_integrations.projects.api.create_project_from_lead', { lead_name: id })
+    .then((name) => {
+      const pid = name?.message || name
+      toast({ title: __('Project created') + ': ' + pid, icon: 'check-circle', iconClasses: 'text-green-500' })
+      if (pid) router.push({ name: 'LCS Project', params: { id: pid } })
+    })
+    .catch((e) => toast({ title: e?.messages?.[0] || e?.message || __('Could not create project'), icon: 'alert-circle', iconClasses: 'text-red-500' }))
+    .finally(() => { starting.value = null })
 }
 
 // --- Detail-Drawer (echt: Zeilenklick öffnet) ------------------------------
@@ -494,8 +517,42 @@ onBeforeUnmount(() => {
   font-weight: var(--pp-weight-semibold); box-shadow: var(--pp-shadow-xs); }
 .crml-viewseg-ico { width: 14px; height: 14px; }
 
-/* Kanban-Board (eigener Scroll-Bereich im fixierten Viewport-Layout) */
-.crml-board { flex: 1; min-height: 0; overflow: auto; }
+/* Questionaire-Fortschritt (Liste + Karten) */
+.crml-q { display: inline-flex; align-items: center; gap: var(--pp-space-2); min-width: 120px; }
+.crml-q-track { flex: 1; height: 6px; border-radius: var(--pp-radius-full); background: var(--pp-bg-sunken); overflow: hidden; }
+.crml-q-track i { display: block; height: 100%; }
+.crml-q b { font-size: 11px; font-variant-numeric: tabular-nums; color: var(--pp-text-secondary); }
+
+/* Aktions-Buttons (Lead öffnen / Projekt starten) */
+.crml-act { display: inline-flex; gap: 6px; }
+.crml-abtn { appearance: none; cursor: pointer; font-family: inherit; font-size: 11px; font-weight: var(--pp-weight-medium);
+  padding: 5px 10px; border: 1px solid var(--pp-border-default); border-radius: var(--pp-radius-ui);
+  background: var(--pp-bg-base); color: var(--pp-text-secondary); white-space: nowrap; }
+.crml-abtn:hover:not(:disabled) { border-color: var(--pp-brand-primary); color: var(--pp-brand-primary); }
+.crml-abtn.is-primary { background: var(--pp-brand-primary); border-color: var(--pp-brand-primary); color: var(--pp-text-on-accent); }
+.crml-abtn.is-primary:hover:not(:disabled) { color: var(--pp-text-on-accent); filter: brightness(1.05); }
+.crml-abtn:disabled { opacity: 0.5; cursor: default; }
+
+/* Cards-Modus */
+.crml-cards { flex: 1; min-height: 0; overflow: auto; display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: var(--pp-space-3); align-content: start; }
+.crml-card { display: flex; flex-direction: column; gap: var(--pp-space-2); cursor: pointer;
+  background: var(--pp-bg-surface); border: 1px solid var(--pp-border-subtle); border-radius: var(--pp-radius-ui);
+  box-shadow: var(--pp-shadow-xs); padding: var(--pp-space-4); }
+.crml-card:hover { border-color: var(--pp-brand-primary); }
+.crml-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--pp-space-2); }
+.crml-card-title { min-width: 0; display: flex; flex-direction: column; }
+.crml-card-name { font-size: var(--pp-fs-14, 14px); font-weight: var(--pp-weight-semibold); color: var(--pp-text-primary); }
+.crml-card-id { font-size: 11px; color: var(--pp-text-tertiary); font-variant-numeric: tabular-nums; }
+.crml-card-firma { font-size: var(--pp-fs-13, 13px); color: var(--pp-text-secondary); }
+.crml-card-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.crml-tag { font-size: 11px; color: var(--pp-text-tertiary); background: var(--pp-bg-sunken);
+  padding: 2px var(--pp-space-2); border-radius: var(--pp-radius-full); }
+.crml-card-q { display: flex; align-items: center; gap: var(--pp-space-2); }
+.crml-card-q .crml-q-track { flex: 1; }
+.crml-card-q b { font-size: 11px; color: var(--pp-text-secondary); white-space: nowrap; }
+.crml-card-foot { display: flex; gap: 6px; margin-top: var(--pp-space-1); }
+.crml-card-foot .crml-abtn { flex: 1; text-align: center; justify-content: center; }
 
 
 
