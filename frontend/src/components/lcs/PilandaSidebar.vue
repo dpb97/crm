@@ -57,6 +57,8 @@ import { PROJECT_STEPS } from '@/lib/projectSteps'
 import PpSidebar from '@/components/pp/PpSidebar.vue'
 import { usePilandaNav } from '@/composables/usePilandaNav'
 import IconArrowLeft from '~icons/lucide/arrow-left'
+import IconAward from '~icons/lucide/award'
+import IconFolder from '~icons/lucide/folder'
 
 // Lucide-Icons (~icons/lucide/* — frappeui/vite lucideIcons-Plugin, wie im Desk).
 import IconHouse from '~icons/lucide/house'
@@ -114,6 +116,9 @@ const ICON_MAP = {
   activity: IconActivity, globe: IconGlobe, 'share-2': IconShare2,
   'user-plus': IconUserPlus, target: IconTarget, 'folder-kanban': IconFolderKanban,
   radar: IconRadar, 'trending-up': IconTrendingUp, 'calendar-days': IconCalendarDays,
+  // Project-workspace step icons.
+  grid: IconLayoutGrid, 'dollar-sign': IconBanknote, calendar: IconCalendarDays,
+  award: IconAward, folder: IconFolder, 'arrow-left': IconArrowLeft,
 }
 
 // Schlüsselwort-Fallback (Port des Desk-iconFor) für Items ohne icon-Feld.
