@@ -78,7 +78,7 @@
             </Tooltip>
             <PpPill :tone="statusTone(doc.status)">{{ __(doc.status || 'Open') }}</PpPill>
             <button class="crmw-btn" @click="activeTab = T.ACT">{{ __('Activity') }}</button>
-            <button class="crmw-btn crmw-btn--primary" @click="showNewOfferDialog = true">{{ __('Create Offer') }}</button>
+            <button class="crmw-btn crmw-btn--primary" :disabled="!canCreateOffer" :title="offerGateHint" @click="showNewOfferDialog = true">{{ __('Create Offer') }}</button>
           </template>
         </PpPageHead>
 
@@ -222,7 +222,7 @@
                   <span v-if="activeOffersCount > 0"> • {{ activeOffersCount }} {{ __('active') }}</span>
                 </p>
               </div>
-              <Button variant="solid" size="sm" iconLeft="plus" @click="showNewOfferDialog = true" :label="__('New Offer')" />
+              <Button variant="solid" size="sm" iconLeft="plus" :disabled="!canCreateOffer" :tooltip="offerGateHint" @click="showNewOfferDialog = true" :label="__('New Offer')" />
             </div>
 
             <div v-if="offersResource.loading && !offers.length" class="flex items-center justify-center py-8">
@@ -234,7 +234,7 @@
               :hint="__('Create an offer to track versions and outcomes.')"
             >
               <template #action>
-                <Button variant="outline" size="sm" iconLeft="plus" @click="showNewOfferDialog = true" :label="__('Create first offer')" />
+                <Button variant="outline" size="sm" iconLeft="plus" :disabled="!canCreateOffer" :tooltip="offerGateHint" @click="showNewOfferDialog = true" :label="__('Create first offer')" />
               </template>
             </PpEmptyState>
             <PpDataGrid v-else :columns="offerCols" :rows="offerRows" @row-click="openOffer">
@@ -374,10 +374,12 @@
             </button>
           </div>
         </div>
+        <!-- Amount first: a binding offer always needs its value up front. -->
+        <FormControl :label="__('Offer amount (EUR)')" v-model="newOffer.value" type="number" min="0" required :placeholder="__('e.g. 1250000')" />
         <FormControl :label="__('Offer Title')" v-model="newOffer.offer_title" type="text" :placeholder="__('e.g. Initial proposal, Revision 2, ...')" required />
         <div class="grid grid-cols-2 gap-4">
-          <FormControl :label="__('Value (EUR)')" v-model="newOffer.value" type="number" />
           <FormControl :label="__('Win Probability (%)')" v-model="newOffer.probability" type="number" min="0" max="100" />
+          <div />
         </div>
         <div class="grid grid-cols-2 gap-4">
           <FormControl :label="__('Offer Date')" v-model="newOffer.offer_date" type="date" />
@@ -394,7 +396,7 @@
     <template #actions>
       <div class="flex justify-end gap-2">
         <Button variant="ghost" @click="showNewOfferDialog = false" :label="__('Cancel')" />
-        <Button variant="solid" @click="createOffer" :loading="creatingOffer" :disabled="!newOffer.offer_title || creatingOffer" :label="__('Create')" iconLeft="plus" />
+        <Button variant="solid" @click="createOffer" :loading="creatingOffer" :disabled="!newOffer.offer_title || (!newOffer.value && newOffer.value !== 0) || creatingOffer" :label="__('Create')" iconLeft="plus" />
       </div>
     </template>
   </Dialog>
@@ -742,6 +744,14 @@ const offerTimeline = computed(() =>
 const showNewOfferDialog = ref(false)
 const creatingOffer = ref(false)
 
+// A binding offer (verbindliches Angebot) is only meaningful once the project
+// has reached the Offer phase — no formal quote before then.
+const OFFER_ALLOWED_PHASES = ['Offer', 'Negotiation', 'Won', 'Execution', 'Completed']
+const canCreateOffer = computed(() => OFFER_ALLOWED_PHASES.includes(doc.value?.phase))
+const offerGateHint = computed(() =>
+  canCreateOffer.value ? '' : __('A binding offer is only possible from the Offer phase.'),
+)
+
 // Offer templates
 const templatesResource = createResource({
   url: 'lcs_integrations.projects.api.get_offer_templates',
@@ -780,6 +790,14 @@ const newOffer = ref({
 
 async function createOffer() {
   if (creatingOffer.value) return
+  if (!canCreateOffer.value) {
+    toast({ title: offerGateHint.value, icon: 'alert-circle', iconClasses: 'text-amber-500' })
+    return
+  }
+  if (!newOffer.value.value && newOffer.value.value !== 0) {
+    toast({ title: __('Please enter the offer amount first.'), icon: 'alert-circle', iconClasses: 'text-amber-500' })
+    return
+  }
   creatingOffer.value = true
   try {
     const res = createResource({
@@ -1008,6 +1026,7 @@ function formatRelativeTime(dateStr) {
   border: 1px solid var(--pp-border-default); background: var(--pp-bg-surface); color: var(--pp-text-primary); }
 .crmw-btn:hover { background: var(--pp-bg-hover); border-color: var(--pp-brand-primary); color: var(--pp-brand-primary); }
 .crmw-btn--primary { background: var(--pp-brand-primary); border-color: var(--pp-brand-primary); color: var(--pp-text-on-accent); }
+.crmw-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .crmw-btn--primary:hover { filter: brightness(1.05); color: var(--pp-text-on-accent); }
 
 /* Token pills (type / status) */

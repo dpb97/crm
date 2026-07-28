@@ -967,3 +967,6 @@ Move a country to another territory,Ein Land in ein anderes Gebiet verschieben
 No countries assigned,Keine Länder zugeordnet
 Country moved to,Land verschoben nach
 Country could not be moved.,Land konnte nicht verschoben werden.
+Offer amount (EUR),Angebotsbetrag (EUR)
+A binding offer is only possible from the Offer phase.,Ein verbindliches Angebot ist erst ab Phase Angebot möglich.
+Please enter the offer amount first.,Bitte zuerst den Angebotsbetrag eingeben.
