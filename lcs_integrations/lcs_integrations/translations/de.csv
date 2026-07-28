@@ -975,3 +975,8 @@ Role,Rolle
 None yet.,Noch keine.
 Relation,Beziehung
 Remove,Entfernen
+You are not authorised to give this approval: {0},"Du bist nicht berechtigt, diese Freigabe zu erteilen: {0}"
+LCS Offer Approver CEO,Angebot-Freigabe CEO
+LCS Offer Approver CFO-COO,Angebot-Freigabe CFO/COO
+LCS Offer Approver Owner,Angebot-Freigabe Eigentümer
+Not permitted,Nicht berechtigt

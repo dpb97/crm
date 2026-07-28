@@ -12,7 +12,7 @@
 
     <p v-if="!rows.length" class="rel-empty">{{ __('None yet.') }}</p>
 
-    <div v-for="(row, i) in rows" :key="i" class="rel-row">
+    <div v-for="(row, i) in rows" :key="row._k" class="rel-row">
       <template v-for="col in columns" :key="col.key">
         <Link v-if="col.type === 'link'" :doctype="col.options" v-model="row[col.key]" class="rel-link" :placeholder="col.label" @update:modelValue="dirty = true" />
         <select v-else-if="col.type === 'select'" v-model="row[col.key]" class="rel-input" @change="dirty = true">
@@ -47,6 +47,8 @@ const props = defineProps({
 const rows = ref([])
 const dirty = ref(false)
 const saving = ref(false)
+let keySeq = 0
+const nextKey = () => `r${++keySeq}` // stable per-row key so Link inputs don't go stale on delete
 
 async function load() {
   rows.value = []
@@ -56,13 +58,13 @@ async function load() {
     const res = await call('lcs_integrations.projects.api.get_relations', {
       doctype: props.doctype, name: props.name, fieldname: props.fieldname,
     })
-    rows.value = (res?.message || res || []).map((r) => ({ ...r }))
+    rows.value = (res?.message || res || []).map((r) => ({ ...r, _k: nextKey() }))
   } catch { rows.value = [] }
 }
 watch(() => [props.name, props.fieldname], load, { immediate: true })
 
 function addRow() {
-  const blank = {}
+  const blank = { _k: nextKey() }
   props.columns.forEach((c) => { blank[c.key] = c.type === 'check' ? 0 : '' })
   rows.value.push(blank)
   dirty.value = true

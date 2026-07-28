@@ -1787,13 +1787,24 @@ def offer_needs_owner(doc):
     return (doc.get("value_eur") or doc.get("value") or 0) >= _OWNER_THRESHOLD_EUR
 
 
+# Only holders of the matching role may give each approval (System Manager may
+# always override). The roles are created idempotently by a patch.
+_APPROVAL_ROLES = {
+    "approval_ceo": "LCS Offer Approver CEO",
+    "approval_cfo_coo": "LCS Offer Approver CFO-COO",
+    "approval_owner": "LCS Offer Approver Owner",
+}
+
+
 def on_offer_approval_validate(doc, method=None):
     """Release + signature workflow for a binding offer:
-      · ticking an approval stamps WHO approved (session user); unticking clears it,
+      · an approval may only be given by a holder of the matching role (or a
+        System Manager); ticking stamps WHO approved, unticking clears it,
       · owner approval is mandatory above EUR 2m,
       · the offer can only be marked signed once every required approval is in.
     """
     user = frappe.session.user
+    roles = set(frappe.get_roles(user))
     for chk, by in (
         ("approval_ceo", "approval_ceo_by"),
         ("approval_cfo_coo", "approval_cfo_coo_by"),
@@ -1801,6 +1812,10 @@ def on_offer_approval_validate(doc, method=None):
     ):
         if doc.get(chk):
             if not doc.get(by):
+                # newly given approval — the acting user must hold the role
+                needed = _APPROVAL_ROLES[chk]
+                if "System Manager" not in roles and needed not in roles:
+                    frappe.throw(_("You are not authorised to give this approval: {0}").format(_(needed)))
                 doc.set(by, user)
         else:
             doc.set(by, None)
@@ -1836,6 +1851,8 @@ def get_relations(doctype, name, fieldname):
     """Read a relation child table (cross-org / person relationships)."""
     if (doctype, fieldname) not in _RELATION_FIELDS:
         frappe.throw(_("Unsupported relation field."))
+    if not frappe.has_permission(doctype, "read", doc=name):
+        frappe.throw(_("Not permitted"), frappe.PermissionError)
     doc = frappe.get_doc(doctype, name)
     return [row.as_dict() for row in (doc.get(fieldname) or [])]
 

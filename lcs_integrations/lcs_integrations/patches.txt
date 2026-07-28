@@ -53,3 +53,5 @@ lcs_integrations.patches.rename_demo_projects
 lcs_integrations.patches.backfill_contact_domain_binding
 # Cross-org / person relationships (Partner/Zulieferer, Arbeitgeber-Historie, Freunde).
 lcs_integrations.patches.add_cross_org_relations
+# Roles that authorise offer approvals (CEO / CFO-COO / owner).
+lcs_integrations.patches.create_offer_approver_roles
