@@ -33,6 +33,7 @@
   "mountain_mast_longitude",
   "section_opportunity",
   "deal",
+  "lead",
   "source",
   "expected_start_date",
   "expected_close_date",
@@ -238,6 +239,12 @@
    "fieldtype": "Link",
    "label": "Linked Deal",
    "options": "CRM Deal"
+  },
+  {
+   "fieldname": "lead",
+   "fieldtype": "Link",
+   "label": "Linked Lead",
+   "options": "CRM Lead"
   },
   {
    "description": "How this opportunity came to us — managed centrally in CRM Lead Source",

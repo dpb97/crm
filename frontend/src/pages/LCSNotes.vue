@@ -16,15 +16,13 @@
         <Breadcrumbs :items="[{ label: 'Vertrieb' }, { label: 'CRM' }, { label: __('Notes'), route: { name: 'Notes' } }]" />
       </template>
       <template #right-header>
+        <Button variant="solid" :label="__('New note')" iconLeft="plus" @click="showNew = true" />
         <Button :label="__('Refresh')" iconLeft="refresh-cw" :loading="board.loading" @click="board.reload()" />
       </template>
     </LayoutHeader>
 
     <div class="pp-listpage">
       <div class="pp-listpage__inner">
-        <!-- Schnellerfassung (tippen/sprechen + Auto-Mapping) — erster Block. -->
-        <LcsNoteComposer @saved="board.reload()" />
-
         <!-- Filterleiste: Art-Segmente + Suche -->
         <PpFilterBar
           v-model="art"
@@ -62,6 +60,11 @@
         </PpTableCard>
       </div>
     </div>
+
+    <!-- Neue Notiz (nur per Button) -->
+    <PpModal v-model:open="showNew" :title="__('New note')" :width="640">
+      <LcsNoteComposer @saved="onNoteSaved" />
+    </PpModal>
   </div>
 </template>
 
@@ -75,6 +78,7 @@ import PpEmptyState from '@/components/pp/PpEmptyState.vue'
 import PpFilterBar from '@/components/pp/PpFilterBar.vue'
 import PpTableCard from '@/components/pp/PpTableCard.vue'
 import LcsNoteComposer from '@/components/lcs/LcsNoteComposer.vue'
+import PpModal from '@/components/pp/PpModal.vue'
 import PpPill from '@/components/pp/PpPill.vue'
 import IconStickyNote from '~icons/lucide/sticky-note'
 import { usePilandaInspect } from '@/composables/usePilandaInspect'
@@ -83,6 +87,10 @@ const router = useRouter()
 const { inspectNode } = usePilandaInspect()
 
 const board = createResource({ url: 'lcs_integrations.projects.api.get_notes', auto: true })
+
+// Neue Notiz — nur per Button (Modal).
+const showNew = ref(false)
+function onNoteSaved() { showNew.value = false; board.reload() }
 const rows = computed(() => board.data?.rows || [])
 
 // --- Filter: Art + Freitext ------------------------------------------------

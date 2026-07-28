@@ -553,6 +553,36 @@ def create_project_from_deal(deal_name):
 
 
 @frappe.whitelist()
+def create_project_from_lead(lead_name):
+    """Create an LCS Project directly from a CRM Lead (Interessent → Vertriebs-
+    projekt). Carries the funnel position forward: a qualified lead starts the
+    project at the Qualified phase. Idempotent per lead (skips if already made)."""
+    if not frappe.has_permission("CRM Lead", ptype="read", doc=lead_name):
+        frappe.throw("Not permitted to read this lead", frappe.PermissionError)
+    if not frappe.has_permission("LCS Project", ptype="create"):
+        frappe.throw("Not permitted to create projects", frappe.PermissionError)
+
+    existing = frappe.db.get_value("LCS Project", {"lead": lead_name}, "name")
+    if existing:
+        return existing
+
+    lead = frappe.get_doc("CRM Lead", lead_name)
+    project = frappe.new_doc("LCS Project")
+    project.project_name = lead.organization or lead.lead_name or lead.name
+    project.organization = lead.organization
+    project.salesperson = lead.lead_owner
+    project.estimated_value = lead.annual_revenue
+    if frappe.get_meta("LCS Project").has_field("lead"):
+        project.lead = lead_name
+    # Qualified leads enter the project at Qualified; earlier leads at the start.
+    project.phase = "Qualified" if (lead.status or "").lower().startswith("qualif") else "Qualified"
+    project.status = "Open"
+    project.insert(ignore_permissions=True)
+    frappe.db.commit()
+    return project.name
+
+
+@frappe.whitelist()
 def get_project_primary_contact(project):
     """Primary contact of a project (perm-safe: reads the child table via
     get_all so Sales Users don't hit 'LCS Project Contact' permission errors)."""

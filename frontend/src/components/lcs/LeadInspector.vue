@@ -32,7 +32,8 @@
       </section>
 
       <div class="li-foot">
-        <Button variant="solid" iconLeft="external-link" :label="__('Open in CRM')" @click="$emit('open', lead.name)" />
+        <Button variant="solid" iconLeft="git-branch" :label="__('Convert to project')" :loading="converting" @click="convertToProject" />
+        <Button variant="subtle" iconLeft="external-link" :label="__('Open in CRM')" @click="$emit('open', lead.name)" />
       </div>
     </template>
 
@@ -41,8 +42,9 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
-import { Button } from 'frappe-ui'
+import { computed, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { Button, call, toast } from 'frappe-ui'
 import IconMail from '~icons/lucide/mail'
 import IconPhone from '~icons/lucide/phone'
 import QuickContactActions from '@/components/lcs/QuickContactActions.vue'
@@ -51,6 +53,21 @@ const props = defineProps({
   lead: { type: Object, default: null },
 })
 defineEmits(['open'])
+
+const router = useRouter()
+const converting = ref(false)
+function convertToProject() {
+  if (!props.lead) return
+  converting.value = true
+  call('lcs_integrations.projects.api.create_project_from_lead', { lead_name: props.lead.name })
+    .then((name) => {
+      const id = name?.message || name
+      toast.success(__('Project created') + ': ' + id)
+      if (id) router.push({ name: 'LCS Project', params: { id } })
+    })
+    .catch((e) => toast.error(e?.messages?.[0] || e?.message || __('Could not create project')))
+    .finally(() => { converting.value = false })
+}
 
 const displayName = computed(() => {
   const l = props.lead
@@ -85,5 +102,5 @@ const displayName = computed(() => {
 .li-ico { width: 14px; height: 14px; flex-shrink: 0; }
 
 .li-actions { margin-top: var(--pp-space-2); }
-.li-foot { margin-top: var(--pp-space-1); }
+.li-foot { margin-top: var(--pp-space-1); display: flex; flex-direction: column; gap: var(--pp-space-2); align-items: flex-start; }
 </style>
