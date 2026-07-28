@@ -31,6 +31,23 @@
         <QuickContactActions :email="lead.email" :phone="lead.mobile_no" class="li-actions" />
       </section>
 
+      <!-- Opportunity Matrix — SSOT on the originating LCS Chance (chance.crm_lead). -->
+      <section class="li-sec">
+        <h4 class="li-sec-title">{{ __('Opportunity Matrix') }}</h4>
+        <OpportunityMatrix
+          v-if="chance.name"
+          :technical-fit="chance.technical_fit || 0"
+          :commercial-fit="chance.commercial_fit || 0"
+          :relationship="chance.relationship_strength || 0"
+          :competition="chance.competition_level || 0"
+          :strategic-importance="chance.strategic_importance || 0"
+          @update="onMatrixUpdate"
+        />
+        <p v-else class="li-muted">
+          {{ __('No linked opportunity — the matrix is maintained on the opportunity (Chance → Lead).') }}
+        </p>
+      </section>
+
       <div class="li-foot">
         <Button variant="solid" iconLeft="git-branch" :label="__('Convert to project')" :loading="converting" @click="convertToProject" />
         <Button variant="subtle" iconLeft="external-link" :label="__('Open in CRM')" @click="$emit('open', lead.name)" />
@@ -42,12 +59,13 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { Button, call, toast } from 'frappe-ui'
 import IconMail from '~icons/lucide/mail'
 import IconPhone from '~icons/lucide/phone'
 import QuickContactActions from '@/components/lcs/QuickContactActions.vue'
+import OpportunityMatrix from '@/components/lcs/OpportunityMatrix.vue'
 
 const props = defineProps({
   lead: { type: Object, default: null },
@@ -55,6 +73,25 @@ const props = defineProps({
 defineEmits(['open'])
 
 const router = useRouter()
+
+// Opportunity Matrix lives on the LCS Chance that originated this lead; load it
+// on lead change and persist slider edits back to that chance (single SSOT).
+const chance = ref({})
+watch(() => props.lead?.name, async (name) => {
+  chance.value = {}
+  if (!name) return
+  try {
+    const res = await call('lcs_integrations.projects.api.get_chance_by_lead', { lead: name })
+    chance.value = res || {}
+  } catch { chance.value = {} }
+}, { immediate: true })
+
+function onMatrixUpdate({ field, value }) {
+  if (!chance.value?.name) return
+  chance.value[field] = value
+  call('frappe.client.set_value', { doctype: 'LCS Chance', name: chance.value.name, fieldname: field, value })
+    .catch((e) => toast.error(e?.messages?.[0] || e?.message || __('Could not save.')))
+}
 const converting = ref(false)
 function convertToProject() {
   if (!props.lead) return

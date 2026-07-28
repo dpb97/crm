@@ -43,7 +43,8 @@
       <QuickContactActions :email="c.email_id" :phone="phone" />
 
       <div class="ci-foot">
-        <Button variant="solid" iconLeft="external-link" :label="__('Open')" @click="$emit('open', contactId)" />
+        <Button variant="solid" iconLeft="target" :label="__('Create opportunity')" :loading="creatingChance" @click="createChance" />
+        <Button variant="subtle" iconLeft="external-link" :label="__('Open')" @click="$emit('open', contactId)" />
       </div>
     </template>
 
@@ -53,7 +54,8 @@
 
 <script setup>
 import { ref, watch } from 'vue'
-import { call, Avatar, Button } from 'frappe-ui'
+import { useRouter } from 'vue-router'
+import { call, toast, Avatar, Button } from 'frappe-ui'
 import QuickContactActions from '@/components/lcs/QuickContactActions.vue'
 
 const props = defineProps({
@@ -61,9 +63,28 @@ const props = defineProps({
 })
 defineEmits(['open'])
 
+const router = useRouter()
 const c = ref(null)
 const loading = ref(false)
 const phone = ref('')
+
+// Kontakt → Chance: create a fresh opportunity prefilled from this contact and
+// open it so the salesperson can rate the Opportunity Matrix right away.
+const creatingChance = ref(false)
+async function createChance() {
+  if (!props.contactId) return
+  creatingChance.value = true
+  try {
+    const res = await call('lcs_integrations.projects.api.create_chance_from_contact', { contact: props.contactId })
+    const id = res?.name || res?.message?.name
+    toast.success(__('Opportunity created') + (res?.chance_no ? ': ' + res.chance_no : ''))
+    if (id) router.push({ name: 'LCS Chance', params: { id } })
+  } catch (e) {
+    toast.error(e?.messages?.[0] || e?.message || __('Could not create the opportunity.'))
+  } finally {
+    creatingChance.value = false
+  }
+}
 
 async function load() {
   if (!props.contactId) {

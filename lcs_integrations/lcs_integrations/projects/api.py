@@ -1494,3 +1494,55 @@ def chance_dismiss(name):
     doc.status = "Keine Chance"
     doc.save(ignore_permissions=True)
     return {"name": doc.name, "status": doc.status}
+
+
+_CHANCE_MATRIX_FIELDS = (
+    "technical_fit", "commercial_fit", "relationship_strength",
+    "competition_level", "strategic_importance",
+)
+
+
+def _next_chance_no():
+    """Next free CH-### number (mirrors the Pilot-Scout import format)."""
+    top = 99
+    for no in frappe.get_all("LCS Chance", pluck="chance_no"):
+        if no and no.startswith("CH-"):
+            try:
+                top = max(top, int(no[3:]))
+            except (ValueError, TypeError):
+                pass
+    return f"CH-{top + 1}"
+
+
+@frappe.whitelist()
+def create_chance_from_contact(contact):
+    """A contact can spawn an opportunity → create a fresh LCS Chance prefilled
+    from the contact, ready for the Opportunity Matrix.
+    Flow: Kontakt → Chance → Lead → Projekt."""
+    c = frappe.get_doc("Contact", contact)
+    company = c.company_name or c.full_name or contact
+    doc = frappe.new_doc("LCS Chance")
+    doc.chance_no = _next_chance_no()
+    doc.title = company
+    doc.source = "Anfrage (Mail/Telefon)"
+    doc.source_detail = c.full_name or contact
+    doc.client = c.company_name or ""
+    doc.company = c.company_name or ""
+    doc.status = "Neu"
+    doc.insert(ignore_permissions=True)
+    return {"name": doc.name, "chance_no": doc.chance_no}
+
+
+@frappe.whitelist()
+def get_chance_by_lead(lead):
+    """The LCS Chance that originated a lead (chance.crm_lead == lead), with its
+    Opportunity-Matrix scores. Returns {} when the lead has no linked chance."""
+    name = frappe.db.get_value("LCS Chance", {"crm_lead": lead}, "name")
+    if not name:
+        return {}
+    doc = frappe.get_doc("LCS Chance", name)
+    out = {"name": doc.name, "chance_no": doc.chance_no, "title": doc.title,
+           "score": doc.score, "status": doc.status}
+    for f in _CHANCE_MATRIX_FIELDS:
+        out[f] = doc.get(f) or 0
+    return out
