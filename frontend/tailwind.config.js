@@ -68,6 +68,23 @@ export default {
           muted:     '#6B7280',
           surface:   '#F8FAFC',
         },
+        // Marken-Konsolidierung: die Tailwind-`blue`-Palette wird auf einen
+        // Türkis-Ramp (Brand-Cyan #008b8b) umgebogen, damit alle hartkodierten
+        // `blue-*`-Klassen in Alt-Komponenten (Badges, Pills, Dialoge) im neuen
+        // Türkis statt im Fremd-Blau erscheinen — ohne jede Komponente zu ändern.
+        blue: {
+          50:  '#e7f4f4',
+          100: '#c9e6e6',
+          200: '#99d2d2',
+          300: '#5cbcbc',
+          400: '#28a3a3',
+          500: '#008b8b',
+          600: '#017c7c',
+          700: '#036767',
+          800: '#055353',
+          900: '#064242',
+          950: '#032b2b',
+        },
       },
       fontFamily: {
         // Matches LCS brand typography; falls back to the frappe-ui default.

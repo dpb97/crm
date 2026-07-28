@@ -112,7 +112,7 @@ const ICON_MAP = {
   // Vertrieb nav (klickdummy IA): explicit level-1 icons.
   activity: IconActivity, globe: IconGlobe, 'share-2': IconShare2,
   'user-plus': IconUserPlus, target: IconTarget, 'folder-kanban': IconFolderKanban,
-  radar: IconRadar, 'trending-up': IconTrendingUp,
+  radar: IconRadar, 'trending-up': IconTrendingUp, 'calendar-days': IconCalendarDays,
 }
 
 // Schlüsselwort-Fallback (Port des Desk-iconFor) für Items ohne icon-Feld.
