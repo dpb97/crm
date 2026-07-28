@@ -5,13 +5,11 @@
   und wie viel Arbeit (Leads / Angebote / Projekte) trägt jeder Sales-Manager.
 
   Präsentation nach pilanda_theme-Showcase #8: PpPageHead + PpStatTile +
-  TerritoryMap (echte Leaflet-Weltkarte, Marker je Territorium auf echter
-  Geografie, gefärbt nach zuständigem Sales-Manager) + PpDataGrid (Territorien).
+  PpDataGrid (Territorien + Segmente). Reine Tabellen-Übersicht — die
+  Gebiets-KARTE lebt auf der Projektlandkarte (LCS Projects Map), damit die
+  Marktaufteilung eine kompakte „wer ist wofür zuständig"-Sicht bleibt.
   Datenlogik unverändert produktiv:
     lcs_integrations.projects.api.get_market_assignment
-  Die Marker-Koordinate ist der geografische Schwerpunkt der (echten) Länder
-  eines Territoriums (serverseitig aus dem bestehenden Country-Centroid-Table)
-  — reine Ortsreferenz, keine erfundenen Geschäftsdaten.
 -->
 
 <template>
@@ -29,7 +27,7 @@
       <div class="crmt-inner">
         <PpPageHead
           :title="__('Market Assignment')"
-          :subtitle="__('Project map + territories by sales manager · click a marker to see the assignment')"
+          :subtitle="__('Territories and segments by sales manager · who is responsible for what')"
         />
 
         <section class="crmt-kpis">
@@ -75,30 +73,11 @@
           </div>
         </section>
 
-        <!-- Projektkarte -->
-        <section class="crmt-section">
-          <div class="crmt-section-head">
-            <h3 class="crmt-section-title">{{ __('Project Map') }}</h3>
-            <span class="crmt-hint">{{ markers.length }} {{ __('of') }} {{ territories.length }} {{ __('territories located') }}</span>
-          </div>
-          <TerritoryMap v-if="markers.length" :markers="markers" :active-id="activeId" height-class="h-[60vh]" @marker-click="pickMarker" />
-          <div v-else class="crmt-card crmt-map-empty">
-            <PpEmptyState
-              :icon="IconMapPin"
-              :title="board.loading ? __('Loading map …') : __('No mappable territories')"
-              :hint="board.loading ? '' : __('The filtered territories have no countries with coordinates.')"
-            />
-          </div>
-          <p class="crmt-active" data-testid="crmt-active">
-            <template v-if="activeTerritory">
-              {{ __('Selected') }}: <strong>{{ activeTerritory.territory }}</strong> ·
-              {{ __('Sales manager') }} <strong>{{ activeTerritory.code || '—' }}</strong>
-              <template v-if="activeTerritory.user_name"> ({{ activeTerritory.user_name }})</template> ·
-              {{ activeTerritory.country_count }} {{ __('countries') }} · {{ activeTerritory.projects }} {{ __('Projects') }}
-            </template>
-            <template v-else>{{ __('No territory selected — click a marker.') }}</template>
-          </p>
-        </section>
+        <!-- Hinweis: die Karte lebt auf der Projektlandkarte (Gebiete + Projekte). -->
+        <p class="crmt-maplink">
+          {{ __('The territory map lives on the') }}
+          <a class="crmt-link" @click="$router.push({ name: 'LCS Projects Map' })">{{ __('Project Map') }}</a>.
+        </p>
 
         <!-- Territorien -->
         <PpFilterBar v-model:search="search" :placeholder="__('Territory / country …')">
@@ -116,7 +95,7 @@
           :total="territories.length"
           :grow="false"
         >
-            <PpDataGrid v-if="filteredRows.length" :columns="columns" :rows="gridRows" @row-click="selectTerritory">
+            <PpDataGrid v-if="filteredRows.length" :columns="columns" :rows="gridRows">
               <template #cell-territory="{ row }">
                 <span class="pp-cell-strong">{{ row.territory }}</span>
                 <span v-if="row.sub_region" class="pp-cell-sub">{{ row.sub_region }}</span>
@@ -175,7 +154,6 @@ import { createResource, call, toast, Breadcrumbs, Button, FormControl, FeatherI
 import LayoutHeader from '@/components/LayoutHeader.vue'
 import PpPageHead from '@/components/pp/PpPageHead.vue'
 import PpStatTile from '@/components/pp/PpStatTile.vue'
-import TerritoryMap from '@/components/lcs/TerritoryMap.vue'
 import PpDataGrid from '@/components/pp/PpDataGrid.vue'
 import PpEmptyState from '@/components/pp/PpEmptyState.vue'
 import IconMapPin from '~icons/lucide/map-pin'
@@ -234,18 +212,6 @@ const filteredRows = computed(() => {
   })
 })
 const gridRows = computed(() => filteredRows.value.map((t) => ({ ...t, id: t.territory })))
-
-// Karten-Marker: nur verortbare Territorien (Koordinate vom Server), gefärbt
-// nach zuständigem Manager; folgt dem aktiven Filter.
-const markers = computed(() => filteredRows.value
-  .filter((t) => t.latitude != null && t.longitude != null)
-  .map((t) => ({ id: t.territory, lat: t.latitude, lon: t.longitude,
-    label: `${t.territory} · ${t.code || '—'}`, kind: mgrKind(t.code) })))
-
-const activeId = ref(null)
-const activeTerritory = computed(() => territories.value.find((t) => t.territory === activeId.value) || null)
-function pickMarker(id) { activeId.value = id }
-function selectTerritory(id) { activeId.value = id }
 
 // Territorien-Tabelle.
 const columns = [
@@ -362,9 +328,9 @@ async function reassign(row, code) {
 .crmt-input:focus { outline: none; border-color: var(--pp-brand-primary); box-shadow: 0 0 0 3px rgb(var(--pp-brand-primary-rgb) / 0.15); }
 .crmt-input--search { padding-left: 30px; min-width: 180px; }
 
-.crmt-card { background: var(--pp-bg-surface); border: 1px solid var(--pp-border-subtle);
-  border-radius: var(--pp-radius-ui); box-shadow: var(--pp-shadow-xs); padding: var(--pp-space-2); }
-.crmt-map-empty { display: flex; align-items: center; justify-content: center; min-height: 240px; }
+.crmt-maplink { margin: 0; font-size: var(--pp-fs-13, 13px); color: var(--pp-text-secondary); }
+.crmt-link { cursor: pointer; color: var(--pp-brand-primary); font-weight: var(--pp-weight-medium); }
+.crmt-link:hover { text-decoration: underline; }
 
 .crmt-mgr { display: inline-flex; align-items: center; gap: 6px; font-size: var(--pp-fs-13, 13px); color: var(--pp-text-primary); }
 .crmt-mgr-inline { color: var(--pp-text-secondary); }
