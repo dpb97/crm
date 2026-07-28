@@ -13,6 +13,8 @@
         <Breadcrumbs :items="[{ label: 'Vertrieb' }, { label: 'CRM' }, { label: __('Network'), route: { name: 'LCS Network' } }]" />
       </template>
       <template #right-header>
+        <Button :label="__('New company')" iconLeft="building-2" @click="openOrg" />
+        <Button variant="solid" :label="__('New contact')" iconLeft="user-plus" @click="openContact" />
         <Button :label="__('Refresh')" iconLeft="refresh-cw" @click="graph.reload()" />
       </template>
     </LayoutHeader>
@@ -45,17 +47,51 @@
         </section>
       </div>
     </div>
+
+    <!-- Neuer Kontakt (Firma aus Bestand ODER neu über den Link-Picker) -->
+    <PpModal v-model:open="contactOpen" :title="__('New contact')" :width="520">
+      <form class="crmn-form" @submit.prevent="saveContact">
+        <div class="crmn-form-row">
+          <label class="crmn-fld"><span class="crmn-fld-cap">{{ __('First name') }}</span>
+            <input v-model="cForm.first_name" type="text" class="crmn-input" autofocus /></label>
+          <label class="crmn-fld"><span class="crmn-fld-cap">{{ __('Last name') }}</span>
+            <input v-model="cForm.last_name" type="text" class="crmn-input" /></label>
+        </div>
+        <label class="crmn-fld"><span class="crmn-fld-cap">{{ __('Email') }}</span>
+          <input v-model="cForm.email" type="email" class="crmn-input" /></label>
+        <div class="crmn-fld">
+          <span class="crmn-fld-cap">{{ __('Company') }}</span>
+          <Link doctype="CRM Organization" v-model="cForm.company" :placeholder="__('Select from existing or create new')" :onCreate="onCreateOrg" />
+        </div>
+      </form>
+      <template #footer>
+        <Button :label="__('Cancel')" @click="contactOpen = false" />
+        <Button variant="solid" :label="__('Save')" :loading="saving" @click="saveContact" />
+      </template>
+    </PpModal>
+
+    <!-- Neue Firma -->
+    <PpModal v-model:open="orgOpen" :title="__('New company')" :width="440">
+      <label class="crmn-fld"><span class="crmn-fld-cap">{{ __('Company') }}</span>
+        <input v-model="oName" type="text" class="crmn-input" autofocus @keydown.enter.prevent="saveOrg" /></label>
+      <template #footer>
+        <Button :label="__('Cancel')" @click="orgOpen = false" />
+        <Button variant="solid" :label="__('Save')" :loading="saving" @click="saveOrg" />
+      </template>
+    </PpModal>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
-import { createResource, Breadcrumbs, Button } from 'frappe-ui'
+import { createResource, call, toast, Breadcrumbs, Button } from 'frappe-ui'
 import LayoutHeader from '@/components/LayoutHeader.vue'
 import PpNetGraph from '@/components/pp/PpNetGraph.vue'
 import PpPageHead from '@/components/pp/PpPageHead.vue'
 import PpEmptyState from '@/components/pp/PpEmptyState.vue'
+import PpModal from '@/components/pp/PpModal.vue'
+import Link from '@/components/Controls/Link.vue'
 import { usePilandaInspect } from '@/composables/usePilandaInspect'
 
 const router = useRouter()
@@ -184,6 +220,54 @@ function pick(id) {
   inspectNode(view)
 }
 
+// --- Neue Firma / Neuer Kontakt --------------------------------------------
+const saving = ref(false)
+
+const orgOpen = ref(false)
+const oName = ref('')
+function openOrg() { oName.value = ''; orgOpen.value = true }
+function saveOrg() {
+  const name = oName.value.trim()
+  if (!name) return
+  saving.value = true
+  call('frappe.client.insert', { doc: { doctype: 'CRM Organization', organization_name: name } })
+    .then(() => { orgOpen.value = false; toast.success(__('Company created') + ': ' + name); graph.reload() })
+    .catch((e) => toast.error(e?.messages?.[0] || e?.message || __('Could not save.')))
+    .finally(() => { saving.value = false })
+}
+
+const contactOpen = ref(false)
+const cForm = ref({ first_name: '', last_name: '', email: '', company: '' })
+function openContact() { cForm.value = { first_name: '', last_name: '', email: '', company: '' }; contactOpen.value = true }
+// Firma inline neu anlegen (Link-Picker „Create new") → setzt sie im Formular.
+async function onCreateOrg(value, close) {
+  try {
+    const res = await call('frappe.client.insert', { doc: { doctype: 'CRM Organization', organization_name: value } })
+    const name = res?.message?.name || res?.name || value
+    cForm.value.company = name
+    toast.success(__('Company created') + ': ' + name)
+    close && close()
+  } catch (e) { toast.error(e?.messages?.[0] || e?.message || __('Could not save.')) }
+}
+function saveContact() {
+  const fn = cForm.value.first_name.trim()
+  const ln = cForm.value.last_name.trim()
+  if (!fn && !ln) { toast.error(__('Please enter a name.')); return }
+  saving.value = true
+  const doc = {
+    doctype: 'Contact',
+    first_name: fn || ln,
+    last_name: fn ? ln : '',
+    company_name: cForm.value.company || '',
+  }
+  const email = cForm.value.email.trim()
+  if (email) doc.email_ids = [{ email_id: email, is_primary: 1 }]
+  call('frappe.client.insert', { doc })
+    .then(() => { contactOpen.value = false; toast.success(__('Contact created')); graph.reload() })
+    .catch((e) => toast.error(e?.messages?.[0] || e?.message || __('Could not save.')))
+    .finally(() => { saving.value = false })
+}
+
 onBeforeUnmount(() => inspectNode(null))
 
 const selPeople = computed(() => {
@@ -233,4 +317,14 @@ function openSelected() {
   border-radius: var(--pp-radius-ui); box-shadow: var(--pp-shadow-xs); }
 .crmn-graph--card { background: var(--pp-bg-surface); border: 1px solid var(--pp-border-subtle);
   border-radius: var(--pp-radius-ui); box-shadow: var(--pp-shadow-xs); padding: var(--pp-space-3); }
+
+/* Anlage-Formulare (Neuer Kontakt / Neue Firma) */
+.crmn-form { display: flex; flex-direction: column; gap: var(--pp-space-4); }
+.crmn-form-row { display: flex; gap: var(--pp-space-3); }
+.crmn-fld { display: flex; flex-direction: column; gap: 4px; flex: 1; }
+.crmn-fld-cap { font-size: 10px; font-weight: var(--pp-weight-bold); letter-spacing: 0.04em;
+  text-transform: uppercase; color: var(--pp-text-tertiary); }
+.crmn-input { appearance: none; font-family: inherit; font-size: var(--pp-fs-13, 13px); color: var(--pp-text-primary);
+  padding: 7px var(--pp-space-3); border: 1px solid var(--pp-border-default); border-radius: var(--pp-radius-ui); background: var(--pp-bg-base); }
+.crmn-input:focus { outline: none; border-color: var(--pp-brand-primary); box-shadow: 0 0 0 3px rgb(var(--pp-brand-primary-rgb) / 0.15); }
 </style>
