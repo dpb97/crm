@@ -52,6 +52,7 @@ export function usePilandaNav() {
           { n: 'Leads',               t: '/crm/leads',             icon: 'user-plus',     k: 'cust', x: true, d: 'Phase Lead' },
           { n: 'Calls',               t: '/crm/call-logs',         k: 'cust', x: true, sub: 1, d: 'Anruf-Protokolle über alle Leads' },
           { n: 'Notizen',             t: '/crm/notes',             k: 'cust', x: true, sub: 1, d: 'Notizen über Leads, Deals und Projekte' },
+          { n: 'Aufgaben',            t: '/crm/tasks',             k: 'cust', x: true, sub: 1, d: 'Aufgaben über Leads, Deals und Projekte' },
           { n: 'Sales Meeting',       t: '/crm/sales-meeting',     icon: 'calendar-days', k: 'cust', x: true, d: 'Vertriebsbesprechung mit Forecast-Einblicken' },
           { n: 'Vertriebsprojekte',   t: '/crm/projects',          icon: 'folder-kanban', k: 'cust', x: true, d: 'Vertriebsprojekte (Deal=Projekt)' },
           { n: 'Markteinteilung',     t: '/crm/market-assignment', icon: 'globe',         k: 'cust', x: true, d: 'Territorien mit genau EINER verantwortlichen Person' },
