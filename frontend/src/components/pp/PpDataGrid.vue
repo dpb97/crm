@@ -264,6 +264,16 @@ function setFilter(key, val) { colFilters.value = { ...colFilters.value, [key]: 
 const activeFilters = computed(() =>
   Object.entries(colFilters.value).filter(([, v]) => String(v ?? "").trim() !== ""),
 );
+// Only offer a filter input for columns that actually carry a raw value —
+// slot-only/derived columns (e.g. an action column) have no row[key] to match,
+// so filtering them would just wipe the table.
+const filterableKeys = computed(() => {
+  const keys = new Set();
+  for (const c of cols.value) {
+    if (props.rows.some((r) => r[c.key] != null && r[c.key] !== "")) keys.add(c.key);
+  }
+  return keys;
+});
 const filteredRows = computed(() => {
   if (!activeFilters.value.length) return props.rows;
   return props.rows.filter((r) =>
@@ -531,6 +541,7 @@ function sortState(key) {
               :class="{ 'pp-datagrid__pin': c.pin }"
             >
               <input
+                v-if="filterableKeys.has(c.key)"
                 type="text"
                 class="pp-datagrid__filterinput"
                 :value="colFilters[c.key] || ''"

@@ -49,7 +49,7 @@
 
     <div class="lcspm-body flex-1 min-h-0 overflow-hidden p-3">
       <PpGeoMap v-if="layer === 'projekte'" :masten="masten" :pins="pins" :segment="segment" height="100%" @inspect="onInspect" />
-      <TerritoryMap v-else-if="territoryPolygons.length" :polygons="territoryPolygons" :pins="pins" :active-id="activeId" height-class="h-full" @marker-click="pickMarker" />
+      <TerritoryMap v-else-if="territoryPolygons.length" :polygons="territoryPolygons" :pins="territoryPins" :active-id="activeId" height-class="h-full" @marker-click="pickMarker" />
       <div v-else class="lcspm-empty">{{ market.loading ? __('Loading …') : __('No territories with countries yet') }}</div>
 
       <!-- Legende (einblendbar) -->
@@ -112,6 +112,12 @@ const geo = createResource({
 })
 const masten = computed(() => geo.data?.masten || [])
 const pins = computed(() => geo.data?.pins || [])
+// Project dots for the territory layer: get_project_geo returns every project
+// as a 2-point route now (pins is empty), so derive a point per project from
+// its valley-mast coordinate.
+const territoryPins = computed(() =>
+  masten.value.map((m) => ({ t: m.nr ? `${m.nr} · ${m.n}` : m.n, ll: m.tal })).filter((p) => p.ll),
+)
 
 // Karten-Layer: Projekte (Trassen) ⇄ Markteinteilung (Territorien).
 const layer = ref('projekte')
