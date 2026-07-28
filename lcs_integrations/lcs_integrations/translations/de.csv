@@ -944,3 +944,15 @@ Done,Erledigt
 Mark the engineering step as done for now.,Projektierungs-Schritt vorerst als erledigt markieren.
 Back to Sales,Zurück zum Vertrieb
 ,
+Phase requirements,Phasen-Voraussetzungen
+Questionaire (before Budget),Questionaire (vor Budget)
+Budget (before Richtpreis),Budget (vor Richtpreis)
+Richtpreis (before Offer),Richtpreis (vor Angebot)
+Budget unknown,Budget nicht bekannt
+Richtpreis not possible,Richtpreis nicht möglich
+Replace,Ersetzen
+Upload,Hochladen
+Questionaire uploaded,Questionaire hochgeladen
+Please upload the questionaire before moving to Budget.,Bitte das Questionaire vor dem Wechsel zu Budget hochladen.
+Enter the project budget or mark it as unknown before Richtpreis.,"Projektbudget eintragen oder als nicht bekannt markieren, bevor es zu Richtpreis geht."
+Enter the Richtpreis or mark it as not possible before the Offer phase.,"Richtpreis eintragen oder als nicht möglich markieren, bevor es zur Angebot-Phase geht."

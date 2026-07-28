@@ -75,6 +75,9 @@ doc_events = {
     "LCS Project": {
         "before_insert": "lcs_integrations.territory.auto_assign.on_lcs_project_before_insert",
         "validate": [
+            # Business-process-flow gates: block advancing a phase until its
+            # prerequisites are met (questionaire / budget / Richtpreis).
+            "lcs_integrations.projects.api.enforce_phase_gates",
             "lcs_integrations.projects.notifications.on_project_phase_change",
             "lcs_integrations.cross_module.training_check.on_project_validate",
             # LCS Project is the single source of truth for sales_manager —

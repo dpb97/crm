@@ -1739,3 +1739,38 @@ def link_company_by_domain(contact):
         doc.append("links", {"link_doctype": "CRM Organization", "link_name": org_name})
     doc.save(ignore_permissions=True)
     return {"linked": True, "company": company, "organization": org_name, "via": via, "domain": dom}
+
+
+# --------------------------------------------------------------- Phase gates
+
+_PHASE_ORDER = ["Qualified", "Budget", "Richtpreis", "Offer", "Negotiation", "Won", "Execution", "Completed"]
+
+
+def _phase_idx(phase):
+    return _PHASE_ORDER.index(phase) if phase in _PHASE_ORDER else -1
+
+
+def enforce_phase_gates(doc, method=None):
+    """Block advancing an LCS Project past a phase until its prerequisites are
+    met (business process flow). Only checks gates NEWLY crossed on this save, so
+    existing records and backwards moves are never blocked:
+      · → Budget      requires the questionaire to be uploaded
+      · → Richtpreis  requires a customer budget OR "budget unknown"
+      · → Offer       requires a Richtpreis OR "Richtpreis not possible"
+    """
+    if not doc.get("phase") or doc.get("phase") == "Lost":
+        return
+    before = doc.get_doc_before_save()
+    if before is None:
+        return  # new project (e.g. auto-created from a won deal) — no gate on creation
+    old_idx = _phase_idx(before.phase)
+    new_idx = _phase_idx(doc.phase)
+    if new_idx <= old_idx:  # not advancing / moving back
+        return
+
+    if new_idx >= 1 and old_idx < 1 and not doc.get("questionaire"):
+        frappe.throw(_("Please upload the questionaire before moving to Budget."))
+    if new_idx >= 2 and old_idx < 2 and not (doc.get("budget_customer") or doc.get("budget_unknown")):
+        frappe.throw(_("Enter the project budget or mark it as unknown before Richtpreis."))
+    if new_idx >= 3 and old_idx < 3 and not (doc.get("richtpreis") or doc.get("richtpreis_impossible")):
+        frappe.throw(_("Enter the Richtpreis or mark it as not possible before the Offer phase."))

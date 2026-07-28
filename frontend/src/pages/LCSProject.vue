@@ -116,6 +116,40 @@
           <div class="crmw-content">
           <!-- Übersicht -->
           <div v-if="activeTab === T.OV" class="crmw-tabpane space-y-5">
+            <!-- Phasen-Voraussetzungen (Business-Process-Flow-Gates). -->
+            <section class="rounded-xl border bg-white p-4">
+              <h3 class="mb-3 text-sm font-semibold text-gray-900">{{ __('Phase requirements') }}</h3>
+              <div class="space-y-3">
+                <!-- Gate 1: Questionaire -->
+                <div class="flex items-center justify-between gap-3">
+                  <span class="text-sm text-gray-700">{{ __('Questionaire (before Budget)') }}</span>
+                  <span class="flex items-center gap-2">
+                    <a v-if="doc.questionaire" :href="doc.questionaire" target="_blank" rel="noopener" class="text-xs text-lcs-primary underline">{{ __('View') }}</a>
+                    <button class="crmw-btn crmw-btn--primary" :disabled="uploadingQ" @click="triggerQuestionaire">
+                      <FeatherIcon name="upload" class="h-3.5 w-3.5" />{{ doc.questionaire ? __('Replace') : __('Upload') }}
+                    </button>
+                    <input ref="questionaireInput" type="file" class="hidden" @change="onQuestionaireFile" />
+                  </span>
+                </div>
+                <!-- Gate 2: Budget -->
+                <div class="flex items-center justify-between gap-3">
+                  <span class="text-sm text-gray-700">{{ __('Budget (before Richtpreis)') }}</span>
+                  <label class="flex items-center gap-1.5 text-xs text-gray-600">
+                    <input type="checkbox" :checked="!!doc.budget_unknown" @change="updateField('budget_unknown', $event.target.checked ? 1 : 0)" />
+                    {{ __('Budget unknown') }}
+                  </label>
+                </div>
+                <!-- Gate 3: Richtpreis -->
+                <div class="flex items-center justify-between gap-3">
+                  <span class="text-sm text-gray-700">{{ __('Richtpreis (before Offer)') }}</span>
+                  <label class="flex items-center gap-1.5 text-xs text-gray-600">
+                    <input type="checkbox" :checked="!!doc.richtpreis_impossible" @change="updateField('richtpreis_impossible', $event.target.checked ? 1 : 0)" />
+                    {{ __('Richtpreis not possible') }}
+                  </label>
+                </div>
+              </div>
+            </section>
+
             <!-- Chancen-Matrix direkt in der Übersicht. -->
             <section v-if="canShow('show_opportunity_matrix')" class="rounded-xl border bg-white p-4">
               <h3 class="mb-3 text-sm font-semibold text-gray-900">{{ __('Opportunity Matrix') }}</h3>
@@ -928,6 +962,40 @@ watch(projectId, (id) => {
 function toggleProjektierungDone() {
   projektierungDone.value = !projektierungDone.value
   if (projectId.value) localStorage.setItem(`lcs-proj-${projectId.value}-eng-done`, projektierungDone.value ? '1' : '0')
+}
+
+// Gate 1: questionaire upload — stores the file URL on the LCS Project.
+const questionaireInput = ref(null)
+const uploadingQ = ref(false)
+function triggerQuestionaire() { questionaireInput.value?.click() }
+async function onQuestionaireFile(ev) {
+  const file = ev.target.files?.[0]
+  ev.target.value = ''
+  if (!file) return
+  uploadingQ.value = true
+  try {
+    const form = new FormData()
+    form.append('file', file, file.name)
+    form.append('is_private', '1')
+    form.append('folder', 'Home/Attachments')
+    form.append('doctype', 'LCS Project')
+    form.append('docname', projectId.value)
+    const csrf = window.csrf_token || ''
+    const res = await window.fetch('/api/method/upload_file', {
+      method: 'POST', credentials: 'include',
+      headers: csrf ? { 'X-Frappe-CSRF-Token': csrf } : {},
+      body: form,
+    })
+    if (!res.ok) throw new Error(__('Upload failed:') + ' ' + res.status)
+    const payload = await res.json()
+    const url = payload?.message?.file_url
+    if (url) updateField('questionaire', url)
+    toast({ title: __('Questionaire uploaded'), icon: 'check-circle', iconClasses: 'text-green-500' })
+  } catch (err) {
+    toast({ title: __('Could not attach PDF'), text: err?.message || '', icon: 'alert-circle', iconClasses: 'text-red-500' })
+  } finally {
+    uploadingQ.value = false
+  }
 }
 
 // Aktivitäten / Kommentare (echtes Frappe-Comment-System)

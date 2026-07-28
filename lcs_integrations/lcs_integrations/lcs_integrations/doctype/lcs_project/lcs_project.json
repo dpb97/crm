@@ -67,7 +67,10 @@
   "sharepoint_link",
   "document_link",
   "section_notes",
-  "notes"
+  "notes",
+  "questionaire",
+  "budget_unknown",
+  "richtpreis_impossible"
  ],
  "fields": [
   {
@@ -449,6 +452,23 @@
    "fieldname": "notes",
    "fieldtype": "Text Editor",
    "label": "Notes"
+  },
+  {
+   "fieldname": "questionaire",
+   "fieldtype": "Attach",
+   "label": "Questionaire"
+  },
+  {
+   "fieldname": "budget_unknown",
+   "fieldtype": "Check",
+   "label": "Budget unknown",
+   "default": "0"
+  },
+  {
+   "fieldname": "richtpreis_impossible",
+   "fieldtype": "Check",
+   "label": "Richtpreis not possible",
+   "default": "0"
   }
  ],
  "index_web_pages_for_search": 0,
