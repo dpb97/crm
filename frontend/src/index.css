@@ -22,6 +22,12 @@
      follows the Pilanda brand from one place. Pilanda dark-cyan = #008B8B.
      Set back to `11 58 111` for the legacy LCS navy. */
   --pp-brand-primary-rgb: 0 139 139;
+  /* Force the brand token to a crisp teal hex (not just the -rgb variant): the
+     OKLCH value in pp-tokens read navy/off in some contexts, so pp components
+     that use var(--pp-brand-primary) (active filter pills, buttons, accents)
+     rendered blue instead of the master's turquoise. */
+  --pp-brand-primary:   #008b8b;
+  --pp-brand-primary-d: #0a6f6f;
   --lcs-primary:    rgb(var(--pp-brand-primary-rgb, 0 139 139));
   --lcs-secondary:  var(--pp-brand-primary);   /* link/secondary accent -> Brand-Cyan (SSOT pp-tokens --pp-brand-primary; vormals Fremd-Blau) */
   --lcs-accent:     #F5A524;   /* signal yellow */
@@ -70,6 +76,9 @@ html[data-theme="dark"] {
   --lcs-card-bg:    #111827;
   --lcs-card-border:#1F2937;
   --lcs-muted:      #9CA3AF;
+
+  --pp-brand-primary:   #17b3b3;
+  --pp-brand-primary-d: #54d3d3;
 
   /* State colours — klickdummy dark variants (--live / --cus / --frp / --danger). */
   --pp-state-success-500: #3fbe7f;  --pp-state-success: #3fbe7f;
