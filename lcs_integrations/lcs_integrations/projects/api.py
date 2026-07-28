@@ -1820,3 +1820,39 @@ def on_offer_approval_validate(doc, method=None):
             doc.signed_on = frappe.utils.now_datetime()
     elif doc.get("signed_on"):
         doc.signed_on = None
+
+
+# --------------------------------------------------------------- Relations (child tables)
+
+_RELATION_FIELDS = {
+    ("CRM Organization", "lcs_relations"),
+    ("Contact", "lcs_relations"),
+    ("Contact", "lcs_employment"),
+}
+
+
+@frappe.whitelist()
+def get_relations(doctype, name, fieldname):
+    """Read a relation child table (cross-org / person relationships)."""
+    if (doctype, fieldname) not in _RELATION_FIELDS:
+        frappe.throw(_("Unsupported relation field."))
+    doc = frappe.get_doc(doctype, name)
+    return [row.as_dict() for row in (doc.get(fieldname) or [])]
+
+
+@frappe.whitelist()
+def save_relations(doctype, name, fieldname, rows):
+    """Replace a relation child table with the given rows and save. Rows is a
+    JSON list of dicts. Only the whitelisted relation fields are editable."""
+    if (doctype, fieldname) not in _RELATION_FIELDS:
+        frappe.throw(_("Unsupported relation field."))
+    if not frappe.has_permission(doctype, "write", doc=name):
+        frappe.throw(_("Not permitted"), frappe.PermissionError)
+    if isinstance(rows, str):
+        rows = frappe.parse_json(rows)
+    doc = frappe.get_doc(doctype, name)
+    doc.set(fieldname, [])
+    for r in (rows or []):
+        doc.append(fieldname, {k: v for k, v in r.items() if not str(k).startswith("_") and k not in ("name", "idx", "parent", "parenttype", "parentfield")})
+    doc.save(ignore_permissions=True)
+    return {"ok": True, "count": len(doc.get(fieldname) or [])}

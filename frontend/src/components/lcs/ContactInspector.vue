@@ -55,6 +55,15 @@
 
       <QuickContactActions :email="c.email_id" :phone="phone" />
 
+      <RelationEditor
+        :doctype="'Contact'" :name="contactId" fieldname="lcs_employment"
+        :title="__('Employment history')" :columns="employmentColumns"
+      />
+      <RelationEditor
+        :doctype="'Contact'" :name="contactId" fieldname="lcs_relations"
+        :title="__('Relations / friends')" :columns="relationColumns"
+      />
+
       <div class="ci-foot">
         <Button variant="solid" iconLeft="target" :label="__('Create opportunity')" :loading="creatingChance" @click="createChance" />
         <Button variant="subtle" iconLeft="external-link" :label="__('Open')" @click="$emit('open', contactId)" />
@@ -70,6 +79,19 @@ import { ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { call, toast, Avatar, Button } from 'frappe-ui'
 import QuickContactActions from '@/components/lcs/QuickContactActions.vue'
+import RelationEditor from '@/components/lcs/RelationEditor.vue'
+
+const employmentColumns = [
+  { key: 'organization', type: 'link', options: 'CRM Organization', label: __('Company') },
+  { key: 'role', type: 'text', label: __('Role') },
+  { key: 'start_date', type: 'date', label: __('From') },
+  { key: 'end_date', type: 'date', label: __('To') },
+  { key: 'is_current', type: 'check', label: __('Current') },
+]
+const relationColumns = [
+  { key: 'related_contact', type: 'link', options: 'Contact', label: __('Person') },
+  { key: 'relation_type', type: 'select', opts: ['Freund', 'Kollege', 'Bekannt', 'Familie'], label: __('Relation') },
+]
 
 const props = defineProps({
   contactId: { type: String, default: '' },

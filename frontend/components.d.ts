@@ -333,6 +333,7 @@ declare module 'vue' {
     RatingInput: typeof import('./src/components/Controls/RatingInput.vue')['default']
     ReactIcon: typeof import('./src/components/Icons/ReactIcon.vue')['default']
     RefreshIcon: typeof import('./src/components/Icons/RefreshIcon.vue')['default']
+    RelationEditor: typeof import('./src/components/lcs/RelationEditor.vue')['default']
     ReloadIcon: typeof import('./src/components/Icons/ReloadIcon.vue')['default']
     ReplyAllIcon: typeof import('./src/components/Icons/ReplyAllIcon.vue')['default']
     ReplyIcon: typeof import('./src/components/Icons/ReplyIcon.vue')['default']

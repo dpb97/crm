@@ -32,6 +32,11 @@
         <div><dt>{{ __('Annual Revenue') }}</dt><dd>{{ o.annual_revenue ? fmtMoney(o.annual_revenue) : '—' }}</dd></div>
       </dl>
 
+      <RelationEditor
+        :doctype="'CRM Organization'" :name="organizationId" fieldname="lcs_relations"
+        :title="__('Partner & suppliers')" :columns="orgRelationColumns"
+      />
+
       <div class="oi-foot">
         <Button variant="solid" iconLeft="external-link" :label="__('Open')" @click="$emit('open', organizationId)" />
       </div>
@@ -44,6 +49,12 @@
 <script setup>
 import { ref, watch } from 'vue'
 import { call, Avatar, Button } from 'frappe-ui'
+import RelationEditor from '@/components/lcs/RelationEditor.vue'
+
+const orgRelationColumns = [
+  { key: 'related_organization', type: 'link', options: 'CRM Organization', label: __('Organization') },
+  { key: 'relation_type', type: 'select', opts: ['Partner', 'Zulieferer'], label: __('Relation') },
+]
 
 const props = defineProps({
   organizationId: { type: String, default: '' },
