@@ -36,7 +36,7 @@
      theme's [data-theme="dark"] block wins by specificity). */
   --pp-text-primary:   #000000;
   --pp-text-secondary: #000000;
-  --pp-text-tertiary:  #1f2937;
+  --pp-text-tertiary:  #000000;
   --lcs-secondary:  var(--pp-brand-primary);   /* link/secondary accent -> Brand-Cyan (SSOT pp-tokens --pp-brand-primary; vormals Fremd-Blau) */
   --lcs-accent:     #F5A524;   /* signal yellow */
 
@@ -93,6 +93,34 @@ html[data-theme="dark"] {
   --pp-state-warning-500: #e0a63a;  --pp-state-warning: #e0a63a;
   --pp-state-info-500:    #6b9bff;  --pp-state-info:    #6b9bff;
   --pp-state-danger-500:  #ff6b5e;  --pp-state-danger:  #ff6b5e;
+}
+
+/* ============================================================
+   All text black in light mode (org design rule). Shared components
+   (Opportunity Matrix, frappe-ui widgets) hard-code slate greys via
+   text-gray-* / text-ink-gray-* utilities instead of the --pp-text-*
+   tokens, so force those greyscale TEXT ramps to black here. Light mode
+   only — the dark theme keeps its light text. Backgrounds/borders (bg-*,
+   border-*) are untouched; this only affects text colour utilities.
+   ============================================================ */
+html:not([data-theme="dark"]) {
+  --ink-gray-5: #000000;
+  --ink-gray-6: #000000;
+  --ink-gray-7: #000000;
+  --ink-gray-8: #000000;
+  --ink-gray-9: #000000;
+}
+html:not([data-theme="dark"]) .text-gray-400,
+html:not([data-theme="dark"]) .text-gray-500,
+html:not([data-theme="dark"]) .text-gray-600,
+html:not([data-theme="dark"]) .text-gray-700,
+html:not([data-theme="dark"]) .text-gray-800,
+html:not([data-theme="dark"]) .text-gray-900,
+html:not([data-theme="dark"]) .text-slate-400,
+html:not([data-theme="dark"]) .text-slate-500,
+html:not([data-theme="dark"]) .text-slate-600,
+html:not([data-theme="dark"]) .text-slate-700 {
+  color: #000000;
 }
 
 /* ============================================================

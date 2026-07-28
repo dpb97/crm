@@ -1542,7 +1542,9 @@ def get_chance_by_lead(lead):
         return {}
     doc = frappe.get_doc("LCS Chance", name)
     out = {"name": doc.name, "chance_no": doc.chance_no, "title": doc.title,
-           "score": doc.score, "status": doc.status}
+           "score": doc.score, "status": doc.status,
+           "order_value": doc.order_value, "country": doc.country,
+           "deadline": doc.deadline}
     for f in _CHANCE_MATRIX_FIELDS:
         out[f] = doc.get(f) or 0
     return out
