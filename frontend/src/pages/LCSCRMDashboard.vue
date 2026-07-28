@@ -26,19 +26,20 @@
     <div class="sd">
       <!-- KPI-Zeile -->
       <section class="sd-kpis">
-        <component
-          :is="k.route || k.href ? (k.href ? 'a' : 'button') : 'div'"
+        <div
           v-for="k in kpiCards"
           :key="k.key"
           class="sd-kpi"
-          :class="`is-${k.tone}`"
-          :href="k.href || undefined"
-          @click="k.route && $router.push({ name: k.route })"
+          :class="[`is-${k.tone}`, { 'is-link': k.route || k.href }]"
+          :role="k.route || k.href ? 'button' : undefined"
+          :tabindex="k.route || k.href ? 0 : undefined"
+          @click="onKpi(k)"
+          @keydown.enter="onKpi(k)"
         >
           <span class="sd-kpi-cap">{{ k.label }}</span>
           <span class="sd-kpi-val">{{ k.value }}</span>
           <span class="sd-kpi-link">{{ k.hint }}<template v-if="k.route || k.href"> →</template></span>
-        </component>
+        </div>
       </section>
 
       <!-- ANORDNUNG -->
@@ -160,13 +161,21 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { createResource, Breadcrumbs, Button, FeatherIcon } from 'frappe-ui'
 import { useStorage } from '@vueuse/core'
 import { sessionStore } from '@/stores/session'
 import LayoutHeader from '@/components/LayoutHeader.vue'
 
+const router = useRouter()
 const session = sessionStore()
 const currentUser = computed(() => session.user)
+
+// KPI card navigation — external href (Desk) or an SPA route.
+function onKpi(k) {
+  if (k.href) window.location.href = k.href
+  else if (k.route) router.push({ name: k.route })
+}
 
 // --- Datenquellen (alle real) ----------------------------------------------
 const dash = createResource({ url: 'lcs_integrations.projects.api.get_sales_dashboard', auto: true })
@@ -317,8 +326,8 @@ const markets = computed(() => {
   padding: var(--pp-space-4); background: var(--pp-bg-surface);
   border: 1px solid var(--pp-border-subtle); border-top: 3px solid var(--pp-brand-primary);
   border-radius: var(--pp-radius-ui); box-shadow: var(--pp-shadow-xs); text-decoration: none; }
-button.sd-kpi, a.sd-kpi { cursor: pointer; }
-button.sd-kpi:hover, a.sd-kpi:hover { border-color: var(--pp-brand-primary); }
+.sd-kpi.is-link { cursor: pointer; }
+.sd-kpi.is-link:hover { border-color: var(--pp-brand-primary); }
 .sd-kpi.is-success { border-top-color: var(--pp-state-success); }
 .sd-kpi.is-warning { border-top-color: var(--pp-state-warning); }
 .sd-kpi-cap { font-size: 10px; font-weight: var(--pp-weight-bold); letter-spacing: 0.06em;
@@ -326,7 +335,7 @@ button.sd-kpi:hover, a.sd-kpi:hover { border-color: var(--pp-brand-primary); }
 .sd-kpi-val { font-size: 28px; font-weight: var(--pp-weight-bold); color: var(--pp-text-primary);
   line-height: 1.1; font-variant-numeric: tabular-nums; }
 .sd-kpi-link { font-size: 11px; color: var(--pp-text-tertiary); }
-button.sd-kpi:hover .sd-kpi-link, a.sd-kpi:hover .sd-kpi-link { color: var(--pp-brand-primary); }
+.sd-kpi.is-link:hover .sd-kpi-link { color: var(--pp-brand-primary); }
 
 /* ANORDNUNG */
 .sd-arrange { display: flex; align-items: center; justify-content: flex-end; gap: var(--pp-space-2); }

@@ -85,10 +85,11 @@ const props = defineProps({
   groupBy:    { type: String,  default: "" },
   selectable: { type: Boolean, default: false },
   expandable: { type: Boolean, default: false },
-  columnTools:{ type: Boolean, default: false }, // Spaltenauswahl-Toolbar (Sichtbarkeit) — via PpColChooser
+  columnTools:{ type: Boolean, default: true },  // @7: Spaltenauswahl-Toolbar (Sichtbarkeit) — jetzt STANDARD AN
   chooserKeys:{ type: Array,   default: null },  // @4: Chooser auf diese keys begrenzen (null = alle Spalten)
-  reorderable:{ type: Boolean, default: false }, // Spaltenreihenfolge per Drag and Drop
+  reorderable:{ type: Boolean, default: true },  // @7: Spaltenreihenfolge per Drag and Drop — jetzt STANDARD AN
   resizable:  { type: Boolean, default: false }, // Spaltenbreite per Ziehen am Rand
+  filterable: { type: Boolean, default: true },  // @7: Spaltenfilter je Spalte (Filterzeile) — STANDARD AN
   pickable:   { type: Boolean, default: false }, // @5: kontrollierte Picker-Spalte links (v-model:picked)
   picked:     { type: Array,   default: () => [] }, // @5: ausgewaehlte ids (kontrolliert)
   pickMode:   { type: Boolean, default: false }, // @6: Picker-Modus an/aus (v-model, DEFAULT AUS)
@@ -145,6 +146,7 @@ function resetCols() {
   colOrder.value = null;
   colHidden.value = new Set(initialHidden.value); // initialen Sichtbarkeitszustand wiederherstellen
   colWidths.value = {};
+  colFilters.value = {};                           // Spaltenfilter zurücksetzen
   chooserOpen.value = false;
 }
 
@@ -255,8 +257,24 @@ function cmp(a, b) {
   return String(a).localeCompare(String(b), "de", { numeric: true });
 }
 
+/* ---- Spaltenfilter (clientseitig, je Spalte) ------------------- */
+const filterRowOpen = ref(false);
+const colFilters = ref({}); // key -> Filtertext
+function setFilter(key, val) { colFilters.value = { ...colFilters.value, [key]: val }; }
+const activeFilters = computed(() =>
+  Object.entries(colFilters.value).filter(([, v]) => String(v ?? "").trim() !== ""),
+);
+const filteredRows = computed(() => {
+  if (!activeFilters.value.length) return props.rows;
+  return props.rows.filter((r) =>
+    activeFilters.value.every(([k, v]) =>
+      String(r[k] ?? "").toLowerCase().includes(String(v).toLowerCase()),
+    ),
+  );
+});
+
 const sortedRows = computed(() => {
-  const list = props.rows.slice();
+  const list = filteredRows.value.slice();
   if (!sortKey.value) return list;
   const k = sortKey.value;
   const f = sortDir.value === "asc" ? 1 : -1;
@@ -376,7 +394,7 @@ function sortState(key) {
 <template>
   <div class="pp-datagrid">
     <!-- Spalten-Toolbar: Sichtbarkeit (PpColChooser, EIN Baustein) / Hinweis Reorder+Resize -->
-    <div v-if="columnTools || reorderable || resizable" class="pp-datagrid__toolbar">
+    <div v-if="columnTools || reorderable || resizable || filterable" class="pp-datagrid__toolbar">
       <PpColChooser
         v-if="columnTools"
         v-model:open="chooserOpen"
@@ -387,6 +405,13 @@ function sortState(key) {
         @toggle="toggleColVis($event.k)"
         @reorder="onChooserReorder"
       />
+      <button
+        v-if="filterable"
+        type="button"
+        class="pp-datagrid__filterbtn"
+        :class="{ 'is-active': filterRowOpen || activeFilters.length }"
+        @click="filterRowOpen = !filterRowOpen"
+      >Filter<span v-if="activeFilters.length" class="pp-datagrid__filterbadge">{{ activeFilters.length }}</span></button>
       <button v-if="columnTools" type="button" class="pp-datagrid__colreset" @click="resetCols">Zurücksetzen</button>
       <span v-if="reorderable || resizable" class="pp-datagrid__toolbar-hint">
         {{ reorderable && resizable ? 'Spaltenkopf ziehen = umsortieren · Rand ziehen = Breite'
@@ -491,6 +516,28 @@ function sortState(key) {
               </span>
               <span v-if="resizable" class="pp-datagrid__resize" title="Breite ziehen"
                     @mousedown.stop.prevent="startResize($event, c.key)" @click.stop></span>
+            </th>
+          </tr>
+
+          <!-- Filterzeile je Spalte (@7, umschaltbar über „Filter") -->
+          <tr v-if="filterable && filterRowOpen" class="pp-datagrid__filterrow">
+            <th v-if="showPick" class="pp-datagrid__cell pp-datagrid__cell--lead pp-datagrid__cell--ctrl"></th>
+            <th v-if="expandable" class="pp-datagrid__cell pp-datagrid__cell--lead pp-datagrid__cell--ctrl"></th>
+            <th v-if="selectable" class="pp-datagrid__cell pp-datagrid__cell--lead pp-datagrid__cell--ctrl"></th>
+            <th
+              v-for="c in cols"
+              :key="'f-' + c.key"
+              class="pp-datagrid__cell pp-datagrid__filtercell"
+              :class="{ 'pp-datagrid__pin': c.pin }"
+            >
+              <input
+                type="text"
+                class="pp-datagrid__filterinput"
+                :value="colFilters[c.key] || ''"
+                placeholder="Filter …"
+                @input="setFilter(c.key, $event.target.value)"
+                @click.stop
+              />
             </th>
           </tr>
         </thead>
@@ -614,8 +661,10 @@ function sortState(key) {
           </template>
 
           <!-- Leerzustand -->
-          <tr v-if="!rows.length" class="pp-datagrid__row">
-            <td class="pp-datagrid__cell pp-datagrid__empty" :colspan="totalColspan">Keine Daten</td>
+          <tr v-if="!sortedRows.length" class="pp-datagrid__row">
+            <td class="pp-datagrid__cell pp-datagrid__empty" :colspan="totalColspan">
+              {{ rows.length ? "Keine Treffer für den Spaltenfilter" : "Keine Daten" }}
+            </td>
           </tr>
         </tbody>
 
@@ -699,6 +748,29 @@ function sortState(key) {
 }
 .pp-datagrid__colreset:hover { color: var(--pp-brand-primary); background: var(--pp-bg-hover); }
 .pp-datagrid__toolbar-hint { font-size: var(--pp-fs-12); color: var(--pp-text-tertiary); margin-left: auto; }
+
+/* Filter-Umschalter + Filterzeile (@7) */
+.pp-datagrid__filterbtn {
+  appearance: none; cursor: pointer; font-family: inherit; font-size: var(--pp-fs-12);
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px var(--pp-space-2); border: 1px solid var(--pp-border-default);
+  background: var(--pp-bg-surface); color: var(--pp-text-secondary); border-radius: var(--pp-radius-ui);
+}
+.pp-datagrid__filterbtn:hover { color: var(--pp-brand-primary); border-color: var(--pp-brand-primary); }
+.pp-datagrid__filterbtn.is-active { color: var(--pp-brand-primary); border-color: var(--pp-brand-primary);
+  background: color-mix(in oklab, var(--pp-brand-primary) 8%, transparent); }
+.pp-datagrid__filterbadge { font-size: 10px; font-weight: var(--pp-weight-bold); line-height: 1;
+  color: var(--pp-text-on-accent); background: var(--pp-brand-primary); padding: 1px 5px; border-radius: var(--pp-radius-full); }
+.pp-datagrid__filterrow th { position: static; background: var(--pp-bg-surface);
+  padding: 4px var(--pp-space-3); border-bottom: 1px solid var(--pp-border-subtle); }
+.pp-datagrid__filterinput {
+  width: 100%; appearance: none; font-family: inherit; font-size: var(--pp-fs-12, 12px);
+  color: var(--pp-text-primary); padding: 4px var(--pp-space-2);
+  border: 1px solid var(--pp-border-default); border-radius: var(--pp-radius-ui); background: var(--pp-bg-base);
+  text-transform: none; letter-spacing: normal; font-weight: var(--pp-weight-regular, 400);
+}
+.pp-datagrid__filterinput:focus { outline: none; border-color: var(--pp-brand-primary);
+  box-shadow: 0 0 0 2px rgb(var(--pp-brand-primary-rgb) / 0.15); }
 
 /* Reorder/Resize am Spaltenkopf (Kopf-th ist sticky = positionierter Anker) */
 .pp-datagrid__cell--th.is-draggable { cursor: grab; }
