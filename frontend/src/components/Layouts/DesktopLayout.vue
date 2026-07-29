@@ -125,9 +125,9 @@ import PpMobileNav from '@/components/pp/PpMobileNav.vue'
 import IconMenu from '~icons/lucide/menu'
 import IconHouse from '~icons/lucide/house'
 import IconFolderKanban from '~icons/lucide/folder-kanban'
+import IconSearch from '~icons/lucide/search'
 import PpInspectorNodeView from '@/components/lcs/PpInspectorNodeView.vue'
 import { useRouter, useRoute } from 'vue-router'
-import { toast } from 'frappe-ui'
 import { usePilandaMode } from '@/composables/usePilandaMode'
 import { useViewport } from '@/composables/useViewport'
 import { usePilandaInspect } from '@/composables/usePilandaInspect'
@@ -154,19 +154,20 @@ const mobileNavActive = computed(() => {
 
 // Bottom tab bar (design master .mnav). The master's generic Home/News/
 // Assistent become CRM-real targets: Start=Dashboard, Projekte=core screen.
-// The "Pi" assistant pill is kept as the master's signature (no bot wired yet).
+// The 4th slot (master's "Pi" assistant, no bot yet) opens the global search
+// palette — the closest smart entry point until pilanda_salesbot exists.
 const mobileNavItems = [
-  { key: 'menu',      label: __('Menu'),     icon: IconMenu },
-  { key: 'start',     label: __('Start'),    icon: IconHouse },
-  { key: 'projects',  label: __('Projects'), icon: IconFolderKanban },
-  { key: 'assistant', label: __('Assistant'), pi: true },
+  { key: 'menu',     label: __('Menu'),     icon: IconMenu },
+  { key: 'start',    label: __('Start'),    icon: IconHouse },
+  { key: 'projects', label: __('Projects'), icon: IconFolderKanban },
+  { key: 'search',   label: __('Search'),   icon: IconSearch },
 ]
 function onMobileNav(key) {
   if (key === 'menu') { mobileNavOpen.value = !mobileNavOpen.value; return }
   mobileNavOpen.value = false
   if (key === 'start') router.push({ name: 'Dashboard' })
   else if (key === 'projects') router.push('/crm/projects')
-  else if (key === 'assistant') toast.success(__('Assistant coming soon'))
+  else if (key === 'search') window.dispatchEvent(new Event('lcs-open-search'))
 }
 const { spec: inspSpec, view: inspView, panel: inspPanel, collapsed: inspCollapsed, setCollapsed: setInspCollapsed } = usePilandaInspect()
 const { open: funcbarOpen, groups: funcbarGroups, available: funcbarAvailable, runAction: onFuncbarAction } = usePilandaFuncbar()

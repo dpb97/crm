@@ -84,16 +84,20 @@ function onGlobalKeydown(e) {
     showGlobalSearch.value = !showGlobalSearch.value
   }
 }
+// Opened from the mobile bottom-nav search tab (no Ctrl+K on touch).
+function openSearch() { showGlobalSearch.value = true }
 
 // Start the offline sync engine — replays queued mutations when online
 onMounted(() => {
   startSyncEngine()
   startOfflinePrefetch()
   window.addEventListener('lcs-open-preferences', openPrefs)
+  window.addEventListener('lcs-open-search', openSearch)
   window.addEventListener('keydown', onGlobalKeydown)
 })
 onUnmounted(() => {
   window.removeEventListener('lcs-open-preferences', openPrefs)
+  window.removeEventListener('lcs-open-search', openSearch)
   window.removeEventListener('keydown', onGlobalKeydown)
 })
 </script>
