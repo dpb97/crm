@@ -232,9 +232,30 @@ html:not([data-theme="dark"]) .to-gray-50 { --tw-gradient-to: var(--pp-bg-surfac
   color: rgb(107 114 128); /* gray-500 */
 }
 
-/* Autocomplete/Link popovers portal to <body> without a z-index; the LCS
-   side panels (inspector, funnel phase panel) sit at z-40 and would cover
-   the dropdown list. Nothing else in the app stacks above 40. */
+/* Autocomplete/Link popovers portal to <body> without a z-index. They must sit
+   ABOVE everything that can host a Link field — including PpModal / PpInspector
+   overlays / the mobile nav drawer, which stack at --pp-z-modal (1100). At the
+   old z-50 the dropdown list rendered BEHIND an open modal (e.g. RelationEditor
+   or the "new contact" dialog) and was unclickable. 1200 clears the modal layer. */
 .PopoverContent {
-  z-index: 50;
+  z-index: 1200;
+}
+
+/* ============================================================
+   Mobile shell polish (phone ≤767px). Overrides live here so the byte-copied
+   Pp* SSOT components stay pristine (merge-/SSOT-safe).
+   ============================================================ */
+@media (max-width: 640px) {
+  /* Appbar user chip → avatar only. The full name+role has no ellipsis and
+     would push the appbar past 375px, forcing page-level horizontal scroll. */
+  .pp-usermenu__meta { display: none !important; }
+}
+@media (max-width: 767px) {
+  /* Comfortable ≥40px hit area for the inspector overlay close button. */
+  .pp-inspector.is-overlay .pp-inspector__close { width: 40px !important; height: 40px !important; }
+}
+@media (max-width: 400px) {
+  /* Tightest phones: drop the brand wordmark, keep just the mark (design master
+     hides `.brand .wm` at ≤400px). */
+  .pp-appbar__wm { display: none !important; }
 }

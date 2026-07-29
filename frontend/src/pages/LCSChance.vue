@@ -189,5 +189,11 @@ function dueLabel(v) {
 .chd-hint { color: var(--pp-text-tertiary); }
 .chd-loading { padding: var(--pp-space-8); text-align: center; color: var(--pp-text-tertiary); }
 
-@media (max-width: 1080px) { .chd-2col { grid-template-columns: 1fr; } .chd-kv { grid-template-columns: 1fr; } }
+@media (max-width: 1080px) {
+  .chd-2col { grid-template-columns: 1fr; }
+  .chd-kv { grid-template-columns: 1fr; }
+  /* Also collapse the inner label column — the fixed 160px label otherwise
+     persists on phones and squeezes the value to a sliver. */
+  .chd-kv > div { grid-template-columns: auto 1fr; }
+}
 </style>

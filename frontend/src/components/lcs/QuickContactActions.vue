@@ -55,7 +55,7 @@ function teamsLink(email) {
 }
 function actionCls(enabled) {
   return [
-    'flex items-center justify-center gap-1.5 rounded-md border px-2 py-1.5 text-xs font-medium transition',
+    'flex min-h-[40px] items-center justify-center gap-1.5 rounded-md border px-2.5 py-2 text-xs font-medium transition',
     enabled
       ? 'border-gray-200 text-gray-700 hover:border-lcs-secondary hover:text-lcs-secondary'
       : 'pointer-events-none border-gray-100 text-gray-300',

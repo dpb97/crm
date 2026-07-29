@@ -101,7 +101,7 @@ async function save() {
   color: var(--pp-brand-primary); background: transparent; border: 0; }
 .rel-add:hover { text-decoration: underline; }
 .rel-empty { margin: 0; font-size: var(--pp-fs-12, 12px); color: var(--pp-text-tertiary); }
-.rel-row { display: flex; align-items: center; gap: 6px; }
+.rel-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .rel-link { flex: 1; min-width: 0; }
 .rel-input { flex: 1; min-width: 0; appearance: none; font-family: inherit; font-size: var(--pp-fs-12, 12px); color: var(--pp-text-primary);
   padding: 5px var(--pp-space-2); border: 1px solid var(--pp-border-default); border-radius: var(--pp-radius-ui); background: var(--pp-bg-base); }
@@ -114,4 +114,11 @@ async function save() {
   padding: 5px 12px; border-radius: var(--pp-radius-ui); border: 1px solid var(--pp-brand-primary);
   background: var(--pp-brand-primary); color: var(--pp-text-on-accent); }
 .rel-save:disabled { opacity: 0.6; cursor: default; }
+
+/* Phone / narrow inspector overlay: stack each field full-width instead of
+   squeezing link + select + date + check into one ~360px row. */
+@media (max-width: 640px) {
+  .rel-link, .rel-input { flex: 1 1 100%; }
+  .rel-input--sm { flex: 1 1 100%; width: auto; }
+}
 </style>

@@ -57,7 +57,7 @@
       <div
         v-if="listening && interimText"
         class="absolute right-full top-1/2 mr-2 -translate-y-1/2 whitespace-nowrap rounded-lg bg-gray-900 px-3 py-1.5 text-xs text-white shadow-lg"
-        style="max-width: 400px; white-space: normal; overflow-wrap: break-word;"
+        style="max-width: min(400px, calc(100vw - 24px)); white-space: normal; overflow-wrap: break-word;"
       >
         <div class="flex items-center gap-1.5">
           <span class="h-1.5 w-1.5 animate-pulse rounded-full bg-red-400" />

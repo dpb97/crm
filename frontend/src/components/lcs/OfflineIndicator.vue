@@ -65,7 +65,7 @@
   >
     <div
       v-if="drawerOpen"
-      class="fixed right-4 top-16 z-50 w-96 overflow-hidden rounded-xl border bg-white shadow-2xl"
+      class="fixed right-4 top-16 z-50 w-[min(24rem,calc(100vw-2rem))] overflow-hidden rounded-xl border bg-white shadow-2xl"
     >
       <!-- Header -->
       <div class="flex items-center justify-between border-b bg-gray-50 px-4 py-3">
@@ -155,6 +155,19 @@
         </div>
       </div>
 
+      <!-- Offline availability — how much data is cached for offline use -->
+      <div v-if="cacheTotal > 0" class="border-t bg-gray-50 px-4 py-2.5">
+        <div class="flex items-center gap-1.5 text-xs font-medium text-gray-600">
+          <FeatherIcon name="hard-drive" class="h-3.5 w-3.5 text-gray-400" />
+          <span>{{ cacheTotal }} {{ __('records available offline') }}</span>
+        </div>
+        <div class="mt-1 flex flex-wrap gap-x-3 gap-y-0.5">
+          <span v-for="s in visibleCacheStats" :key="s.dt" class="text-[10px] text-gray-400">
+            {{ s.label }} <span class="font-semibold text-gray-500">{{ s.n }}</span>
+          </span>
+        </div>
+      </div>
+
       <!-- Footer with sync action -->
       <div v-if="mutations.length" class="flex items-center justify-between border-t bg-gray-50 px-4 py-2.5">
         <span class="text-xs text-gray-500">
@@ -175,7 +188,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { FeatherIcon, Dialog, Button } from 'frappe-ui'
 import { listMutations, onQueueChange } from '@/utils/offlineDB'
 import { drain, retryMutation, discardMutation } from '@/utils/syncEngine'
@@ -285,18 +298,52 @@ async function onSyncNow() {
   }
 }
 
+// --- Offline cache stats (records mirrored into IndexedDB by the SW) ---
+const cacheStats = ref({})
+// `_methods` is the get_* response cache, not document records — exclude it
+// from the "records available offline" count and the per-doctype chips.
+const cacheTotal = computed(() =>
+  Object.entries(cacheStats.value).reduce(
+    (sum, [store, n]) => (store === '_methods' ? sum : sum + (n || 0)),
+    0,
+  ),
+)
+const visibleCacheStats = computed(() =>
+  Object.entries(cacheStats.value)
+    .filter(([store, n]) => store !== '_methods' && n > 0)
+    .sort((a, b) => b[1] - a[1])
+    .map(([dt, n]) => ({ dt, n, label: dt.replace(/^CRM |^LCS /, '') })),
+)
+function loadCacheStats() {
+  try {
+    navigator.serviceWorker?.controller?.postMessage({ type: 'lcs.cache.stats' })
+  } catch {
+    // SW not controlling yet (first load) — silently skip.
+  }
+}
+function onSwMessage(e) {
+  if (e.data?.type === 'lcs.cache.stats.result' && e.data.stores) {
+    cacheStats.value = e.data.stores
+  }
+}
+// Refresh stats each time the drawer is opened.
+watch(drawerOpen, (open) => { if (open) loadCacheStats() })
+
 let unsub = null
 
 onMounted(() => {
   window.addEventListener('online', updateOnline)
   window.addEventListener('offline', updateOnline)
+  navigator.serviceWorker?.addEventListener('message', onSwMessage)
   refresh()
+  loadCacheStats()
   unsub = onQueueChange(() => refresh())
 })
 
 onUnmounted(() => {
   window.removeEventListener('online', updateOnline)
   window.removeEventListener('offline', updateOnline)
+  navigator.serviceWorker?.removeEventListener('message', onSwMessage)
   if (unsub) unsub()
 })
 </script>

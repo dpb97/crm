@@ -7,11 +7,11 @@
   layers like ProjectMap. Overlapping coordinates fan out in a small spiral.
 -->
 <template>
-  <div class="relative h-full">
+  <div class="relative h-full min-h-[320px]">
     <div v-if="loading" class="absolute inset-0 z-20 flex items-center justify-center rounded-lg bg-white/80">
       <div class="h-6 w-6 animate-spin rounded-full border-2 border-gray-200 border-t-lcs-primary" />
     </div>
-    <div ref="mapContainer" :class="['w-full rounded-lg border', heightClass]" />
+    <div ref="mapContainer" :class="['w-full min-h-[320px] rounded-lg border', heightClass]" />
   </div>
 </template>
 

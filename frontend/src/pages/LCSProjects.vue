@@ -246,6 +246,7 @@
           </div>
           <span class="lcsp-cardsub">{{ __('Row = details in the inspector · double-click opens the sales project') }}</span>
         </div>
+        <div class="lcsp-tblscroll">
         <table class="pp-table">
         <thead class="lcsp-thead sticky top-0 z-10">
           <tr>
@@ -367,6 +368,7 @@
           </tr>
         </tbody>
         </table>
+        </div>
       </div>
       </template>
     </div>
@@ -1065,6 +1067,13 @@ async function createProject() {
 .lcsp-tablecard { margin: var(--pp-space-4) var(--pp-space-5) var(--pp-space-6);
   background: var(--pp-bg-surface); border: 1px solid var(--pp-border-subtle);
   border-radius: var(--pp-radius-ui); box-shadow: var(--pp-shadow-xs); overflow: hidden; }
+/* Phone: let the wide many-column table scroll horizontally inside the card
+   instead of crushing every column to a few px. Desktop is unchanged (the
+   wrapper is a plain block, table flows at 100%). */
+@media (max-width: 767px) {
+  .lcsp-tblscroll { overflow-x: auto; }
+  .lcsp-tblscroll .pp-table { min-width: 760px; }
+}
 .lcsp-cardhead { display: flex; align-items: center; justify-content: space-between; gap: var(--pp-space-3);
   flex-wrap: wrap; padding: var(--pp-space-3) var(--pp-space-4);
   border-bottom: 1px solid var(--pp-border-subtle); background: var(--pp-bg-sunken); }

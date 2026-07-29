@@ -111,7 +111,7 @@
   </div>
 </template>
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import TaskCreateModal from '@/components/lcs/TaskCreateModal.vue'
 import AppSidebar from '@/components/Layouts/AppSidebar.vue'
 import AppHeader from '@/components/Layouts/AppHeader.vue'
@@ -169,6 +169,20 @@ function onMobileNav(key) {
   else if (key === 'projects') router.push('/crm/projects')
   else if (key === 'search') window.dispatchEvent(new Event('lcs-open-search'))
 }
+
+// On mobile the nav drawer, the inspector overlay and the function bar are all
+// full-screen-ish layers at modal z-index — keep them mutually exclusive so two
+// never fight over the screen (and so the funcbar, which otherwise opens BEHIND
+// the inspector overlay, becomes visible).
+watch(mobileNavOpen, (open) => {
+  if (open && isMobile.value) setInspCollapsed(true)
+})
+watch(inspCollapsed, (collapsed) => {
+  if (!collapsed && isMobile.value) mobileNavOpen.value = false
+})
+watch(funcbarOpen, (open) => {
+  if (open && isMobile.value) { setInspCollapsed(true); mobileNavOpen.value = false }
+})
 const { spec: inspSpec, view: inspView, panel: inspPanel, collapsed: inspCollapsed, setCollapsed: setInspCollapsed } = usePilandaInspect()
 const { open: funcbarOpen, groups: funcbarGroups, available: funcbarAvailable, runAction: onFuncbarAction } = usePilandaFuncbar()
 

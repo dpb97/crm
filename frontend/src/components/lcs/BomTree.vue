@@ -14,7 +14,7 @@
         ({{ totalRowCount }} {{ __('items') }})
       </span>
     </div>
-    <div class="divide-y">
+    <div class="divide-y overflow-x-auto">
       <BomRow
         v-for="(row, i) in rows"
         :key="row.child_id || i"

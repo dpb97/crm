@@ -21,7 +21,7 @@
     }"
   >
     <template #body-content>
-      <div class="relative" style="height: 75vh; min-height: 540px;">
+      <div class="relative" style="height: 75vh; min-height: min(540px, 80vh);">
         <iframe
           ref="iframeEl"
           :src="iframeSrc"
