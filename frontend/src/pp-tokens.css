@@ -236,13 +236,13 @@
     /* Radii — Enterprise: max 3px, nur Kreise/Pills voll rund.
      * sm..2xl sind bewusst Aliasse auf 3px, damit Bestands-
      * referenzen nicht brechen, aber NIE > 3px rendern. */
-    --pp-radius-ui:   3px;    /* durchgängiger Standard-UI-Radius (Buttons/Inputs/Cards) — Enterprise 3px (User 22.06.) */
+    --pp-radius-ui:   4px;    /* Standard-UI-Radius (Buttons/Inputs/Cards) — klickdummy-Master --radius: 4px */
     --pp-radius-xs:   2px;
-    --pp-radius-sm:   3px;
-    --pp-radius-md:   3px;
-    --pp-radius-lg:   3px;
-    --pp-radius-xl:   3px;
-    --pp-radius-2xl:  3px;
+    --pp-radius-sm:   4px;
+    --pp-radius-md:   4px;
+    --pp-radius-lg:   4px;
+    --pp-radius-xl:   4px;
+    --pp-radius-2xl:  4px;
     --pp-radius-full: 9999px;   /* Kreise/Pills bleiben rund */
 
     /* Shadows — flat, soft, low-noise */

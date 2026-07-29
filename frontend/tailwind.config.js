@@ -87,8 +87,9 @@ export default {
         },
       },
       fontFamily: {
-        // Matches LCS brand typography; falls back to the frappe-ui default.
-        lcs: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        // Klickdummy-Master typeface (Noto Sans), self-hosted via @font-face.
+        sans: ['Noto Sans', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        lcs: ['Noto Sans', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       },
       // Soft elevation matching LCS card aesthetic
       boxShadow: {

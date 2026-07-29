@@ -3,6 +3,18 @@
    (PpSidebar) in Pilanda mode. Namespaced, so no clash with the --lcs-* set. */
 @import './pp-tokens.css';
 
+/* Klickdummy-Master typeface: Noto Sans (variable, weight 100–900), self-hosted
+   from the design asset — matches the design master's font 1:1. */
+@font-face {
+  font-family: "Noto Sans";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("./assets/fonts/noto-sans.woff2") format("woff2");
+}
+:root { --pp-font-body: "Noto Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+body, .crm { font-family: var(--pp-font-body); }
+
 /* Klickdummy-Master §5: app-weit keine sichtbaren Scrollbalken (Scrollen
    bleibt voll funktional). Firefox + IE + WebKit/Blink. */
 * { scrollbar-width: none; -ms-overflow-style: none; }
@@ -30,13 +42,11 @@
   --pp-brand-primary-d: #0a6f6f;
   --lcs-primary:    rgb(var(--pp-brand-primary-rgb, 0 139 139));
 
-  /* All text black (light mode) — the slate-tinted grays read too light.
-     Primary + secondary pure black; tertiary near-black so tiny uppercase
-     captions keep a hair of hierarchy. Dark mode keeps its light text (the
-     theme's [data-theme="dark"] block wins by specificity). */
-  --pp-text-primary:   #000000;
-  --pp-text-secondary: #000000;
-  --pp-text-tertiary:  #000000;
+  /* Text = klickdummy-Master slate hierarchy (ink / muted / faint). Aligned
+     back to the design master (was forced black). */
+  --pp-text-primary:   #232a36;   /* ink */
+  --pp-text-secondary: #69707d;   /* muted */
+  --pp-text-tertiary:  #9aa1ad;   /* faint */
   --lcs-secondary:  var(--pp-brand-primary);   /* link/secondary accent -> Brand-Cyan (SSOT pp-tokens --pp-brand-primary; vormals Fremd-Blau) */
   --lcs-accent:     #F5A524;   /* signal yellow */
 
@@ -93,34 +103,6 @@ html[data-theme="dark"] {
   --pp-state-warning-500: #e0a63a;  --pp-state-warning: #e0a63a;
   --pp-state-info-500:    #6b9bff;  --pp-state-info:    #6b9bff;
   --pp-state-danger-500:  #ff6b5e;  --pp-state-danger:  #ff6b5e;
-}
-
-/* ============================================================
-   All text black in light mode (org design rule). Shared components
-   (Opportunity Matrix, frappe-ui widgets) hard-code slate greys via
-   text-gray-* / text-ink-gray-* utilities instead of the --pp-text-*
-   tokens, so force those greyscale TEXT ramps to black here. Light mode
-   only — the dark theme keeps its light text. Backgrounds/borders (bg-*,
-   border-*) are untouched; this only affects text colour utilities.
-   ============================================================ */
-html:not([data-theme="dark"]) {
-  --ink-gray-5: #000000;
-  --ink-gray-6: #000000;
-  --ink-gray-7: #000000;
-  --ink-gray-8: #000000;
-  --ink-gray-9: #000000;
-}
-html:not([data-theme="dark"]) .text-gray-400,
-html:not([data-theme="dark"]) .text-gray-500,
-html:not([data-theme="dark"]) .text-gray-600,
-html:not([data-theme="dark"]) .text-gray-700,
-html:not([data-theme="dark"]) .text-gray-800,
-html:not([data-theme="dark"]) .text-gray-900,
-html:not([data-theme="dark"]) .text-slate-400,
-html:not([data-theme="dark"]) .text-slate-500,
-html:not([data-theme="dark"]) .text-slate-600,
-html:not([data-theme="dark"]) .text-slate-700 {
-  color: #000000;
 }
 
 /* ============================================================
