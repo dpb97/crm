@@ -84,7 +84,7 @@
 
         <!-- Phasen-Stepper -->
         <section class="crmw-stepper">
-          <PpPhaseStepper :steps="phaseSteps" :current="currentStep" @go="initiatePhaseChange" />
+          <PpPhaseStepper :steps="phaseSteps" :current="currentStep" @go="onPhaseClick" />
           <p v-if="doc.phase === 'Lost'" class="crmw-lost">
             <FeatherIcon name="x-circle" class="inline h-3.5 w-3.5" /> {{ __('Project marked as lost') }}
           </p>
@@ -490,6 +490,8 @@ import { ref, computed, watch, nextTick, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { PROJECT_STEPS } from '@/lib/projectSteps'
 import { usePilandaMode } from '@/composables/usePilandaMode'
+import { usePilandaInspect } from '@/composables/usePilandaInspect'
+import ProjectPhaseInspector from '@/components/lcs/ProjectPhaseInspector.vue'
 import {
   createDocumentResource, createListResource, createResource,
   Breadcrumbs, Button, Dropdown, Dialog, Tooltip, FeatherIcon, FormControl,
@@ -588,6 +590,22 @@ const activeTab = ref(T.OV)
 // (it shows the steps instead of the main menu while a project is open).
 const route = useRoute()
 const { pilandaMode } = usePilandaMode()
+const { inspectPanel } = usePilandaInspect()
+
+// Click a BPF phase → open the docked inspector to enter that phase's data +
+// move there (gate-checked). Falls back to a direct move without the shell.
+function onPhaseClick(phase) {
+  if (pilandaMode.value) {
+    inspectPanel({
+      component: ProjectPhaseInspector,
+      props: { projectId: projectId.value, phase },
+      on: { changed: () => project.reload() },
+      title: __(phase),
+    })
+  } else {
+    initiatePhaseChange(phase)
+  }
+}
 const SLUG_TO_TAB = Object.fromEntries(PROJECT_STEPS.map((s) => [s.slug, T[s.t]]))
 const TAB_TO_SLUG = Object.fromEntries(PROJECT_STEPS.map((s) => [T[s.t], s.slug]))
 watch(() => route.query.step, (slug) => {
