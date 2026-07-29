@@ -70,6 +70,8 @@ const visibleAlerts = computed(() => {
 
 function openEvent(e) {
   completeAlert(e.id)
+  // No Calendar route in this fork — skip navigation instead of throwing.
+  if (!router.hasRoute('Calendar')) return
   router.push({
     name: 'Calendar',
     query: {

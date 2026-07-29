@@ -230,13 +230,22 @@
         <div v-else class="lcsod-notes-empty">{{ __('No notes yet.') }}</div>
       </div>
 
-      <!-- Won/Lost reason — only shown when relevant -->
+      <!-- Won/Lost reason — only shown when relevant. Writes to the real
+           fields (won_notes when accepted, lost_reason when rejected). -->
       <div v-if="doc.status === 'Rejected' || doc.status === 'Accepted'" class="lcsod-card">
         <InlineField
-          :label="doc.status === 'Accepted' ? __('Won Notes') : __('Lost Reason')"
-          :value="doc.won_lost_reason"
+          v-if="doc.status === 'Accepted'"
+          :label="__('Won Notes')"
+          :value="doc.won_notes"
           type="textarea"
-          @save="save('won_lost_reason', $event)"
+          @save="save('won_notes', $event)"
+        />
+        <InlineField
+          v-else
+          :label="__('Lost Reason')"
+          :value="doc.lost_reason"
+          type="textarea"
+          @save="save('lost_reason', $event)"
         />
       </div>
 

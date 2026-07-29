@@ -91,7 +91,7 @@
 </template>
 
 <script setup>
-import { computed, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { createResource, call, toast, Breadcrumbs, Button } from 'frappe-ui'
 import LayoutHeader from '@/components/LayoutHeader.vue'
@@ -105,16 +105,23 @@ const chance = createResource({ url: 'lcs_integrations.projects.api.get_chance',
 const c = computed(() => chance.data || null)
 watch(() => props.id, () => chance.reload())
 
-const coords = computed(() => (c.value?.latitude ? `${c.value.latitude.toFixed(5)}° N · ${c.value.longitude.toFixed(5)}° O` : '—'))
+const coords = computed(() => (
+  c.value?.latitude != null && c.value?.longitude != null
+    ? `${c.value.latitude.toFixed(5)}° N · ${c.value.longitude.toFixed(5)}° O`
+    : '—'
+))
 
-const converting = computed(() => false)
+const converting = ref(false)
 function toLead() {
+  if (converting.value) return
+  converting.value = true
   call('lcs_integrations.projects.api.chance_to_lead', { name: props.id })
     .then((res) => {
-      toast({ title: __('Lead created'), icon: 'check-circle', iconClasses: 'text-green-500' })
+      toast({ title: res?.created ? __('Lead created') : __('Lead already exists'), icon: 'check-circle', iconClasses: 'text-green-500' })
       if (res?.lead) router.push({ name: 'Lead', params: { leadId: res.lead } })
     })
     .catch((e) => toast({ title: __('Could not create the lead.'), text: e?.messages?.[0] || e?.message || '', icon: 'alert-circle', iconClasses: 'text-red-500' }))
+    .finally(() => { converting.value = false })
 }
 
 // Chancen-Matrix: Regler → optimistisch lokal + auf der LCS Chance speichern.
