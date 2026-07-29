@@ -84,7 +84,7 @@
 
         <!-- Phasen-Stepper -->
         <section class="crmw-stepper">
-          <PpPhaseStepper :steps="phaseSteps" :current="currentStep" />
+          <PpPhaseStepper :steps="phaseSteps" :current="currentStep" @go="initiatePhaseChange" />
           <p v-if="doc.phase === 'Lost'" class="crmw-lost">
             <FeatherIcon name="x-circle" class="inline h-3.5 w-3.5" /> {{ __('Project marked as lost') }}
           </p>
@@ -120,10 +120,17 @@
             <section class="crmw-gates">
               <header class="crmw-gates-head">
                 <h3>{{ __('Phase requirements') }}</h3>
-                <span class="crmw-gates-count" :class="{ 'is-done': gatesDone === 3 }">{{ gatesDone }}/3</span>
+                <span class="crmw-gates-phase">{{ __(doc.phase || '') }}</span>
               </header>
               <ul class="crmw-gate-list">
-                <li class="crmw-gate">
+                <li v-if="!activeGate" class="crmw-gate">
+                  <span class="crmw-gate-dot is-done"><FeatherIcon name="check" class="h-3.5 w-3.5" /></span>
+                  <div class="crmw-gate-txt">
+                    <div class="crmw-gate-label">{{ __('All requirements met') }}</div>
+                    <div class="crmw-gate-hint">{{ __('for the current phase') }}</div>
+                  </div>
+                </li>
+                <li v-if="activeGate === 'questionaire'" class="crmw-gate">
                   <span class="crmw-gate-dot" :class="gateQuestionaire ? 'is-done' : 'is-open'"><FeatherIcon :name="gateQuestionaire ? 'check' : 'alert-circle'" class="h-3.5 w-3.5" /></span>
                   <div class="crmw-gate-txt">
                     <div class="crmw-gate-label">{{ __('Questionaire') }}</div>
@@ -137,7 +144,7 @@
                     <input ref="questionaireInput" type="file" class="hidden" @change="onQuestionaireFile" />
                   </div>
                 </li>
-                <li class="crmw-gate">
+                <li v-if="activeGate === 'budget'" class="crmw-gate">
                   <span class="crmw-gate-dot" :class="gateBudget ? 'is-done' : 'is-open'"><FeatherIcon :name="gateBudget ? 'check' : 'alert-circle'" class="h-3.5 w-3.5" /></span>
                   <div class="crmw-gate-txt">
                     <div class="crmw-gate-label">{{ __('Budget') }}</div>
@@ -151,7 +158,7 @@
                     </label>
                   </div>
                 </li>
-                <li class="crmw-gate">
+                <li v-if="activeGate === 'richtpreis'" class="crmw-gate">
                   <span class="crmw-gate-dot" :class="gateRichtpreis ? 'is-done' : 'is-open'"><FeatherIcon :name="gateRichtpreis ? 'check' : 'alert-circle'" class="h-3.5 w-3.5" /></span>
                   <div class="crmw-gate-txt">
                     <div class="crmw-gate-label">{{ __('Richtpreis') }}</div>
@@ -622,7 +629,9 @@ const PHASE_STEPS = [
   { key: 'Execution',   idx: 7, group: __('Project'), label: __('Execution') },
   { key: 'Completed',   idx: 8, group: __('Project'), label: __('Completed') },
 ]
-const phaseSteps = PHASE_STEPS.map(({ idx, group, label }) => ({ idx, group, label }))
+// `go` makes each step clickable in PpPhaseStepper → jumps the project to that
+// phase (gate-validated on the backend).
+const phaseSteps = PHASE_STEPS.map((p) => ({ idx: p.idx, group: p.group, label: p.label, go: p.key }))
 const currentStep = computed(() => {
   const s = PHASE_STEPS.find((p) => p.key === doc.value.phase)
   return s ? s.idx : 0 // 0 = keine aktive Stufe (z. B. „Lost")
@@ -852,6 +861,10 @@ const gateQuestionaire = computed(() => !!doc.value?.questionaire)
 const gateBudget = computed(() => !!(doc.value?.budget_customer || doc.value?.budget_unknown))
 const gateRichtpreis = computed(() => !!(doc.value?.richtpreis || doc.value?.richtpreis_impossible))
 const gatesDone = computed(() => [gateQuestionaire, gateBudget, gateRichtpreis].filter((g) => g.value).length)
+// Only the requirement for the CURRENT phase's next step is shown.
+const activeGate = computed(() => (
+  { Qualified: 'questionaire', Budget: 'budget', Richtpreis: 'richtpreis' }[doc.value?.phase] || null
+))
 
 // Offer templates
 const templatesResource = createResource({
@@ -1182,9 +1195,9 @@ function formatRelativeTime(dateStr) {
 .crmw-gates-head { display: flex; align-items: center; justify-content: space-between;
   padding: var(--pp-space-3) var(--pp-space-4); border-bottom: 1px solid var(--pp-border-subtle); background: var(--pp-bg-sunken); }
 .crmw-gates-head h3 { margin: 0; font-size: var(--pp-fs-13, 13px); font-weight: var(--pp-weight-semibold); color: var(--pp-text-primary); }
-.crmw-gates-count { font-size: 11px; font-weight: var(--pp-weight-bold); font-variant-numeric: tabular-nums;
-  color: var(--pp-text-on-accent); background: var(--pp-state-warning); padding: 1px 8px; border-radius: var(--pp-radius-full); }
-.crmw-gates-count.is-done { background: var(--pp-state-success); }
+.crmw-gates-phase { font-size: 10px; font-weight: var(--pp-weight-bold); letter-spacing: 0.05em; text-transform: uppercase;
+  color: var(--pp-brand-primary); background: var(--pp-accent-soft, color-mix(in oklab, var(--pp-brand-primary) 12%, transparent));
+  padding: 2px 8px; border-radius: var(--pp-radius-full); }
 .crmw-gate-list { list-style: none; margin: 0; padding: 0; }
 .crmw-gate { display: flex; align-items: center; gap: var(--pp-space-3); padding: var(--pp-space-3) var(--pp-space-4); }
 .crmw-gate + .crmw-gate { border-top: 1px solid var(--pp-border-subtle); }

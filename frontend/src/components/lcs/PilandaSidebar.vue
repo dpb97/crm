@@ -223,6 +223,20 @@ watch(
 )
 const activeKey = ref(null)
 
+// In the project workspace, highlight the current step in the sidebar. PpSidebar
+// keys items as "<group>-<index>"; the project module has one group whose first
+// item is the "back" row, so PROJECT_STEPS[j] is item index j+1.
+watch(
+  [inProjectWorkspace, () => route.query.step],
+  () => {
+    if (!inProjectWorkspace.value) return
+    const slug = route.query.step || 'overview'
+    const j = PROJECT_STEPS.findIndex((s) => s.slug === slug)
+    activeKey.value = '0-' + (j >= 0 ? j + 1 : 1)
+  },
+  { immediate: true },
+)
+
 // ---------------------------------------------------------------
 // Allgemein-/Wissen-ANZEIGE (Host-Aufgabe lt. PpSidebar-Vertrag) — portiert
 // aus PilandaDesk.vue: die flache SSOT-Liste wird in Anzeige-Reihenfolge mit
