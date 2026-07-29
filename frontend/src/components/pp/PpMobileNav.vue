@@ -34,7 +34,10 @@ const emit = defineEmits(['select'])
 <style scoped>
 .pp-mnav {
   flex: none;
-  height: 58px;
+  /* 58px bar + safe-area padding so the iOS home indicator / gesture bar never
+     overlaps the tap targets in standalone PWA mode (viewport-fit=cover). */
+  height: calc(58px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
   display: flex;
   align-items: stretch;
   justify-content: space-around;

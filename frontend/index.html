@@ -4,9 +4,13 @@
     <meta charset="UTF-8" />
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1.0, viewport-fit=cover maximum-scale=1.0, user-scalable=no"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
     />
-    <title>Frappe CRM</title>
+    <!-- Status-Bar / Browser-Chrome an die graue Appbar (--pp-bg-surface)
+         angleichen, damit der obere Rand im Standalone-PWA-Modus nahtlos ist. -->
+    <meta name="theme-color" content="#e2e5ea" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#1b212b" media="(prefers-color-scheme: dark)" />
+    <title>LCS CRM</title>
     <!-- Pilanda-Theme-Tokens (SSOT: pilanda_theme, oklch-Skala + Radius).
          Laedt die volle Token-Datei in die SPA; der after_request-Block
          von pilanda_theme legt Live-DB-Overrides darueber. -->
@@ -25,8 +29,9 @@
       href="/assets/pilanda_theme/css/pilanda_theme_fonts.css"
     />
     <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-title" content="Frappe CRM" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="white" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="LCS CRM" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
 
     <!-- PWA / favicon — Pilanda "PA" brand mark (LCS CRM) -->
     <link rel="icon" type="image/x-icon" href="/assets/crm/frontend/favicon.ico" />

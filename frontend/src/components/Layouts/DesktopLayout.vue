@@ -86,6 +86,7 @@
     <PpMobileNav
       v-if="isMobile"
       :items="mobileNavItems"
+      :active-key="mobileNavActive"
       @select="onMobileNav"
     />
     <GlobalModals />
@@ -125,7 +126,7 @@ import IconMenu from '~icons/lucide/menu'
 import IconHouse from '~icons/lucide/house'
 import IconFolderKanban from '~icons/lucide/folder-kanban'
 import PpInspectorNodeView from '@/components/lcs/PpInspectorNodeView.vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { toast } from 'frappe-ui'
 import { usePilandaMode } from '@/composables/usePilandaMode'
 import { useViewport } from '@/composables/useViewport'
@@ -138,9 +139,18 @@ import { useOnboarding } from 'frappe-ui/frappe'
 const { pilandaMode } = usePilandaMode()
 const { isMobile } = useViewport()
 const router = useRouter()
+const route = useRoute()
 // Mobile nav drawer open-state (off-canvas PilandaSidebar), toggled by the
 // bottom-nav "Menü" tab; auto-closes on nav-item / back clicks.
 const mobileNavOpen = ref(false)
+
+// Highlight the bottom tab matching the current route.
+const mobileNavActive = computed(() => {
+  const p = route.path || ''
+  if (p.startsWith('/crm/project')) return 'projects'   // list + detail
+  if (p.startsWith('/dashboard') || p === '/' || p === '/crm') return 'start'
+  return ''
+})
 
 // Bottom tab bar (design master .mnav). The master's generic Home/News/
 // Assistent become CRM-real targets: Start=Dashboard, Projekte=core screen.

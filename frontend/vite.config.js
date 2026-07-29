@@ -53,8 +53,14 @@ export default defineConfig(async ({ mode }) => {
           scope: '/crm',
           description:
             'LCS Cable Cranes Sales CRM — leads, deals, projects, market-split territories.',
-          background_color: '#FFFFFF',
-          theme_color: '#008B8B', // Brand-Cyan (Literal zwingend: PWA-Manifest kann kein var(); SSOT = pp-tokens --pp-brand-primary / --pp-brand-700)
+          // Match the design master's grey shell so the standalone launch is
+          // seamless: base canvas as splash bg (no white flash), surface grey
+          // as the OS title-bar/status-bar colour (= the PpAppbar; brand is
+          // carried by the icon + the appbar's teal underline). Literals are
+          // mandatory (manifest has no var()); SSOT = pp-tokens --pp-bg-base /
+          // --pp-bg-surface.
+          background_color: '#dcdfe5',
+          theme_color: '#e2e5ea',
           lang: 'de',
           orientation: 'portrait',
           categories: ['business', 'productivity'],
