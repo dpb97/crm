@@ -106,6 +106,19 @@ html[data-theme="dark"] {
 }
 
 /* ============================================================
+   No pure-white surfaces (design master): panels/cards are the grey
+   --pp-bg-surface (#e2e5ea), never #fff. Many LCS + frappe-ui components
+   hard-code `bg-white` / white gradients, which read as bright white blocks
+   against the grey canvas. Remap them to the surface token in LIGHT mode so
+   every block matches the master. Dark mode keeps its own surfaces.
+   ============================================================ */
+html:not([data-theme="dark"]) .bg-white { background-color: var(--pp-bg-surface) !important; }
+html:not([data-theme="dark"]) .from-white,
+html:not([data-theme="dark"]) .from-gray-50 { --tw-gradient-from: var(--pp-bg-surface) !important; }
+html:not([data-theme="dark"]) .to-white,
+html:not([data-theme="dark"]) .to-gray-50 { --tw-gradient-to: var(--pp-bg-surface) !important; }
+
+/* ============================================================
    Reusable component classes — consolidate patterns we use
    30+ times across LCS Vue components into single names.
    Usage: <div class="lcs-card"> ... </div>
