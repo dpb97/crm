@@ -181,6 +181,24 @@
       </ul>
       <PpEmptyState v-else :icon="IconClipboard" :title="__('No decisions yet')" :hint="__('Decisions taken at the agenda points appear here.')" />
     </PpModal>
+
+    <!-- Entscheiden: zeigt WAS entschieden werden muss + erfasst den Entscheid -->
+    <PpModal v-model:open="decideOpen" :title="__('Take a decision')" :width="520">
+      <div v-if="decideItem" class="crmsm-decide">
+        <div class="crmsm-decide-cap">{{ __('To be decided') }}</div>
+        <div class="crmsm-decide-topic">{{ decideItem.topic }}</div>
+        <dl class="crmsm-decide-meta">
+          <div v-if="decideItem.object"><dt>{{ __('Object') }}</dt><dd>{{ decideItem.object }}</dd></div>
+          <div v-if="decideItem.responsible"><dt>{{ __('Responsible') }}</dt><dd>{{ decideItem.responsible }}</dd></div>
+        </dl>
+        <label class="crmsm-decide-cap" for="sm-decision">{{ __('Decision') }}</label>
+        <textarea id="sm-decision" v-model="decideText" rows="3" class="crmsm-input" :placeholder="__('What was decided?')" autofocus />
+        <div class="crmsm-decide-foot">
+          <button type="button" class="crmsm-btn" @click="decideOpen = false">{{ __('Cancel') }}</button>
+          <button type="button" class="crmsm-btn is-primary" :disabled="mutate.loading" @click="confirmDecide">{{ __('Confirm decision') }}</button>
+        </div>
+      </div>
+    </PpModal>
   </div>
 </template>
 
@@ -223,7 +241,7 @@ const agendaRows = computed(() => agenda.value.map((a) => ({ ...a, id: a.name })
 
 const agendaCols = [
   { key: 'nr', label: '#', align: 'right', width: 44 },
-  { key: 'topic', label: __('Topic'), pin: true, width: 300 },
+  { key: 'topic', label: __('Topic'), width: 300 },
   { key: 'object', label: __('Object'), width: 240 },
   { key: 'responsible', label: __('Responsible'), width: 150 },
   { key: 'status', label: __('Status'), width: 120 },
@@ -249,9 +267,22 @@ const flash = ref('')
 const mutate = createResource({ url: 'lcs_integrations.projects.api.sales_meeting_decide' })
 const archiver = createResource({ url: 'lcs_integrations.projects.api.sales_meeting_archive' })
 
+// Deciding opens a dialog that first shows WHAT has to be decided (topic +
+// context) and captures the decision, instead of silently marking it decided.
+const decideOpen = ref(false)
+const decideItem = ref(null)
+const decideText = ref('')
 function decide(row) {
-  mutate.submit({ name: row.name }).then(() => {
-    flash.value = `${__('Decided')}: „${row.topic}" — ${__('added to the minutes. Archiving stays the salesperson’s manual step.')}`
+  decideItem.value = row
+  decideText.value = row.decision || ''
+  decideOpen.value = true
+}
+function confirmDecide() {
+  const row = decideItem.value
+  if (!row) return
+  mutate.submit({ name: row.name, decision: decideText.value.trim() || null }).then(() => {
+    flash.value = `${__('Decided')}: „${row.topic}" — ${__('added to the minutes.')}`
+    decideOpen.value = false
     board.reload()
   })
 }
@@ -475,6 +506,17 @@ function fmtDate(d) {
   padding: 7px var(--pp-space-3); border: 1px solid var(--pp-border-default); border-radius: var(--pp-radius-ui);
   background: var(--pp-bg-base); }
 .crmsm-input:focus { outline: none; border-color: var(--pp-brand-primary); box-shadow: 0 0 0 3px rgb(var(--pp-brand-primary-rgb) / 0.15); }
+.crmsm-input { width: 100%; }
+
+/* Entscheid-Dialog */
+.crmsm-decide { display: flex; flex-direction: column; gap: var(--pp-space-2); }
+.crmsm-decide-cap { font-size: 10px; font-weight: var(--pp-weight-bold); letter-spacing: 0.05em; text-transform: uppercase; color: var(--pp-text-tertiary); }
+.crmsm-decide-topic { font-size: var(--pp-fs-16, 16px); font-weight: var(--pp-weight-semibold); color: var(--pp-text-primary); }
+.crmsm-decide-meta { display: flex; flex-wrap: wrap; gap: var(--pp-space-2) var(--pp-space-5); margin: 0 0 var(--pp-space-2);
+  padding: var(--pp-space-2) var(--pp-space-3); background: var(--pp-bg-sunken); border-radius: var(--pp-radius-ui); }
+.crmsm-decide-meta dt { font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--pp-text-tertiary); }
+.crmsm-decide-meta dd { margin: 2px 0 0; font-size: var(--pp-fs-13, 13px); color: var(--pp-text-primary); }
+.crmsm-decide-foot { display: flex; justify-content: flex-end; gap: var(--pp-space-2); margin-top: var(--pp-space-2); }
 
 /* Protokoll */
 .crmsm-minutes { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--pp-space-2); }
