@@ -117,51 +117,67 @@
           <!-- Übersicht -->
           <div v-if="activeTab === T.OV" class="crmw-tabpane space-y-5">
             <!-- Phasen-Voraussetzungen (Business-Process-Flow-Gates). -->
-            <section class="rounded-xl border bg-white p-4">
-              <h3 class="mb-3 text-sm font-semibold text-gray-900">{{ __('Phase requirements') }}</h3>
-              <div class="space-y-3">
-                <!-- Gate 1: Questionaire -->
-                <div class="flex items-center justify-between gap-3">
-                  <span class="text-sm text-gray-700">{{ __('Questionaire (before Budget)') }}</span>
-                  <span class="flex items-center gap-2">
-                    <a v-if="doc.questionaire" :href="doc.questionaire" target="_blank" rel="noopener" class="text-xs text-lcs-primary underline">{{ __('View') }}</a>
-                    <button class="crmw-btn crmw-btn--primary" :disabled="uploadingQ" @click="triggerQuestionaire">
-                      <FeatherIcon name="upload" class="h-3.5 w-3.5" />{{ doc.questionaire ? __('Replace') : __('Upload') }}
+            <section class="crmw-gates">
+              <header class="crmw-gates-head">
+                <h3>{{ __('Phase requirements') }}</h3>
+                <span class="crmw-gates-count" :class="{ 'is-done': gatesDone === 3 }">{{ gatesDone }}/3</span>
+              </header>
+              <ul class="crmw-gate-list">
+                <li class="crmw-gate">
+                  <span class="crmw-gate-dot" :class="gateQuestionaire ? 'is-done' : 'is-open'"><FeatherIcon :name="gateQuestionaire ? 'check' : 'alert-circle'" class="h-3.5 w-3.5" /></span>
+                  <div class="crmw-gate-txt">
+                    <div class="crmw-gate-label">{{ __('Questionaire') }}</div>
+                    <div class="crmw-gate-hint">{{ __('required before Budget') }}</div>
+                  </div>
+                  <div class="crmw-gate-ctrl">
+                    <a v-if="doc.questionaire" :href="doc.questionaire" target="_blank" rel="noopener" class="crmw-gate-link">{{ __('View') }}</a>
+                    <button class="gate-btn" :disabled="uploadingQ" @click="triggerQuestionaire">
+                      <FeatherIcon name="upload" class="h-3.5 w-3.5" />{{ uploadingQ ? __('Uploading …') : (doc.questionaire ? __('Replace') : __('Upload')) }}
                     </button>
                     <input ref="questionaireInput" type="file" class="hidden" @change="onQuestionaireFile" />
-                  </span>
-                </div>
-                <!-- Gate 2: Budget -->
-                <div class="flex items-center justify-between gap-3">
-                  <span class="text-sm text-gray-700">{{ __('Budget (before Richtpreis)') }}</span>
-                  <label class="flex items-center gap-1.5 text-xs text-gray-600">
-                    <input type="checkbox" :checked="!!doc.budget_unknown" @change="updateField('budget_unknown', $event.target.checked ? 1 : 0)" />
-                    {{ __('Budget unknown') }}
-                  </label>
-                </div>
-                <!-- Gate 3: Richtpreis -->
-                <div class="flex items-center justify-between gap-3">
-                  <span class="text-sm text-gray-700">{{ __('Richtpreis (before Offer)') }}</span>
-                  <label class="flex items-center gap-1.5 text-xs text-gray-600">
-                    <input type="checkbox" :checked="!!doc.richtpreis_impossible" @change="updateField('richtpreis_impossible', $event.target.checked ? 1 : 0)" />
-                    {{ __('Richtpreis not possible') }}
-                  </label>
-                </div>
-              </div>
+                  </div>
+                </li>
+                <li class="crmw-gate">
+                  <span class="crmw-gate-dot" :class="gateBudget ? 'is-done' : 'is-open'"><FeatherIcon :name="gateBudget ? 'check' : 'alert-circle'" class="h-3.5 w-3.5" /></span>
+                  <div class="crmw-gate-txt">
+                    <div class="crmw-gate-label">{{ __('Budget') }}</div>
+                    <div class="crmw-gate-hint">{{ __('required before Richtpreis') }}</div>
+                  </div>
+                  <div class="crmw-gate-ctrl">
+                    <span class="crmw-gate-val">{{ doc.budget_customer ? formatCurrency(doc.budget_customer) : '—' }}</span>
+                    <label class="crmw-gate-chk">
+                      <input type="checkbox" :checked="!!doc.budget_unknown" @change="updateField('budget_unknown', $event.target.checked ? 1 : 0)" />
+                      {{ __('Budget unknown') }}
+                    </label>
+                  </div>
+                </li>
+                <li class="crmw-gate">
+                  <span class="crmw-gate-dot" :class="gateRichtpreis ? 'is-done' : 'is-open'"><FeatherIcon :name="gateRichtpreis ? 'check' : 'alert-circle'" class="h-3.5 w-3.5" /></span>
+                  <div class="crmw-gate-txt">
+                    <div class="crmw-gate-label">{{ __('Richtpreis') }}</div>
+                    <div class="crmw-gate-hint">{{ __('required before Offer') }}</div>
+                  </div>
+                  <div class="crmw-gate-ctrl">
+                    <span class="crmw-gate-val">{{ doc.richtpreis ? formatCurrency(doc.richtpreis) : '—' }}</span>
+                    <label class="crmw-gate-chk">
+                      <input type="checkbox" :checked="!!doc.richtpreis_impossible" @change="updateField('richtpreis_impossible', $event.target.checked ? 1 : 0)" />
+                      {{ __('Richtpreis not possible') }}
+                    </label>
+                  </div>
+                </li>
+              </ul>
             </section>
 
-            <!-- Chancen-Matrix direkt in der Übersicht. -->
-            <section v-if="canShow('show_opportunity_matrix')" class="rounded-xl border bg-white p-4">
-              <h3 class="mb-3 text-sm font-semibold text-gray-900">{{ __('Opportunity Matrix') }}</h3>
-              <OpportunityMatrix
-                :technical-fit="matrixValues.technical_fit"
-                :commercial-fit="matrixValues.commercial_fit"
-                :relationship="matrixValues.relationship_strength"
-                :competition="matrixValues.competition_level"
-                :strategic-importance="matrixValues.strategic_importance"
-                @update="onMatrixUpdate"
-              />
-            </section>
+            <!-- Chancen-Matrix direkt in der Übersicht (eigenständige Karte). -->
+            <OpportunityMatrix
+              v-if="canShow('show_opportunity_matrix')"
+              :technical-fit="matrixValues.technical_fit"
+              :commercial-fit="matrixValues.commercial_fit"
+              :relationship="matrixValues.relationship_strength"
+              :competition="matrixValues.competition_level"
+              :strategic-importance="matrixValues.strategic_importance"
+              @update="onMatrixUpdate"
+            />
             <!-- Notizen — angepinnt, immer sichtbar -->
             <section class="rounded-xl border border-amber-200 bg-amber-50/50 p-4">
               <div class="mb-2 flex items-center justify-between">
@@ -831,6 +847,12 @@ const offerGateHint = computed(() =>
   canCreateOffer.value ? '' : __('A binding offer is only possible from the Offer phase.'),
 )
 
+// Phase-requirement gate status (for the Overview requirements card).
+const gateQuestionaire = computed(() => !!doc.value?.questionaire)
+const gateBudget = computed(() => !!(doc.value?.budget_customer || doc.value?.budget_unknown))
+const gateRichtpreis = computed(() => !!(doc.value?.richtpreis || doc.value?.richtpreis_impossible))
+const gatesDone = computed(() => [gateQuestionaire, gateBudget, gateRichtpreis].filter((g) => g.value).length)
+
 // Offer templates
 const templatesResource = createResource({
   url: 'lcs_integrations.projects.api.get_offer_templates',
@@ -1153,6 +1175,36 @@ function formatRelativeTime(dateStr) {
 .crmw-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .crmw-btn--done { background: var(--pp-state-success); border-color: var(--pp-state-success); color: var(--pp-text-on-accent); }
 .crmw-btn { display: inline-flex; align-items: center; gap: 6px; }
+
+/* Phasen-Voraussetzungen (Gate-Karte) */
+.crmw-gates { background: var(--pp-bg-surface); border: 1px solid var(--pp-border-subtle);
+  border-radius: var(--pp-radius-lg, 12px); box-shadow: var(--pp-shadow-xs); overflow: hidden; }
+.crmw-gates-head { display: flex; align-items: center; justify-content: space-between;
+  padding: var(--pp-space-3) var(--pp-space-4); border-bottom: 1px solid var(--pp-border-subtle); background: var(--pp-bg-sunken); }
+.crmw-gates-head h3 { margin: 0; font-size: var(--pp-fs-13, 13px); font-weight: var(--pp-weight-semibold); color: var(--pp-text-primary); }
+.crmw-gates-count { font-size: 11px; font-weight: var(--pp-weight-bold); font-variant-numeric: tabular-nums;
+  color: var(--pp-text-on-accent); background: var(--pp-state-warning); padding: 1px 8px; border-radius: var(--pp-radius-full); }
+.crmw-gates-count.is-done { background: var(--pp-state-success); }
+.crmw-gate-list { list-style: none; margin: 0; padding: 0; }
+.crmw-gate { display: flex; align-items: center; gap: var(--pp-space-3); padding: var(--pp-space-3) var(--pp-space-4); }
+.crmw-gate + .crmw-gate { border-top: 1px solid var(--pp-border-subtle); }
+.crmw-gate-dot { flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: var(--pp-radius-full); }
+.crmw-gate-dot.is-done { background: color-mix(in oklab, var(--pp-state-success) 16%, transparent); color: var(--pp-state-success); }
+.crmw-gate-dot.is-open { background: color-mix(in oklab, var(--pp-state-warning) 16%, transparent); color: var(--pp-state-warning); }
+.crmw-gate-txt { flex: 1; min-width: 0; }
+.crmw-gate-label { font-size: var(--pp-fs-14, 14px); font-weight: var(--pp-weight-medium); color: var(--pp-text-primary); }
+.crmw-gate-hint { font-size: var(--pp-fs-12, 12px); color: var(--pp-text-tertiary); }
+.crmw-gate-ctrl { display: flex; align-items: center; gap: var(--pp-space-3); flex-shrink: 0; }
+.crmw-gate-link { font-size: var(--pp-fs-12, 12px); color: var(--pp-brand-primary); }
+.crmw-gate-link:hover { text-decoration: underline; }
+.crmw-gate-val { font-size: var(--pp-fs-13, 13px); font-variant-numeric: tabular-nums; color: var(--pp-text-secondary); }
+.crmw-gate-chk { display: inline-flex; align-items: center; gap: 5px; font-size: var(--pp-fs-12, 12px); color: var(--pp-text-secondary); white-space: nowrap; cursor: pointer; }
+.crmw-gate-chk input { accent-color: var(--pp-brand-primary); }
+.gate-btn { appearance: none; cursor: pointer; font-family: inherit; font-size: 12px; font-weight: var(--pp-weight-medium);
+  display: inline-flex; align-items: center; gap: 5px; padding: 6px 11px; border-radius: var(--pp-radius-ui);
+  border: 1px solid var(--pp-brand-primary); background: var(--pp-brand-primary); color: var(--pp-text-on-accent); }
+.gate-btn:hover:not(:disabled) { filter: brightness(1.05); }
+.gate-btn:disabled { opacity: 0.6; cursor: default; }
 .crmw-btn--primary:hover { filter: brightness(1.05); color: var(--pp-text-on-accent); }
 
 /* Token pills (type / status) */
