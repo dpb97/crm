@@ -23,11 +23,35 @@
  * Cache-API fallback for the SPA shell.
  */
 
-import { precacheAndRoute, cleanupOutdatedCaches } from 'workbox-precaching'
+import {
+  precacheAndRoute,
+  cleanupOutdatedCaches,
+  createHandlerBoundToURL,
+} from 'workbox-precaching'
+import { registerRoute, NavigationRoute } from 'workbox-routing'
 import { clientsClaim } from 'workbox-core'
 
 precacheAndRoute(self.__WB_MANIFEST || [])
 cleanupOutdatedCaches()
+
+// SPA navigation fallback: serve the precached app shell for ANY in-scope
+// page navigation so deep links and hard refreshes boot fully offline (the
+// SPA then routes client-side). Without this, an offline reload on e.g.
+// /crm/projects/PROJ-1 hits the network and white-screens. Backend paths
+// (Frappe desk, API, static assets, files) are denylisted so only real SPA
+// navigations fall back to index.html.
+registerRoute(
+  new NavigationRoute(createHandlerBoundToURL('index.html'), {
+    denylist: [
+      /^\/app(\/|$)/,
+      /^\/api\//,
+      /^\/assets\//,
+      /^\/files\//,
+      /^\/private\//,
+      /\/sw\.js$/,
+    ],
+  }),
+)
 
 self.skipWaiting()
 clientsClaim()
@@ -37,7 +61,8 @@ clientsClaim()
 // ---------------------------------------------------------------------------
 
 const DB_NAME = 'lcs-crm'
-const DB_VERSION = 1
+// v2: added the `_methods` store for custom read-method (get_*) response caching.
+const DB_VERSION = 2
 // Stores we proactively keep around so the offline reads light up
 // immediately. New doctypes are auto-created on first use, but their
 // store has to live through a `versionchange` upgrade — so when the
@@ -52,6 +77,10 @@ const STATIC_STORES = [
   'LCS Segment',
   'LCS Offer',
   'ToDo',
+  // Generic cache for custom read-method (get_*) responses — keyed by
+  // method-path + args hash, so offline reads of the dashboard, geo, relations
+  // etc. return their last successful payload.
+  '_methods',
 ]
 
 let dbPromise = null
@@ -167,6 +196,12 @@ function applyFilters(rows, filters) {
 
 const GET_LIST_RE = /\/api\/method\/frappe\.client\.get_list/
 const GET_ONE_RE = /\/api\/method\/frappe\.client\.get(?!_)/  // get but not get_list
+// Custom whitelisted read methods — any /api/method path containing `get_<name>`
+// (e.g. …api.get_sales_dashboard, get_project_geo, get_relations). Write methods
+// (save/insert/delete/create_*/*_to_lead) never match `get_`, so they are never
+// cached or served from cache. get_list / get are handled by the blocks above,
+// which return before this one is reached.
+const METHOD_READ_RE = /\/api\/method\/[^?]*get_[a-z0-9_]+/i
 
 function readArg(url, body, name) {
   const u = new URL(url)
@@ -264,6 +299,50 @@ function jsonResponse(body) {
   })
 }
 
+// ---------------------------------------------------------------------------
+// Custom read-method cache (get_* whitelisted methods)
+// ---------------------------------------------------------------------------
+
+// djb2 — a tiny stable string hash for the cache key (method-path + args).
+function hashKey(str) {
+  let h = 5381
+  for (let i = 0; i < str.length; i++) h = ((h << 5) + h + str.charCodeAt(i)) | 0
+  return (h >>> 0).toString(36)
+}
+
+// Build a stable key from the method path + query params + JSON body, so the
+// same call with the same args maps to the same cached payload. `req` must be
+// an un-consumed clone (the body is read here).
+async function methodCacheKey(req) {
+  const u = new URL(req.url)
+  const body = await safeJsonClone(req)
+  const bodyStr = body ? JSON.stringify(body) : ''
+  return u.pathname + '::' + hashKey(u.search + '|' + bodyStr)
+}
+
+async function cacheMethodResponse(keyReq, res) {
+  try {
+    const key = await methodCacheKey(keyReq)
+    const payload = await res.clone().json()
+    // Store the full Frappe-shaped payload ({message: ...}) under `name`=key
+    // so the existing `name`-keyed store machinery can hold it.
+    await putMany('_methods', [{ name: key, payload }])
+  } catch (e) {
+    console.warn('[lcs-sw] method cache write failed', e)
+  }
+}
+
+async function offlineMethodFallback(keyReq) {
+  try {
+    const key = await methodCacheKey(keyReq)
+    const rec = await getOne('_methods', key)
+    if (!rec || !rec.payload) return null
+    return jsonResponse({ ...rec.payload, _lcs_offline: true })
+  } catch {
+    return null
+  }
+}
+
 self.addEventListener('fetch', (event) => {
   const { request } = event
   const url = request.url
@@ -306,6 +385,34 @@ self.addEventListener('fetch', (event) => {
           return res
         } catch {
           const fallback = await offlineSingleFallback(request)
+          return (
+            fallback ||
+            new Response(JSON.stringify({ exc_type: 'OfflineError' }), {
+              status: 503,
+              headers: { 'Content-Type': 'application/json' },
+            })
+          )
+        }
+      })(),
+    )
+    return
+  }
+
+  // Custom read methods (get_*) — network-first, offline-fallback from the
+  // `_methods` IDB store. Clone the request BEFORE fetch consumes its body so
+  // the cache key can be derived from the POST body offline too.
+  if (METHOD_READ_RE.test(url)) {
+    event.respondWith(
+      (async () => {
+        const keyReq = request.clone()
+        try {
+          const res = await fetch(request)
+          if (res && res.ok) {
+            event.waitUntil(cacheMethodResponse(keyReq, res))
+          }
+          return res
+        } catch {
+          const fallback = await offlineMethodFallback(keyReq)
           return (
             fallback ||
             new Response(JSON.stringify({ exc_type: 'OfflineError' }), {

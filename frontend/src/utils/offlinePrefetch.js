@@ -23,6 +23,15 @@ const CORE_DOCTYPES = [
   { doctype: 'CRM Lead', fullDocs: 25 },
   { doctype: 'CRM Organization', fullDocs: 0 },
   { doctype: 'Contact', fullDocs: 0 },
+  // LCS Vertrieb core — projects, offers and tasks must be readable offline
+  // on site too (they back the project pipeline, the offer workflow and the
+  // task lists). Full docs for projects/offers so detail pages incl. child
+  // tables (approvals, relations, versions) open without a connection.
+  { doctype: 'LCS Project', fullDocs: 25 },
+  { doctype: 'LCS Offer', fullDocs: 25 },
+  { doctype: 'LCS Sales Territory', fullDocs: 0 },
+  { doctype: 'LCS Segment', fullDocs: 0 },
+  { doctype: 'ToDo', fullDocs: 0 },
 ]
 
 const LIST_LIMIT = 200
