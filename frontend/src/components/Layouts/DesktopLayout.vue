@@ -9,11 +9,9 @@
       brand-label="Pilanda"
       :search="false"
       :window-controls="false"
-      :menu="isMobile"
       :user="appbarUser"
       @home="goHome"
       @user-select="onUserSelect"
-      @menu="mobileNavOpen = true"
     />
     <div class="flex flex-1 min-h-0">
       <!-- Sidebar-Spalte: KEINE frappe-ui-Fläche (bg-surface-menu-bar) und kein
@@ -83,6 +81,13 @@
       <span class="lcs-statusbar-spacer"></span>
       <span>Pilanda Sales CRM</span>
     </footer>
+    <!-- Mobile: untere Tab-Leiste (Design-Master .mnav) statt Statusleiste;
+         „Menü" öffnet den Nav-Drawer, die übrigen Tabs sind Modul-Kürzel. -->
+    <PpMobileNav
+      v-if="isMobile"
+      :items="mobileNavItems"
+      @select="onMobileNav"
+    />
     <GlobalModals />
   </div>
 
@@ -115,7 +120,13 @@ import PilandaSidebar from '@/components/lcs/PilandaSidebar.vue'
 import PpAppbar from '@/components/pp/PpAppbar.vue'
 import PpInspector from '@/components/pp/PpInspector.vue'
 import PpFunctionBar from '@/components/pp/PpFunctionBar.vue'
+import PpMobileNav from '@/components/pp/PpMobileNav.vue'
+import IconMenu from '~icons/lucide/menu'
+import IconHouse from '~icons/lucide/house'
+import IconFolderKanban from '~icons/lucide/folder-kanban'
 import PpInspectorNodeView from '@/components/lcs/PpInspectorNodeView.vue'
+import { useRouter } from 'vue-router'
+import { toast } from 'frappe-ui'
 import { usePilandaMode } from '@/composables/usePilandaMode'
 import { useViewport } from '@/composables/useViewport'
 import { usePilandaInspect } from '@/composables/usePilandaInspect'
@@ -126,9 +137,27 @@ import { useOnboarding } from 'frappe-ui/frappe'
 
 const { pilandaMode } = usePilandaMode()
 const { isMobile } = useViewport()
+const router = useRouter()
 // Mobile nav drawer open-state (off-canvas PilandaSidebar), toggled by the
-// PpAppbar burger; auto-closes on nav-item / back clicks.
+// bottom-nav "Menü" tab; auto-closes on nav-item / back clicks.
 const mobileNavOpen = ref(false)
+
+// Bottom tab bar (design master .mnav). The master's generic Home/News/
+// Assistent become CRM-real targets: Start=Dashboard, Projekte=core screen.
+// The "Pi" assistant pill is kept as the master's signature (no bot wired yet).
+const mobileNavItems = [
+  { key: 'menu',      label: __('Menu'),     icon: IconMenu },
+  { key: 'start',     label: __('Start'),    icon: IconHouse },
+  { key: 'projects',  label: __('Projects'), icon: IconFolderKanban },
+  { key: 'assistant', label: __('Assistant'), pi: true },
+]
+function onMobileNav(key) {
+  if (key === 'menu') { mobileNavOpen.value = !mobileNavOpen.value; return }
+  mobileNavOpen.value = false
+  if (key === 'start') router.push({ name: 'Dashboard' })
+  else if (key === 'projects') router.push('/crm/projects')
+  else if (key === 'assistant') toast.success(__('Assistant coming soon'))
+}
 const { spec: inspSpec, view: inspView, panel: inspPanel, collapsed: inspCollapsed, setCollapsed: setInspCollapsed } = usePilandaInspect()
 const { open: funcbarOpen, groups: funcbarGroups, available: funcbarAvailable, runAction: onFuncbarAction } = usePilandaFuncbar()
 

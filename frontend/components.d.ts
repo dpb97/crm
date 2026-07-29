@@ -303,6 +303,7 @@ declare module 'vue' {
     PpInspectorNodeView: typeof import('./src/components/lcs/PpInspectorNodeView.vue')['default']
     PpKanban: typeof import('./src/components/pp/PpKanban.vue')['default']
     PpMap: typeof import('./src/components/pp/PpMap.vue')['default']
+    PpMobileNav: typeof import('./src/components/pp/PpMobileNav.vue')['default']
     PpModal: typeof import('./src/components/pp/PpModal.vue')['default']
     PpNetGraph: typeof import('./src/components/pp/PpNetGraph.vue')['default']
     PpNetworkGraph: typeof import('./src/components/pp/PpNetworkGraph.vue')['default']
