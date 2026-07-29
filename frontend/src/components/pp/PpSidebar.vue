@@ -539,9 +539,9 @@ const itemTitle = (it) => {
 /* ---- Menü-Items ---- */
 .pp-nav__item { appearance: none; cursor: pointer; font-family: inherit; text-align: left; width: 100%;
   display: flex; align-items: center; gap: var(--pp-space-2);
-  padding: var(--pp-space-1) var(--pp-space-2) var(--pp-space-1) var(--pp-space-3);
+  padding: var(--pp-space-2) var(--pp-space-2) var(--pp-space-2) var(--pp-space-3);
   border: 0; background: transparent; color: var(--pp-text-primary);
-  font-size: var(--pp-fs-13, 13px); font-weight: var(--pp-weight-medium);
+  font-size: var(--pp-fs-14, 14px); font-weight: var(--pp-weight-medium);
   border-radius: var(--pp-radius-ui); position: relative;
   transition: background var(--pp-duration-fast) var(--pp-ease-standard); }
 .pp-nav__item:hover { background: var(--pp-bg-hover); }
@@ -549,7 +549,7 @@ const itemTitle = (it) => {
 .pp-nav__item.is-active::before { content: ""; position: absolute; left: -2px; top: 5px; bottom: 5px; width: 3px;
   background: var(--pp-brand-primary); border-radius: 0 3px 3px 0; }
 .pp-nav__ic { display: inline-flex; flex: 0 0 auto; }
-.pp-nav__ic :deep(svg) { width: 16px; height: 16px; color: currentColor; opacity: .9; }
+.pp-nav__ic :deep(svg) { width: 18px; height: 18px; color: currentColor; opacity: .9; }
 .pp-nav__item.is-active .pp-nav__ic :deep(svg) { opacity: 1; }
 .pp-nav__label { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pp-nav__count { flex: 0 0 auto; font-size: 10px; font-weight: var(--pp-weight-bold);
@@ -572,7 +572,7 @@ const itemTitle = (it) => {
   left: calc(var(--pp-space-3) + 7px); width: 1px; background: var(--pp-border-subtle); }
 
 .pp-nav__item--sub,
-.pp-nav__item--sub2 { font-size: var(--pp-fs-12, 12px); }
+.pp-nav__item--sub2 { font-size: var(--pp-fs-13, 13px); }
 .pp-nav__item--sub  .pp-nav__label,
 .pp-nav__item--sub2 .pp-nav__label { color: var(--pp-text-secondary); }
 .pp-nav__item--sub.is-active  .pp-nav__label,
