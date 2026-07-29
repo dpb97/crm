@@ -9,17 +9,23 @@
       brand-label="Pilanda"
       :search="false"
       :window-controls="false"
+      :menu="isMobile"
       :user="appbarUser"
       @home="goHome"
       @user-select="onUserSelect"
+      @menu="mobileNavOpen = true"
     />
     <div class="flex flex-1 min-h-0">
       <!-- Sidebar-Spalte: KEINE frappe-ui-Fläche (bg-surface-menu-bar) und kein
            doppelter Rahmen — PpSidebar bringt --pp-bg-surface + border-right
            selbst mit (identisch zur Desk-Sidebar). -->
-      <div class="h-full shrink-0">
+      <!-- Desktop: feste Spalte. Mobile: Off-Canvas-Drawer (fixed + Scrim),
+           per Burger in der Topbar geöffnet — die Spalte reserviert dann
+           keine Breite mehr. -->
+      <div v-if="!isMobile" class="h-full shrink-0">
         <PilandaSidebar />
       </div>
+      <PilandaSidebar v-else :drawer="true" v-model:mobile-open="mobileNavOpen" />
       <!-- Ein durchgehender Pilanda-Base-Hintergrund für Header + Seite; weiße
            Karten (--pp-bg-surface) schweben darauf. Verhindert den weiß/grau-
            Bruch zwischen Shell-Chrome und den getokenten Seiten-Canvasen.
@@ -39,6 +45,7 @@
       <PpInspector
         v-if="inspSpec || inspView || inspPanel"
         class="shrink-0"
+        :overlay="isMobile"
         :spec="inspSpec"
         :collapsed="inspCollapsed"
         title="Spezifikation"
@@ -67,7 +74,7 @@
     </div>
     <!-- Feste Statuszeile unten (Klickdummy-Master Regel 5:
          Marke · LCS Group · Benutzer · Stand). -->
-    <footer class="lcs-statusbar">
+    <footer v-if="!isMobile" class="lcs-statusbar">
       <span class="lcs-statusbar-brand">Pilanda</span>
       <span class="lcs-statusbar-dot">·</span>
       <span>LCS Group</span>
@@ -98,7 +105,7 @@
   </div>
 </template>
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import TaskCreateModal from '@/components/lcs/TaskCreateModal.vue'
 import AppSidebar from '@/components/Layouts/AppSidebar.vue'
 import AppHeader from '@/components/Layouts/AppHeader.vue'
@@ -110,6 +117,7 @@ import PpInspector from '@/components/pp/PpInspector.vue'
 import PpFunctionBar from '@/components/pp/PpFunctionBar.vue'
 import PpInspectorNodeView from '@/components/lcs/PpInspectorNodeView.vue'
 import { usePilandaMode } from '@/composables/usePilandaMode'
+import { useViewport } from '@/composables/useViewport'
 import { usePilandaInspect } from '@/composables/usePilandaInspect'
 import { usePilandaFuncbar } from '@/composables/usePilandaFuncbar'
 import { sessionStore } from '@/stores/session'
@@ -117,6 +125,10 @@ import { usersStore } from '@/stores/users'
 import { useOnboarding } from 'frappe-ui/frappe'
 
 const { pilandaMode } = usePilandaMode()
+const { isMobile } = useViewport()
+// Mobile nav drawer open-state (off-canvas PilandaSidebar), toggled by the
+// PpAppbar burger; auto-closes on nav-item / back clicks.
+const mobileNavOpen = ref(false)
 const { spec: inspSpec, view: inspView, panel: inspPanel, collapsed: inspCollapsed, setCollapsed: setInspCollapsed } = usePilandaInspect()
 const { open: funcbarOpen, groups: funcbarGroups, available: funcbarAvailable, runAction: onFuncbarAction } = usePilandaFuncbar()
 

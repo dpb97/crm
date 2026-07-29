@@ -31,6 +31,8 @@ import { computed, defineAsyncComponent, provide, onMounted, onUnmounted, ref } 
 import { startSyncEngine } from '@/utils/syncEngine'
 import { startOfflinePrefetch } from '@/utils/offlinePrefetch'
 import { useUserPreferences } from '@/composables/useUserPreferences'
+import { usePilandaMode } from '@/composables/usePilandaMode'
+import { useViewport } from '@/composables/useViewport'
 
 // Global preferences dialog — opened via window event dispatched from
 // anywhere (e.g. UserDropdown menu item)
@@ -59,12 +61,15 @@ const MobileLayout = defineAsyncComponent(
 const DesktopLayout = defineAsyncComponent(
   () => import('./components/Layouts/DesktopLayout.vue'),
 )
+const { pilandaMode } = usePilandaMode()
+const { isMobile } = useViewport()
 const Layout = computed(() => {
-  if (window.innerWidth < 640) {
-    return MobileLayout
-  } else {
-    return DesktopLayout
-  }
+  // The Pilanda shell is responsive on its own (drawer sidebar + overlay
+  // inspector on narrow screens), so it stays on mobile too — otherwise the
+  // whole Vertrieb navigation would be unreachable behind the upstream
+  // MobileLayout. Only the CRM-only escape (?mode=crm) falls back to it.
+  if (pilandaMode.value) return DesktopLayout
+  return isMobile.value ? MobileLayout : DesktopLayout
 })
 
 setConfig('systemTimezone', window.timezone?.system || null)

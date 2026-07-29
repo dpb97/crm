@@ -15,11 +15,11 @@
 -->
 
 <template>
-  <div class="pilanda-sidebar-host">
+  <div class="pilanda-sidebar-host" :class="{ 'is-drawer': drawer }">
     <!-- Zurück = schlichter Pfeil als eigene Zeile über dem Modul-Dropdown
          (Klickdummy-Master Regel 3; Label = vorherige Station). -->
     <button
-      v-if="canBack"
+      v-if="canBack && !drawer"
       type="button"
       class="pilanda-back"
       :class="{ 'is-rail': collapsed }"
@@ -36,6 +36,8 @@
       :allgemein="inProjectWorkspace ? [] : allgemeinDisplay"
       :wissen="inProjectWorkspace ? [] : wissenDisplay"
       :icon-resolver="iconResolver"
+      :drawer="drawer"
+      :mobile-open="mobileOpen"
       v-model:active-id="activeId"
       v-model:active-key="activeKey"
       v-model:collapsed="collapsed"
@@ -44,6 +46,7 @@
       :max-width="440"
       :rail-width="56"
       @navigate="onNavigate"
+      @update:mobile-open="emit('update:mobileOpen', $event)"
     />
     <!-- Kein CRM-Only-Button mehr (Marco 20.07.2026: EINE Shell;
          Standalone-Ansicht nur noch via ?mode=crm). -->
@@ -153,6 +156,15 @@ function iconResolver(nameOrKeyword) {
   return ICON_MAP[key] || iconFor(nameOrKeyword)
 }
 
+// Mobile off-canvas drawer: when `drawer` is set the host renders this sidebar
+// as a fixed overlay and controls visibility via `mobileOpen` (v-model). PpSidebar
+// already auto-closes on nav-item clicks; we additionally close on the back arrow.
+const props = defineProps({
+  drawer: { type: Boolean, default: false },
+  mobileOpen: { type: Boolean, default: false },
+})
+const emit = defineEmits(['update:mobileOpen'])
+
 const router = useRouter()
 const route = useRoute()
 const { modules, zones, allgemein, wissen, load } = usePilandaNav()
@@ -197,7 +209,7 @@ function stationLabel(r) {
 }
 const prevStation = ref('')
 const canBack = ref(false)
-function goBack() { router.back() }
+function goBack() { if (props.drawer) emit('update:mobileOpen', false); router.back() }
 const _removeAfterEach = router.afterEach((to, from) => {
   if (from && from.name && from.fullPath !== to.fullPath) {
     prevStation.value = stationLabel(from)
@@ -373,6 +385,9 @@ onBeforeUnmount(() => window.removeEventListener('resize', onResize))
    border-right selbst mit (identisch zur Desk-Sidebar). Volle Höhe, damit die
    Sidebar zwischen Topbar und Fensterrand aufspannt. */
 .pilanda-sidebar-host { display: flex; flex-direction: column; height: 100%; }
+/* Drawer-Modus (Mobile): der Host reserviert keine Flow-Box — die innere
+   PpSidebar ist fixed (Off-Canvas) und ankert am Viewport, nicht am Host. */
+.pilanda-sidebar-host.is-drawer { display: contents; }
 .pilanda-sb-main { flex: 1; min-height: 0; }
 
 /* Zurück-Zeile (Master Regel 3) */

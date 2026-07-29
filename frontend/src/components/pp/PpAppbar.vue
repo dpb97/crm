@@ -45,6 +45,7 @@ import Search from "~icons/lucide/search";
 import Minus from "~icons/lucide/minus";
 import Square from "~icons/lucide/square";
 import X from "~icons/lucide/x";
+import MenuIcon from "~icons/lucide/menu";
 
 defineProps({
   brandSrc:   { type: String, default: "" },
@@ -52,14 +53,21 @@ defineProps({
   crumb:      { type: Array, default: () => [] },
   search:     { type: Boolean, default: true },
   windowControls: { type: Boolean, default: true },
+  // Mobile: leading hamburger that toggles the off-canvas nav drawer.
+  menu:       { type: Boolean, default: false },
   user:       { type: Object, default: () => ({ initials: "?", name: "", role: "" }) },
   height:     { type: Number, default: 52 },
 });
-const emit = defineEmits(["home", "search", "minimize", "toggle-size", "logout", "user-select"]);
+const emit = defineEmits(["home", "search", "minimize", "toggle-size", "logout", "user-select", "menu"]);
 </script>
 
 <template>
   <header class="pp-appbar" :style="{ height: height + 'px' }">
+    <!-- Mobile: Burger öffnet den Navigations-Drawer (nur wenn menu=true). -->
+    <button v-if="menu" class="pp-appbar__icon-btn pp-appbar__burger" type="button"
+            title="Menü" aria-label="Menü öffnen" @click="emit('menu')">
+      <MenuIcon />
+    </button>
     <!-- Marke (Home-Link) -->
     <button class="pp-appbar__brand" type="button" title="Zur Startseite" @click="emit('home')">
       <slot name="brand">

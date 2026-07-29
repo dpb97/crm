@@ -113,6 +113,10 @@ html[data-theme="dark"] {
    every block matches the master. Dark mode keeps its own surfaces.
    ============================================================ */
 html:not([data-theme="dark"]) .bg-white { background-color: var(--pp-bg-surface) !important; }
+/* Solid `bg-gray-50` (#f9fafb) is still near-white and reads as a white block
+   against the grey canvas — remap the literal utility (template usage only; the
+   @apply'd pills compile to raw colours and are untouched) to the subtle inset. */
+html:not([data-theme="dark"]) .bg-gray-50 { background-color: var(--pp-bg-sunken) !important; }
 html:not([data-theme="dark"]) .from-white,
 html:not([data-theme="dark"]) .from-gray-50 { --tw-gradient-from: var(--pp-bg-surface) !important; }
 html:not([data-theme="dark"]) .to-white,
