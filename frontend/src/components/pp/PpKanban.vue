@@ -53,6 +53,9 @@
 -->
 <script setup>
 import { ref, computed, watch, onBeforeUnmount } from "vue";
+import { useViewport } from "@/composables/useViewport";
+import ChevronLeft from "~icons/lucide/chevron-left";
+import ChevronRight from "~icons/lucide/chevron-right";
 
 const props = defineProps({
   columns: { type: Array, default: () => [] }, // [{ key, label, wip? }]
@@ -76,6 +79,34 @@ const byCol = computed(() => {
   for (const c of localCards.value) (map[c.col] ??= []).push(c);
   return map;
 });
+
+/* ---- Mobile: one lane at a time, swipe between phases ---------------
+   On a phone the columns don't fit side by side, so we show a single
+   full-width lane and let the user swipe (or tap the ‹ › / dots) through
+   the phases. Desktop keeps the full multi-column board. */
+const { isMobile } = useViewport();
+const activeIdx = ref(0);
+watch(
+  () => props.columns.length,
+  (n) => { if (activeIdx.value > n - 1) activeIdx.value = Math.max(0, n - 1); },
+);
+const shownColumns = computed(() =>
+  isMobile.value
+    ? (props.columns[activeIdx.value] ? [props.columns[activeIdx.value]] : [])
+    : props.columns,
+);
+function prevCol() { if (activeIdx.value > 0) activeIdx.value--; }
+function nextCol() { if (activeIdx.value < props.columns.length - 1) activeIdx.value++; }
+let _swx = 0, _swy = 0;
+function onLaneTouchStart(e) { const t = e.changedTouches[0]; _swx = t.clientX; _swy = t.clientY; }
+function onLaneTouchEnd(e) {
+  const t = e.changedTouches[0];
+  const dx = t.clientX - _swx, dy = t.clientY - _swy;
+  // Horizontal swipe over ~50px that is clearly not a vertical scroll.
+  if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.4) {
+    dx < 0 ? nextCol() : prevCol();
+  }
+}
 
 const TONE_STATE = {
   info:    "var(--pp-state-info)",
@@ -127,6 +158,9 @@ function onPointerMove(ev) {
   const d = drag.value;
   d.x = ev.clientX;
   d.y = ev.clientY;
+  // Mobile: cards are not draggable (one lane visible at a time); horizontal
+  // movement is a lane swipe, handled by the container's touch listeners.
+  if (isMobile.value) return;
   if (!d.active) {
     const dist = Math.hypot(ev.clientX - d.startX, ev.clientY - d.startY);
     if (dist < DRAG_THRESHOLD) return;
@@ -159,6 +193,19 @@ function onPointerUp() {
   window.removeEventListener("pointermove", onPointerMove);
   window.removeEventListener("pointerup", onPointerUp);
   document.body.style.userSelect = "";
+
+  // Mobile: open the card only on a real tap (barely any movement); a larger
+  // movement was a lane swipe and must not open the card.
+  if (isMobile.value) {
+    if (d && downCard) {
+      const dist = Math.hypot((d.x ?? d.startX) - d.startX, (d.y ?? d.startY) - d.startY);
+      if (dist < 10) emit("card-click", downCard.id);
+    }
+    drag.value = null;
+    dropTarget.value = null;
+    downCard = null;
+    return;
+  }
 
   if (d && d.active && dropTarget.value) {
     applyMove(d.id, dropTarget.value.col, dropTarget.value.index);
@@ -213,9 +260,29 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="pp-kanban pp-kanban--dnd">
+  <div
+    class="pp-kanban pp-kanban--dnd"
+    :class="{ 'pp-kanban--mobile': isMobile }"
+    @touchstart="isMobile && onLaneTouchStart($event)"
+    @touchend="isMobile && onLaneTouchEnd($event)"
+  >
+    <!-- Mobile: lane switcher (‹ current phase · i/n › + dots) -->
+    <div v-if="isMobile && columns.length" class="pp-kanban__mnav">
+      <button type="button" class="pp-kanban__mnav-btn" :disabled="activeIdx === 0"
+              aria-label="Vorherige Phase" @click="prevCol"><ChevronLeft /></button>
+      <div class="pp-kanban__mnav-label">
+        <span class="pp-kanban__mnav-name">{{ columns[activeIdx] && columns[activeIdx].label }}</span>
+        <span class="pp-kanban__mnav-pos">{{ activeIdx + 1 }} / {{ columns.length }}</span>
+      </div>
+      <button type="button" class="pp-kanban__mnav-btn" :disabled="activeIdx === columns.length - 1"
+              aria-label="Nächste Phase" @click="nextCol"><ChevronRight /></button>
+    </div>
+    <div v-if="isMobile && columns.length > 1" class="pp-kanban__dots">
+      <button v-for="(c, ci) in columns" :key="c.key" type="button" class="pp-kanban__dot"
+              :class="{ 'is-active': ci === activeIdx }" :aria-label="c.label" @click="activeIdx = ci"></button>
+    </div>
     <div
-      v-for="col in columns"
+      v-for="col in shownColumns"
       :key="col.key"
       class="pp-kanban__col"
       :data-kanban-col="col.key"
@@ -342,6 +409,26 @@ onBeforeUnmount(() => {
 
 /* Karte: klar greifbar, im Zug gedämpft */
 .pp-kanban__card { touch-action: none; user-select: none; }
+
+/* ---- Mobile: single full-width lane + swipe switcher ---------------- */
+.pp-kanban--mobile { flex-direction: column; overflow-x: hidden; }
+.pp-kanban--mobile .pp-kanban__col { width: 100%; min-width: 0; max-width: 100%; flex: 1 1 auto; }
+.pp-kanban__mnav { display: flex; align-items: center; gap: 8px; padding: 2px 0 8px; }
+.pp-kanban__mnav-btn {
+  flex: 0 0 auto; width: 40px; height: 40px; display: grid; place-items: center;
+  border: 1px solid var(--pp-border-default); border-radius: var(--pp-radius-ui);
+  background: var(--pp-bg-surface); color: var(--pp-text-secondary); cursor: pointer;
+}
+.pp-kanban__mnav-btn:disabled { opacity: 0.4; cursor: default; }
+.pp-kanban__mnav-btn :deep(svg) { width: 18px; height: 18px; }
+.pp-kanban__mnav-label { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; line-height: 1.2; }
+.pp-kanban__mnav-name { font-weight: var(--pp-weight-semibold); font-size: 14px; color: var(--pp-text-primary);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.pp-kanban__mnav-pos { font-size: 11px; color: var(--pp-text-tertiary); font-variant-numeric: tabular-nums; }
+.pp-kanban__dots { display: flex; justify-content: center; gap: 6px; padding-bottom: 10px; }
+.pp-kanban__dot { width: 7px; height: 7px; padding: 0; border: 0; border-radius: var(--pp-radius-full);
+  background: var(--pp-bg-hover); cursor: pointer; transition: background var(--pp-duration-fast) var(--pp-ease-standard); }
+.pp-kanban__dot.is-active { background: var(--pp-brand-primary); }
 .pp-kanban__card.is-dragging { opacity: 0.4; }
 
 .pp-kanban__badges { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: var(--pp-space-2); }
