@@ -261,10 +261,17 @@ function navKeyForPath(path) {
   let exact = null, prefix = null, prefixLen = -1
   mod.g.forEach((g, gi) => {
     ;(g.items || []).forEach((it, ii) => {
-      const t = it.t || it.target || it.path
+      let t = it.t || it.target || it.path
       if (!t || !t.startsWith('/')) return
+      // Nav targets carry the /crm app prefix (e.g. /crm/contacts), but the Vue
+      // router base is /crm so route.path has it stripped (/contacts/view/list).
+      // Normalise the target to the in-router path before matching. Non-SPA
+      // targets (/app/…, external) are skipped.
+      if (t === '/crm') t = '/'
+      else if (t.startsWith('/crm/')) t = t.slice(4)
+      else return
       if (t === path) exact = gi + '-' + ii
-      else if (path.startsWith(t + '/') && t.length > prefixLen) {
+      else if (t !== '/' && path.startsWith(t + '/') && t.length > prefixLen) {
         prefix = gi + '-' + ii
         prefixLen = t.length
       }
