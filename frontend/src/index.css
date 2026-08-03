@@ -253,6 +253,10 @@ html:not([data-theme="dark"]) .to-gray-50 { --tw-gradient-to: var(--pp-bg-surfac
 @media (max-width: 767px) {
   /* Comfortable ≥40px hit area for the inspector overlay close button. */
   .pp-inspector.is-overlay .pp-inspector__close { width: 40px !important; height: 40px !important; }
+  /* List pages: hide the KPI stat cards on phones so the (steerable) data table
+     is the focus instead of being pushed off-screen. Filtering stays reachable
+     via the search/filter field. Dashboard + detail-page KPIs are kept. */
+  .crml-kpis, .lcsd-kpis, .crmc-kpis, .crmo-kpis, .lcsp-kpis, .crmt-kpis { display: none !important; }
 }
 @media (max-width: 400px) {
   /* Tightest phones: drop the brand wordmark, keep just the mark (design master

@@ -1,7 +1,7 @@
 <!--
   QuickContactActions
   ===================
-  Call / Mail / WhatsApp / Teams quick links for a contact. Each action is
+  Call / Mail / WhatsApp App / WhatsApp Web quick links for a contact. Each action is
   disabled (greyed, non-clickable) when its underlying field is empty.
   Shared by the contact page and the project inspector.
 -->
@@ -16,11 +16,13 @@
     <a :href="email ? `mailto:${email}` : null" :class="actionCls(email)">
       <FeatherIcon name="mail" class="h-4 w-4" /> {{ __('Mail') }}
     </a>
+    <!-- wa.me opens the installed WhatsApp app (mobile app / desktop client). -->
     <a :href="phone ? `https://wa.me/${waNumber(phone)}` : null" target="_blank" rel="noopener" :class="actionCls(phone)">
-      <FeatherIcon name="message-circle" class="h-4 w-4" /> WhatsApp
+      <FeatherIcon name="message-circle" class="h-4 w-4" /> WhatsApp App
     </a>
-    <a :href="email ? teamsLink(email) : null" target="_blank" rel="noopener" :class="actionCls(email)">
-      <FeatherIcon name="message-square" class="h-4 w-4" /> {{ __('Chat') }}
+    <!-- web.whatsapp.com opens WhatsApp Web in the browser. -->
+    <a :href="phone ? waWebLink(phone) : null" target="_blank" rel="noopener" :class="actionCls(phone)">
+      <FeatherIcon name="message-circle" class="h-4 w-4" /> WhatsApp Web
     </a>
   </div>
 </template>
@@ -50,8 +52,9 @@ function waNumber(p) {
   else if (n.startsWith('00')) n = n.slice(2)
   return n.replace(/\D/g, '')
 }
-function teamsLink(email) {
-  return `https://teams.microsoft.com/l/chat/0/0?users=${encodeURIComponent(email)}`
+// WhatsApp Web deep link — opens web.whatsapp.com with the number prefilled.
+function waWebLink(p) {
+  return `https://web.whatsapp.com/send/?phone=${waNumber(p)}&text&type=phone_number&app_absent=0`
 }
 function actionCls(enabled) {
   return [

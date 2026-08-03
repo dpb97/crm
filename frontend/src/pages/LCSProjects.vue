@@ -505,7 +505,7 @@
 import { ref, computed, reactive, watch, onMounted, onUnmounted } from 'vue'
 import { createResource, call, Breadcrumbs, Button, FormControl, Dialog, Tooltip, FeatherIcon, toast } from 'frappe-ui'
 import { useRouter } from 'vue-router'
-import { useStorage } from '@vueuse/core'
+import { useProfileSetting } from '@/composables/useProfileSetting'
 import { sessionStore } from '@/stores/session'
 import { useOfflineList } from '@/composables/useOfflineList'
 import { useUserPreferences } from '@/composables/useUserPreferences'
@@ -554,8 +554,34 @@ const router = useRouter()
 
 // State
 const filters = reactive({ project_type: '', phase: '', country: '' })
+// Persist the selected phase/type/country filter to the profile (cross-device),
+// hydrating once the preferences load. The hydration guard stops the initial
+// load from echoing empty defaults back to the server.
+let _filtersHydrated = false
+watch(
+  () => [userPrefs.state.loaded, userPrefs.state.prefs.list_view_state],
+  () => {
+    if (!userPrefs.state.loaded) return
+    const st = userPrefs.getListState('lcs_projects')
+    if (st.filters) Object.assign(filters, { project_type: '', phase: '', country: '', ...st.filters })
+    _filtersHydrated = true
+  },
+  { immediate: true },
+)
+let _filtersTimer = null
+watch(
+  filters,
+  () => {
+    if (!_filtersHydrated) return
+    clearTimeout(_filtersTimer)
+    _filtersTimer = setTimeout(() => {
+      userPrefs.saveListState('lcs_projects', { filters: { ...filters } }).catch(() => {})
+    }, 400)
+  },
+  { deep: true },
+)
 // User preference persists across reloads
-const onlyMine = useStorage('lcs-projects-only-mine', false)
+const onlyMine = useProfileSetting('lcs_projects', 'only_mine', false)
 const showNewDialog = ref(false)
 const creating = ref(false)
 const selectedIndex = ref(-1)
@@ -644,7 +670,7 @@ const sortDirection = ref('desc')
 // View mode: Liste ⇄ Phasenboard (design master). The territory/portfolio maps
 // live on their own nav page (Projektlandkarte), so the in-list toggle is just
 // the two views the master shows.
-const viewMode = useStorage('lcs-projects-view-mode', 'list')
+const viewMode = useProfileSetting('lcs_projects', 'view', 'list')
 if (!['list', 'kanban'].includes(viewMode.value)) viewMode.value = 'list'
 const VIEW_MODES = [
   { key: 'list', label: __('List') },
@@ -757,7 +783,7 @@ watch(
 )
 // Per-user column order (drag headers to reorder), reconciled with the catalog
 // so new/removed columns are handled. Persisted in the browser.
-const columnOrder = useStorage('lcs-projects-col-order', COLUMN_CATALOG.map((c) => c.key))
+const columnOrder = useProfileSetting('lcs_projects', 'col_order', COLUMN_CATALOG.map((c) => c.key))
 const orderedCatalog = computed(() => {
   const ord = columnOrder.value
   const known = COLUMN_CATALOG.map((c) => c.key)

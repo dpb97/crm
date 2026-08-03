@@ -249,6 +249,39 @@ watch(
   { immediate: true },
 )
 
+// Outside the project workspace, derive the active nav item from the URL so the
+// correct entry stays highlighted on reload / deep-link / back-forward — not only
+// after a click. Mirrors PpSidebar's "<groupIndex>-<itemIndex>" key scheme
+// (buildTree). Exact match for list routes; longest-prefix for detail routes
+// (e.g. /crm/projects/PROJ-1 → the Vertriebsprojekte item).
+function navKeyForPath(path) {
+  const mods = displayModules.value || []
+  const mod = mods.find((m) => m.id === activeId.value) || mods[0]
+  if (!mod || !Array.isArray(mod.g)) return null
+  let exact = null, prefix = null, prefixLen = -1
+  mod.g.forEach((g, gi) => {
+    ;(g.items || []).forEach((it, ii) => {
+      const t = it.t || it.target || it.path
+      if (!t || !t.startsWith('/')) return
+      if (t === path) exact = gi + '-' + ii
+      else if (path.startsWith(t + '/') && t.length > prefixLen) {
+        prefix = gi + '-' + ii
+        prefixLen = t.length
+      }
+    })
+  })
+  return exact || prefix
+}
+watch(
+  [() => route.path, inProjectWorkspace, modules, activeId],
+  () => {
+    if (inProjectWorkspace.value) return
+    const k = navKeyForPath(route.path)
+    if (k) activeKey.value = k
+  },
+  { immediate: true },
+)
+
 // ---------------------------------------------------------------
 // Allgemein-/Wissen-ANZEIGE (Host-Aufgabe lt. PpSidebar-Vertrag) — portiert
 // aus PilandaDesk.vue: die flache SSOT-Liste wird in Anzeige-Reihenfolge mit

@@ -74,7 +74,7 @@ Date,Datum
 Deals,Verkaufschance
 Delete Organization,Firma löschen
 Deputy,Stellvertreter
-"Description, criteria and fillable fields per funnel stage. One criterion / fieldname per line.","Beschreibung, Kriterien und ausfüllbare Felder je Funnel-Stufe. Ein Kriterium / Feldname pro Zeile."
+"Description, criteria and fillable fields per funnel stage. One criterion / fieldname per line.","Beschreibung, Kriterien und ausfüllbare Felder je Trichter-Phase. Ein Kriterium / Feldname pro Zeile."
 Detail map,Detailkarte
 direct,direkt
 Direction,Richtung
@@ -96,7 +96,7 @@ for voice,für Sprache
 Forecasting,Prognose
 From,Von
 frozen,eingefroren
-Funnel Phases,Funnel-Phasen
+Funnel Phases,Trichter-Phasen
 Graph Mailbox (UPN),Graph-Postfach (UPN)
 handled directly by LCS,direkt über LCS betreut
 If this is wrong:,Falls das falsch ist:
@@ -997,3 +997,273 @@ Take a decision,Entscheiden
 To be decided,Zu entscheiden
 What was decided?,Was wurde entschieden?
 Confirm decision,Entscheid übernehmen
+(empty),(leer)
+3-5 characters,3–5 Zeichen
+5-dimension scoring radar chart,Radar-Diagramm mit 5-Dimensionen-Bewertung
+6-system overview on project detail pages,6-System-Übersicht auf Projekt-Detailseiten
+Add a point via the actions bar to start the meeting.,"Über die Aktionsleiste einen Punkt hinzufügen, um die Besprechung zu starten."
+Add a project description...,Projektbeschreibung hinzufügen …
+Add your first comment,Ersten Kommentar hinzufügen
+An ERPNext Project is auto-created when this project enters Order or Execution phase.,"Ein ERPNext-Projekt wird automatisch erstellt, sobald dieses Projekt in die Phase Auftrag oder Ausführung wechselt."
+Analysis failed. Please try again.,Analyse fehlgeschlagen. Bitte erneut versuchen.
+Audio could not be uploaded.,Audio konnte nicht hochgeladen werden.
+Auto (best match),Automatisch (beste Übereinstimmung)
+BSM (Construction),BSM (Bau)
+Back to overview,Zurück zur Übersicht
+Brief project description (optional)...,Kurze Projektbeschreibung (optional) …
+Budget → Richtpreis → Offer cards,Karten Budget → Richtpreis → Angebot
+Cable-crane routes on a live map · click a project for the details,Seilkran-Trassen auf einer Live-Karte · Projekt anklicken für Details
+Cal,Kal
+Capturing Leads,Leads erfassen
+Change deal status,Vertriebsprojekt-Status ändern
+Changes queued for sync,Änderungen für Sync eingereiht
+Choose columns — saved to your user profile,Spalten wählen — im Benutzerprofil gespeichert
+Click mic for voice input,Mikrofon für Spracheingabe anklicken
+Click mic or press Ctrl+Shift+V for voice input,Mikrofon anklicken oder Strg+Umschalt+V für Spracheingabe
+Click to add a description,Zum Hinzufügen einer Beschreibung klicken
+Click to enter custom value,"Klicken, um einen eigenen Wert einzugeben"
+"Compact mode — denser layouts, smaller fonts","Kompaktmodus — dichtere Layouts, kleinere Schrift"
+Companies created in the CRM will appear here.,Im CRM angelegte Firmen erscheinen hier.
+Confirm before moving a project backwards in the pipeline,"Bestätigen, bevor ein Projekt in der Pipeline zurückgeschoben wird"
+Connection OK — Graph token acquired.,Verbindung OK — Graph-Token erhalten.
+"Construction-site management link, defects","Baustellenmanagement-Link, Mängel"
+Cont,Kont
+Contacts created in the CRM will appear here.,Im CRM angelegte Kontakte erscheinen hier.
+Convert lead to deal,Lead in Vertriebsprojekt umwandeln
+Corridor: best = full pipeline · worst = conservative floor · line = probability-weighted forecast (€).,Korridor: Best = volle Pipeline · Worst = konservative Untergrenze · Linie = wahrscheinlichkeitsgewichtete Prognose (€).
+Could not create task,Aufgabe konnte nicht angelegt werden
+Could not load the email.,E-Mail konnte nicht geladen werden.
+Could not open Fusion Manage,Fusion Manage konnte nicht geöffnet werden
+Could not post comment,Kommentar konnte nicht gesendet werden
+Could not revoke access,Zugriff konnte nicht entzogen werden
+Could not share contact,Kontakt konnte nicht geteilt werden
+Could not start recording,Aufnahme konnte nicht gestartet werden
+Could not start the backfill.,Verlaufsimport konnte nicht gestartet werden.
+Create an offer to track versions and outcomes.,"Ein Angebot anlegen, um Versionen und Ergebnisse zu verfolgen."
+Create projects with estimated values and phases to see your pipeline visualized here.,"Projekte mit geschätzten Werten und Phasen anlegen, um die Pipeline hier visualisiert zu sehen."
+Create task,Aufgabe anlegen
+Create your first note,Erste Notiz anlegen
+"Create your first project to start tracking opportunities, phases, and team assignments.","Lege dein erstes Projekt an, um Chancen, Phasen und Teamzuordnungen zu verfolgen."
+Ctrl+N,Strg+N
+Custom Actions,Eigene Aktionen
+Custom Branding,Eigenes Branding
+Custom Fields,Eigene Felder
+Custom List Actions,Eigene Listenaktionen
+Custom Statuses,Eigene Status
+Customer budget → internal estimate → firm offer,Kundenbudget → interne Schätzung → verbindliches Angebot
+Customer mails,Kunden-Mails
+Deal,Vertriebsprojekt
+Decide at the point · done items are archived manually · row = detail in the inspector,Am Punkt entscheiden · erledigte Einträge werden manuell archiviert · Zeile = Details im Inspektor
+Decisions taken at the agenda points appear here.,Entscheidungen zu den Agenda-Punkten erscheinen hier.
+Display preferences — choose what to show,"Anzeige-Einstellungen — wählen, was angezeigt wird"
+Due date,Fälligkeitsdatum
+ERPNext Artefacts,ERPNext-Artefakte
+Email Communication,E-Mail-Kommunikation
+"Emails, calls and tasks are shown in the full view.","E-Mails, Anrufe und Aufgaben werden in der Vollansicht angezeigt."
+"Engage — Regular contact, work on proposal","Engagieren — regelmäßiger Kontakt, Angebot ausarbeiten"
+Failed to load preferences,Einstellungen konnten nicht geladen werden
+Failed to send comment!,Kommentar konnte nicht gesendet werden!
+Fill the Opportunity Matrix before moving to this phase.,"Chancen-Matrix ausfüllen, bevor zu dieser Phase gewechselt wird."
+Forecasting Default Period,Prognose-Standardzeitraum
+Forecasting is not available for your role,Prognose ist für deine Rolle nicht verfügbar
+Free-form replies are only allowed within the 24-hour service window.,Freie Antworten sind nur innerhalb des 24-Stunden-Servicefensters erlaubt.
+"Full Push — All resources committed, close the deal","Voller Einsatz — alle Ressourcen gebündelt, Abschluss holen"
+History backfill started — running in the background.,Verlaufsimport gestartet — läuft im Hintergrund.
+Home Actions,Startseiten-Aktionen
+"How do we compare to competitors? 100 = no competition, 0 = heavily contested with price pressure.","Wie stehen wir im Vergleich zum Wettbewerb? 100 = kein Wettbewerb, 0 = stark umkämpft mit Preisdruck."
+"How important is this project for our long-term positioning? Reference projects, market entry, technology showcase.","Wie wichtig ist dieses Projekt für unsere langfristige Positionierung? Referenzprojekte, Markteintritt, Technologie-Aushängeschild."
+How strong is our relationship with the decision makers? Do we have a champion inside?,Wie stark ist unsere Beziehung zu den Entscheidern? Haben wir einen Fürsprecher im Haus?
+"How well does our solution match the technical requirements? Consider experience with similar terrain, climate, and load capacities.","Wie gut passt unsere Lösung zu den technischen Anforderungen? Berücksichtige Erfahrung mit ähnlichem Gelände, Klima und Traglasten."
+Import from BSM (Construction Sites),Aus BSM importieren (Baustellen)
+Import running BSM construction sites as LCS Projects,Laufende BSM-Baustellen als LCS-Projekte importieren
+Imports historical mail from known contacts/companies for,Importiert historische Mails von bekannten Kontakten/Firmen für
+Integration Status Panel,Integrationsstatus-Panel
+Invite Users,Benutzer einladen
+Invite your team,Dein Team einladen
+Is the budget realistic? Are payment terms acceptable? Consider competition pricing pressure.,Ist das Budget realistisch? Sind die Zahlungsbedingungen akzeptabel? Berücksichtige den Preisdruck durch den Wettbewerb.
+"Item number, state, BOM link","Artikelnummer, Status, Stücklisten-Link"
+LMS Training Requirements,LMS-Schulungsanforderungen
+Leads created in the CRM will appear here.,Im CRM angelegte Leads erscheinen hier.
+Leave empty to load the full mailbox history.,"Leer lassen, um den gesamten Postfach-Verlauf zu laden."
+Link a Fusion Manage item,Fusion-Manage-Element verknüpfen
+"Link a SharePoint folder, Teams channel, or document link in the project to open it here.","Einen SharePoint-Ordner, Teams-Kanal oder Dokument-Link im Projekt verknüpfen, um ihn hier zu öffnen."
+Linked to Fusion Manage,Mit Fusion Manage verknüpft
+Live (Frankfurter.dev · ECB),Live (Frankfurter.dev · EZB)
+"Maintain — Periodic check-ins, build relationships","Halten — periodische Kontakte, Beziehungen aufbauen"
+Matching …,Wird zugeordnet …
+Microphone access blocked by your system.,Mikrofonzugriff vom System blockiert.
+Microphone permission denied. Enable it in browser settings.,Mikrofonberechtigung verweigert. In den Browsereinstellungen aktivieren.
+Mobile App Installation,Mobile-App-Installation
+"Monitor — Keep awareness, no active pursuit","Beobachten — im Blick behalten, keine aktive Verfolgung"
+Monthly / Quarterly / Yearly revenue forecast,Monats-/Quartals-/Jahresumsatzprognose
+Name must be at least 3 characters,Name muss mindestens 3 Zeichen lang sein
+Network error reaching speech recognition service.,Netzwerkfehler beim Erreichen des Spracherkennungsdienstes.
+Network error — will retry automatically,Netzwerkfehler — es wird automatisch erneut versucht
+New note,Neue Notiz
+No BOM rows returned,Keine Stücklistenzeilen erhalten
+No BSM projects to import. Everything is already linked.,Keine BSM-Projekte zum Importieren. Alles ist bereits verknüpft.
+No ERPNext Project linked yet.,Noch kein ERPNext-Projekt verknüpft.
+No WhatsApp messages yet.,Noch keine WhatsApp-Nachrichten.
+No contacts are assigned to this project yet.,Diesem Projekt sind noch keine Kontakte zugeordnet.
+No customer linked to this project.,Kein Kunde mit diesem Projekt verknüpft.
+No emails synced for this company yet.,Für diese Firma noch keine E-Mails synchronisiert.
+No items match your search.,Keine Einträge passen zu deiner Suche.
+No mailbox bindings — add one in Outlook Mailbox Binding to start syncing.,"Keine Postfach-Bindungen — füge in Outlook Mailbox Binding eine hinzu, um die Synchronisierung zu starten."
+No notes yet. Click Add to write project notes.,"Noch keine Notizen. Auf Hinzufügen klicken, um Projektnotizen zu schreiben."
+No offer PDF uploaded yet.,Noch kein Angebots-PDF hochgeladen.
+No phone number on this contact — add one to enable WhatsApp.,"Keine Telefonnummer bei diesem Kontakt — füge eine hinzu, um WhatsApp zu aktivieren."
+No project detected automatically — please choose manually below.,Kein Projekt automatisch erkannt — bitte unten manuell wählen.
+No project detected automatically — please choose manually.,Kein Projekt automatisch erkannt — bitte manuell wählen.
+No speech detected. Speak closer to the microphone.,Keine Sprache erkannt. Näher ans Mikrofon sprechen.
+No tasks yet — add some in the ERPNext Project view.,Noch keine Aufgaben — füge welche in der ERPNext-Projektansicht hinzu.
+No workspaces available,Keine Arbeitsbereiche verfügbar
+Not yet frozen — save the offer to capture a rate.,"Noch nicht eingefroren — Angebot speichern, um einen Kurs festzuhalten."
+Note from the Pilot,Notiz vom Pilot
+Notes and voice notes appear here as they are captured.,"Notizen und Sprachnotizen erscheinen hier, sobald sie erfasst werden."
+Notifications are globally disabled in LCS Outlook Sync Settings.,Benachrichtigungen sind in den LCS Outlook Sync Settings global deaktiviert.
+"ONE filing: the note hangs on the chosen project/lead, travels with it (Chance → Lead → Projekt) and appears in the list at once.","EINE Ablage: Die Notiz hängt am gewählten Projekt/Lead, wandert mit ihm mit (Chance → Lead → Projekt) und erscheint sofort in der Liste."
+Offer PDF uploaded,Angebots-PDF hochgeladen
+"Offer notes, terms, reminders...","Angebotsnotizen, Konditionen, Erinnerungen …"
+Offer versions,Angebotsversionen
+Offline — changes will sync when reconnected,Offline — Änderungen werden bei erneuter Verbindung synchronisiert
+"Once an offer is created, its version history appears here.","Sobald ein Angebot erstellt ist, erscheint hier dessen Versionshistorie."
+"Once organizations with assigned contacts exist, the relationship graph appears here.","Sobald Firmen mit zugeordneten Kontakten existieren, erscheint hier der Beziehungsgraph."
+Online — syncing automatically,Online — synchronisiert automatisch
+Only import active BSM projects (skip Completed / Cancelled),Nur aktive BSM-Projekte importieren (Abgeschlossen / Abgebrochen überspringen)
+Open Team in Microsoft Teams,Team in Microsoft Teams öffnen
+"Open an offer to change its status, versions and outcome.","Ein Angebot öffnen, um Status, Versionen und Ergebnis zu ändern."
+Open display preferences,Anzeige-Einstellungen öffnen
+Opportunity Matrix Tab,Chancen-Matrix-Tab
+Opportunity Matrix required,Chancen-Matrix erforderlich
+"Optional: mailbox UPN to probe, e.g. vertrieb@lcs-group.com","Optional: zu prüfendes Postfach-UPN, z. B. vertrieb@lcs-group.com"
+Other Features,Weitere Funktionen
+PLM / BOM,PLM / Stückliste
+"Pass a contact, organization, project, or email to load activity.","Kontakt, Firma, Projekt oder E-Mail übergeben, um Aktivität zu laden."
+Phase changes and high-probability alerts post here.,Phasenwechsel und Hochwahrscheinlichkeits-Warnungen erscheinen hier.
+"Pick how to resolve each conflicting field. ""Mine"" keeps your offline change. ""Theirs"" discards yours.","Wähle, wie jedes Konfliktfeld aufgelöst wird. „Meine“ behält deine Offline-Änderung. „Ihre“ verwirft deine."
+Pinned View,Angeheftete Ansicht
+Pipeline by Source Channel,Pipeline nach Quellkanal
+Please add a note for the selected reason.,Bitte eine Notiz zum gewählten Grund hinzufügen.
+Please use Chrome or Edge.,Bitte Chrome oder Edge verwenden.
+Project mail activity,Projekt-Mail-Aktivität
+Project manager and team members,Projektleiter und Teammitglieder
+Provision a project Team to get a structured workspace with channels and a notifications hub.,"Ein Projekt-Team bereitstellen, um einen strukturierten Arbeitsbereich mit Kanälen und einem Benachrichtigungs-Hub zu erhalten."
+Public View,Öffentliche Ansicht
+"Pursue — Active selling, frequent meetings","Verfolgen — aktiver Verkauf, häufige Besprechungen"
+Quick Entry Layout,Schnelleingabe-Layout
+Radar chart showing opportunity scores,Radar-Diagramm der Chancen-Scores
+Rate each dimension from 0 (weak) to 100 (strong). Use mouse or arrow keys.,Jede Dimension von 0 (schwach) bis 100 (stark) bewerten. Maus oder Pfeiltasten verwenden.
+Recording was cancelled.,Aufnahme wurde abgebrochen.
+Refresh integration status,Integrationsstatus aktualisieren
+Relationships between organizations and people · click a node to open the profile,"Beziehungen zwischen Firmen und Personen · Knoten anklicken, um das Profil zu öffnen"
+Remove the Fusion Manage link from this project?,Fusion-Manage-Verknüpfung von diesem Projekt entfernen?
+Required courses and compliance status,Pflichtkurse und Compliance-Status
+Runs in the background; new emails appear on the linked companies.,Läuft im Hintergrund; neue E-Mails erscheinen bei den verknüpften Firmen.
+Sales / CRM · Project,Vertrieb / CRM · Projekt
+Sales meeting actions,Sales-Meeting-Aktionen
+Saved View,Gespeicherte Ansicht
+Saving …,Speichert …
+Scanner error,Scanner-Fehler
+Scanner loading…,Scanner lädt …
+Search by item number or description...,Nach Artikelnummer oder Beschreibung suchen …
+"Search leads, deals, contacts, projects...","Leads, Vertriebsprojekte, Kontakte, Projekte suchen …"
+Search project by number or name …,Projekt nach Nummer oder Name suchen …
+Selected language is not supported.,Ausgewählte Sprache wird nicht unterstützt.
+Send email,E-Mail senden
+Sending comment...,Kommentar wird gesendet …
+Sending is disabled — configure LCS WhatsApp Settings to enable.,"Senden ist deaktiviert — LCS WhatsApp Settings konfigurieren, um es zu aktivieren."
+Server changed while you were editing,"Server hat sich geändert, während du bearbeitet hast"
+Set expected close dates on projects to see the forecast.,"Erwartete Abschlussdaten bei Projekten setzen, um die Prognose zu sehen."
+Setting Up,Einrichtung
+Setup your password,Passwort einrichten
+SharePoint Folder,SharePoint-Ordner
+Show / Hide Sections,Bereiche ein-/ausblenden
+Showing cached results from,Zwischengespeicherte Ergebnisse von
+Since (optional),Seit (optional)
+Some sections are hidden by your profile and cannot be enabled here.,Einige Bereiche sind durch dein Profil ausgeblendet und können hier nicht aktiviert werden.
+Speech recognition failed: ,Spracherkennung fehlgeschlagen: 
+Speech recognition grammar error.,Grammatikfehler bei der Spracherkennung.
+"Start with ""My Projects"" filter enabled",Mit aktiviertem Filter „Meine Projekte“ starten
+Switches CSS variables + Tailwind dark variants in lockstep.,Schaltet CSS-Variablen + Tailwind-Dark-Varianten im Gleichschritt um.
+Sync Conflict,Sync-Konflikt
+Task created,Aufgabe erstellt
+Team / HRMS Section,Team-/HRMS-Bereich
+"Terms, reminders, outcome...","Konditionen, Erinnerungen, Ergebnis …"
+Territory could not be reassigned.,Gebiet konnte nicht neu zugewiesen werden.
+"The linked Fusion Manage item has no child components, or the BOM view has not been configured.","Das verknüpfte Fusion-Manage-Element hat keine Unterkomponenten, oder die Stücklistenansicht wurde nicht konfiguriert."
+Theirs (server),Ihre (Server)
+This change will not be sent to the server. It cannot be recovered.,Diese Änderung wird nicht an den Server gesendet. Sie kann nicht wiederhergestellt werden.
+This moves the project backward in the pipeline.,Dies verschiebt das Projekt in der Pipeline zurück.
+This record was changed by someone else while you were offline.,"Dieser Datensatz wurde von jemand anderem geändert, während du offline warst."
+Toggle: show only my projects,Umschalten: nur meine Projekte zeigen
+Training compliance issue,Schulungs-Compliance-Problem
+Transcription job could not be queued.,Transkriptionsauftrag konnte nicht eingereiht werden.
+Transcription queued,Transkription eingereiht
+Type a note and press Enter or record a voice note.,Notiz eingeben und Enter drücken oder eine Sprachnotiz aufnehmen.
+"Type a quick note about the project — mention the project number, name, customer, or location. Or use the microphone for a voice note…","Kurze Notiz zum Projekt eingeben — Projektnummer, Name, Kunde oder Standort nennen. Oder das Mikrofon für eine Sprachnotiz nutzen …"
+Type custom value...,Eigenen Wert eingeben …
+Type or speak a note,Notiz eingeben oder sprechen
+Type — dictate additionally in the ERP (server-side transcription),Tippen — zusätzlich im ERP diktieren (serverseitige Transkription)
+Unlink failed,Verknüpfung konnte nicht gelöst werden
+Upload PDF,PDF hochladen
+Upload failed:,Upload fehlgeschlagen:
+Uploading …,Wird hochgeladen …
+Use all server,Alle vom Server übernehmen
+View full notes →,Alle Notizen anzeigen →
+Voice Input Language,Spracheingabe-Sprache
+Voice input not supported,Spracheingabe nicht unterstützt
+Voice input not supported in this browser (Chrome/Edge recommended),Spracheingabe in diesem Browser nicht unterstützt (Chrome/Edge empfohlen)
+Voice note uploaded — transcription queued,Sprachnotiz hochgeladen — Transkription eingereiht
+Waiting for connection,Warte auf Verbindung
+Was,Vorher
+Weighted Revenue Forecast,Gewichtete Umsatzprognose
+Weighted revenue outlook across the pipeline,Gewichteter Umsatzausblick über die Pipeline
+What customer wants to spend,Was der Kunde ausgeben möchte
+What this does,Was das bewirkt
+Will sync when reconnected,Synchronisiert bei erneuter Verbindung
+Write a comment …,Kommentar schreiben …
+"Write project notes, internal reminders, or next steps...","Projektnotizen, interne Erinnerungen oder nächste Schritte schreiben …"
+Your access profile does not include forecasting. Contact your administrator to request access.,"Dein Zugriffsprofil umfasst keine Prognose. Kontaktiere deinen Administrator, um Zugriff anzufordern."
+Your admin has granted you access to:,Dein Administrator hat dir Zugriff gewährt auf:
+added to the minutes.,zum Protokoll hinzugefügt.
+already linked,bereits verknüpft
+archive via the “Minutes” action.,über die Aktion „Protokoll“ archivieren.
+archived (manually by the salesperson).,archiviert (manuell durch den Vertriebler).
+archived point(s),archivierte Punkte
+assigned to a Firma,einer Firma zugeordnet
+certifications expiring soon,bald ablaufende Zertifizierungen
+change(s),Änderung(en)
+compliant,konform
+conflict(s) — tap to resolve,Konflikt(e) — zum Auflösen tippen
+created this lead,hat diesen Lead erstellt
+drag cards between phases,Karten zwischen Phasen ziehen
+e.g. 1250000,z. B. 1250000
+e.g. 450000,z. B. 450000
+e.g. Austria,z. B. Austria
+"e.g. Initial proposal, Revision 2, ...","z. B. Erstangebot, Revision 2, …"
+"e.g. Prepare offer, call back …","z. B. Angebot vorbereiten, zurückrufen …"
+e.g. vertrieb@lcs-group.com,z. B. vertrieb@lcs-group.com
+"e.g. “Grimsel: KWO wants to push the build phase to 2027, budget stays …”","z. B. „Grimsel: KWO möchte die Bauphase auf 2027 verschieben, Budget bleibt …“"
+errors — check the Error Log,Fehler — Error Log prüfen
+field(s),Feld(er)
+in this session,in dieser Sitzung
+last 7 days,letzte 7 Tage
+match,Übereinstimmung
+notify,benachrichtigen
+offer(s),Angebot(e)
+online presence,Online-Präsenz
+over customer budget,über Kundenbudget
+own projects only,nur eigene Projekte
+per plan,laut Plan
+probability-adjusted,wahrscheinlichkeitsgewichtet
+proj.,Proj.
+reachable by mail,per Mail erreichbar
+records available offline,Datensätze offline verfügbar
+removed,entfernt
+required courses,Pflichtkurse
+retry,erneut versuchen
+sync error(s),Sync-Fehler
+team members missing required certifications,Teammitglieder ohne erforderliche Zertifizierungen
+under customer budget,unter Kundenbudget
+value when you started editing,Wert beim Beginn der Bearbeitung
+won,gewonnen

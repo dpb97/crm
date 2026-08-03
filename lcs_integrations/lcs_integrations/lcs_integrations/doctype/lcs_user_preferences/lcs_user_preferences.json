@@ -26,7 +26,8 @@
   "compact_mode",
   "confirm_phase_changes",
   "voice_input_language",
-  "list_columns"
+  "list_columns",
+  "list_view_state"
  ],
  "fields": [
   {
@@ -156,6 +157,13 @@
    "label": "List Columns (JSON)",
    "options": "JSON",
    "description": "Per-user column selection for the LCS list pages, keyed by table id, e.g. {\"lcs_projects\": [\"project_number\", ...]}. Managed by the column picker in the SPA."
+  },
+  {
+   "fieldname": "list_view_state",
+   "fieldtype": "Code",
+   "label": "List View State (JSON)",
+   "options": "JSON",
+   "description": "Per-user list view state (column order, filters, view mode) keyed by table id, e.g. {\"lcs_projects\": {\"col_order\": [...], \"filters\": {...}, \"view\": \"list\"}}. Managed by the SPA list pages."
   }
  ],
  "index_web_pages_for_search": 0,

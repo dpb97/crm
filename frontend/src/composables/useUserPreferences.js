@@ -81,6 +81,32 @@ export function useUserPreferences() {
         preferences: { list_columns: serialized },
       })
     },
+    /** Per-user list VIEW STATE (column order, filters, view mode …) keyed by
+        table id. Distinct from list_columns (selection) so the column picker
+        and the view-state persistence don't clobber each other. */
+    getListState(tableKey) {
+      try {
+        const all = JSON.parse(state.prefs.list_view_state || '{}')
+        const st = all[tableKey]
+        return st && typeof st === 'object' ? st : {}
+      } catch (e) {
+        return {}
+      }
+    },
+    async saveListState(tableKey, patch) {
+      let all = {}
+      try {
+        all = JSON.parse(state.prefs.list_view_state || '{}')
+      } catch (e) {
+        all = {}
+      }
+      all[tableKey] = { ...(all[tableKey] || {}), ...patch }
+      const serialized = JSON.stringify(all)
+      state.prefs.list_view_state = serialized
+      await call('lcs_integrations.visibility.service.save_user_preferences', {
+        preferences: { list_view_state: serialized },
+      })
+    },
     /** Combined "should-show" helper: true unless admin profile blocks it. */
     canShow(key) {
       const hideKey = {
