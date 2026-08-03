@@ -37,8 +37,8 @@
           :subtitle="subtitle"
         />
 
-        <!-- Filterleiste: Listen-/Board-Umschalter (Referenz: Calls) -->
-        <PpFilterBar>
+        <!-- Filterleiste: Suche + Listen-/Board-Umschalter (Referenz: Calls) -->
+        <PpFilterBar v-model:search="q" :placeholder="__('Search deal / company / owner') + ' …'">
           <template #actions>
             <div class="lcsd-viewseg" role="tablist">
               <button
@@ -242,6 +242,19 @@ watch(
   { immediate: true, deep: true },
 )
 
+// Text search over the board / list (company, deal name, status, owner). The
+// KPI pipeline totals stay on the full set; only the board/list/column badges
+// narrow to the match.
+const q = ref('')
+const filteredDeals = computed(() => {
+  const needle = q.value.trim().toLowerCase()
+  if (!needle) return boardDeals.value
+  return boardDeals.value.filter((d) =>
+    [d.organization, d.name, d.status, d.deal_owner ? ownerName(d.deal_owner) : '']
+      .some((f) => String(f || '').toLowerCase().includes(needle)),
+  )
+})
+
 function dealProbability(d) {
   const p = d.probability != null && d.probability !== '' ? Number(d.probability) : statusProb(d.status)
   return Math.round(p)
@@ -251,7 +264,7 @@ function dealProbability(d) {
 const perColumn = computed(() => {
   const map = {}
   for (const s of statuses.value) map[s.name] = { count: 0, sum: 0 }
-  for (const d of boardDeals.value) {
+  for (const d of filteredDeals.value) {
     const c = map[d.status] || (map[d.status] = { count: 0, sum: 0 })
     c.count += 1
     c.sum += Number(d.deal_value) || 0
@@ -271,7 +284,7 @@ function columnSum(key) {
 
 // PpKanban-Karten aus den echten Deals abgeleitet.
 const cards = computed(() =>
-  boardDeals.value.map((d) => {
+  filteredDeals.value.map((d) => {
     const type = statusType(d.status)
     const tone = type === 'Won' ? 'success' : type === 'Lost' ? 'danger' : 'info'
     return {
@@ -302,7 +315,7 @@ const listColumns = [
   { key: 'modified', label: __('Last update'), align: 'right', width: 140 },
 ]
 const listRows = computed(() =>
-  boardDeals.value.map((d) => ({
+  filteredDeals.value.map((d) => ({
     id: d.name,
     org: d.organization || d.name,
     phase: d.status,
