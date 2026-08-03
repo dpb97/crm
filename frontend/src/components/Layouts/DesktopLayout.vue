@@ -172,10 +172,14 @@ function onMobileNav(key) {
   else if (key === 'search') window.dispatchEvent(new Event('lcs-open-search'))
 }
 
+const { spec: inspSpec, view: inspView, panel: inspPanel, collapsed: inspCollapsed, setCollapsed: setInspCollapsed } = usePilandaInspect()
+const { open: funcbarOpen, groups: funcbarGroups, available: funcbarAvailable, runAction: onFuncbarAction } = usePilandaFuncbar()
+
 // On mobile the nav drawer, the inspector overlay and the function bar are all
 // full-screen-ish layers at modal z-index — keep them mutually exclusive so two
 // never fight over the screen (and so the funcbar, which otherwise opens BEHIND
-// the inspector overlay, becomes visible).
+// the inspector overlay, becomes visible). Declared AFTER the composables above
+// so the refs they watch are already initialised (no temporal-dead-zone error).
 watch(mobileNavOpen, (open) => {
   if (open && isMobile.value) setInspCollapsed(true)
 })
@@ -185,8 +189,6 @@ watch(inspCollapsed, (collapsed) => {
 watch(funcbarOpen, (open) => {
   if (open && isMobile.value) { setInspCollapsed(true); mobileNavOpen.value = false }
 })
-const { spec: inspSpec, view: inspView, panel: inspPanel, collapsed: inspCollapsed, setCollapsed: setInspCollapsed } = usePilandaInspect()
-const { open: funcbarOpen, groups: funcbarGroups, available: funcbarAvailable, runAction: onFuncbarAction } = usePilandaFuncbar()
 
 // Logo-SSOT pilanda_theme (Laufzeit-URL, von Frappe serviert — wie im Desk).
 const BRAND_MARK = '/assets/pilanda_theme/logo/pilanda-mark.svg'
