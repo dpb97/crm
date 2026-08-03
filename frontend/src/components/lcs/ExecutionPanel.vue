@@ -71,8 +71,8 @@
       <div v-if="!data.tasks.length" class="rounded-lg border border-dashed border-gray-200 p-4 text-center text-xs text-gray-400">
         {{ __('No tasks yet — add some in the ERPNext Project view.') }}
       </div>
-      <div v-else class="overflow-hidden rounded-lg border bg-white">
-        <table class="pp-table">
+      <div v-else class="overflow-x-auto rounded-lg border bg-white">
+        <table class="pp-table min-w-[600px]">
           <thead>
             <tr class="border-b text-left text-xs font-medium uppercase text-gray-500">
               <th >{{ __('Subject') }}</th>
@@ -115,8 +115,8 @@
           {{ data.time_logs.length }}
         </span>
       </h3>
-      <div class="overflow-hidden rounded-lg border bg-white">
-        <table class="pp-table">
+      <div class="overflow-x-auto rounded-lg border bg-white">
+        <table class="pp-table min-w-[600px]">
           <thead>
             <tr class="border-b text-left text-xs font-medium uppercase text-gray-500">
               <th >{{ __('Employee') }}</th>
