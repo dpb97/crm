@@ -15,7 +15,34 @@
 
 <template>
   <div class="border-b bg-surface-white px-5 py-2">
-    <div class="flex items-stretch gap-1.5 overflow-x-auto">
+    <!-- Mobile: one stage at a time, swipe (or ‹ ›) through the funnel.
+         Tapping the stage opens the detail panel. -->
+    <div
+      v-if="isMobile"
+      class="flex items-center gap-2"
+      @touchstart="onFbTouchStart($event)"
+      @touchend="onFbTouchEnd($event)"
+    >
+      <template v-if="isLost">
+        <span class="flex h-7 w-7 items-center justify-center rounded-full border-2 border-red-500 bg-red-500 text-white"><FeatherIcon name="x" class="h-3.5 w-3.5" /></span>
+        <span class="text-sm font-semibold text-red-600">{{ __('Lost') }}</span>
+      </template>
+      <template v-else>
+        <button type="button" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-gray-200 text-gray-500 transition hover:bg-gray-50 disabled:opacity-40"
+                :disabled="viewIdx === 0" aria-label="Vorherige Phase" @click="viewPrev"><FeatherIcon name="chevron-left" class="h-5 w-5" /></button>
+        <button type="button" class="flex min-w-0 flex-1 flex-col items-center rounded-md px-2 py-1 transition hover:bg-gray-50" @click="openInfo(viewIdx)">
+          <span class="text-[10px] font-bold uppercase tracking-wider" :class="viewIdx === currentIdx ? 'text-lcs-primary' : 'text-gray-400'">{{ groupLabel(STAGES[viewIdx].group) }}</span>
+          <span class="mt-0.5 flex items-center gap-1.5">
+            <span class="flex h-6 w-6 items-center justify-center rounded-full border-2 text-[11px] font-bold" :class="nodeClass(viewIdx)"><FeatherIcon v-if="viewIdx < currentIdx" name="check" class="h-3 w-3" /><span v-else>{{ viewIdx + 1 }}</span></span>
+            <span class="truncate text-sm font-semibold text-ink-gray-9">{{ stageLabel(STAGES[viewIdx].label) }}</span>
+          </span>
+          <span class="mt-0.5 text-[10px] text-gray-400">{{ viewIdx + 1 }} / {{ STAGES.length }}<template v-if="viewIdx === currentIdx"> · {{ __('current') }}</template></span>
+        </button>
+        <button type="button" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-gray-200 text-gray-500 transition hover:bg-gray-50 disabled:opacity-40"
+                :disabled="viewIdx === STAGES.length - 1" aria-label="Nächste Phase" @click="viewNext"><FeatherIcon name="chevron-right" class="h-5 w-5" /></button>
+      </template>
+    </div>
+    <div v-else class="flex items-stretch gap-1.5 overflow-x-auto">
       <template v-for="(g, gi) in GROUPS" :key="g.name">
         <!-- hand-over chevron between entity segments -->
         <div v-if="gi > 0" class="flex items-center self-stretch pt-3">
@@ -114,7 +141,7 @@
   <div
     v-if="infoStage"
     ref="panelRef"
-    class="fixed right-0 top-0 z-40 flex h-screen w-full flex-col border-l bg-white shadow-2xl sm:w-80"
+    class="fixed right-0 top-0 z-40 flex h-[100dvh] w-full flex-col border-l bg-white shadow-2xl sm:w-80"
   >
     <div class="flex items-center justify-between border-b px-4 py-3">
       <span class="lcs-section-label">{{ __('Phase') }}</span>
@@ -214,8 +241,9 @@
       />
     </div>
 
-    <!-- Footer: one-click advance from the record's current stage -->
-    <div v-if="!isLost && nextStageLabel" class="border-t px-4 py-3">
+    <!-- Footer: one-click advance from the record's current stage. Extra bottom
+         padding clears the mobile home indicator / bottom nav. -->
+    <div v-if="!isLost && nextStageLabel" class="border-t px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
       <Button
         class="w-full"
         variant="solid"
@@ -231,6 +259,7 @@
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { onClickOutside } from '@vueuse/core'
+import { useViewport } from '@/composables/useViewport'
 import { FeatherIcon, Button, FormControl, createResource, call, toast } from 'frappe-ui'
 import Link from '@/components/Controls/Link.vue'
 
@@ -377,6 +406,26 @@ const currentIdx = computed(() => {
   if (props.entity === 'project') return PROJECT_MAP[props.status] ?? 2
   return dealIdx(props.status)
 })
+
+// Mobile: show a single stage at a time and swipe through the funnel instead
+// of the full horizontal bar (which overflows a phone). viewIdx follows the
+// record's current stage but the user can swipe/tap ‹ › to browse the others.
+const { isMobile } = useViewport()
+const viewIdx = ref(0)
+watch(
+  currentIdx,
+  (n) => { viewIdx.value = Math.min(Math.max(0, n), STAGES.length - 1) },
+  { immediate: true },
+)
+function viewPrev() { if (viewIdx.value > 0) viewIdx.value-- }
+function viewNext() { if (viewIdx.value < STAGES.length - 1) viewIdx.value++ }
+let _fbx = 0, _fby = 0
+function onFbTouchStart(e) { const t = e.changedTouches[0]; _fbx = t.clientX; _fby = t.clientY }
+function onFbTouchEnd(e) {
+  const t = e.changedTouches[0]
+  const dx = t.clientX - _fbx, dy = t.clientY - _fby
+  if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.4) { dx < 0 ? viewNext() : viewPrev() }
+}
 
 function groupActive(gi) {
   return GROUPS.value[gi].stages.some((s) => s.idx === currentIdx.value)
