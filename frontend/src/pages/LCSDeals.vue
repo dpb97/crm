@@ -150,7 +150,7 @@
 
 <script setup>
 import { ref, computed, watch, onBeforeUnmount } from 'vue'
-import { useStorage } from '@vueuse/core'
+import { useProfileSetting } from '@/composables/useProfileSetting'
 import { call, createListResource, toast, Breadcrumbs, Button, FeatherIcon } from 'frappe-ui'
 import LayoutHeader from '@/components/LayoutHeader.vue'
 import PpPageHead from '@/components/pp/PpPageHead.vue'
@@ -288,7 +288,7 @@ const cards = computed(() =>
 )
 
 /* ---- List ⇄ Kanban (Befund 18: gleiche SSOT, gleicher Abstiegs-Vertrag) - */
-const viewMode = useStorage('lcs-deals-view-mode', 'kanban')
+const viewMode = useProfileSetting('lcs_deals', 'view', 'kanban')
 const VIEWS = [
   { key: 'list', label: __('List'), icon: IconList },
   { key: 'kanban', label: __('Board'), icon: IconColumns },

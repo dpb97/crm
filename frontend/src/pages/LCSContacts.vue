@@ -146,6 +146,7 @@ import { usePilandaMode } from '@/composables/usePilandaMode'
 import { usePilandaInspect } from '@/composables/usePilandaInspect'
 import { useListFuncbar } from '@/composables/useListFuncbar'
 import { usePagination } from '@/composables/usePagination'
+import { useProfileSetting } from '@/composables/useProfileSetting'
 
 const router = useRouter()
 const { pilandaMode } = usePilandaMode()
@@ -290,7 +291,7 @@ const {
 
 // Listen-/Karten-Umschalter (Karten via PpContactCards, gefüttert aus den
 // paginierten Zeilen — KPI-Filter + Pagination gelten in beiden Ansichten).
-const viewMode = ref('list')
+const viewMode = useProfileSetting('lcs_contacts', 'view', 'list')
 const cardPeople = computed(() =>
   pagedRows.value.map((r) => ({
     id: r.id,

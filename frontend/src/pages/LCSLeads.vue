@@ -214,7 +214,7 @@
 <script setup>
 import { ref, computed, watch, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
-import { useStorage } from '@vueuse/core'
+import { useProfileSetting } from '@/composables/useProfileSetting'
 import { createResource, call, toast, Breadcrumbs, Button } from 'frappe-ui'
 import LayoutHeader from '@/components/LayoutHeader.vue'
 import PpPageHead from '@/components/pp/PpPageHead.vue'
@@ -280,7 +280,7 @@ useListFuncbar({ title: __('Leads'), meaning: __('Leads in the sales funnel.'), 
   taskRef: () => sel.value ? { doctype: 'CRM Lead', name: sel.value.name, title: sel.value.lead_name || sel.value.organization || sel.value.name } : null })
 
 // List ⇄ Kanban (Befund 18: SSOT-Liste, one renderer, same descent contract).
-const viewMode = useStorage('lcs-leads-view-mode', 'list')
+const viewMode = useProfileSetting('lcs_leads', 'view', 'list')
 // Normalize a legacy stored value (e.g. old "kanban") to a supported mode.
 if (viewMode.value !== 'list' && viewMode.value !== 'cards') viewMode.value = 'list'
 const VIEWS = [

@@ -163,7 +163,7 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { createResource, Breadcrumbs, Button, FeatherIcon } from 'frappe-ui'
-import { useStorage } from '@vueuse/core'
+import { useProfileSetting } from '@/composables/useProfileSetting'
 import { sessionStore } from '@/stores/session'
 import LayoutHeader from '@/components/LayoutHeader.vue'
 
@@ -217,12 +217,12 @@ const ARRANGE_MODES = [
   { key: 'auto', label: __('Automatic') },
   { key: 'manual', label: __('Manual') },
 ]
-const arrange = useStorage('lcs-dash-arrange', 'auto')
+const arrange = useProfileSetting('lcs_dashboard', 'arrange', 'auto')
 const isManual = computed(() => arrange.value === 'manual')
 
 // Persisted manual order (per browser/user); always reconciled with ALL_WIDGETS
 // so a newly added widget shows up and a removed one drops out.
-const savedOrder = useStorage('lcs-dash-widget-order', [...ALL_WIDGETS])
+const savedOrder = useProfileSetting('lcs_dashboard', 'widget_order', [...ALL_WIDGETS])
 const widgetOrder = computed(() => {
   if (!isManual.value) return ALL_WIDGETS
   const kept = savedOrder.value.filter((id) => ALL_WIDGETS.includes(id))
