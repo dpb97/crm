@@ -495,6 +495,11 @@ function fmtDate(d) {
 .crmsm-btn:hover { border-color: var(--pp-brand-primary); color: var(--pp-brand-primary); }
 .crmsm-btn.is-primary { background: var(--pp-brand-primary); border-color: var(--pp-brand-primary); color: #fff; }
 .crmsm-btn.is-primary:hover { color: #fff; opacity: 0.92; }
+/* Phone: comfortable ≥40px touch targets for Decide / Archive (the meeting's
+   primary decide flow). Desktop stays compact in the dense agenda grid. */
+@media (max-width: 767px) {
+  .crmsm-btn { min-height: 40px; display: inline-flex; align-items: center; justify-content: center; padding: 8px 14px; }
+}
 
 
 /* Modal-Formular */

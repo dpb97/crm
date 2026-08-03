@@ -372,6 +372,11 @@ function dueClass(v) {
 .chc-btn.is-primary { background: var(--pp-brand-primary); border-color: var(--pp-brand-primary); color: var(--pp-text-on-accent); }
 .chc-btn.is-primary:hover:not(:disabled) { color: var(--pp-text-on-accent); filter: brightness(1.05); }
 .chc-btn:disabled { opacity: 0.5; cursor: default; }
+/* Phone: comfortable ≥40px touch targets for these decision buttons
+   (create lead / dismiss chance are consequential). Desktop stays compact. */
+@media (max-width: 767px) {
+  .chc-btn { min-height: 40px; display: inline-flex; align-items: center; justify-content: center; padding: 8px 14px; }
+}
 
 /* Erfassen-Modal */
 .chc-form { display: flex; flex-direction: column; gap: var(--pp-space-4); }

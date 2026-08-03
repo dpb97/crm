@@ -554,6 +554,11 @@ onBeforeUnmount(() => {
 .crml-card-q b { font-size: 11px; color: var(--pp-text-secondary); white-space: nowrap; }
 .crml-card-foot { display: flex; gap: 6px; margin-top: var(--pp-space-1); }
 .crml-card-foot .crml-abtn { flex: 1; text-align: center; justify-content: center; }
+/* Phone: comfortable ≥40px touch targets in the lead card footer
+   ("Start project" is consequential). */
+@media (max-width: 767px) {
+  .crml-abtn { min-height: 40px; display: inline-flex; align-items: center; justify-content: center; padding: 8px 14px; }
+}
 
 
 
