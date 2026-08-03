@@ -46,6 +46,7 @@ import Minus from "~icons/lucide/minus";
 import Square from "~icons/lucide/square";
 import X from "~icons/lucide/x";
 import MenuIcon from "~icons/lucide/menu";
+import SlidersIcon from "~icons/lucide/sliders-horizontal";
 
 defineProps({
   brandSrc:   { type: String, default: "" },
@@ -55,10 +56,14 @@ defineProps({
   windowControls: { type: Boolean, default: true },
   // Mobile: leading hamburger that toggles the off-canvas nav drawer.
   menu:       { type: Boolean, default: false },
+  // Mobile: trailing actions button that toggles the page function bar (the
+  // funcbar burger otherwise only lives in the inspector head, unreachable
+  // without a selection). Distinct sliders icon so it's not confused with menu.
+  actions:    { type: Boolean, default: false },
   user:       { type: Object, default: () => ({ initials: "?", name: "", role: "" }) },
   height:     { type: Number, default: 52 },
 });
-const emit = defineEmits(["home", "search", "minimize", "toggle-size", "logout", "user-select", "menu"]);
+const emit = defineEmits(["home", "search", "minimize", "toggle-size", "logout", "user-select", "menu", "actions"]);
 </script>
 
 <template>
@@ -87,8 +92,12 @@ const emit = defineEmits(["home", "search", "minimize", "toggle-size", "logout",
 
     <div class="pp-appbar__spacer"></div>
 
-    <!-- rechts: Suche · Fenster-Controls · User -->
+    <!-- rechts: Aktionen · Suche · Fenster-Controls · User -->
     <div class="pp-appbar__right">
+      <button v-if="actions" class="pp-appbar__icon-btn" type="button"
+              title="Funktionen" aria-label="Funktionen" @click="emit('actions')">
+        <SlidersIcon />
+      </button>
       <button v-if="search" class="pp-appbar__icon-btn" type="button"
               title="Suche (Strg K)" aria-label="Suche öffnen" @click="emit('search')">
         <Search />

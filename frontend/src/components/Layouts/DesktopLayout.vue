@@ -9,9 +9,11 @@
       brand-label="Pilanda"
       :search="false"
       :window-controls="false"
+      :actions="isMobile && funcbarAvailable"
       :user="appbarUser"
       @home="goHome"
       @user-select="onUserSelect"
+      @actions="funcbarOpen = !funcbarOpen"
     />
     <div class="flex flex-1 min-h-0">
       <!-- Sidebar-Spalte: KEINE frappe-ui-Fläche (bg-surface-menu-bar) und kein
