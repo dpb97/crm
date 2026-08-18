@@ -112,9 +112,9 @@
           <!-- Pilot · neueste Treffer -->
           <ul v-else-if="id === 'pilot'" class="sd-list">
             <li v-for="t in pilotHits" :key="t.name" class="sd-pilot">
-              <a class="sd-pilot-title" href="/app/pilot-workbench">{{ t.titel || t.title }}</a>
+              <a class="sd-pilot-title" href="#" @click.prevent="$router.push({ name: 'LCS Pilot' })">{{ t.title }}</a>
               <span class="sd-pilot-meta">
-                <span v-if="t.land">{{ t.land }}</span>
+                <span v-if="t.country">{{ t.country }}</span>
                 <span v-if="t.score" class="sd-chip">{{ __('Score') }} {{ Math.round(t.score) }}</span>
               </span>
             </li>
@@ -153,6 +153,33 @@
             </table>
             <p v-if="!markets.length" class="sd-empty">{{ __('No territories found.') }}</p>
           </div>
+
+          <!-- Fällige Aufgaben -->
+          <ul v-else-if="id === 'tasks'" class="sd-list">
+            <li v-for="t in dueTasks" :key="t.name" class="sd-task">
+              <span class="sd-task-dot" :class="'is-' + (t.priority || 'medium').toLowerCase()" />
+              <span class="sd-task-body">
+                <span class="sd-task-title">{{ t.title }}</span>
+                <span class="sd-task-meta">
+                  <span v-if="t.reference_docname">{{ t.reference_docname }} · </span>{{ dueLabel(t.due_date) }}
+                </span>
+              </span>
+              <span class="sd-chip" :class="{ 'is-danger': isOverdue(t.due_date) }">{{ dueChip(t.due_date) }}</span>
+            </li>
+            <li v-if="!dueTasks.length" class="sd-empty">{{ __('No due tasks.') }}</li>
+          </ul>
+
+          <!-- Neue Mails -->
+          <ul v-else-if="id === 'mails'" class="sd-list">
+            <li v-for="m in newMails" :key="m.name" class="sd-mailrow">
+              <span class="sd-mail-ic"><FeatherIcon name="mail" class="h-3.5 w-3.5" /></span>
+              <span class="sd-mail-body">
+                <span class="sd-mail-subj">{{ m.subject || __('(no subject)') }}</span>
+                <span class="sd-mail-meta">{{ m.sender }} · {{ mailWhen(m.communication_date) }}</span>
+              </span>
+            </li>
+            <li v-if="!newMails.length" class="sd-empty">{{ __('No new mails.') }}</li>
+          </ul>
         </article>
       </section>
     </div>
@@ -179,10 +206,11 @@ function onKpi(k) {
 
 // --- Datenquellen (alle real) ----------------------------------------------
 const dash = createResource({ url: 'lcs_integrations.projects.api.get_sales_dashboard', auto: true })
-const pilot = createResource({ url: 'pilot.api.workbench', auto: true })
+const pilot = createResource({ url: 'lcs_integrations.projects.api.get_pilot_hits', auto: true })
 const notes = createResource({ url: 'lcs_integrations.projects.api.get_notes', auto: true })
 const market = createResource({ url: 'lcs_integrations.projects.api.get_market_assignment', auto: true })
-function reloadAll() { dash.reload(); pilot.reload(); notes.reload(); market.reload() }
+const work = createResource({ url: 'lcs_integrations.projects.api.get_dashboard_worklist', auto: true })
+function reloadAll() { dash.reload(); pilot.reload(); notes.reload(); market.reload(); work.reload() }
 
 const kpis = computed(() => dash.data?.kpis || {})
 
@@ -196,7 +224,7 @@ function moneyShort(v) {
 
 // --- KPI-Karten -------------------------------------------------------------
 const kpiCards = computed(() => [
-  { key: 'pilot', tone: 'brand', label: __('Pilot hits'), value: String(kpis.value.pilot_hits ?? 0), hint: __('Rate in Pilot'), href: '/app/pilot-workbench' },
+  { key: 'pilot', tone: 'brand', label: __('Pilot hits'), value: String(kpis.value.pilot_hits ?? 0), hint: __('Rate in Pilot'), route: 'LCS Pilot' },
   { key: 'chances', tone: 'brand', label: __('Open chances'), value: String(kpis.value.chances_open ?? 0), hint: __('Open chances list'), route: 'LCS Chances' },
   { key: 'leads', tone: 'brand', label: __('Leads active'), value: String(kpis.value.leads_active ?? 0), hint: __('Open leads list'), route: 'Leads' },
   { key: 'projects', tone: 'brand', label: __('Sales projects'), value: String(kpis.value.projects_total ?? 0), hint: __('Open phase board'), route: 'LCS Projects' },
@@ -206,13 +234,15 @@ const kpiCards = computed(() => [
 
 // --- Widget-Metadaten + Reihenfolge (Automatisch ⇄ Manuell) ----------------
 const widgetMeta = {
+  tasks: { title: __('Due tasks'), sub: __('assigned to me'), wide: false },
+  mails: { title: __('New mails'), sub: __('latest received'), wide: false },
   pipeline: { title: __('Pipeline by phase (weighted, visible projects)'), sub: __('live from the phase board'), wide: false },
   types: { title: __('Visible projects by type'), sub: '', wide: false },
   pilot: { title: __('Pilot · latest hits'), sub: __("Salesperson's rating in Pilot"), wide: false },
   activities: { title: __('Activities'), sub: __('today'), wide: false },
   markets: { title: __('My markets'), sub: __('Territory assignment'), wide: true },
 }
-const ALL_WIDGETS = ['pipeline', 'types', 'pilot', 'activities', 'markets']
+const ALL_WIDGETS = ['tasks', 'mails', 'pipeline', 'types', 'pilot', 'activities', 'markets']
 const ARRANGE_MODES = [
   { key: 'auto', label: __('Automatic') },
   { key: 'manual', label: __('Manual') },
@@ -274,8 +304,8 @@ const donutSegments = computed(() => {
 
 // --- Pilot · neueste Treffer -----------------------------------------------
 const pilotHits = computed(() => {
-  const rows = Array.isArray(pilot.data?.tenders) ? pilot.data.tenders : []
-  return [...rows].sort((a, b) => String(b.published_am || '').localeCompare(String(a.published_am || ''))).slice(0, 5)
+  const rows = Array.isArray(pilot.data?.rows) ? pilot.data.rows : []
+  return [...rows].sort((a, b) => (b.score || 0) - (a.score || 0)).slice(0, 5)
 })
 
 // --- Aktivitäten (aus den Notizen) -----------------------------------------
@@ -312,6 +342,18 @@ const markets = computed(() => {
   const mine = all.filter((t) => t.user === currentUser.value || t.deputy_user === currentUser.value)
   return (mine.length ? mine : all).slice(0, 6)
 })
+
+// --- Fällige Aufgaben + Neue Mails ------------------------------------------
+const dueTasks = computed(() => work.data?.tasks || [])
+const newMails = computed(() => work.data?.mails || [])
+function _dt(v) { const d = new Date(String(v || '').replace(' ', 'T')).getTime(); return isNaN(d) ? null : d }
+function isOverdue(due) { const d = _dt(due); return d != null && d < Date.now() }
+function dueLabel(due) {
+  const d = _dt(due); if (d == null) return '—'
+  return new Intl.DateTimeFormat('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }).format(d)
+}
+function dueChip(due) { return isOverdue(due) ? __('Overdue') : __('Today') }
+function mailWhen(v) { return relTime(v) }
 </script>
 
 <style scoped>
@@ -389,6 +431,33 @@ const markets = computed(() => {
 .sd-pilot-meta { display: inline-flex; align-items: center; gap: var(--pp-space-2); font-size: var(--pp-fs-12, 12px); color: var(--pp-text-tertiary); }
 .sd-chip { padding: 1px var(--pp-space-2); border-radius: var(--pp-radius-full); color: var(--pp-brand-primary);
   background: color-mix(in oklab, var(--pp-brand-primary) 12%, transparent); font-variant-numeric: tabular-nums; }
+.sd-chip.is-danger { color: var(--pp-state-danger); background: color-mix(in oklab, var(--pp-state-danger) 14%, transparent); }
+
+/* Fällige Aufgaben */
+.sd-task { display: flex; align-items: center; gap: var(--pp-space-3); padding: var(--pp-space-2) 0;
+  border-bottom: 1px solid var(--pp-border-subtle); }
+.sd-task:last-child { border-bottom: 0; }
+.sd-task-dot { flex-shrink: 0; width: 8px; height: 8px; border-radius: var(--pp-radius-full); background: var(--pp-text-tertiary); }
+.sd-task-dot.is-high { background: var(--pp-state-danger); }
+.sd-task-dot.is-medium { background: var(--pp-accent-amber, var(--pp-state-warning)); }
+.sd-task-dot.is-low { background: var(--pp-state-success); }
+.sd-task-body { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1; }
+.sd-task-title { font-size: var(--pp-fs-14, 14px); font-weight: var(--pp-weight-semibold); color: var(--pp-text-primary);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sd-task-meta { font-size: var(--pp-fs-12, 12px); color: var(--pp-text-tertiary); }
+
+/* Neue Mails */
+.sd-mailrow { display: flex; align-items: flex-start; gap: var(--pp-space-3); padding: var(--pp-space-2) 0;
+  border-bottom: 1px solid var(--pp-border-subtle); }
+.sd-mailrow:last-child { border-bottom: 0; }
+.sd-mail-ic { flex-shrink: 0; width: 26px; height: 26px; border-radius: var(--pp-radius-full);
+  display: inline-flex; align-items: center; justify-content: center; color: var(--pp-brand-primary);
+  background: color-mix(in oklab, var(--pp-brand-primary) 12%, transparent); }
+.sd-mail-body { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.sd-mail-subj { font-size: var(--pp-fs-14, 14px); font-weight: var(--pp-weight-semibold); color: var(--pp-text-primary);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sd-mail-meta { font-size: var(--pp-fs-12, 12px); color: var(--pp-text-tertiary);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* Aktivitäten */
 .sd-acts { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }

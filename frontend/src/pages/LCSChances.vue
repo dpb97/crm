@@ -33,9 +33,11 @@
 
         <PpTableCard :title="__('Chancen')" :note="headerNote">
           <PpDataGrid
+            table-key="lcs_chances"
             v-if="filtered.length"
             :columns="columns"
             :rows="filtered"
+            :page-size="25"
             pickable
             v-model:pick-mode="selectMode"
             v-model:picked="picked"
@@ -56,6 +58,9 @@
                 {{ fmtDate(value) }}<span class="pp-cell-sub" :class="dueClass(value)">{{ dueLabel(value) }}</span>
               </template>
               <span v-else class="pp-cell-muted">—</span>
+            </template>
+            <template #cell-last_contact="{ value }">
+              <span :class="{ 'pp-cell-muted': !value }">{{ value ? fmtDate(value) : '—' }}</span>
             </template>
             <template #cell-score="{ value }">
               <span class="chc-score">
@@ -144,7 +149,18 @@ const { inspectNode } = usePilandaInspect()
 const { registerFuncbar, clearFuncbar } = usePilandaFuncbar()
 
 const board = createResource({ url: 'lcs_integrations.projects.api.get_chances', auto: true })
-const rows = computed(() => board.data?.rows || [])
+
+// „Letzter Kontakt" — jüngstes Mail-Datum je Chance (über den verknüpften Lead).
+const lastContactRes = createResource({
+  url: 'lcs_integrations.projects.api.get_last_contact_dates',
+  params: { doctype: 'LCS Chance' },
+  auto: true,
+})
+const lastContact = computed(() => lastContactRes.data || {})
+
+const rows = computed(() =>
+  (board.data?.rows || []).map((r) => ({ ...r, last_contact: lastContact.value[r.id] || '' })),
+)
 const dismissedQuarter = computed(() => board.data?.dismissed_quarter || 0)
 
 // --- Filter: Quelle + Freitext ---------------------------------------------
@@ -178,6 +194,7 @@ const columns = [
   { key: 'order_value', label: __('Value'), align: 'right', width: 90 },
   { key: 'deadline', label: __('Deadline'), width: 140 },
   { key: 'score', label: __('Score'), width: 120 },
+  { key: 'last_contact', label: __('Last contact'), align: 'right', width: 150 },
   { key: 'status', label: __('Status'), width: 110 },
   { key: 'entscheid', label: __('Sales decision'), width: 260 },
 ]
@@ -231,6 +248,7 @@ function onRowClick(id) {
       { title: __('Source'), items: [{ text: r.source, muted: r.source_detail || '' }], empty: '—' },
     ],
     action: { label: __('Open chance'), onClick: () => openDetail(id) },
+    ref: { doctype: 'LCS Chance', name: r.name, title: r.title },
   })
 }
 function openDetail(id) {

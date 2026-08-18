@@ -69,7 +69,7 @@
           :shown="listRows.length"
           :total="listRows.length"
         >
-          <PpDataGrid :columns="listColumns" :rows="listRows" pickable v-model:pick-mode="selectMode" v-model:picked="picked" @row-click="openDeal">
+          <PpDataGrid table-key="lcs_deals" :columns="listColumns" :rows="listRows" :page-size="25" pickable v-model:pick-mode="selectMode" v-model:picked="picked" @row-click="openDeal">
             <template #cell-phase="{ row }">
               <PpPill :tone="row.tone">{{ statusLabel(row.phase) }}</PpPill>
             </template>
@@ -222,7 +222,7 @@ const dealsRes = createListResource({
   doctype: 'CRM Deal',
   fields: ['name', 'organization', 'deal_value', 'currency', 'probability', 'status', 'deal_owner', 'modified'],
   orderBy: 'modified desc',
-  pageLength: 500,
+  pageLength: 99999, // load all so filters/search cover the full dataset
   cache: 'lcs-deals-board',
   auto: true,
 })
@@ -474,6 +474,7 @@ function openDeal(id) {
     },
     on: { open: openDealDetail },
     title: __('Deal'),
+    ref: { doctype: 'CRM Deal', name: d.name, title: d.deal_name || d.organization || d.name },
   })
 }
 function openDealDetail(id) {

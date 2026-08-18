@@ -20,6 +20,19 @@ class LCSProject(Document):
         if self.project_abbr:
             self.project_abbr = self.project_abbr.upper()
         self.backfill_estimated_value()
+        self.enforce_customer_and_salesperson()
+
+    def enforce_customer_and_salesperson(self):
+        """A project created/edited by a user must always name a customer and a
+        salesperson. Automated creators (deal->project, BSM backfill, lead->project)
+        insert with ignore_permissions=True and are intentionally exempt, since
+        their source records may not carry both fields yet."""
+        if self.flags.ignore_permissions:
+            return
+        if not self.organization:
+            frappe.throw(frappe._("Please select a customer for the project."))
+        if not self.salesperson:
+            frappe.throw(frappe._("Please select a sales rep (Vertrieb) for the project."))
 
     def backfill_estimated_value(self):
         """Estimated value falls back: Angebot → Richtpreis → Budget.

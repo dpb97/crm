@@ -143,6 +143,13 @@ scheduler_events = {
         # Persist the day's ECB rates (frankfurter.dev) into LCS FX Rate so
         # offer conversions read from the DB, not a live API call.
         "lcs_integrations.currency.frankfurter.daily_fetch",
+        # Safety-net mail backfill of the last few days across ALL folders —
+        # catches mail the Inbox-only delta stream misses (filed to subfolders
+        # or dropped during a Graph outage). Idempotent (message-id dedup).
+        "lcs_integrations.outlook_sync.backfill_service.backfill_recent",
+        # Pull scored tenders from the Hermes Salesbot Postgres into LCS Chance
+        # (source "Pilot-Scout"). No-op when 'salesbot_db' is unconfigured.
+        "lcs_integrations.salesbot.sync.scheduled_sync",
     ],
 }
 

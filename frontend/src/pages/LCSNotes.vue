@@ -33,7 +33,7 @@
 
         <!-- Karte „Notizen" -->
         <PpTableCard :title="__('Notes')" :shown="filtered.length" :total="rows.length">
-          <PpDataGrid v-if="filtered.length" :columns="columns" :rows="filtered" @row-click="openNote">
+          <PpDataGrid table-key="lcs_notes" v-if="filtered.length" :columns="columns" :rows="filtered" :page-size="25" @row-click="openNote">
             <template #cell-title="{ row }">
               <span class="pp-cell-strong">{{ row.title }}</span>
               <span v-if="row.object" class="pp-cell-sub crmn-object">{{ row.object }}</span>
@@ -130,6 +130,9 @@ function openNote(id) {
       { label: __('Time'), value: relTime(r.time) },
     ],
     action: r.ref_name ? { label: __('Open object'), onClick: () => openRef(r) } : undefined,
+    ref: r.ref_name && r.ref_doctype
+      ? { doctype: r.ref_doctype, name: r.ref_name, title: r.title || r.ref_name }
+      : { title: r.title || __('Note') },
   })
 }
 function openRef(r) {

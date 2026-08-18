@@ -80,7 +80,7 @@
           :shown="filtered.length"
           :total="leads.length"
         >
-          <PpDataGrid v-if="rows.length" :columns="columns" :rows="pagedRows" pickable v-model:pick-mode="selectMode" v-model:picked="picked" @row-click="openLead">
+          <PpDataGrid table-key="lcs_leads" v-if="rows.length" :columns="columns" :rows="rows" :page-size="25" pickable v-model:pick-mode="selectMode" v-model:picked="picked" @row-click="openLead">
             <template #cell-name="{ row }">
               <span class="pp-cell-strong">{{ row.name }}</span>
               <span class="pp-cell-sub">{{ row.id }}</span>
@@ -93,6 +93,9 @@
             </template>
             <template #cell-modified="{ value }">
               <span class="pp-cell-muted">{{ relDate(value) }}</span>
+            </template>
+            <template #cell-last_contact="{ value }">
+              <span :class="{ 'pp-cell-muted': !value }">{{ value ? fmtDate(value) : '—' }}</span>
             </template>
             <template #cell-status="{ row }">
               <PpPill v-if="row.status" :tone="statusTone(row.status)">{{ __(row.status) }}</PpPill>
@@ -130,13 +133,6 @@
             :hint="loading ? '' : __('Leads created in the CRM will appear here.')"
           />
 
-          <template v-if="rows.length && rowTotal > 25" #footer>
-            <LcsPagination
-              :from="pgFrom" :to="pgTo" :total="rowTotal"
-              :page="page" :page-count="pageCount" :page-size="pageSize"
-              @prev="pgPrev" @next="pgNext" @page-size="setPageSize"
-            />
-          </template>
         </PpTableCard>
 
         <!-- Cards (Referenz Screenshot 2): reiche Karten je Lead, Klick → Inspektor. -->
@@ -226,7 +222,6 @@ import PpFilterBar from '@/components/pp/PpFilterBar.vue'
 import PpTableCard from '@/components/pp/PpTableCard.vue'
 import PpPill from '@/components/pp/PpPill.vue'
 import LeadInspector from '@/components/lcs/LeadInspector.vue'
-import LcsPagination from '@/components/lcs/LcsPagination.vue'
 import IconSearchX from '~icons/lucide/search-x'
 import IconInbox from '~icons/lucide/inbox'
 import IconMail from '~icons/lucide/mail'
@@ -236,7 +231,6 @@ import IconLayoutGrid from '~icons/lucide/layout-grid'
 import { usePilandaMode } from '@/composables/usePilandaMode'
 import { usePilandaInspect } from '@/composables/usePilandaInspect'
 import { useListFuncbar } from '@/composables/useListFuncbar'
-import { usePagination } from '@/composables/usePagination'
 
 const router = useRouter()
 const { pilandaMode } = usePilandaMode()
@@ -261,6 +255,15 @@ const leadsRes = createResource({
 const boardLeads = ref([])
 watch(() => leadsRes.data, (d) => { boardLeads.value = (d || []).map((x) => ({ ...x })) }, { immediate: true, deep: true })
 const leads = computed(() => boardLeads.value)
+
+// „Letzter Kontakt" — jüngstes Mail-Datum je Lead (über die Organisation).
+const lastContactRes = createResource({
+  url: 'lcs_integrations.projects.api.get_last_contact_dates',
+  params: { doctype: 'CRM Lead' },
+  auto: true,
+})
+const lastContact = computed(() => lastContactRes.data || {})
+
 const loading = computed(() => leadsRes.loading)
 function reload() { leadsRes.reload(); statusRes.reload() }
 
@@ -391,6 +394,7 @@ const columns = [
   { key: 'organization', label: __('Company'), width: 200 },
   { key: 'owner', label: __('Salesperson'), width: 150 },
   { key: 'modified', label: __('Lead since'), width: 130 },
+  { key: 'last_contact', label: __('Last contact'), align: 'right', width: 150 },
   { key: 'status', label: __('Status'), width: 130 },
   { key: 'questionaire', label: __('Questionaire'), width: 160 },
   { key: 'action', label: __('Action'), width: 230 },
@@ -404,6 +408,7 @@ const rows = computed(() =>
     status: l.status,
     questionaire: questionairePct(l.status),
     modified: l.modified,
+    last_contact: lastContact.value[l.name] || '',
   })),
 )
 
@@ -444,11 +449,8 @@ function startProject(id) {
 }
 
 // --- Detail-Drawer (echt: Zeilenklick öffnet) ------------------------------
-// Pagination (client-side; the list loads all rows).
-const {
-  paged: pagedRows, page, pageCount, total: rowTotal,
-  from: pgFrom, to: pgTo, pageSize, next: pgNext, prev: pgPrev, setPageSize,
-} = usePagination(rows)
+// Pagination now lives inside PpDataGrid (page-size), so its column filter +
+// search run over the FULL dataset and only the page is rendered.
 
 const drawerOpen = ref(false)
 const selId = ref(null)
@@ -475,6 +477,7 @@ function openLead(id) {
     props: { lead: sel.value },
     on: { open: openInCrm },
     title: __('Lead'),
+    ref: { doctype: 'CRM Lead', name: sel.value.name, title: sel.value.lead_name || sel.value.organization || sel.value.name },
   })
 }
 function openInCrm() {

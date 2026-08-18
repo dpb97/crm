@@ -7,23 +7,25 @@
 -->
 
 <template>
-  <div class="grid grid-cols-2 gap-2" :class="cols === 4 ? 'sm:grid-cols-4' : ''">
+  <!-- Only actionable links are rendered (no greyed-out empty boxes). -->
+  <div class="flex flex-wrap gap-2">
     <!-- Plain callto: link — hands the number to the OS' registered dialer
          (Teams / Skype / softphone). No Call Log / Teams deep-link flow. -->
-    <a :href="phone ? 'callto:' + telNumber(phone) : null" :class="actionCls(phone)">
+    <a v-if="phone" :href="'callto:' + telNumber(phone)" :class="actionCls">
       <FeatherIcon name="phone" class="h-4 w-4" /> {{ __('Call') }}
     </a>
-    <a :href="email ? `mailto:${email}` : null" :class="actionCls(email)">
+    <a v-if="email" :href="`mailto:${email}`" :class="actionCls">
       <FeatherIcon name="mail" class="h-4 w-4" /> {{ __('Mail') }}
     </a>
     <!-- wa.me opens the installed WhatsApp app (mobile app / desktop client). -->
-    <a :href="phone ? `https://wa.me/${waNumber(phone)}` : null" target="_blank" rel="noopener" :class="actionCls(phone)">
-      <FeatherIcon name="message-circle" class="h-4 w-4" /> WhatsApp App
+    <a v-if="phone" :href="`https://wa.me/${waNumber(phone)}`" target="_blank" rel="noopener" :class="actionCls">
+      <FeatherIcon name="message-circle" class="h-4 w-4" /> WhatsApp
     </a>
     <!-- web.whatsapp.com opens WhatsApp Web in the browser. -->
-    <a :href="phone ? waWebLink(phone) : null" target="_blank" rel="noopener" :class="actionCls(phone)">
+    <a v-if="phone" :href="waWebLink(phone)" target="_blank" rel="noopener" :class="actionCls">
       <FeatherIcon name="message-circle" class="h-4 w-4" /> WhatsApp Web
     </a>
+    <span v-if="!phone && !email" class="px-1 py-2 text-xs text-gray-400">{{ __('No contact details yet') }}</span>
   </div>
 </template>
 
@@ -56,12 +58,6 @@ function waNumber(p) {
 function waWebLink(p) {
   return `https://web.whatsapp.com/send/?phone=${waNumber(p)}&text&type=phone_number&app_absent=0`
 }
-function actionCls(enabled) {
-  return [
-    'flex min-h-[40px] items-center justify-center gap-1.5 rounded-md border px-2.5 py-2 text-xs font-medium transition',
-    enabled
-      ? 'border-gray-200 text-gray-700 hover:border-lcs-secondary hover:text-lcs-secondary'
-      : 'pointer-events-none border-gray-100 text-gray-300',
-  ]
-}
+const actionCls =
+  'flex min-h-[40px] flex-1 basis-[calc(50%-0.25rem)] min-w-[110px] items-center justify-center gap-1.5 rounded-md border border-gray-200 px-2.5 py-2 text-xs font-medium text-gray-700 transition hover:border-lcs-secondary hover:text-lcs-secondary'
 </script>

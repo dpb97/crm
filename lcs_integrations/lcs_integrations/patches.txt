@@ -55,3 +55,11 @@ lcs_integrations.patches.backfill_contact_domain_binding
 lcs_integrations.patches.add_cross_org_relations
 # Roles that authorise offer approvals (CEO / CFO-COO / owner).
 lcs_integrations.patches.create_offer_approver_roles
+# Pin the site timezone to Europe/Vienna (empty default = Asia/Kolkata, +3:30 skew).
+lcs_integrations.patches.set_system_timezone_vienna
+# Sales-Meeting classification fields on LCS Project (offer pipeline from the Excel protocol).
+lcs_integrations.patches.install_sales_meeting_fields
+# Store Graph conversationId on synced mail for exact conversation threading.
+lcs_integrations.patches.install_conversation_id
+# Turn Contact.previous_companies free text into a CRM Organization picker.
+lcs_integrations.patches.convert_previous_company_to_link

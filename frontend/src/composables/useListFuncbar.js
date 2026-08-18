@@ -16,11 +16,13 @@ import { watch, onMounted, onBeforeUnmount } from 'vue'
 import { usePilandaInspect } from './usePilandaInspect'
 import { usePilandaFuncbar } from './usePilandaFuncbar'
 import { useCreateTask } from './useCreateTask'
+import { useTaskContext } from './useTaskContext'
 
 export function useListFuncbar(opts) {
   const { inspectNode } = usePilandaInspect()
   const { registerFuncbar, clearFuncbar } = usePilandaFuncbar()
   const { openTask } = useCreateTask()
+  const { context: taskContext } = useTaskContext()
   const extra = opts.actions || []
 
   function buildGroups() {
@@ -42,7 +44,12 @@ export function useListFuncbar(opts) {
     if (id === 'export') opts.exportRows && opts.exportRows()
     else if (id === 'refresh') opts.reload && opts.reload()
     else if (id === 'select' && opts.selectMode) opts.selectMode.value = !opts.selectMode.value
-    else if (id === 'new-task') openTask(opts.taskRef ? opts.taskRef() : (opts.title ? { title: opts.title } : null))
+    else if (id === 'new-task') {
+      // Prefer an explicit page taskRef, else the element selected in the
+      // inspector (task context), else just the page title.
+      const ref = (opts.taskRef && opts.taskRef()) || taskContext.value || (opts.title ? { title: opts.title } : null)
+      openTask(ref)
+    }
     else { const a = extra.find((x) => x.id === id); if (a && a.run) a.run() }
   }
 

@@ -46,7 +46,7 @@
         </section>
 
         <PpTableCard :title="__('Organizations')" :shown="filtered.length" :total="orgs.length">
-          <PpDataGrid v-if="rows.length" :columns="columns" :rows="pagedRows" pickable v-model:pick-mode="selectMode" v-model:picked="picked" @row-click="openOrg">
+          <PpDataGrid table-key="lcs_organizations" v-if="rows.length" :columns="columns" :rows="rows" :page-size="25" pickable v-model:pick-mode="selectMode" v-model:picked="picked" @row-click="openOrg">
             <template #cell-name="{ row }">
               <span class="pp-cell-strong">{{ row.name }}</span>
               <span class="pp-cell-sub">{{ row.industry || '—' }}</span>
@@ -60,6 +60,9 @@
             </template>
             <template #cell-no_of_employees="{ value }">
               <span class="crmo-num">{{ value || '—' }}</span>
+            </template>
+            <template #cell-last_contact="{ value }">
+              <span :class="{ 'pp-cell-muted': !value }">{{ value ? fmtDate(value) : '—' }}</span>
             </template>
             <template #cell-modified="{ value }">
               <span class="pp-cell-muted">{{ fmtDate(value) }}</span>
@@ -82,14 +85,6 @@
             :title="loading ? __('Loading …') : __('No organizations yet')"
             :hint="loading ? '' : __('Companies created in the CRM will appear here.')"
           />
-
-          <template v-if="rows.length && rowTotal > 25" #footer>
-            <LcsPagination
-              :from="pgFrom" :to="pgTo" :total="rowTotal"
-              :page="page" :page-count="pageCount" :page-size="pageSize"
-              @prev="pgPrev" @next="pgNext" @page-size="setPageSize"
-            />
-          </template>
         </PpTableCard>
       </div>
     </div>
@@ -108,13 +103,11 @@ import PpEmptyState from '@/components/pp/PpEmptyState.vue'
 import PpFilterBar from '@/components/pp/PpFilterBar.vue'
 import PpTableCard from '@/components/pp/PpTableCard.vue'
 import OrganizationInspector from '@/components/lcs/OrganizationInspector.vue'
-import LcsPagination from '@/components/lcs/LcsPagination.vue'
 import IconSearchX from '~icons/lucide/search-x'
 import IconInbox from '~icons/lucide/inbox'
 import { usePilandaMode } from '@/composables/usePilandaMode'
 import { usePilandaInspect } from '@/composables/usePilandaInspect'
 import { useListFuncbar } from '@/composables/useListFuncbar'
-import { usePagination } from '@/composables/usePagination'
 
 const router = useRouter()
 const { pilandaMode } = usePilandaMode()
@@ -134,6 +127,9 @@ const orgsRes = createResource({
   auto: true,
 })
 const orgs = computed(() => orgsRes.data || [])
+// Last contact (latest synced mail) per organization, for the sortable column.
+const lastContactRes = createResource({ url: 'lcs_integrations.projects.api.get_last_contact_dates', params: { doctype: 'CRM Organization' }, auto: true })
+const lastContact = computed(() => lastContactRes.data || {})
 const loading = computed(() => orgsRes.loading)
 function reload() { orgsRes.reload() }
 
@@ -209,6 +205,7 @@ const columns = [
   { key: 'website', label: __('Website'), width: 220 },
   { key: 'territory', label: __('Territory'), width: 180 },
   { key: 'no_of_employees', label: __('Employees'), align: 'right', width: 120 },
+  { key: 'last_contact', label: __('Last contact'), align: 'right', width: 150 },
   { key: 'modified', label: __('Last modified'), align: 'right', width: 150 },
 ]
 const rows = computed(() =>
@@ -219,15 +216,13 @@ const rows = computed(() =>
     website: prettyUrl(o.website),
     territory: o.territory,
     no_of_employees: o.no_of_employees,
+    last_contact: lastContact.value[o.name] || '',
     modified: o.modified,
   })),
 )
 
-// Pagination (client-side; the list loads all rows).
-const {
-  paged: pagedRows, page, pageCount, total: rowTotal,
-  from: pgFrom, to: pgTo, pageSize, next: pgNext, prev: pgPrev, setPageSize,
-} = usePagination(rows)
+// Pagination now lives inside PpDataGrid (page-size), so its column filter +
+// search run over the FULL dataset and only the page is rendered.
 
 let lastClick = { id: null, t: 0 }
 function openOrg(id) {
@@ -248,6 +243,7 @@ function openOrg(id) {
     props: { organizationId: id },
     on: { open: openDetail },
     title: __('Company'),
+    ref: { doctype: 'CRM Organization', name: id, title: rows.value.find((r) => r.id === id)?.name || id },
   })
 }
 function openDetail(id) {

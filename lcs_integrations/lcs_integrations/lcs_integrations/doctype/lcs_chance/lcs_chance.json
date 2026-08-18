@@ -62,7 +62,7 @@
   {"fieldname": "order_value", "fieldtype": "Float", "label": "Order Value (EUR)", "precision": "0"},
   {"fieldname": "published_on", "fieldtype": "Date", "label": "Published On"},
   {"fieldname": "deadline", "fieldtype": "Date", "label": "Deadline"},
-  {"fieldname": "source_url", "fieldtype": "Data", "label": "Source URL", "options": "URL"},
+  {"fieldname": "source_url", "fieldtype": "Data", "label": "Source URL", "options": "URL", "length": 500},
 
   {"fieldname": "sb_scout", "fieldtype": "Section Break", "label": "Scout Evaluation"},
   {"fieldname": "score", "fieldtype": "Int", "label": "Score", "description": "0-100 (from the Pilot scout)", "in_list_view": 1},
@@ -85,7 +85,7 @@
   {"fieldname": "geo_confidence", "fieldtype": "Data", "label": "Geo Confidence"},
 
   {"fieldname": "sb_sales", "fieldtype": "Section Break", "label": "Sales"},
-  {"fieldname": "status", "fieldtype": "Select", "label": "Status", "options": "Neu\nRelevant\nKontakt aufgenommen\nKeine Chance", "default": "Neu", "in_standard_filter": 1, "in_list_view": 1},
+  {"fieldname": "status", "fieldtype": "Select", "label": "Status", "options": "Neu\nIn Bearbeitung\nRelevant\nKontakt aufgenommen\nKeine Chance", "default": "Neu", "in_standard_filter": 1, "in_list_view": 1},
   {"fieldname": "responsible", "fieldtype": "Data", "label": "Responsible"},
   {"fieldname": "sales_note", "fieldtype": "Small Text", "label": "Sales Note"},
   {"fieldname": "crm_lead", "fieldtype": "Link", "label": "CRM Lead", "options": "CRM Lead", "read_only": 1},

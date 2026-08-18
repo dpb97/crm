@@ -17,6 +17,24 @@ from lcs_integrations.email_domain_autolink.hooks import match_reference_for_sen
 from .graph_client import GraphClient, GraphClientError
 
 
+def _graph_datetime(value):
+    """Parse a Graph ISO-8601 UTC timestamp (e.g. '2026-08-15T09:30:00Z') into a
+    naive datetime in the site's timezone — used for Communication.communication_date
+    so the mail carries its real received/sent time, not the sync time."""
+    if not value:
+        return None
+    import datetime
+    try:
+        dt = datetime.datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    except Exception:
+        return None
+    dt = dt.replace(tzinfo=None)  # naive UTC
+    try:
+        return frappe.utils.convert_utc_to_system_timezone(dt).replace(tzinfo=None)
+    except Exception:
+        return dt
+
+
 def sync_all_bindings() -> None:
     bindings = frappe.get_all(
         "Outlook Mailbox Binding",
@@ -57,6 +75,17 @@ def sync_one(binding_name: str) -> int:
     return created
 
 
+def _mail_sync_disabled(emails):
+    """True if any participant email belongs to a Contact opted out of mail sync."""
+    for e in emails:
+        if not e:
+            continue
+        for parent in frappe.get_all("Contact Email", filters={"email_id": e}, pluck="parent"):
+            if frappe.db.get_value("Contact", parent, "lcs_mail_sync") == 0:
+                return True
+    return False
+
+
 def _persist_message(user: str, message: dict[str, Any], only_known: bool = True) -> bool:
     graph_id = message.get("id")
     if not graph_id:
@@ -89,16 +118,64 @@ def _persist_message(user: str, message: dict[str, Any], only_known: bool = True
             for r in message.get("toRecipients", [])
         ) if addr and frappe.utils.validate_email_address(addr)
     )
+    # LCS: honor the per-contact Mail-Sync opt-out (lcs_mail_sync=0).
+    _parts = [sender] + [a.strip() for a in recipients.split(",") if a.strip()]
+    if _mail_sync_disabled(_parts):
+        return False
+    sent_or_received = "Received" if message.get("isDraft") is False else "Sent"
+    # Real timestamp from Graph (received for inbound, sent for outbound), so the
+    # CRM shows the actual mail date instead of the moment it was synced.
+    comm_date = (
+        _graph_datetime(message.get("receivedDateTime") if sent_or_received == "Received" else message.get("sentDateTime"))
+        or _graph_datetime(message.get("receivedDateTime"))
+        or _graph_datetime(message.get("sentDateTime"))
+    )
     comm = frappe.get_doc({
         "doctype": "Communication",
         "communication_medium": "Email",
-        "sent_or_received": "Received" if message.get("isDraft") is False else "Sent",
+        "sent_or_received": sent_or_received,
         "sender": sender,
         "recipients": recipients,
         "subject": message.get("subject") or "(no subject)",
         "content": message.get("body", {}).get("content") or "",
         "message_id": graph_id,
         "user": user,
+        "communication_date": comm_date,
+        "lcs_conversation_id": message.get("conversationId"),
     })
     comm.insert(ignore_permissions=True)
     return True
+
+
+@frappe.whitelist()
+def repair_communication_dates(limit=100000):
+    """One-off backfill of the real received/sent date onto already-synced mail
+    that was stamped with the sync time. Fetches each message's timestamps from
+    Graph by its stored id + mailbox and updates communication_date in place."""
+    gc = GraphClient()
+    rows = frappe.get_all(
+        "Communication",
+        filters={"communication_type": "Communication", "message_id": ["is", "set"]},
+        fields=["name", "message_id", "user"],
+        limit=int(limit),
+    )
+    fixed = failed = 0
+    for i, r in enumerate(rows):
+        mailbox = r.get("user")
+        gid = r.get("message_id")
+        if not mailbox or not gid:
+            failed += 1
+            continue
+        try:
+            m = gc.message_dates(mailbox, gid)
+        except Exception:
+            failed += 1
+            continue
+        dt = _graph_datetime(m.get("receivedDateTime")) or _graph_datetime(m.get("sentDateTime"))
+        if dt:
+            frappe.db.set_value("Communication", r["name"], "communication_date", dt, update_modified=False)
+            fixed += 1
+        if i % 100 == 0:
+            frappe.db.commit()
+    frappe.db.commit()
+    return {"total": len(rows), "fixed": fixed, "failed": failed}

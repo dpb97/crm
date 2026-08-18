@@ -26,7 +26,7 @@
         <div>
           <dt>{{ __('Company') }}</dt>
           <dd>
-            <span v-if="c.company_name">{{ c.company_name }}</span>
+            <a v-if="c.company_name" class="ci-link ci-firma" @click="goFirma(c.company_name)">{{ c.company_name }}</a>
             <button
               v-else-if="c.email_id"
               type="button"
@@ -99,6 +99,10 @@ const props = defineProps({
 defineEmits(['open'])
 
 const router = useRouter()
+// Absprungpunkt zur Firma (company_name ist der CRM-Organization-Docname).
+function goFirma(name) {
+  if (name) router.push({ name: 'Organization', params: { organizationId: name } })
+}
 const c = ref(null)
 const loading = ref(false)
 const phone = ref('')
@@ -177,6 +181,7 @@ watch(() => props.contactId, load, { immediate: true })
 .ci-meta dd { margin: 2px 0 0; font-size: var(--pp-fs-14); color: var(--pp-text-primary); }
 .ci-link { color: var(--pp-brand-primary); text-decoration: none; }
 .ci-link:hover { text-decoration: underline; }
+.ci-firma { cursor: pointer; }
 .ci-linkbtn { appearance: none; cursor: pointer; font-family: inherit; font-size: var(--pp-fs-12, 12px);
   padding: 3px var(--pp-space-2); border: 1px dashed var(--pp-border-default); border-radius: var(--pp-radius-ui);
   background: transparent; color: var(--pp-brand-primary); }

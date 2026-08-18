@@ -58,13 +58,14 @@
 
         <!-- Tabelle ODER Leerzustand -->
         <PpTableCard :title="__('Contacts')" :shown="filtered.length" :total="contacts.length">
-          <PpDataGrid v-if="rows.length && viewMode === 'list'" :columns="columns" :rows="pagedRows" pickable v-model:pick-mode="selectMode" v-model:picked="picked" @row-click="openContact">
+          <PpDataGrid table-key="lcs_contacts" v-if="rows.length && viewMode === 'list'" :columns="columns" :rows="rows" :page-size="25" pickable v-model:pick-mode="selectMode" v-model:picked="picked" @row-click="openContact">
             <template #cell-name="{ row }">
               <span class="pp-cell-strong">{{ row.name }}</span>
               <span class="pp-cell-sub">{{ row.email || '—' }}</span>
             </template>
             <template #cell-company_name="{ value }">
-              <span :class="{ 'pp-cell-muted': !value }">{{ value || '—' }}</span>
+              <a v-if="value" class="crmc-firma-link" @click.stop.prevent="openFirma(value)">{{ value }}</a>
+              <span v-else class="pp-cell-muted">—</span>
             </template>
             <template #cell-mobile_no="{ value }">
               <span class="crmc-contact-line crmc-contact-line--muted">
@@ -73,6 +74,9 @@
             </template>
             <template #cell-email_count="{ value }">
               <span class="crmc-count" :data-zero="value === '0' ? 'true' : 'false'">{{ value }}</span>
+            </template>
+            <template #cell-last_contact="{ value }">
+              <span :class="{ 'pp-cell-muted': !value }">{{ value ? fmtDate(value) : '—' }}</span>
             </template>
             <template #cell-modified="{ value }">
               <span class="pp-cell-muted">{{ fmtDate(value) }}</span>
@@ -110,7 +114,8 @@
             :hint="loading ? '' : __('Contacts created in the CRM will appear here.')"
           />
 
-          <template v-if="rows.length && rowTotal > 25" #footer>
+          <!-- Card view keeps the external pager; the list view paginates inside PpDataGrid. -->
+          <template v-if="viewMode === 'cards' && rows.length && rowTotal > 25" #footer>
             <LcsPagination
               :from="pgFrom" :to="pgTo" :total="rowTotal"
               :page="page" :page-count="pageCount" :page-size="pageSize"
@@ -182,7 +187,29 @@ function exportRows() {
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'personen.csv'; a.click(); URL.revokeObjectURL(a.href)
   toast({ title: `${src.length} ${__('exported')}`, icon: 'check-circle', iconClasses: 'text-green-500' })
 }
-useListFuncbar({ title: __('Contacts'), meaning: __('Contacts in the CRM.'), count: () => contacts.value.length, reload, exportRows, selectMode, pickedCount: () => picked.value.length })
+// Ausgewählte Kontakte löschen (z.B. interne Mitarbeiter / Fehlimporte raus).
+async function deleteSelected() {
+  const ids = picked.value.slice()
+  if (!ids.length) { toast({ title: __('Nothing selected.'), icon: 'alert-circle' }); return }
+  if (!window.confirm(__('Delete {0} contact(s)? This cannot be undone.').replace('{0}', ids.length))) return
+  let ok = 0
+  const failed = []
+  for (const id of ids) {
+    try { await call('frappe.client.delete', { doctype: 'Contact', name: id }); ok++ }
+    catch (e) { failed.push(id) }
+  }
+  picked.value = []
+  selectMode.value = false
+  reload()
+  toast(failed.length
+    ? { title: `${ok} ${__('deleted')} · ${failed.length} ${__('failed (still linked)')}`, icon: 'alert-circle' }
+    : { title: `${ok} ${__('deleted')}`, icon: 'check-circle', iconClasses: 'text-green-500' })
+}
+// Selected person (inspector), so „Neue Aufgabe" links to that contact, not the page.
+const selectedId = ref(null)
+useListFuncbar({ title: __('Contacts'), meaning: __('Contacts in the CRM.'), count: () => contacts.value.length, reload, exportRows, selectMode, pickedCount: () => picked.value.length,
+  taskRef: () => { const c = rows.value.find((r) => r.id === selectedId.value); return c ? { doctype: 'Contact', name: c.id, title: c.name } : null },
+  actions: [{ id: 'delete-selected', label: __('Delete selected'), group: 'werkzeuge', run: deleteSelected }] })
 
 // --- E-Mail-Anzahl je Kontakt (LCS-API) -----------------------------------
 const emailCounts = ref({})
@@ -269,8 +296,11 @@ const columns = [
   { key: 'company_name', label: __('Company'), width: 220 },
   { key: 'mobile_no', label: __('Phone'), width: 170 },
   { key: 'email_count', label: __('Emails'), align: 'right', width: 100 },
+  { key: 'last_contact', label: __('Last contact'), align: 'right', width: 150 },
   { key: 'modified', label: __('Last modified'), align: 'right', width: 150 },
 ]
+const lastContactRes = createResource({ url: 'lcs_integrations.projects.api.get_last_contact_dates', params: { doctype: 'Contact' }, auto: true })
+const lastContact = computed(() => lastContactRes.data || {})
 const rows = computed(() =>
   filtered.value.map((c) => ({
     id: c.name,
@@ -278,6 +308,7 @@ const rows = computed(() =>
     email: c.email_id,
     company_name: c.company_name,
     mobile_no: c.mobile_no || c.phone,
+    last_contact: lastContact.value[c.name] || '',
     email_count: String(emailCounts.value[c.name] ?? 0),
     modified: c.modified,
   })),
@@ -317,15 +348,21 @@ function openContact(id) {
     return
   }
   lastClick = { id, t: now }
+  selectedId.value = id
   inspectPanel({
     component: ContactInspector,
     props: { contactId: id },
     on: { open: openDetail },
     title: __('Contact'),
+    ref: { doctype: 'Contact', name: id, title: rows.value.find((r) => r.id === id)?.name || id },
   })
 }
 function openDetail(id) {
   router.push({ name: 'Contact', params: { contactId: id } })
+}
+// Absprungpunkt zur Firma: company_name ist der CRM-Organization-Docname.
+function openFirma(name) {
+  if (name) router.push({ name: 'Organization', params: { organizationId: name } })
 }
 onBeforeUnmount(() => {
   if (pilandaMode.value) inspectPanel(null)
@@ -343,6 +380,8 @@ onBeforeUnmount(() => {
 .crmc-btn--primary { background: var(--pp-brand-primary); border-color: var(--pp-brand-primary); color: var(--pp-text-on-accent); }
 .crmc-btn--primary:hover { filter: brightness(1.05); color: var(--pp-text-on-accent); }
 
+.crmc-firma-link { color: var(--pp-brand-primary); cursor: pointer; text-decoration: none; }
+.crmc-firma-link:hover { text-decoration: underline; }
 .crmc-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--pp-space-3); }
 
 /* KPI-Karten als klickbare Segment-Filter (Regel 9) */

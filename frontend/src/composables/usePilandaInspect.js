@@ -15,6 +15,7 @@
 // (renderer) share one reactive panel. `spec`, `view` and `panel` are mutually
 // exclusive — setting one clears the others.
 import { ref, markRaw } from 'vue'
+import { useTaskContext } from './useTaskContext'
 
 const spec = ref(null)  // nav-item spec object (built-in panel), or null
 const view = ref(null)  // rich node view (custom slot), or null
@@ -22,6 +23,13 @@ const panel = ref(null) // { component, props, on, title } dynamic component, or
 const collapsed = ref(true) // starts closed (rail)
 
 let _wired = false
+
+// Whatever the inspector currently shows is the "selected element" — feed its
+// reference to the shared task context so „Neue Aufgabe" links to it everywhere.
+const { setTaskContext } = useTaskContext()
+function _syncTaskRef(ref) {
+  setTaskContext(ref && (ref.name || ref.title) ? ref : null)
+}
 
 export function usePilandaInspect() {
   // Nav item -> built-in spec panel.
@@ -44,9 +52,11 @@ export function usePilandaInspect() {
       spec.value = null
       panel.value = null
       collapsed.value = false
+      _syncTaskRef(v.ref)
     } else {
       view.value = null
       collapsed.value = true
+      _syncTaskRef(null)
     }
   }
 
@@ -57,9 +67,11 @@ export function usePilandaInspect() {
       spec.value = null
       view.value = null
       collapsed.value = false
+      _syncTaskRef(p.ref)
     } else {
       panel.value = null
       collapsed.value = true
+      _syncTaskRef(null)
     }
   }
 

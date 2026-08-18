@@ -71,7 +71,8 @@
   STRIKT --pp-*-Tokens, hell + dunkel. Scoped, Prefix `pp-datagrid`.
 -->
 <script setup>
-import { ref, computed, onBeforeUnmount } from "vue";
+import { ref, computed, watch, onBeforeUnmount } from "vue";
+import { useProfileSetting } from "@/composables/useProfileSetting";
 import ChevronUp    from "~icons/lucide/chevron-up";
 import ChevronDown  from "~icons/lucide/chevron-down";
 import ChevronsUpDown from "~icons/lucide/chevrons-up-down";
@@ -86,6 +87,7 @@ const props = defineProps({
   selectable: { type: Boolean, default: false },
   expandable: { type: Boolean, default: false },
   columnTools:{ type: Boolean, default: true },  // @7: Spaltenauswahl-Toolbar (Sichtbarkeit) — jetzt STANDARD AN
+  tableKey:   { type: String,  default: "" },    // @8: gesetzt → Reihenfolge + Sichtbarkeit pro Nutzer speichern
   chooserKeys:{ type: Array,   default: null },  // @4: Chooser auf diese keys begrenzen (null = alle Spalten)
   reorderable:{ type: Boolean, default: true },  // @7: Spaltenreihenfolge per Drag and Drop — jetzt STANDARD AN
   resizable:  { type: Boolean, default: false }, // Spaltenbreite per Ziehen am Rand
@@ -93,6 +95,7 @@ const props = defineProps({
   pickable:   { type: Boolean, default: false }, // @5: kontrollierte Picker-Spalte links (v-model:picked)
   picked:     { type: Array,   default: () => [] }, // @5: ausgewaehlte ids (kontrolliert)
   pickMode:   { type: Boolean, default: false }, // @6: Picker-Modus an/aus (v-model, DEFAULT AUS)
+  pageSize:   { type: Number,  default: 0 },     // @8: >0 → interne Pagination (Filter/Sort über ALLE Zeilen, dann anzeigen)
 });
 const emit = defineEmits(["row-click", "update:selection", "toggle-expand", "update:picked", "update:pickMode", "row-dblclick"]);
 
@@ -124,6 +127,32 @@ const colOrder  = ref(null);          // Array<key> | null = natürliche Reihenf
 const colHidden = ref(new Set(props.columns.filter((c) => c.hidden).map((c) => c.key))); // ausgeblendete keys (initial aus column.hidden)
 const colWidths = ref({});            // key -> px (Resize-Override)
 const chooserOpen = ref(false);       // PpColChooser-Panel offen
+
+/* @8: Reihenfolge + Sichtbarkeit pro Nutzer + Tabelle persistieren, wenn eine
+   tableKey gesetzt ist. Additiv — ohne tableKey unverändert (nur In-Session). */
+if (props.tableKey) {
+  const orderPref  = useProfileSetting("grid_" + props.tableKey, "order",  null);
+  const hiddenPref = useProfileSetting("grid_" + props.tableKey, "hidden", null);
+  const sameArr = (a, b) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
+  const sameSet = (a, b) =>
+    JSON.stringify([...(a || [])].sort()) === JSON.stringify([...(b || [])].sort());
+  // Server → lokal (Hydration).
+  watch(orderPref, (v) => {
+    if (Array.isArray(v) && !sameArr(v, colOrder.value)) colOrder.value = v.slice();
+  }, { immediate: true });
+  watch(hiddenPref, (v) => {
+    if (Array.isArray(v) && !sameSet(v, [...colHidden.value])) colHidden.value = new Set(v);
+  }, { immediate: true });
+  // Lokal → Server.
+  watch(colOrder, (v) => {
+    const arr = v ? v.slice() : null;
+    if (!sameArr(arr, orderPref.value)) orderPref.value = arr;
+  });
+  watch(colHidden, (v) => {
+    const arr = [...v];
+    if (!sameSet(arr, hiddenPref.value)) hiddenPref.value = arr;
+  });
+}
 
 const orderedKeys = computed(() => colOrder.value ?? baseCols.value.map((c) => c.key));
 
@@ -291,11 +320,36 @@ const sortedRows = computed(() => {
   return list.sort((r1, r2) => cmp(r1[k], r2[k]) * f);
 });
 
+/* ---- Interne Pagination (opt-in via pageSize; 0 = aus). Filter + Sort laufen
+   über ALLE Zeilen (props.rows), erst danach wird die Anzeige-Seite geschnitten
+   — so wirken Spaltenfilter/Suche über den gesamten Bestand, nicht nur die Seite. */
+const dgPage = ref(1);
+const dgPageCount = computed(() =>
+  props.pageSize > 0 ? Math.max(1, Math.ceil(sortedRows.value.length / props.pageSize)) : 1,
+);
+watch([() => sortedRows.value.length, () => props.pageSize], () => {
+  if (dgPage.value > dgPageCount.value) dgPage.value = dgPageCount.value;
+  if (dgPage.value < 1) dgPage.value = 1;
+});
+const displayRows = computed(() => {
+  if (!props.pageSize || props.pageSize <= 0) return sortedRows.value;
+  const start = (dgPage.value - 1) * props.pageSize;
+  return sortedRows.value.slice(start, start + props.pageSize);
+});
+function dgSetPage(p) { dgPage.value = Math.min(Math.max(1, p), dgPageCount.value); }
+const dgPagerInfo = computed(() => {
+  const total = sortedRows.value.length;
+  if (props.pageSize <= 0 || total <= props.pageSize) return "";
+  const from = total === 0 ? 0 : (dgPage.value - 1) * props.pageSize + 1;
+  const to = Math.min(dgPage.value * props.pageSize, total);
+  return `${from}–${to} / ${total}`;
+});
+
 /* ---- Gruppierung der Zeilen ------------------------------------ */
 const sectioned = computed(() => {
-  if (!props.groupBy) return [{ label: null, rows: sortedRows.value }];
+  if (!props.groupBy) return [{ label: null, rows: displayRows.value }];
   const map = new Map();
-  for (const r of sortedRows.value) {
+  for (const r of displayRows.value) {
     const key = r[props.groupBy] ?? "—";
     if (!map.has(key)) map.set(key, []);
     map.get(key).push(r);
@@ -707,6 +761,16 @@ function sortState(key) {
         </tfoot>
       </table>
     </div>
+
+    <!-- @8 interne Pagination: Filter/Sort über ALLE Zeilen, nur die Seite wird gezeigt -->
+    <div v-if="dgPagerInfo" class="pp-datagrid__pager">
+      <span class="pp-datagrid__pager-info">{{ dgPagerInfo }}</span>
+      <div class="pp-datagrid__pager-ctrl">
+        <button type="button" class="pp-datagrid__pager-btn" :disabled="dgPage <= 1" @click="dgSetPage(dgPage - 1)" aria-label="Zurück">‹</button>
+        <span class="pp-datagrid__pager-page">{{ dgPage }} / {{ dgPageCount }}</span>
+        <button type="button" class="pp-datagrid__pager-btn" :disabled="dgPage >= dgPageCount" @click="dgSetPage(dgPage + 1)" aria-label="Weiter">›</button>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -720,6 +784,18 @@ function sortState(key) {
   font-family: var(--pp-font-body);
   color: var(--pp-text-primary);
 }
+
+/* ---- Interne Pagination (@8) ---------------------------------- */
+.pp-datagrid__pager { flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between;
+  gap: var(--pp-space-3); padding: var(--pp-space-2) var(--pp-space-3); border-top: 1px solid var(--pp-border-subtle); }
+.pp-datagrid__pager-info { font-size: var(--pp-fs-12, 12px); color: var(--pp-text-tertiary); font-variant-numeric: tabular-nums; }
+.pp-datagrid__pager-ctrl { display: inline-flex; align-items: center; gap: var(--pp-space-2); }
+.pp-datagrid__pager-page { font-size: var(--pp-fs-12, 12px); color: var(--pp-text-secondary); font-variant-numeric: tabular-nums; }
+.pp-datagrid__pager-btn { appearance: none; cursor: pointer; font-family: inherit; font-size: 15px; line-height: 1;
+  width: 26px; height: 26px; border: 1px solid var(--pp-border-default); border-radius: var(--pp-radius-ui);
+  background: var(--pp-bg-surface); color: var(--pp-text-secondary); }
+.pp-datagrid__pager-btn:hover:not(:disabled) { border-color: var(--pp-brand-primary); color: var(--pp-brand-primary); }
+.pp-datagrid__pager-btn:disabled { opacity: 0.4; cursor: default; }
 
 /* ---- Bulk-Leiste ---------------------------------------------- */
 .pp-datagrid__bulk {

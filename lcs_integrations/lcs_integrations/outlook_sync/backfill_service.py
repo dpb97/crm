@@ -97,6 +97,15 @@ def backfill_all_active_full() -> dict:
     return backfill_all_active(since=None, max_messages=100000)
 
 
+def backfill_recent(days: int = 3) -> dict:
+    """Daily safety-net backfill of the last `days` across ALL folders for every
+    active binding. The delta stream only watches the Inbox, so mail filed into
+    subfolders — or missed during a Graph outage — never lands via delta; this
+    catches it. Idempotent via Communication message-id dedup."""
+    since = frappe.utils.add_days(frappe.utils.today(), -abs(int(days)))
+    return backfill_all_active(since=since, max_messages=5000)
+
+
 def backfill_all_active(since: str | None = None, max_messages: int = 2000) -> dict:
     """Backfill every active binding (bench-executable, no kwargs needed)."""
     import traceback

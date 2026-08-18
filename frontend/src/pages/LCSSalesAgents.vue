@@ -45,7 +45,7 @@
           :shown="filtered.length"
           :total="rows.length"
         >
-          <PpDataGrid v-if="filtered.length" :columns="columns" :rows="filtered" @row-click="openRow">
+          <PpDataGrid table-key="lcs_sales_agents" v-if="filtered.length" :columns="columns" :rows="filtered" :page-size="25" @row-click="openRow">
             <template #cell-name="{ row }">
               <span class="pp-cell-strong">{{ row.name }}</span>
               <span class="pp-cell-sub">{{ row.sub }}</span>
@@ -201,6 +201,7 @@ function openRow(id) {
       label: __('Open market assignment'),
       onClick: () => router.push({ name: 'LCS Market Assignment' }),
     },
+    ref: r.user ? { doctype: 'User', name: r.user, title: r.name } : { title: r.name },
   })
 }
 onBeforeUnmount(() => inspectNode(null))

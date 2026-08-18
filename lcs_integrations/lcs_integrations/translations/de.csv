@@ -1276,3 +1276,154 @@ No people assigned in the graph.,Keine Personen im Graph zugeordnet.
 No cross-organization connections.,Keine firmenübergreifenden Verbindungen.
 No career history on record.,Keine Karrierehistorie hinterlegt.
 Search deal / company / owner,Deal / Firma / Eigentümer suchen
+30-70,30-70
+< 30,< 30
+> 70,> 70
+Add Mobile Number...,Mobilnummer hinzufügen …
+Amount,Betrag
+Change Image,Bild ändern
+Comments,Kommentare
+Contact Updated,Kontakt aktualisiert
+Contact image updated,Kontaktbild aktualisiert
+"Creates an LCS Project in the CRM for every BSM construction-site project that doesn't already have one. Uses name prefixes (SB-, WI-, LL-, AS_) to classify the project type. Skips any BSM project that is already linked.","Legt für jedes BSM-Baustellenprojekt, das noch keines hat, ein LCS-Projekt im CRM an. Nutzt Namenspräfixe (SB-, WI-, LL-, AS_) zur Klassifizierung des Projekttyps. Bereits verknüpfte BSM-Projekte werden übersprungen."
+Deal Owner,Deal-Inhaber
+Delete,Löschen
+Delete selected,Auswahl löschen
+Delete {0} contact(s)? This cannot be undone.,{0} Kontakt(e) löschen? Dies kann nicht rückgängig gemacht werden.
+Details …,Details …
+Filter recipient,Empfänger filtern
+Filter sender,Absender filtern
+For,Für
+High,Hoch
+Low,Niedrig
+Make Call,Anrufen
+Medium,Mittel
+Mobile No.,Mobilnr.
+Mobile Number,Mobilnummer
+No contact details yet,Noch keine Kontaktdaten
+No emails match the filter.,Keine E-Mails entsprechen dem Filter.
+Nothing selected.,Nichts ausgewählt.
+PLM,PLM
+Post,Senden
+Remove Image,Bild entfernen
+Richtpreis,Richtpreis
+SO,SO
+Score,Score
+Typed notes are automatically matched to the right project. Voice notes are uploaded and transcribed on the server (language: {0}) — matching happens afterwards.,Getippte Notizen werden automatisch dem richtigen Projekt zugeordnet. Sprachnotizen werden hochgeladen und auf dem Server transkribiert (Sprache: {0}) — die Zuordnung erfolgt anschließend.
+Upload Image,Bild hochladen
+Visitenkarte scannen,Visitenkarte scannen
+WhatsApp,WhatsApp
+current,aktuell
+days,Tage
+deleted,gelöscht
+e.g. Seilbahn Innsbruck Nord,z. B. Seilbahn Innsbruck Nord
+failed (still linked),fehlgeschlagen (noch verknüpft)
+to,bis
+Delete email,E-Mail löschen
+Delete this email? It will be removed from the CRM.,Diese E-Mail löschen? Sie wird aus dem CRM entfernt.
+Email deleted,E-Mail gelöscht
+Could not delete the email.,E-Mail konnte nicht gelöscht werden.
+Due tasks,Fällige Aufgaben
+New mails,Neue Mails
+assigned to me,mir zugewiesen
+latest received,zuletzt empfangen
+No due tasks.,Keine fälligen Aufgaben.
+No new mails.,Keine neuen Mails.
+Overdue,Überfällig
+Today,Heute
+Please select a customer for the project.,Bitte einen Kunden für das Projekt auswählen.
+Please select a sales rep (Vertrieb) for the project.,Bitte einen Vertriebs-Mitarbeiter für das Projekt auswählen.
+New project,Neues Projekt
+Drag to reorder,Zum Umsortieren ziehen
+Remove point,Punkt entfernen
+Remove this agenda point? This cannot be undone.,Diesen Agenda-Punkt entfernen? Dies kann nicht rückgängig gemacht werden.
+Agenda point removed,Punkt entfernt
+Created at,Erstellt auf
+Page,Seite
+Select customer,Kunde auswählen
+Select salesperson,Vertriebler auswählen
+All senders,Alle Absender
+All recipients,Alle Empfänger
+New maintenance item,Neuer Wartungspunkt
+Edit maintenance item,Wartungspunkt bearbeiten
+Maintenance & Service,Wartung & Service
+No maintenance items,Keine Wartungspunkte
+No entries in this list,Keine Einträge in dieser Liste
+Add one via the actions bar.,Über die Aktionsleiste hinzufügen.
+Row = edit classification · Chance = LCS% × Kunde%,Zeile = Klassifizierung bearbeiten · Chance = LCS% × Kunde%
+Row = edit · trash = remove · add via the actions bar,Zeile = bearbeiten · Papierkorb = entfernen · über die Aktionsleiste hinzufügen
+Solution / Produkt,Lösung / Produkt
+Sector / Sektor,Sektor
+No comments yet.,Noch keine Kommentare.
+Please log in.,Bitte einloggen.
+Conversation,Konversation
+Reply all,Allen antworten
+Your reply …,Deine Antwort …
+Open in Outlook,In Outlook öffnen
+Reply sent,Antwort gesendet
+Could not send the reply.,Antwort konnte nicht gesendet werden.
+Previous Company,Frühere Firma
+Previous Companies,Frühere Firma
+Last contact,Letzter Kontakt
+Current meeting,Aktuelles Meeting
+points,Punkte
+Select meeting (past meetings are read-only),Meeting wählen (vergangene sind schreibgeschützt)
+Archived meeting,Archiviertes Meeting
+read-only.,schreibgeschützt.
+Back to current meeting,Zurück zum aktuellen Meeting
+Pilot sync,Pilot-Sync
+Pilot sync failed,Pilot-Sync fehlgeschlagen
+new,neu
+updated,aktualisiert
+Pilot hits,Pilot-Treffer
+Hit,Treffer
+Rate as chance,Als Chance werten
+Rated as chance,Als Chance gewertet
+Relevance,Relevanz
+high,hoch
+medium,mittel
+low,niedrig
+open hits,offene Treffer
+Open hits,Offene Treffer
+No open hits,Keine offenen Treffer
+Loading hits …,Treffer werden geladen …
+rated (quarter),gewertet (Quartal)
+Rated (quarter),Gewertet (Quartal)
+double click = open hit,Doppelklick = Treffer öffnen
+Open hit,Treffer öffnen
+Scout evaluation,Scoutbewertung
+"Search title, company or country","Titel, Firma oder Land suchen"
+New tenders from the scout appear here. Run “Pilot sync” to pull the latest.,Neue Ausschreibungen des Scouts erscheinen hier. „Pilot-Sync" holt die neuesten.
+Scout hits only. Rating a hit as a chance moves it into the sales flow (Chances → Leads → Sales projects) — nothing appears twice.,Nur Scout-Treffer. „Als Chance werten" hebt einen Treffer in den Vertriebsfluss (Chancen → Leads → Vertriebsprojekte) — nichts erscheint doppelt.
+scout,Scout
+unrated,ungewertet
+Filter,Filter
+Search hit or buyer,Treffer oder Auftraggeber suchen
+Scout hits · only the salespersons rating turns one into a chance,Scouttreffer · erst die Wertung des Verkäufers macht daraus eine Chance
+card = details in the inspector,Karte = Details im Inspektor
+In progress,In Bearbeitung
+New,Neu
+Buyer,Auftraggeber
+Deadline,Frist
+Geo,Geo
+Archive,Archiv
+entries,Einträge
+final deletion only here,endgültiges Löschen nur hier
+No archived hits.,Keine archivierten Treffer.
+Delete,Löschen
+Deleted,Gelöscht
+Could not delete.,Löschen fehlgeschlagen.
+No geodata,Keine Geodaten
+No open hits,Keine offenen Treffer
+Responsible,Verantwortlich
+remove,entfernen
+Assign to …,Zuweisen …
+Assigned,Zugewiesen
+Assignment cleared,Zuweisung entfernt
+Comments,Kommentare
+Add a comment …,Kommentar hinzufügen …
+No comments yet.,Noch keine Kommentare.
+Post,Senden
+Cards,Karten
+Table,Tabelle
+Sales decision,Entscheid

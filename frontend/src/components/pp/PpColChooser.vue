@@ -36,7 +36,18 @@ const props = defineProps({
 });
 const emit = defineEmits(["update:open", "toggle", "reorder"]);
 
-function toggleOpen() { emit("update:open", !props.open); }
+// Panel is teleported to <body> to escape the grid/card `overflow: hidden`
+// clipping; position it (fixed) right under the pill on open.
+const pillEl = ref(null);
+const panelPos = ref({ top: 0, left: 0 });
+function toggleOpen() {
+  const willOpen = !props.open;
+  if (willOpen && pillEl.value) {
+    const r = pillEl.value.getBoundingClientRect();
+    panelPos.value = { top: Math.round(r.bottom + 4), left: Math.round(r.left) };
+  }
+  emit("update:open", willOpen);
+}
 function onToggle(it, e) { if (it.disabled) return; emit("toggle", { k: it.k, checked: e.target.checked }); }
 
 // --- DnD-Reihenfolge (native HTML5; Persistenz macht der Host) ---
@@ -55,24 +66,27 @@ function onDrop(targetK) {
 
 <template>
   <div class="pp-colchooser">
-    <button type="button" class="pp-colchooser__pill" :class="{ 'is-open': open }"
+    <button ref="pillEl" type="button" class="pp-colchooser__pill" :class="{ 'is-open': open }"
             :aria-expanded="open" aria-haspopup="menu" @click="toggleOpen">
       <Columns /><span>{{ label }}</span>
     </button>
-    <template v-if="open">
-      <div class="pp-colchooser__backdrop" @click="emit('update:open', false)"></div>
-      <div class="pp-colchooser__panel" role="menu">
-        <div class="pp-colchooser__head">{{ head }}</div>
-        <label v-for="it in items" :key="it.k" class="pp-colchooser__row"
-               :class="{ 'is-disabled': it.disabled, 'is-drag': dragKey === it.k }"
-               :draggable="reorderable && !it.disabled ? 'true' : 'false'"
-               @dragstart="onDragStart(it.k)" @dragover.prevent @drop.prevent="onDrop(it.k)">
-          <span v-if="reorderable" class="pp-colchooser__grip" aria-hidden="true">⋮⋮</span>
-          <input type="checkbox" :checked="it.checked" :disabled="it.disabled" @change="onToggle(it, $event)">
-          <span class="pp-colchooser__lbl">{{ it.l }}</span>
-        </label>
-      </div>
-    </template>
+    <Teleport to="body">
+      <template v-if="open">
+        <div class="pp-colchooser__backdrop" @click="emit('update:open', false)"></div>
+        <div class="pp-colchooser__panel" role="menu"
+             :style="{ top: panelPos.top + 'px', left: panelPos.left + 'px' }">
+          <div class="pp-colchooser__head">{{ head }}</div>
+          <label v-for="it in items" :key="it.k" class="pp-colchooser__row"
+                 :class="{ 'is-disabled': it.disabled, 'is-drag': dragKey === it.k }"
+                 :draggable="reorderable && !it.disabled ? 'true' : 'false'"
+                 @dragstart="onDragStart(it.k)" @dragover.prevent @drop.prevent="onDrop(it.k)">
+            <span v-if="reorderable" class="pp-colchooser__grip" aria-hidden="true">⋮⋮</span>
+            <input type="checkbox" :checked="it.checked" :disabled="it.disabled" @change="onToggle(it, $event)">
+            <span class="pp-colchooser__lbl">{{ it.l }}</span>
+          </label>
+        </div>
+      </template>
+    </Teleport>
   </div>
 </template>
 
@@ -90,8 +104,8 @@ function onDrop(targetK) {
 .pp-colchooser__pill.is-open { border-color: var(--pp-brand-primary); color: var(--pp-brand-primary); }
 .pp-colchooser__pill :deep(svg) { width: 14px; height: 14px; }
 
-.pp-colchooser__backdrop { position: fixed; inset: 0; z-index: 1; }
-.pp-colchooser__panel { position: absolute; top: calc(100% + 4px); right: 0; z-index: 2;
+.pp-colchooser__backdrop { position: fixed; inset: 0; z-index: 200; }
+.pp-colchooser__panel { position: fixed; z-index: 201;
   min-width: 220px; padding: var(--pp-space-2); background: var(--pp-bg-elevated);
   border: 1px solid var(--pp-border-default); border-radius: var(--pp-radius-ui);
   box-shadow: var(--pp-shadow-lg); }

@@ -195,7 +195,9 @@ import IconMapPin from '~icons/lucide/map-pin'
 import { usersStore } from '@/stores/users'
 
 const { isManager } = usersStore()
-const canManage = computed(() => isManager())
+// Server-authoritative flag (System/Sales Manager); falls back to the client
+// role guess only until the board has loaded.
+const canManage = computed(() => board.data?.can_manage ?? isManager())
 
 const board = createResource({
   url: 'lcs_integrations.projects.api.get_market_assignment',

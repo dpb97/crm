@@ -106,6 +106,11 @@
                           :create="field.create"
                           :label="field.label"
                         />
+                        <LcsPhoneInput
+                          v-else-if="field.fieldtype === 'PhoneInput'"
+                          :modelValue="doc[field.fieldname]"
+                          @change="(v) => fieldChange(v, field)"
+                        />
                         <FormControl
                           v-else-if="field.fieldtype == 'Check'"
                           v-model="doc[field.fieldname]"
@@ -412,6 +417,7 @@ import ButtonControl, {
 } from '@/components/Controls/ButtonControl.vue'
 import CollapsibleSection from '@/components/CollapsibleSection.vue'
 import PrimaryDropdown from '@/components/PrimaryDropdown.vue'
+import LcsPhoneInput from '@/components/lcs/LcsPhoneInput.vue'
 import FadedScrollableDiv from '@/components/FadedScrollableDiv.vue'
 import ArrowUpRightIcon from '@/components/Icons/ArrowUpRightIcon.vue'
 import EditIcon from '@/components/Icons/EditIcon.vue'

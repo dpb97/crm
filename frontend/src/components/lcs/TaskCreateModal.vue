@@ -81,6 +81,10 @@ async function save() {
     if (state.ref?.doctype && state.ref?.name) {
       doc.reference_doctype = state.ref.doctype
       doc.reference_docname = state.ref.name
+    } else if (state.ref?.url) {
+      // No document reference — keep a link back to where the task was created.
+      const origin = `${__('Created at')}: ${state.ref.title || ''} — ${state.ref.url}`.trim()
+      doc.description = doc.description ? `${doc.description}\n\n${origin}` : origin
     }
     await call('frappe.client.insert', { doc })
     toast.success(__('Task created'))

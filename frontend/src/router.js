@@ -146,6 +146,11 @@ const routes = [
     component: () => import('@/pages/LCSComingSoon.vue'),
   },
   {
+    path: '/pilot',
+    name: 'LCS Pilot',
+    component: () => import('@/pages/LCSPilot.vue'),
+  },
+  {
     path: '/chances',
     name: 'LCS Chances',
     component: () => import('@/pages/LCSChances.vue'),

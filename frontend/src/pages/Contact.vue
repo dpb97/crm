@@ -31,7 +31,7 @@
                 <div class="group relative h-15.5 w-15.5">
                   <Avatar
                     size="3xl"
-                    class="h-15.5 w-15.5"
+                    class="h-15.5 w-15.5 ring-2 ring-lcs-secondary/25 ring-offset-2"
                     :label="contact.doc.full_name"
                     :image="contact.doc.image"
                   />
@@ -60,7 +60,7 @@
                     class="!absolute bottom-0 left-0 right-0"
                   >
                     <div
-                      class="z-1 absolute bottom-0 left-0 right-0 flex h-14 cursor-pointer items-center justify-center rounded-b-full bg-black bg-opacity-40 pt-5 opacity-0 duration-300 ease-in-out group-hover:opacity-100"
+                      class="z-1 absolute bottom-0 left-0 right-0 flex h-14 cursor-pointer items-center justify-center rounded-b-md bg-black bg-opacity-40 pt-5 opacity-0 duration-300 ease-in-out group-hover:opacity-100"
                       style="
                         -webkit-clip-path: inset(22px 0 0 0);
                         clip-path: inset(22px 0 0 0);
@@ -77,12 +77,15 @@
                     </span>
                     <span>{{ contact.doc.full_name }}</span>
                   </div>
-                  <div
+                  <button
                     v-if="contact.doc.company_name"
-                    class="flex items-center gap-1.5 text-base text-ink-gray-8"
+                    type="button"
+                    class="flex w-fit items-center gap-1.5 rounded-full bg-surface-gray-2 px-2.5 py-1 text-sm font-medium text-ink-gray-7 transition hover:bg-surface-gray-3 hover:text-lcs-secondary"
+                    @click="goFirma(contact.doc.company_name)"
                   >
+                    <FeatherIcon name="briefcase" class="h-3.5 w-3.5" />
                     {{ contact.doc.company_name }}
-                  </div>
+                  </button>
                   <ErrorMessage :message="__(error)" />
                 </div>
               </div>
@@ -134,8 +137,8 @@
     >
       <template #tab-item="{ tab, selected }">
         <button
-          class="group flex items-center gap-2 border-b border-transparent py-2.5 text-base text-ink-gray-5 duration-300 ease-in-out hover:text-ink-gray-9"
-          :class="{ 'text-ink-gray-9': selected }"
+          class="group flex items-center gap-2 border-b-2 border-transparent py-2.5 text-base text-ink-gray-5 duration-300 ease-in-out hover:text-ink-gray-9"
+          :class="{ 'text-ink-gray-9 !border-lcs-secondary': selected }"
         >
           <component :is="tab.icon" v-if="tab.icon" class="h-5" />
           {{ __(tab.label) }}
@@ -156,6 +159,20 @@
           v-if="tab.label === 'Emails'"
           :emails="contactEmails.data"
         />
+        <!-- LCS: network — employment history + person relationships -->
+        <div
+          v-else-if="tab.label === 'Netzwerk'"
+          class="mt-4 flex w-full flex-col gap-6 overflow-y-auto px-5 pb-6"
+        >
+          <RelationEditor
+            :doctype="'Contact'" :name="contact.doc.name" fieldname="lcs_employment"
+            :title="__('Employment history')" :columns="employmentColumns"
+          />
+          <RelationEditor
+            :doctype="'Contact'" :name="contact.doc.name" fieldname="lcs_relations"
+            :title="__('Relations / friends')" :columns="relationColumns"
+          />
+        </div>
         <template v-else>
           <DealsListView
             v-if="tab.label === 'Deals' && rows.length"
@@ -196,6 +213,8 @@ import DealsIcon from '@/components/Icons/DealsIcon.vue'
 import DealsListView from '@/components/ListViews/DealsListView.vue'
 import EmailIcon from '@/components/Icons/EmailIcon.vue'
 import OrgEmailsTab from '@/components/lcs/OrgEmailsTab.vue'
+import RelationEditor from '@/components/lcs/RelationEditor.vue'
+import NetworkIcon from '~icons/lucide/share-2'
 import CustomActions from '@/components/CustomActions.vue'
 import {
   formatDate,
@@ -222,10 +241,12 @@ import {
   usePageMeta,
   Dropdown,
   toast,
+  FeatherIcon,
 } from 'frappe-ui'
 import { useDoctypeModal } from '@/composables/doctypeModal'
 import { useTelemetry } from 'frappe-ui/frappe'
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { useTaskContext } from '@/composables/useTaskContext'
 import { useRoute, useRouter } from 'vue-router'
 import EmptyState from '@/components/ListViews/EmptyState.vue'
 
@@ -244,6 +265,10 @@ const props = defineProps({
 
 const route = useRoute()
 const router = useRouter()
+// LCS: jump from the contact to its company (Organization); company_name is the org docname.
+function goFirma(name) {
+  if (name) router.push({ name: 'Organization', params: { organizationId: name } })
+}
 
 const errorTitle = ref('')
 const errorMessage = ref('')
@@ -256,6 +281,11 @@ const {
 } = useDocument('Contact', props.contactId)
 
 const canDelete = computed(() => permissions.data?.permissions?.delete || false)
+
+// Feed the shell task context so „Neue Aufgabe" links back to this contact.
+const { setTaskContext } = useTaskContext()
+watch(() => contact.doc, (d) => setTaskContext(d ? { doctype: 'Contact', name: props.contactId, title: d.full_name || props.contactId } : null), { immediate: true })
+onUnmounted(() => setTaskContext(null))
 
 onMounted(async () => {
   if (contact.doc) await triggerOnRender()
@@ -313,6 +343,18 @@ function changeContactImage(file) {
 }
 
 const tabIndex = ref(0)
+// LCS: network relation columns (mirrors ContactInspector)
+const employmentColumns = [
+  { key: 'organization', type: 'link', options: 'CRM Organization', label: __('Company') },
+  { key: 'role', type: 'text', label: __('Role') },
+  { key: 'start_date', type: 'date', label: __('From') },
+  { key: 'end_date', type: 'date', label: __('To') },
+  { key: 'is_current', type: 'check', label: __('Current') },
+]
+const relationColumns = [
+  { key: 'related_contact', type: 'link', options: 'Contact', label: __('Person') },
+  { key: 'relation_type', type: 'select', opts: ['Freund', 'Kollege', 'Bekannt', 'Familie'], label: __('Relation') },
+]
 const tabs = [
   {
     label: 'Deals',
@@ -324,6 +366,14 @@ const tabs = [
     label: 'Emails',
     icon: EmailIcon,
     count: computed(() => contactEmails.data?.length),
+  },
+  // LCS: network — employment history + person relationships
+  {
+    label: 'Netzwerk',
+    icon: NetworkIcon,
+    count: computed(
+      () => (contact.doc?.lcs_employment?.length || 0) + (contact.doc?.lcs_relations?.length || 0),
+    ),
   },
 ]
 
@@ -408,44 +458,8 @@ const parsedSections = computed(() => {
           }
         }
         if (field.fieldname === 'mobile_no') {
-          return {
-            ...field,
-            read_only: false,
-            hidden: false,
-            fieldtype: 'Dropdown',
-            options: (contact.doc?.phone_nos || []).map((phone) => ({
-              name: phone.name,
-              value: phone.phone,
-              selected: phone.phone === contact.doc.mobile_no,
-              onClick: () => setAsPrimary('mobile_no', phone.phone),
-              onSave: (option, isNew) =>
-                isNew
-                  ? createNew('phone', option.value)
-                  : editOption(
-                      'Contact Phone',
-                      option.name,
-                      'phone',
-                      option.value,
-                    ),
-              onDelete: async (option, isNew) => {
-                contact.doc.phone_nos = contact.doc.phone_nos.filter(
-                  (p) => p.name !== option.name,
-                )
-                if (!isNew) await deleteOption('Contact Phone', option.name)
-              },
-            })),
-            create: () => {
-              contact.doc.phone_nos = [
-                ...(contact.doc.phone_nos || []),
-                {
-                  name: 'new-1',
-                  value: '',
-                  selected: false,
-                  isNew: true,
-                },
-              ]
-            },
-          }
+          // LCS: simple phone field — country dial-code dropdown + number input.
+          return { ...field, read_only: false, hidden: false, fieldtype: 'PhoneInput' }
         }
         if (field.fieldname === 'address') {
           return {

@@ -270,6 +270,8 @@ onMounted(() => {
     worldCopyJump: false,                    // @4 F29: kein Sprung in die Kachel-Kopie
     maxBounds: [[-85, -180], [85, 180]],     // @4 F29: eine Welt, kein endloses Panning
     maxBoundsViscosity: 1,                   // @4 F29: harte Kante an den Bounds
+    center: [47.5, 13.3],                    // LCS: Default-View (Alpen) — Basiskarte immer sichtbar, auch ohne Projekte
+    zoom: 5,
   });
   const geoBase = {
     "Standard": L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",

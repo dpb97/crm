@@ -34,7 +34,7 @@
 
         <!-- Karte „Anrufe" -->
         <PpTableCard :title="__('Calls')" :shown="filtered.length" :total="rows.length">
-          <PpDataGrid v-if="filtered.length" :columns="columns" :rows="filtered" pickable v-model:pick-mode="selectMode" v-model:picked="picked" @row-click="openCall">
+          <PpDataGrid table-key="lcs_call_logs" v-if="filtered.length" :columns="columns" :rows="filtered" :page-size="25" pickable v-model:pick-mode="selectMode" v-model:picked="picked" @row-click="openCall">
             <template #cell-date="{ value }">{{ fmtDate(value) }}</template>
             <template #cell-person="{ row }">
               <span class="pp-cell-strong">{{ row.person }}</span>
@@ -147,6 +147,9 @@ function openCall(id) {
       { label: __('Object'), value: r.object || '—' },
     ],
     action: r.ref_name ? { label: __('Open object'), onClick: () => openRef(r) } : undefined,
+    ref: r.ref_name && r.ref_doctype
+      ? { doctype: r.ref_doctype, name: r.ref_name, title: r.person || r.ref_name }
+      : { title: r.person || __('Call') },
   })
 }
 function openRef(r) {

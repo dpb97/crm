@@ -886,6 +886,10 @@ def get_market_assignment():
         order_by="segment asc", limit=0,
     )
 
+    # Authoritative "may reassign" flag — server-side role check, so it works
+    # regardless of how the CRM user list derives a single display role.
+    can_manage = bool(set(frappe.get_roles()) & {"System Manager", "Sales Manager"})
+
     return {
         "summary": {
             "territories": len(territories),
@@ -897,6 +901,7 @@ def get_market_assignment():
         "managers": manager_list,
         "territories": rows,
         "segments": segments,
+        "can_manage": can_manage,
     }
 
 
@@ -1083,9 +1088,9 @@ def get_organization_emails(organization: str) -> list[dict]:
     rows = frappe.get_all(
         "Communication",
         filters={"reference_doctype": "CRM Organization", "reference_name": organization},
-        fields=["name", "sender", "subject", "sent_or_received", "communication_date", "content"],
+        fields=["name", "sender", "recipients", "subject", "sent_or_received", "communication_date", "content", "lcs_conversation_id"],
         order_by="communication_date desc",
-        limit=200,
+        limit=100000,  # load all so the tab's filters/dropdowns cover the full history
     )
     import html as _html
     for r in rows:
@@ -1114,6 +1119,86 @@ def get_communication_email(name: str) -> dict:
     from lcs_integrations.outlook_sync.attachments import enrich_email
     c = enrich_email(c)
     return c
+
+
+@frappe.whitelist()
+def delete_synced_email(name: str) -> dict:
+    """Remove a single synced email (Communication) from the CRM. This deletes
+    only the CRM copy - the message stays in the mailbox. A later delta sync may
+    re-import it. Whitelisted so sales roles can prune the customer mail list."""
+    if not frappe.db.exists("Communication", name):
+        return {"deleted": False, "reason": "not_found"}
+    frappe.delete_doc("Communication", name, ignore_permissions=True, delete_permanently=True)
+    frappe.db.commit()
+    return {"deleted": True}
+
+
+@frappe.whitelist()
+def get_last_contact_dates(doctype):
+    """{ record_name: last_email_datetime } so lists can sort by „last contact".
+    Organizations link mail directly (reference); Contacts via the timeline link
+    table or the sender address; Leads/Deals/Projects inherit their organization's
+    latest mail as a pragmatic proxy (mail isn't linked to them directly)."""
+    out = {}
+    if doctype == "CRM Organization":
+        for r in frappe.db.sql(
+            """select reference_name n, max(communication_date) dt from `tabCommunication`
+               where communication_type='Communication' and reference_doctype='CRM Organization'
+               group by reference_name""", as_dict=True):
+            if r.n and r.dt:
+                out[r.n] = str(r.dt)
+        return out
+    if doctype == "Contact":
+        for r in frappe.db.sql(
+            """select cl.link_name n, max(c.communication_date) dt
+               from `tabCommunication Link` cl join `tabCommunication` c on c.name=cl.parent
+               where cl.link_doctype='Contact' and c.communication_type='Communication'
+               group by cl.link_name""", as_dict=True):
+            if r.n and r.dt:
+                out[r.n] = str(r.dt)
+        # also match a contact by its primary email address as sender/recipient
+        for r in frappe.db.sql(
+            """select ce.parent n, max(c.communication_date) dt
+               from `tabContact Email` ce join `tabCommunication` c
+                 on (c.sender=ce.email_id or c.recipients like concat('%%', ce.email_id, '%%'))
+               where c.communication_type='Communication' group by ce.parent""", as_dict=True):
+            if r.n and r.dt and (r.n not in out or str(r.dt) > out[r.n]):
+                out[r.n] = str(r.dt)
+        return out
+    # Chance: inherit the linked lead's latest mail (no own organization link).
+    if doctype == "LCS Chance":
+        lead_dates = get_last_contact_dates("CRM Lead")
+        for r in frappe.get_all("LCS Chance", fields=["name", "crm_lead"], limit_page_length=0):
+            if r.get("crm_lead") and lead_dates.get(r["crm_lead"]):
+                out[r["name"]] = lead_dates[r["crm_lead"]]
+        return out
+    # Lead / Deal / Project: inherit the linked organization's latest mail.
+    org_dates = get_last_contact_dates("CRM Organization")
+    org_field = {"CRM Lead": "organization", "CRM Deal": "organization", "LCS Project": "organization"}.get(doctype)
+    if not org_field:
+        return out
+    for r in frappe.get_all(doctype, fields=["name", org_field], limit_page_length=0):
+        org = r.get(org_field)
+        if org and org_dates.get(org):
+            out[r["name"]] = org_dates[org]
+    return out
+
+
+@frappe.whitelist()
+def send_mail_reply(name, body, reply_all=0):
+    """Reply to a synced email straight from the CRM — sent via Microsoft Graph
+    as the mailbox owner, keeping the original thread. `body` is the reply text."""
+    if frappe.session.user == "Guest":
+        frappe.throw(_("Please log in."), frappe.PermissionError)
+    c = frappe.db.get_value("Communication", name, ["message_id", "user"], as_dict=True)
+    if not c or not c.message_id:
+        frappe.throw(_("No source message to reply to."))
+    if not (body or "").strip():
+        frappe.throw(_("The reply is empty."))
+    from lcs_integrations.outlook_sync.graph_client import GraphClient
+    comment_html = frappe.utils.escape_html(body).replace("\n", "<br>")
+    GraphClient().message_reply(c.user, c.message_id, comment_html, bool(int(reply_all or 0)))
+    return {"sent": True}
 
 
 @frappe.whitelist()
@@ -1150,9 +1235,9 @@ def get_contact_emails(contact) -> list[dict]:
         "Communication",
         filters={"name": ["in", ids]},
         fields=["name", "sender", "recipients", "subject", "sent_or_received",
-                "communication_date", "content"],
+                "communication_date", "content", "lcs_conversation_id"],
         order_by="communication_date desc",
-        limit=200,
+        limit=100000,  # load all so the tab's filters/dropdowns cover the full history
     )
     import html as _html
     for e in emails:
@@ -1218,12 +1303,39 @@ def _sm_meeting_date(meeting_date=None):
 
 
 @frappe.whitelist()
-def get_sales_meeting_agenda(meeting_date=None):
+def get_sales_meeting_dates():
+    """Distinct meeting dates (newest first) for the archive picker, with a
+    small per-meeting count summary. Used to browse past meetings read-only."""
+    rows = frappe.db.sql(
+        """select meeting_date,
+                  count(*) as total,
+                  sum(case when status = 'Decided'  then 1 else 0 end) as decided,
+                  sum(case when status = 'Archived' then 1 else 0 end) as archived
+             from `tabLCS Sales Meeting Agenda`
+            where meeting_date is not null
+            group by meeting_date
+            order by meeting_date desc""",
+        as_dict=True,
+    )
+    return [{
+        "date": str(r.meeting_date),
+        "total": int(r.total or 0),
+        "decided": int(r.decided or 0),
+        "archived": int(r.archived or 0),
+    } for r in rows]
+
+
+@frappe.whitelist()
+def get_sales_meeting_agenda(meeting_date=None, include_archived=0):
     """Committee view for the weekly sales meeting: the agenda for one meeting
     (decide-directly-at-the-point flow) plus the three funnel stages
     (opportunities / leads / sales projects) as compact cards, the last
-    decisions and the meeting frame for the inspector default content."""
+    decisions and the meeting frame for the inspector default content.
+
+    include_archived=1 keeps archived points in the agenda list (used when
+    browsing a past meeting read-only, so the full protocol stays visible)."""
     mdate = _sm_meeting_date(meeting_date)
+    include_archived = frappe.utils.cint(include_archived)
 
     items = frappe.get_all(
         "LCS Sales Meeting Agenda",
@@ -1238,7 +1350,8 @@ def get_sales_meeting_agenda(meeting_date=None):
     for i, a in enumerate(items):
         if a.status == "Archived":
             archived_count += 1
-            continue
+            if not include_archived:
+                continue
         agenda.append({
             "name": a.name, "nr": len(agenda) + 1, "topic": a.topic,
             "object": a.reference_object or "", "responsible": a.responsible or "",
@@ -1373,6 +1486,214 @@ def sales_meeting_archive(name):
     return {"name": doc.name, "status": doc.status}
 
 
+@frappe.whitelist()
+def sales_meeting_remove(name):
+    """Delete an agenda point entirely (e.g. one added by mistake). Unlike
+    archiving, this leaves no trace in the counter."""
+    if frappe.db.exists("LCS Sales Meeting Agenda", name):
+        frappe.delete_doc("LCS Sales Meeting Agenda", name, ignore_permissions=True)
+        frappe.db.commit()
+    return {"removed": True}
+
+
+# --------------------------------------------------------------------------- #
+#  Sales Meeting — Excel-protocol lists (Angebote / Aufträge / Evidenz /       #
+#  Wartung), built on top of the existing LCS Project pipeline.               #
+# --------------------------------------------------------------------------- #
+
+_SM_OFFER_PHASES = ["Qualified", "Budget", "Richtpreis", "Offer", "Negotiation"]
+_SM_ORDER_PHASES = ["Won", "Execution"]
+_SM_PROJECT_FIELDS = {
+    "lcs_solution", "lcs_sector", "lcs_sales_type", "lcs_offer_status",
+    "lcs_chance_lcs", "lcs_chance_customer", "lcs_meeting_due", "lcs_in_evidenz",
+    "lcs_rejection_reason",
+}
+
+
+def _sm_project_row(p):
+    """One offer/order row: mirrors the Excel columns; the weighted Chance is
+    Chance-LCS × Chance-Projekt/Kunde (the two probability factors)."""
+    c_lcs = p.get("lcs_chance_lcs") or 0
+    c_cust = p.get("lcs_chance_customer") or 0
+    chance = round((c_lcs / 100.0) * (c_cust / 100.0) * 100.0, 1)
+    val = p.get("estimated_value") or 0
+    return {
+        "id": p["name"], "name": p["name"],
+        "project_number": p.get("project_number"),
+        "project_name": p.get("project_name"),
+        "pl_pn": p.get("project_abbr"),
+        "organization": p.get("organization"),
+        "phase": p.get("phase"),
+        "solution": p.get("lcs_solution"),
+        "sector": p.get("lcs_sector"),
+        "sales_type": p.get("lcs_sales_type"),
+        "offer_status": p.get("lcs_offer_status"),
+        "chance_lcs": c_lcs, "chance_customer": c_cust, "chance": chance,
+        "value": val, "weighted": round(chance / 100.0 * val, 0),
+        "due": p.get("lcs_meeting_due"),
+        "responsible": p.get("salesperson"),
+        "rejection_reason": p.get("lcs_rejection_reason"),
+        "in_evidenz": p.get("lcs_in_evidenz"),
+    }
+
+
+@frappe.whitelist()
+def get_sales_meeting_lists():
+    """The four Excel tracking lists for the Sales Meeting, from live CRM data."""
+    fields = [
+        "name", "project_number", "project_name", "project_abbr", "organization",
+        "phase", "estimated_value", "salesperson", "lcs_solution", "lcs_sector",
+        "lcs_sales_type", "lcs_offer_status", "lcs_chance_lcs", "lcs_chance_customer",
+        "lcs_meeting_due", "lcs_in_evidenz", "lcs_rejection_reason",
+    ]
+    projects = frappe.get_all(
+        "LCS Project", filters={"phase": ["not in", ["Lost", "Completed"]]},
+        fields=fields, limit_page_length=0,
+    )
+    offers, orders, evidenz = [], [], []
+    for p in projects:
+        row = _sm_project_row(p)
+        if p.get("lcs_in_evidenz"):
+            evidenz.append(row)
+        elif p.get("phase") in _SM_ORDER_PHASES:
+            orders.append(row)
+        elif p.get("phase") in _SM_OFFER_PHASES:
+            offers.append(row)
+    offers.sort(key=lambda r: -(r["weighted"] or 0))
+    orders.sort(key=lambda r: -(r["value"] or 0))
+
+    maintenance = frappe.get_all(
+        "LCS Maintenance Item", filters={"status": "Open"},
+        fields=["name", "name as id", "title", "project", "pl_pn", "comment",
+                "action", "responsible", "due", "sort_index"],
+        order_by="sort_index asc, creation asc", limit_page_length=0,
+    )
+    return {
+        "offers": offers, "orders": orders, "evidenz": evidenz,
+        "maintenance": maintenance,
+        "solution_options": ["SB - Single Line", "SB - Double Line", "CC - Radial Crane",
+                             "CC - Parallel Crane", "CC - Luffing Tower", "QX - QXCrane",
+                             "WI - Winch", "Other"],
+        "sector_options": ["Hydro Power", "Dam Construction", "Mountain Construction",
+                           "Bridge Construction", "Pipeline", "Mining", "Other"],
+        "sales_type_options": ["Rental", "Sale", "Service", "Mixed", "Rental or Sale"],
+        "offer_status_options": ["Angebot", "Auftrag erwartet", "Auftrag", "Konkurrenz",
+                                 "Fehler", "storniert", "gestoppt"],
+    }
+
+
+@frappe.whitelist()
+def save_project_meeting_fields(project, values):
+    """Persist the Sales-Meeting classification of one LCS Project (solution,
+    sector, sales type, chance factors, status, due, evidenz flag, reason)."""
+    if frappe.session.user == "Guest":
+        frappe.throw(_("Please log in."), frappe.PermissionError)
+    vals = frappe.parse_json(values) if isinstance(values, str) else (values or {})
+    doc = frappe.get_doc("LCS Project", project)
+    for k, v in vals.items():
+        if k in _SM_PROJECT_FIELDS:
+            doc.set(k, v)
+    doc.save(ignore_permissions=True)
+    return _sm_project_row(doc.as_dict())
+
+
+@frappe.whitelist()
+def maintenance_add(title, project=None, comment=None, responsible=None, due=None):
+    if frappe.session.user == "Guest":
+        frappe.throw(_("Please log in."), frappe.PermissionError)
+    doc = frappe.get_doc({
+        "doctype": "LCS Maintenance Item", "title": title, "project": project,
+        "comment": comment, "responsible": responsible or frappe.session.user,
+        "due": due, "status": "Open",
+    })
+    doc.insert(ignore_permissions=True)
+    return {"name": doc.name}
+
+
+@frappe.whitelist()
+def maintenance_save(name, values):
+    if frappe.session.user == "Guest":
+        frappe.throw(_("Please log in."), frappe.PermissionError)
+    vals = frappe.parse_json(values) if isinstance(values, str) else (values or {})
+    doc = frappe.get_doc("LCS Maintenance Item", name)
+    for k in ("title", "project", "pl_pn", "comment", "action", "responsible", "due", "status"):
+        if k in vals:
+            doc.set(k, vals[k])
+    doc.save(ignore_permissions=True)
+    return {"ok": True}
+
+
+@frappe.whitelist()
+def maintenance_remove(name):
+    if frappe.session.user == "Guest":
+        frappe.throw(_("Please log in."), frappe.PermissionError)
+    if frappe.db.exists("LCS Maintenance Item", name):
+        frappe.delete_doc("LCS Maintenance Item", name, ignore_permissions=True)
+        frappe.db.commit()
+    return {"removed": True}
+
+
+# --- Sales-Meeting item comments — open thread, any logged-in user ---------- #
+
+_SM_COMMENT_DOCTYPES = {"LCS Project", "LCS Maintenance Item", "LCS Chance"}
+
+
+@frappe.whitelist()
+def get_item_comments(doctype, name):
+    """Discussion thread on a Sales-Meeting item (project / maintenance)."""
+    if doctype not in _SM_COMMENT_DOCTYPES:
+        frappe.throw(_("Not allowed"), frappe.PermissionError)
+    rows = frappe.get_all(
+        "Comment",
+        filters={"reference_doctype": doctype, "reference_name": name, "comment_type": "Comment"},
+        fields=["name", "content", "comment_email", "comment_by", "creation", "owner"],
+        order_by="creation desc", limit_page_length=200,
+    )
+    for r in rows:
+        r["author"] = r.get("comment_by") or frappe.db.get_value("User", r.get("owner"), "full_name") \
+            or (r.get("comment_email") or r.get("owner") or "").split("@")[0]
+        r["mine"] = r.get("owner") == frappe.session.user
+    return rows
+
+
+@frappe.whitelist()
+def add_item_comment(doctype, name, content):
+    """Any logged-in user can comment on a Sales-Meeting item."""
+    if frappe.session.user == "Guest":
+        frappe.throw(_("Please log in."), frappe.PermissionError)
+    if doctype not in _SM_COMMENT_DOCTYPES:
+        frappe.throw(_("Not allowed"), frappe.PermissionError)
+    content = (content or "").strip()
+    if not content:
+        return {}
+    if not frappe.db.exists(doctype, name):
+        frappe.throw(_("Item not found."))
+    full_name = frappe.db.get_value("User", frappe.session.user, "full_name") or frappe.session.user
+    c = frappe.get_doc({
+        "doctype": "Comment", "comment_type": "Comment",
+        "reference_doctype": doctype, "reference_name": name,
+        "content": frappe.utils.escape_html(content).replace("\n", "<br>"),
+        "comment_email": frappe.session.user, "comment_by": full_name,
+    }).insert(ignore_permissions=True)
+    frappe.db.commit()
+    return {"name": c.name, "content": c.content, "author": full_name,
+            "creation": str(c.creation), "mine": True}
+
+
+@frappe.whitelist()
+def delete_item_comment(name):
+    """Delete your own comment (or any, as manager)."""
+    if not frappe.db.exists("Comment", name):
+        return {"deleted": False}
+    c = frappe.db.get_value("Comment", name, ["owner", "comment_type"], as_dict=True)
+    is_mgr = bool(set(frappe.get_roles()) & {"System Manager", "Sales Manager"})
+    if c.owner != frappe.session.user and not is_mgr:
+        frappe.throw(_("You can only delete your own comments."), frappe.PermissionError)
+    frappe.delete_doc("Comment", name, ignore_permissions=True)
+    frappe.db.commit()
+    return {"deleted": True}
+
+
 # --------------------------------------------------------------------------- #
 #  Call logs (Calls page — klickdummy "Anrufe" design)                        #
 # --------------------------------------------------------------------------- #
@@ -1403,7 +1724,7 @@ def _resolve_call_party(value):
 
 
 @frappe.whitelist()
-def get_call_logs(limit=200):
+def get_call_logs(limit=100000):
     """Call-log board for the Calls page: one row per CRM Call Log with the
     external person + company, direction, duration, the telephony status as the
     result pill and the linked object (deal/lead/project)."""
@@ -1412,7 +1733,7 @@ def get_call_logs(limit=200):
         fields=["name", "type", "status", "duration", "from", "to", "start_time",
                 "reference_doctype", "reference_docname"],
         order_by="start_time desc",
-        limit_page_length=int(limit or 200),
+        limit_page_length=int(limit or 100000),
     )
     rows = []
     for c in logs:
@@ -1452,11 +1773,11 @@ def _user_name(user):
 
 
 @frappe.whitelist()
-def get_notes(limit=200):
+def get_notes(limit=100000):
     """Notes board for the Notizen page: a union of FCRM Note (Textnotiz) and
     LCS Audio Transcription Job (Sprachnotiz) so the Art column is real. One row
     per note with title, linked object, author and creation time."""
-    lim = int(limit or 200)
+    lim = int(limit or 100000)
     rows = []
 
     for n in frappe.get_all(
@@ -1511,7 +1832,11 @@ _CHANCE_LIST_FIELDS = [
 
 @frappe.whitelist()
 def get_chances(source=None):
-    """List Chancen for the funnel-entry table (Chance → Lead → Projekt)."""
+    """List Chancen for the funnel-entry table (Chance → Lead → Projekt).
+
+    Unrated Pilot-Scout hits (status "Neu") live on the Pilot page only — they
+    become Chancen once the salesperson rates them, so they are excluded here
+    (klickdummy rule: "nichts erscheint doppelt")."""
     filters = {"status": ["!=", "Keine Chance"]}
     if source and source != "Alle":
         filters["source"] = source
@@ -1519,6 +1844,9 @@ def get_chances(source=None):
         "LCS Chance", filters=filters, fields=_CHANCE_LIST_FIELDS,
         order_by="score desc", limit_page_length=0,
     )
+    rows = [r for r in rows
+            if not (r.get("source") == "Pilot-Scout"
+                    and r.get("status") in ("Neu", "In Bearbeitung"))]
     for r in rows:
         r["id"] = r["name"]
     # "Keine Chance (Quartal)" — dismissed chances in the last 90 days.
@@ -1566,6 +1894,113 @@ def chance_dismiss(name):
     doc.status = "Keine Chance"
     doc.save(ignore_permissions=True)
     return {"name": doc.name, "status": doc.status}
+
+
+# --------------------------------------------------------------------------- #
+#  Pilot — scout hits (klickdummy: Pilot shows ONLY unrated hits; rating       #
+#  promotes a hit to a Chance, which then appears in the Chancen list).        #
+# --------------------------------------------------------------------------- #
+# Hit lifecycle inside Pilot: "Neu" (fresh) or "In Bearbeitung" (being
+# evaluated). Rating promotes to "Relevant" (→ Chancen); "Keine Chance" archives.
+_PILOT_OPEN = ["Neu", "In Bearbeitung"]
+_PILOT_FIELDS = [
+    "name", "chance_no", "title", "source_detail", "client", "company",
+    "country", "cpv_codes", "order_value", "published_on", "deadline",
+    "source_url", "score", "relevance", "category", "reasoning", "summary_de",
+    "description_original", "latitude", "longitude", "geo_confidence",
+    "status", "responsible", "sales_note",
+]
+
+
+@frappe.whitelist()
+def get_pilot_hits(relevance=None):
+    """Open Pilot-Scout hits (LCS Chance, source Pilot-Scout, status Neu / In
+    Bearbeitung), ordered by scout score, plus the recently archived hits
+    ("Keine Chance") for the collapsible archive. These are the tenders the
+    salesbot delivered that still await the salesperson's rating."""
+    filters = {"source": "Pilot-Scout", "status": ["in", _PILOT_OPEN]}
+    if relevance and relevance != "Alle":
+        filters["relevance"] = relevance
+    rows = frappe.get_all(
+        "LCS Chance", filters=filters, fields=_PILOT_FIELDS,
+        order_by="score desc", limit_page_length=0,
+    )
+    for r in rows:
+        r["id"] = r["name"]
+
+    since = frappe.utils.add_days(frappe.utils.today(), -90)
+    archived = frappe.get_all(
+        "LCS Chance",
+        filters={"source": "Pilot-Scout", "status": "Keine Chance"},
+        fields=["name", "chance_no", "title", "country", "score", "modified"],
+        order_by="modified desc", limit_page_length=50,
+    )
+    for r in archived:
+        r["id"] = r["name"]
+    rated_quarter = frappe.db.count("LCS Chance", {
+        "source": "Pilot-Scout",
+        "status": ["in", ["Relevant", "Kontakt aufgenommen"]],
+        "modified": [">=", since],
+    })
+    dismissed_quarter = frappe.db.count("LCS Chance", {
+        "source": "Pilot-Scout", "status": "Keine Chance", "modified": [">=", since],
+    })
+    return {
+        "rows": rows, "total": len(rows), "archived": archived,
+        "rated_quarter": rated_quarter, "dismissed_quarter": dismissed_quarter,
+    }
+
+
+@frappe.whitelist()
+def pilot_rate_as_chance(name):
+    """The salesperson rated a scout hit as worth pursuing → promote it from an
+    open hit (Neu / In Bearbeitung) to a real Chance ('Relevant'). It then shows
+    up in the Chancen list and drops off the Pilot page."""
+    doc = frappe.get_doc("LCS Chance", name)
+    if doc.source == "Pilot-Scout" and doc.status in _PILOT_OPEN:
+        doc.status = "Relevant"
+        doc.save(ignore_permissions=True)
+    return {"name": doc.name, "status": doc.status}
+
+
+@frappe.whitelist()
+def pilot_delete(name):
+    """Permanently delete an archived Pilot-Scout hit (only status 'Keine
+    Chance' — the archive is the one place final deletion happens)."""
+    st = frappe.db.get_value("LCS Chance", name, "status")
+    if st != "Keine Chance":
+        frappe.throw(_("Only archived hits (Keine Chance) can be deleted here."))
+    frappe.delete_doc("LCS Chance", name, ignore_permissions=True)
+    frappe.db.commit()
+    return {"deleted": name}
+
+
+@frappe.whitelist()
+def get_pilot_users():
+    """Enabled human users for the Pilot assignment picker."""
+    rows = frappe.get_all(
+        "User",
+        filters={"enabled": 1, "user_type": "System User",
+                 "name": ["not in", ["Administrator", "Guest"]]},
+        fields=["name", "full_name"], order_by="full_name", limit_page_length=0,
+    )
+    return [{"value": r["name"], "label": r.get("full_name") or r["name"]} for r in rows]
+
+
+@frappe.whitelist()
+def pilot_assign(name, user=None):
+    """Assign a Pilot hit to a salesperson (sets 'responsible') and marks it
+    'In Bearbeitung' so it stays on the Pilot page as work-in-progress. Passing
+    an empty user clears the assignment."""
+    doc = frappe.get_doc("LCS Chance", name)
+    if user:
+        doc.responsible = frappe.db.get_value("User", user, "full_name") or user
+        if doc.status == "Neu":
+            doc.status = "In Bearbeitung"
+    else:
+        doc.responsible = None
+    doc.save(ignore_permissions=True)
+    return {"name": doc.name, "responsible": doc.responsible, "status": doc.status}
 
 
 _CHANCE_MATRIX_FIELDS = (
@@ -1629,7 +2064,7 @@ def get_sales_dashboard():
     activities and markets widgets use their own existing endpoints."""
     q_start = frappe.utils.add_days(frappe.utils.today(), -90)
 
-    pilot_hits = frappe.db.count("LCS Chance", {"source": "Pilot-Scout"})
+    pilot_hits = frappe.db.count("LCS Chance", {"source": "Pilot-Scout", "status": "Neu"})
     chances_open = frappe.db.count("LCS Chance", {"status": ["in", ["Neu", "Relevant"]]})
     lost_lead = ["Lost", "Junk", "Unqualified", "Do Not Contact", "Converted"]
     leads_active = frappe.db.count("CRM Lead", {"status": ["not in", lost_lead]})
@@ -1681,6 +2116,39 @@ def get_sales_dashboard():
         ],
     }
 
+
+@frappe.whitelist()
+def get_dashboard_worklist(task_limit=8, mail_limit=8):
+    """Feeds the dashboard 'Due tasks' and 'New mails' cards for the current
+    user: open CRM Tasks assigned to them that are due (today or overdue), and
+    the most recent received, mailbox-synced emails."""
+    user = frappe.session.user
+    end_of_today = frappe.utils.now_datetime().replace(hour=23, minute=59, second=59)
+    tasks = frappe.get_all(
+        "CRM Task",
+        filters={
+            "assigned_to": user,
+            "status": ["not in", ["Done", "Canceled"]],
+            "due_date": ["<=", end_of_today],
+        },
+        fields=["name", "title", "status", "priority", "due_date",
+                "reference_doctype", "reference_docname"],
+        order_by="due_date asc",
+        limit_page_length=int(task_limit),
+    )
+    mails = frappe.get_all(
+        "Communication",
+        filters={
+            "communication_type": "Communication",
+            "communication_medium": "Email",
+            "sent_or_received": "Received",
+        },
+        fields=["name", "subject", "sender", "communication_date",
+                "reference_doctype", "reference_name"],
+        order_by="communication_date desc",
+        limit_page_length=int(mail_limit),
+    )
+    return {"tasks": tasks, "mails": mails}
 
 _FREE_MAIL = {
     "gmail.com", "googlemail.com", "outlook.com", "hotmail.com", "yahoo.com",

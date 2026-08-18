@@ -1,0 +1,172 @@
+<!--
+  PilotHitInspector — interaktiver Inspektor-Inhalt für einen Pilot-Treffer.
+  Wird per inspectPanel in den Shell-Inspektor gemountet (Klickdummy-Regel:
+  Aktionen/Details im Inspektor, nicht im Canvas). Bietet: Scout-Eckdaten,
+  „Treffer öffnen", Zuweisen an eine Person (setzt Verantwortlichen) und einen
+  Kommentar-Thread (jeder eingeloggte User darf).
+-->
+<template>
+  <div class="phi">
+    <div class="phi-title">{{ hit.title }}</div>
+
+    <dl class="phi-rows">
+      <div><dt>{{ __('Score') }}</dt><dd>{{ hit.score }}/100</dd></div>
+      <div><dt>{{ __('Country') }}</dt><dd>{{ hit.country || '—' }}</dd></div>
+      <div><dt>{{ __('Value') }}</dt><dd>{{ eur(hit.order_value) }}</dd></div>
+      <div><dt>{{ __('Deadline') }}</dt><dd>{{ hit.deadline ? fmtDate(hit.deadline) : '—' }}</dd></div>
+      <div><dt>{{ __('Source') }}</dt><dd>{{ hit.source_detail || 'Pilot-Scout' }}</dd></div>
+    </dl>
+
+    <div v-if="hit.summary_de || hit.reasoning" class="phi-eval">{{ hit.summary_de || hit.reasoning }}</div>
+
+    <button type="button" class="phi-open" @click="$emit('open')">{{ __('Open hit') }} →</button>
+
+    <!-- Zuweisen -->
+    <div class="phi-sec">
+      <div class="phi-cap">{{ __('Responsible') }}</div>
+      <div class="phi-assign">
+        <span class="phi-assignee" :class="{ muted: !hit.responsible }">{{ hit.responsible || '—' }}</span>
+        <button v-if="hit.responsible" type="button" class="phi-clear" :disabled="assigning" @click="assign('')">{{ __('remove') }}</button>
+      </div>
+      <select class="phi-input" :disabled="assigning" @change="onAssign">
+        <option value="">{{ __('Assign to …') }}</option>
+        <option v-for="u in users" :key="u.value" :value="u.value">{{ u.label }}</option>
+      </select>
+    </div>
+
+    <!-- Kommentare -->
+    <div class="phi-sec">
+      <div class="phi-cap">{{ __('Comments') }}</div>
+      <div class="phi-cadd">
+        <textarea v-model="input" rows="2" class="phi-input" :placeholder="__('Add a comment …')" />
+        <button type="button" class="phi-btn is-primary" :disabled="!input.trim() || posting" @click="post">{{ __('Post') }}</button>
+      </div>
+      <ul class="phi-clist">
+        <li v-for="c in comments" :key="c.name" class="phi-citem">
+          <div class="phi-cmeta">
+            <b>{{ c.author }}</b> · {{ cTime(c.creation) }}
+            <button v-if="c.mine" type="button" class="phi-cdel" :title="__('Delete')" @click="del(c)">✕</button>
+          </div>
+          <div class="phi-ctext" v-html="c.content" />
+        </li>
+        <li v-if="!comments.length" class="phi-cempty">{{ __('No comments yet.') }}</li>
+      </ul>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, watch } from 'vue'
+import { call, toast } from 'frappe-ui'
+
+const props = defineProps({ hit: { type: Object, required: true } })
+const emit = defineEmits(['open', 'changed'])
+
+const users = ref([])
+const comments = ref([])
+const input = ref('')
+const assigning = ref(false)
+const posting = ref(false)
+
+call('lcs_integrations.projects.api.get_pilot_users').then((r) => { users.value = r || [] })
+
+function loadComments(name) {
+  comments.value = []
+  if (!name) return
+  call('lcs_integrations.projects.api.get_item_comments', { doctype: 'LCS Chance', name })
+    .then((r) => { comments.value = r || [] })
+}
+loadComments(props.hit?.name)
+watch(() => props.hit?.name, (n) => { input.value = ''; loadComments(n) })
+
+function onAssign(e) {
+  const val = e.target.value
+  e.target.value = ''
+  if (val) assign(val)
+}
+function assign(user) {
+  assigning.value = true
+  call('lcs_integrations.projects.api.pilot_assign', { name: props.hit.name, user: user || '' })
+    .then((r) => {
+      toast({ title: user ? __('Assigned') : __('Assignment cleared'), icon: 'check-circle', iconClasses: 'text-green-500' })
+      // Mirror onto the passed hit so the panel reflects it immediately.
+      props.hit.responsible = r?.responsible || ''
+      if (r?.status) props.hit.status = r.status
+      emit('changed')
+    })
+    .catch((err) => toast({ title: __('Could not save.'), text: err?.messages?.[0] || err?.message || '', icon: 'alert-circle', iconClasses: 'text-red-500' }))
+    .finally(() => { assigning.value = false })
+}
+
+function post() {
+  const t = input.value.trim()
+  if (!t) return
+  posting.value = true
+  call('lcs_integrations.projects.api.add_item_comment', { doctype: 'LCS Chance', name: props.hit.name, content: t })
+    .then((c) => { if (c && c.name) comments.value = [c, ...comments.value]; input.value = '' })
+    .catch((err) => toast({ title: __('Could not save.'), text: err?.messages?.[0] || err?.message || '', icon: 'alert-circle', iconClasses: 'text-red-500' }))
+    .finally(() => { posting.value = false })
+}
+function del(c) {
+  call('lcs_integrations.projects.api.delete_item_comment', { name: c.name })
+    .then(() => { comments.value = comments.value.filter((x) => x.name !== c.name) })
+    .catch((err) => toast({ title: __('Could not delete.'), text: err?.messages?.[0] || err?.message || '', icon: 'alert-circle', iconClasses: 'text-red-500' }))
+}
+
+function eur(v) {
+  const n = Number(v) || 0
+  if (n >= 1_000_000) return (n / 1_000_000).toLocaleString('de-DE', { maximumFractionDigits: 1 }) + ' M€'
+  if (n >= 1_000) return Math.round(n / 1_000).toLocaleString('de-DE') + ' k€'
+  return '€' + Math.round(n)
+}
+function fmtDate(v) {
+  if (!v) return '—'
+  const d = new Date(String(v).replace(' ', 'T'))
+  return isNaN(d) ? String(v) : new Intl.DateTimeFormat('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(d)
+}
+function cTime(v) {
+  if (!v) return ''
+  const d = new Date(String(v).replace(' ', 'T'))
+  return isNaN(d) ? String(v) : d.toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+}
+</script>
+
+<style scoped>
+.phi { padding: 12px 14px; display: flex; flex-direction: column; gap: var(--pp-space-3); }
+.phi-title { font-size: var(--pp-fs-14, 14px); font-weight: var(--pp-weight-semibold); color: var(--pp-text-primary); }
+.phi-rows { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 5px 12px; }
+.phi-rows > div { display: contents; }
+.phi-rows dt { color: var(--pp-text-tertiary); font-size: 11.5px; }
+.phi-rows dd { margin: 0; color: var(--pp-text-primary); font-size: 11.5px; text-align: right; }
+.phi-eval { font-size: 11.5px; color: var(--pp-text-secondary); line-height: 1.45;
+  padding: var(--pp-space-2) var(--pp-space-3); background: var(--pp-bg-base);
+  border: 1px solid var(--pp-border-subtle); border-radius: var(--pp-radius-ui); }
+.phi-open { appearance: none; cursor: pointer; align-self: flex-start; font: inherit; font-size: 12px;
+  color: var(--pp-brand-primary); background: none; border: 0; padding: 0; text-decoration: underline; }
+
+.phi-sec { display: flex; flex-direction: column; gap: 6px; padding-top: var(--pp-space-2);
+  border-top: 1px solid var(--pp-border-subtle); }
+.phi-cap { font-size: 10px; font-weight: var(--pp-weight-bold); letter-spacing: 0.04em; text-transform: uppercase;
+  color: var(--pp-text-tertiary); }
+.phi-assign { display: flex; align-items: center; gap: var(--pp-space-2); }
+.phi-assignee { font-size: var(--pp-fs-13, 13px); color: var(--pp-text-primary); font-weight: var(--pp-weight-medium); }
+.phi-assignee.muted { color: var(--pp-text-tertiary); font-weight: var(--pp-weight-regular); }
+.phi-clear { appearance: none; cursor: pointer; font: inherit; font-size: 11px; color: var(--pp-state-danger);
+  background: none; border: 0; padding: 0; text-decoration: underline; }
+.phi-input { appearance: none; font-family: inherit; font-size: var(--pp-fs-13, 13px); color: var(--pp-text-primary);
+  padding: 6px 8px; border: 1px solid var(--pp-border-default); border-radius: var(--pp-radius-ui); background: var(--pp-bg-base); width: 100%; }
+.phi-input:focus { outline: none; border-color: var(--pp-brand-primary); }
+.phi-cadd { display: flex; flex-direction: column; gap: 6px; }
+.phi-btn { appearance: none; cursor: pointer; align-self: flex-end; font-family: inherit; font-size: 12px;
+  font-weight: var(--pp-weight-medium); padding: 6px 12px; border-radius: var(--pp-radius-ui);
+  border: 1px solid var(--pp-brand-primary); background: var(--pp-brand-primary); color: var(--pp-text-on-accent); }
+.phi-btn:disabled { opacity: .5; cursor: default; }
+.phi-clist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--pp-space-2); }
+.phi-citem { border-top: 1px solid var(--pp-border-subtle); padding-top: var(--pp-space-2); }
+.phi-cmeta { font-size: 11px; color: var(--pp-text-tertiary); display: flex; align-items: center; gap: 6px; }
+.phi-cmeta b { color: var(--pp-text-secondary); font-weight: var(--pp-weight-semibold); }
+.phi-cdel { margin-left: auto; appearance: none; cursor: pointer; border: 0; background: none; color: var(--pp-text-tertiary); font-size: 12px; }
+.phi-cdel:hover { color: var(--pp-state-danger); }
+.phi-ctext { font-size: var(--pp-fs-12, 12px); color: var(--pp-text-primary); line-height: 1.45; margin-top: 2px; }
+.phi-cempty { font-size: 11.5px; color: var(--pp-text-tertiary); }
+</style>

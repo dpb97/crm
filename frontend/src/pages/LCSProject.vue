@@ -487,6 +487,7 @@
 
 <script setup>
 import { ref, computed, watch, nextTick, onUnmounted } from 'vue'
+import { useTaskContext } from '@/composables/useTaskContext'
 import { useRouter, useRoute } from 'vue-router'
 import { PROJECT_STEPS } from '@/lib/projectSteps'
 import { usePilandaMode } from '@/composables/usePilandaMode'
@@ -540,6 +541,11 @@ const project = createDocumentResource({
 })
 if (!project.doc) project.get.fetch()
 const doc = computed(() => project.doc || {})
+
+const { setTaskContext } = useTaskContext()
+// Feed the shell task context so „Neue Aufgabe" links back to this project.
+watch(doc, (d) => setTaskContext(d && d.name ? { doctype: 'LCS Project', name: d.name, title: d.project_name || d.name } : null), { immediate: true })
+onUnmounted(() => setTaskContext(null))
 
 usePageMeta(() => ({ title: doc.value.project_name || projectId.value }))
 

@@ -64,9 +64,10 @@
         <ColumnPicker
           v-if="viewMode === 'list'"
           table-key="lcs_projects"
-          :catalog="COLUMN_CATALOG"
+          :catalog="orderedCatalog"
           :defaults="DEFAULT_COLUMNS"
           v-model="selectedColumns"
+          @reorder="(keys) => (columnOrder = keys)"
         />
         <!-- My Projects toggle — personalized view -->
         <div class="flex rounded-lg border bg-white p-0.5">
@@ -360,6 +361,10 @@
                 {{ formatClosing(p) }}
               </td>
 
+              <td v-else-if="col.key === 'last_contact'" class="pp-cell-soft text-right">
+                <span :class="{ 'pp-cell-muted': !p.last_contact }">{{ p.last_contact ? formatDateCell(p.last_contact) : '—' }}</span>
+              </td>
+
               <!-- Generic cell: dates formatted, everything else as text -->
               <td v-else class="pp-cell-soft" :class="col.align === 'right' ? 'text-right' : ''">
                 {{ col.date ? formatDateCell(p[col.key]) : (p[col.key] || '—') }}
@@ -442,8 +447,28 @@
         <fieldset class="space-y-4">
           <legend class="text-xs font-semibold uppercase tracking-wide text-gray-400">{{ __('Assignment') }}</legend>
           <div class="grid grid-cols-2 gap-4">
-            <FormControl :label="__('Salesperson')" v-model="newProject.salesperson" type="text" />
-            <div class="flex items-end gap-2 pb-1">
+            <div>
+              <label class="mb-1 block text-sm text-gray-700">{{ __('Customer') }} <span class="text-red-500">*</span></label>
+              <Link
+                doctype="CRM Organization"
+                :modelValue="newProject.organization"
+                @update:modelValue="(v) => (newProject.organization = v)"
+                :placeholder="__('Select customer')"
+              />
+              <p v-if="validationErrors.organization" class="mt-1 text-xs text-red-500">{{ validationErrors.organization }}</p>
+            </div>
+            <div>
+              <label class="mb-1 block text-sm text-gray-700">{{ __('Salesperson') }} <span class="text-red-500">*</span></label>
+              <Link
+                doctype="User"
+                :filters="{ user_type: 'System User', enabled: 1 }"
+                :modelValue="newProject.salesperson"
+                @update:modelValue="(v) => (newProject.salesperson = v)"
+                :placeholder="__('Select salesperson')"
+              />
+              <p v-if="validationErrors.salesperson" class="mt-1 text-xs text-red-500">{{ validationErrors.salesperson }}</p>
+            </div>
+            <div class="col-span-2 flex items-end gap-2 pb-1">
               <input type="checkbox" v-model="newProject.is_gu" id="gu-check" class="rounded border-gray-300 text-lcs-primary focus:ring-lcs-secondary" />
               <label for="gu-check" class="text-sm text-gray-700">
                 <!-- H6: Recognition — show abbreviation meaning -->
@@ -504,6 +529,7 @@
 <script setup>
 import { ref, computed, reactive, watch, onMounted, onUnmounted } from 'vue'
 import { createResource, call, Breadcrumbs, Button, FormControl, Dialog, Tooltip, FeatherIcon, toast } from 'frappe-ui'
+import Link from '@/components/Controls/Link.vue'
 import { useRouter } from 'vue-router'
 import { useProfileSetting } from '@/composables/useProfileSetting'
 import { sessionStore } from '@/stores/session'
@@ -598,6 +624,7 @@ function selectProject(p) {
       props: { project: p },
       on: { open: navigateToProject },
       title: __('Project'),
+      ref: { doctype: 'LCS Project', name: p.name, title: p.project_name || p.project_number || p.name },
     })
   }
 }
@@ -695,6 +722,7 @@ const newProject = reactive({
   project_type: 'SB',
   project_abbr: '',
   country: '',
+  organization: '',
   salesperson: '',
   is_gu: false,
   budget_customer: null,
@@ -702,7 +730,7 @@ const newProject = reactive({
   project_description: '',
 })
 
-const validationErrors = reactive({ project_name: '' })
+const validationErrors = reactive({ project_name: '', organization: '', salesperson: '' })
 
 // H6: Recognition — full type names visible on hover
 const typeOptionsRaw = [
@@ -739,7 +767,13 @@ const activeFilters = computed(() => {
   return f
 })
 
-const orderBy = computed(() => `${sortField.value} ${sortDirection.value}`)
+// last_contact is a derived (non-DB) column → keep the server order valid and
+// sort it on the client instead (see projectList).
+const orderBy = computed(() =>
+  sortField.value === 'last_contact'
+    ? 'modified desc'
+    : `${sortField.value} ${sortDirection.value}`,
+)
 
 // ---- Per-user configurable columns ---------------------------------
 // Catalog = every field the list API provides. Cells with bespoke
@@ -758,6 +792,7 @@ const COLUMN_CATALOG = [
   { key: 'probability', label: __('Prob.'), sortable: true, align: 'right' },
   { key: 'weighted', label: __('Weighted'), align: 'right' },
   { key: 'expected_close_date', label: __('Closing'), align: 'right' },
+  { key: 'last_contact', label: __('Last contact'), sortable: true, align: 'right' },
   { key: 'salesperson', label: __('Seller') },
   { key: 'project_type', label: __('Type') },
   { key: 'country', label: __('Country') },
@@ -766,7 +801,7 @@ const COLUMN_CATALOG = [
 ]
 const DEFAULT_COLUMNS = [
   'project_number', 'project_name', 'organization', 'phase',
-  'estimated_value', 'probability', 'weighted', 'expected_close_date', 'salesperson',
+  'estimated_value', 'probability', 'weighted', 'expected_close_date', 'last_contact', 'salesperson',
 ]
 const selectedColumns = ref([...DEFAULT_COLUMNS])
 // Hydrate from the user's saved preference once prefs are loaded
@@ -849,13 +884,38 @@ const {
   ],
   filters: activeFilters,
   orderBy: orderBy,
-  pageLength: 100,
+  pageLength: 99999, // load all so filters/search cover the full dataset
 })
 
+// „Letzter Kontakt" — jüngstes Mail-Datum je Projekt (über die Organisation).
+const lastContactRes = createResource({
+  url: 'lcs_integrations.projects.api.get_last_contact_dates',
+  params: { doctype: 'LCS Project' },
+  auto: true,
+})
+const lastContact = computed(() => lastContactRes.data || {})
+
 const totalCount = computed(() => projectsData.value?.length || 0)
-const projectList = computed(() => projectsData.value || [])
+const projectList = computed(() => {
+  const list = (projectsData.value || []).map((p) => ({
+    ...p,
+    last_contact: lastContact.value[p.name] || '',
+  }))
+  if (sortField.value === 'last_contact') {
+    const dir = sortDirection.value === 'asc' ? 1 : -1
+    list.sort((a, b) => {
+      const av = a.last_contact, bv = b.last_contact
+      if (av === bv) return 0
+      if (!av) return 1 // empties always last
+      if (!bv) return -1
+      return av < bv ? -dir : dir
+    })
+  }
+  return list
+})
 
 useListFuncbar({ title: __('Projects'), meaning: __('Sales projects (Deal = Project).'), count: () => projectList.value.length, reload: reloadProjects,
+  actions: [{ id: 'new-project', label: __('New project'), primary: true, run: () => { showNewDialog.value = true } }],
   taskRef: () => selectedProject.value ? { doctype: 'LCS Project', name: selectedProject.value.name, title: selectedProject.value.project_name || selectedProject.value.name } : null })
 
 const cacheAgeLabel = computed(() => {
@@ -867,9 +927,12 @@ const cacheAgeLabel = computed(() => {
   return `${Math.floor(s / 86400)}d`
 })
 
-// H5: Error prevention — validate before enabling submit
+// H5: Error prevention — validate before enabling submit. Customer + salesperson
+// are mandatory (mirrors the backend rule on interactive project creation).
 const isNewProjectValid = computed(() => {
   return newProject.project_name.trim().length >= 3
+    && !!newProject.organization
+    && !!newProject.salesperson
 })
 
 watch(() => newProject.project_name, (val) => {
@@ -1017,7 +1080,7 @@ async function createProject() {
     // Reset form
     Object.assign(newProject, {
       project_name: '', project_type: 'SB', project_abbr: '',
-      country: '', salesperson: '', is_gu: false,
+      country: '', organization: '', salesperson: '', is_gu: false,
       budget_customer: null, richtpreis: null,
       project_description: '',
     })

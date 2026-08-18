@@ -104,13 +104,33 @@ class GraphClient:
             resp = self._http.get(page_url, headers=headers)
         else:
             params = {
-                "$select": "id,subject,from,toRecipients,receivedDateTime,isDraft,body",
+                "$select": "id,subject,from,toRecipients,receivedDateTime,isDraft,body,conversationId",
                 "$top": str(top),
                 "$orderby": "receivedDateTime desc",
             }
             if since_iso:
                 params["$filter"] = f"receivedDateTime ge {since_iso}"
             resp = self._http.get(f"/users/{mailbox}/messages", params=params, headers=headers)
+        return self._check(resp, 200)
+
+    def message_reply(self, mailbox: str, graph_id: str, comment_html: str, reply_all: bool = False) -> None:
+        """Send a reply to a message as the mailbox owner (keeps the thread).
+        `comment` is prepended above the quoted original by Graph."""
+        action = "replyAll" if reply_all else "reply"
+        resp = self._http.post(
+            f"/users/{mailbox}/messages/{graph_id}/{action}",
+            json={"comment": comment_html},
+            headers=self._headers(),
+        )
+        self._check(resp, 202)
+
+    def message_dates(self, mailbox: str, graph_id: str) -> dict[str, Any]:
+        """Just the received/sent timestamps of one message (for date repair)."""
+        resp = self._http.get(
+            f"/users/{mailbox}/messages/{graph_id}",
+            params={"$select": "receivedDateTime,sentDateTime"},
+            headers=self._headers(),
+        )
         return self._check(resp, 200)
 
     def message_attachments(self, mailbox: str, graph_id: str) -> list[dict[str, Any]]:

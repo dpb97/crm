@@ -8,7 +8,7 @@
       v-model="value"
       :options="options.data"
       :size="attrs.size || 'sm'"
-      :variant="attrs.variant"
+      :variant="attrs.variant || 'subtle'"
       :placeholder="attrs.placeholder"
       :disabled="attrs.disabled"
       :placement="attrs.placement"

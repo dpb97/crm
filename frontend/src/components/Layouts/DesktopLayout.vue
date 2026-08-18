@@ -92,6 +92,7 @@
       @select="onMobileNav"
     />
     <GlobalModals />
+    <TaskCreateModal />
   </div>
 
   <!-- CRM-only (Dominiks Standalone-Ansicht via ?mode=crm) — unverändert. -->

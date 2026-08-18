@@ -11,20 +11,29 @@
       <div class="mb-1 px-2 pt-1 text-xs font-semibold uppercase tracking-wide text-gray-400">
         {{ __('Visible columns') }}
       </div>
-      <label
+      <div
         v-for="col in catalog"
         :key="col.key"
-        class="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-sm hover:bg-gray-50"
+        class="group flex items-center gap-2 rounded px-2 py-1.5 text-sm hover:bg-gray-50"
+        :class="{ 'opacity-50': dragKey === col.key, 'bg-lcs-primary/5 ring-1 ring-lcs-primary/30': dragOverKey === col.key }"
+        draggable="true"
+        @dragstart="onDragStart(col.key)"
+        @dragover.prevent="dragOverKey = col.key"
+        @drop.prevent="onDrop(col.key)"
+        @dragend="dragKey = null; dragOverKey = null"
       >
-        <input
-          type="checkbox"
-          class="rounded border-gray-300 text-lcs-primary focus:ring-lcs-primary"
-          :checked="modelValue.includes(col.key)"
-          :disabled="modelValue.length === 1 && modelValue.includes(col.key)"
-          @change="toggle(col.key)"
-        />
-        <span class="text-gray-700">{{ col.label }}</span>
-      </label>
+        <span class="cursor-grab select-none text-gray-300 group-hover:text-gray-400" :title="__('Drag to reorder')" aria-hidden="true">⋮⋮</span>
+        <label class="flex flex-1 cursor-pointer items-center gap-2">
+          <input
+            type="checkbox"
+            class="rounded border-gray-300 text-lcs-primary focus:ring-lcs-primary"
+            :checked="modelValue.includes(col.key)"
+            :disabled="modelValue.length === 1 && modelValue.includes(col.key)"
+            @change="toggle(col.key)"
+          />
+          <span class="text-gray-700">{{ col.label }}</span>
+        </label>
+      </div>
       <div class="mt-2 flex items-center justify-between border-t pt-2">
         <Button variant="ghost" :label="__('Reset')" @click="reset" class="text-gray-500" />
         <span v-if="saving" class="px-2 text-xs text-gray-400">{{ __('Saving…') }}</span>
@@ -51,12 +60,31 @@ const props = defineProps({
   modelValue: { type: Array, required: true }, // selected keys
   defaults: { type: Array, required: true },
 })
-const emit = defineEmits(['update:modelValue'])
+const emit = defineEmits(['update:modelValue', 'reorder'])
 
 const open = ref(false)
 const saving = ref(false)
 const rootEl = ref(null)
 const userPrefs = useUserPreferences()
+
+// Drag-and-drop reordering of the column list. Emits the new full key order
+// (all catalog keys); the page persists it and derives the on-screen order.
+const dragKey = ref(null)
+const dragOverKey = ref(null)
+function onDragStart(key) { dragKey.value = key }
+function onDrop(targetKey) {
+  const from = dragKey.value
+  dragKey.value = null
+  dragOverKey.value = null
+  if (!from || from === targetKey) return
+  const keys = props.catalog.map((c) => c.key)
+  const fi = keys.indexOf(from)
+  const ti = keys.indexOf(targetKey)
+  if (fi >= 0 && ti >= 0) {
+    keys.splice(ti, 0, keys.splice(fi, 1)[0])
+    emit('reorder', keys)
+  }
+}
 
 function toggle(key) {
   const next = props.modelValue.includes(key)

@@ -263,3 +263,35 @@ html:not([data-theme="dark"]) .to-gray-50 { --tw-gradient-to: var(--pp-bg-surfac
      hides `.brand .wm` at ≤400px). */
   .pp-appbar__wm { display: none !important; }
 }
+
+/* ============================================================
+   LCS: E-Mail-/Mobil-Felder (PrimaryDropdown) rahmenlos — gleicher
+   Look wie die uebrigen Detailfelder (kein weisser Kasten). Gezielt
+   NUR .dropdown-button, kein globaler Input-Eingriff.
+   ============================================================ */
+/* Global (not scoped to .crm) — the Pilanda shell has no .crm wrapper, so the
+   contact side-panel Email/Mobil fields kept their white bg-surface-white box. */
+.dropdown-button {
+  background-color: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  padding-left: 0.5rem !important;
+}
+.dropdown-button:hover {
+  background-color: var(--pp-bg-hover, rgba(0, 0, 0, 0.035)) !important;
+  box-shadow: none !important;
+}
+.dropdown-button:focus {
+  background-color: transparent !important;
+  box-shadow: none !important;
+}
+
+/* ============================================================
+   LCS: eckige Avatare / Profilbilder (Design-Wunsch). Trifft das
+   Avatar-Bild, die Initialen-Fläche und den Avatar-Container der
+   frappe-ui Avatar-Komponente — nicht den kleinen Status-Punkt. */
+img.rounded-full.object-cover,
+.rounded-full.uppercase,
+.inline-block.shrink-0.rounded-full {
+  border-radius: var(--pp-radius-ui, 6px) !important;
+}
