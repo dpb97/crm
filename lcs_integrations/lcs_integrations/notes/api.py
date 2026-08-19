@@ -144,26 +144,26 @@ def dispatch_note(text: str, project: str = None, dry_run: bool = False, audio_f
     for c in top:
         c["confidence"] = _confidence_label(c["score"])
 
-    # Clear winner → auto-dispatch (unless caller explicitly asked for dry-run)
-    auto_target = None
-    comment_name = None
-    if top and top[0]["score"] >= AUTO_DISPATCH_MIN:
-        # Tie check: if #2 is within 10% of #1 it's not actually clear
-        if len(top) < 2 or top[0]["score"] - top[1]["score"] >= 0.1:
-            auto_target = top[0]["name"]
-
-    if auto_target and not dry_run:
-        if frappe.has_permission("LCS Project", ptype="write", doc=auto_target):
-            comment_name = _log_as_comment(auto_target, text, audio_file_url)
-        else:
-            # Silent downgrade: still suggest but don't dispatch
-            auto_target = None
+    # Every STRONG match (>= AUTO_DISPATCH_MIN) is auto-filed. A note that
+    # clearly names several projects (e.g. two project codes) therefore lands in
+    # EACH of them instead of being forced into a single — possibly wrong —
+    # bucket. A single strong match keeps the original one-project behaviour.
+    strong = [c for c in top if c["score"] >= AUTO_DISPATCH_MIN]
+    auto_targets = []
+    comments = []
+    if strong and not dry_run:
+        for c in strong:
+            if frappe.has_permission("LCS Project", ptype="write", doc=c["name"]):
+                comments.append(_log_as_comment(c["name"], text, audio_file_url))
+                auto_targets.append(c["name"])
 
     return {
         "candidates": top,
-        "auto_dispatched": bool(comment_name),
-        "comment": comment_name,
-        "target_project": auto_target if comment_name else None,
+        "auto_dispatched": bool(comments),
+        "comment": comments[0] if comments else None,           # back-compat (single)
+        "comments": comments,
+        "target_project": auto_targets[0] if auto_targets else None,  # back-compat
+        "target_projects": auto_targets,
     }
 
 

@@ -23,7 +23,7 @@
       <select id="qn-assign" v-model="target" class="qn-select" :disabled="matching">
         <option value="">{{ matching ? __('Matching …') : __('Auto (best match)') }}</option>
         <option v-for="c in candidates" :key="c.name" :value="c.name">
-          {{ c.project_number }} · {{ c.project_name }} ({{ Math.round((c.score || 0) * 100) }} % {{ __('match') }})
+          {{ c.project_number }} · {{ stripV(c.project_name) }} ({{ Math.min(100, Math.round((c.score || 0) * 100)) }} % {{ __('match') }})
         </option>
       </select>
       <Button variant="solid" :label="__('Save note')" :loading="busy" :disabled="!draft.trim()" @click="save" />
@@ -56,6 +56,9 @@ const lastError = ref('')
 const candidates = ref([])
 const target = ref('') // '' = auto (best match)
 
+// Display helper: drop the "V_" sales-prefix from a project code (V_SB-… → SB-…).
+function stripV(s) { return String(s || '').replace(/^V_/i, '') }
+
 function onError(msg) { lastError.value = msg }
 
 // Debounced matching → fill the ZUORDNUNG dropdown with candidates + score.
@@ -72,7 +75,13 @@ async function matchNote(text) {
     const res = await call('lcs_integrations.notes.api.dispatch_note', { text, dry_run: 1 })
     const payload = res?.message || res || {}
     candidates.value = payload.candidates || []
-    if (!target.value && candidates.value.length) target.value = candidates.value[0].name
+    if (!target.value && candidates.value.length) {
+      // Several strong matches (>= auto-dispatch) → keep "Auto" so the note is
+      // filed in ALL of them (a note that names two projects lands in both);
+      // otherwise pre-select the single best match.
+      const strong = candidates.value.filter((c) => (c.score || 0) >= 0.8)
+      target.value = strong.length >= 2 ? '' : candidates.value[0].name
+    }
   } catch { /* stiller Match-Fehler — Speichern versucht es erneut */ } finally {
     matching.value = false
   }
@@ -89,8 +98,11 @@ async function save() {
     if (target.value) args.project = target.value
     const res = await call('lcs_integrations.notes.api.dispatch_note', args)
     const payload = res?.message || res || {}
-    if (payload.auto_dispatched || payload.target_project || target.value) {
-      toast.success(__('Note matched to') + ' ' + (payload.target_project || target.value))
+    const targets = (payload.target_projects && payload.target_projects.length)
+      ? payload.target_projects
+      : [payload.target_project || target.value].filter(Boolean)
+    if (payload.auto_dispatched || targets.length) {
+      toast.success(__('Note matched to') + ' ' + targets.map(stripV).join(', '))
       reset()
       emit('saved')
     } else {

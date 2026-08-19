@@ -41,6 +41,7 @@
 -->
 <script setup>
 import { ref, computed, watch, onBeforeUnmount } from "vue";
+import { useViewport } from "@/composables/useViewport";
 import IconMic   from "~icons/lucide/mic";
 import IconSquare from "~icons/lucide/square";
 import IconSend  from "~icons/lucide/send";
@@ -56,6 +57,10 @@ const props = defineProps({
 });
 const emit = defineEmits(["update:modelValue", "text", "audio", "error", "state"]);
 
+// On the phone Enter inserts a line break (send only via the button); on the
+// desktop Enter sends as before.
+const { isMobile } = useViewport();
+
 /* ---- Zustand ---------------------------------------------------- */
 const mode = ref("idle");        // "idle" | "recording" | "error"
 const errorMsg = ref("");
@@ -66,7 +71,9 @@ watch(mode, (m) => emit("state", m));
 const hasText = computed(() => (props.modelValue || "").trim().length > 0);
 const hintText = computed(() => {
   if (mode.value === "recording") return "Aufnahme läuft… Stop-Knopf zum Beenden.";
-  return "Tippen und Enter zum Senden — oder Mikrofon für eine Sprachnotiz.";
+  return isMobile.value
+    ? "Tippen — Pfeil zum Senden (Enter = neue Zeile) — oder Mikrofon."
+    : "Tippen und Enter zum Senden — oder Mikrofon für eine Sprachnotiz.";
 });
 function fmtTime(s) {
   const m = Math.floor(s / 60), r = s % 60;
@@ -76,7 +83,8 @@ function fmtTime(s) {
 /* ---- Text-Weg --------------------------------------------------- */
 function onInput(e) { emit("update:modelValue", e.target.value); }
 function onKeydown(e) {
-  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submitText(); }
+  // Phone: Enter = line break (send via the arrow button). Desktop: Enter sends.
+  if (e.key === "Enter" && !e.shiftKey && !isMobile.value) { e.preventDefault(); submitText(); }
 }
 function submitText() {
   const t = (props.modelValue || "").trim();
