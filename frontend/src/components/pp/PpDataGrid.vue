@@ -1009,7 +1009,12 @@ function sortState(key) {
   color: var(--pp-text-tertiary); padding: var(--pp-space-2) var(--pp-space-1) 0; }
 .pp-datagrid__cards-sec-n { color: var(--pp-text-quaternary, var(--pp-text-tertiary)); font-weight: var(--pp-weight-semibold); }
 .pp-datagrid__card { background: var(--pp-bg-surface); border: 1px solid var(--pp-border-subtle);
-  border-radius: var(--pp-radius-ui); box-shadow: var(--pp-shadow-xs); overflow: hidden; }
+  border-radius: var(--pp-radius-ui); box-shadow: var(--pp-shadow-xs); overflow: hidden;
+  /* The cards container is a flex column with a bounded height; without this the
+     cards (min-height:0 due to overflow:hidden) would shrink to a few px and
+     clip their content. flex:none keeps each card at its natural height and lets
+     the container scroll. */
+  flex: 0 0 auto; }
 .pp-datagrid__card.is-picked { border-color: var(--pp-brand-primary); box-shadow: 0 0 0 1px var(--pp-brand-primary); }
 .pp-datagrid__card-head { display: flex; align-items: center; gap: var(--pp-space-2); padding: 10px 10px 10px 12px; }
 .pp-datagrid__card-exp { appearance: none; cursor: pointer; flex: 0 0 auto; display: inline-flex;
