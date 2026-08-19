@@ -62,7 +62,9 @@ clientsClaim()
 
 const DB_NAME = 'lcs-crm'
 // v2: added the `_methods` store for custom read-method (get_*) response caching.
-const DB_VERSION = 2
+// v3: pre-create the LCS Chance + lookup doctype stores so the full-data offline
+//     prefetch lights up immediately (stores otherwise appear on first use).
+const DB_VERSION = 3
 // Stores we proactively keep around so the offline reads light up
 // immediately. New doctypes are auto-created on first use, but their
 // store has to live through a `versionchange` upgrade — so when the
@@ -76,7 +78,14 @@ const STATIC_STORES = [
   'LCS Sales Territory',
   'LCS Segment',
   'LCS Offer',
+  'LCS Chance',
   'ToDo',
+  'CRM Call Log',
+  'FCRM Note',
+  'CRM Lead Status',
+  'CRM Deal Status',
+  'CRM Communication Status',
+  'CRM Territory',
   // Generic cache for custom read-method (get_*) responses — keyed by
   // method-path + args hash, so offline reads of the dashboard, geo, relations
   // etc. return their last successful payload.
