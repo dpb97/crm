@@ -17,6 +17,7 @@
 
 import { call } from 'frappe-ui'
 import { cachePut } from './offlineDB'
+import { mirrorPut } from './swMirror'
 
 const CORE_DOCTYPES = [
   { doctype: 'CRM Deal', fullDocs: 50 },
@@ -55,7 +56,7 @@ const THROTTLE_MS = 30 * 60 * 1000
 const LS_KEY = 'lcs-offline-prefetch-at'
 // Bump whenever CORE_DOCTYPES / METHOD_WARM change — a version mismatch forces
 // one full re-warm (ignoring the throttle) so a client picks up the wider set.
-const PREFETCH_VERSION = '4'
+const PREFETCH_VERSION = '5'
 const LS_VER = 'lcs-offline-prefetch-ver'
 
 export async function prefetchOfflineData(force = false) {
@@ -77,16 +78,24 @@ export async function prefetchOfflineData(force = false) {
       for (const row of rows || []) {
         await cachePut(doctype, row.name, row)
       }
+      // Write the list rows straight into the service-worker IndexedDB store so
+      // offline get_list reads (offlineListFallback) find them — no dependency
+      // on the SW having intercepted this very fetch.
+      await mirrorPut(doctype, rows || [])
       // Full documents (child tables etc.) for the hottest records —
       // sequential on purpose: background task, don't hammer the server.
+      const fulls = []
       for (const row of (rows || []).slice(0, fullDocs)) {
         try {
           const doc = await call('frappe.client.get', { doctype, name: row.name })
           await cachePut(doctype, doc.name, doc)
+          fulls.push(doc)
         } catch (e) {
           // permission or race — skip this record, keep going
         }
       }
+      // Overwrite the store rows with the full docs (incl. child tables).
+      if (fulls.length) await mirrorPut(doctype, fulls)
       // Per-record detail sub-panels for the hottest records, so those detail
       // pages open FULLY offline (a project's offers + opportunity matrix, a
       // contact's mail thread, a chance's comments) — not just the main doc.
