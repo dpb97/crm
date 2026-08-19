@@ -112,7 +112,31 @@ html[data-theme="dark"] {
    against the grey canvas. Remap them to the surface token in LIGHT mode so
    every block matches the master. Dark mode keeps its own surfaces.
    ============================================================ */
+/* Mobile: 100vh includes the browser address bar, so a full-height shell
+   overflows behind it (content zu lang). Use the dynamic viewport height (dvh)
+   which shrinks/grows with the address bar; falls back to 100vh where unsupported. */
+.h-screen { height: 100vh; height: 100dvh; }
+.min-h-screen { min-height: 100vh; min-height: 100dvh; }
+
+/* Mobile: keine horizontale SEITEN-Scrollleiste — der Seiten-Canvas klippt
+   horizontalen Überlauf. Breite Tabellen scrollen weiterhin in ihrem eigenen
+   overflow-x-Container (dort ist Scrollen gewollt). */
+@media (max-width: 767px) {
+  html, body { overflow-x: hidden; }
+  .lcs-pilanda-content { overflow-x: hidden; }
+}
+
 html:not([data-theme="dark"]) .bg-white { background-color: var(--pp-bg-surface) !important; }
+/* frappe-ui form controls (TextInput/Select/FormControl) render white via the
+   `bg-surface-white` token — the LCS master forbids white fields. Remap ONLY the
+   form elements (not cards/panels) to the grey field surface. */
+html:not([data-theme="dark"]) input.bg-surface-white,
+html:not([data-theme="dark"]) select.bg-surface-white,
+html:not([data-theme="dark"]) textarea.bg-surface-white,
+html:not([data-theme="dark"]) button.bg-surface-white,
+html:not([data-theme="dark"]) [role="combobox"].bg-surface-white {
+  background-color: var(--pp-bg-base) !important;
+}
 /* Solid `bg-gray-50` (#f9fafb) is still near-white and reads as a white block
    against the grey canvas — remap the literal utility (template usage only; the
    @apply'd pills compile to raw colours and are untouched) to the subtle inset. */

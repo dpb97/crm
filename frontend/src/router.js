@@ -151,6 +151,12 @@ const routes = [
     component: () => import('@/pages/LCSPilot.vue'),
   },
   {
+    path: '/pilot/:id',
+    name: 'LCS Pilot Detail',
+    component: () => import('@/pages/LCSPilotDetail.vue'),
+    props: true,
+  },
+  {
     path: '/chances',
     name: 'LCS Chances',
     component: () => import('@/pages/LCSChances.vue'),

@@ -11,6 +11,7 @@
       @saved="onPrefsSaved"
     />
     <GlobalSearchDialog v-if="session.isLoggedIn" v-model="showGlobalSearch" />
+    <PwaInstallBanner v-if="session.isLoggedIn" />
     <Dialogs />
     <DoctypeModals />
     <EventNotificationPopup />
@@ -23,6 +24,7 @@ import EventNotificationPopup from '@/components/EventNotificationPopup.vue'
 import OfflineIndicator from '@/components/lcs/OfflineIndicator.vue'
 import DisplayPreferencesDialog from '@/components/lcs/DisplayPreferencesDialog.vue'
 import GlobalSearchDialog from '@/components/lcs/GlobalSearchDialog.vue'
+import PwaInstallBanner from '@/components/lcs/PwaInstallBanner.vue'
 import DoctypeModals from '@/components/Modals/DoctypeModals.vue'
 import { Dialogs } from '@/utils/dialogs'
 import { sessionStore } from '@/stores/session'

@@ -29,6 +29,9 @@ const CORE_DOCTYPES = [
   // tables (approvals, relations, versions) open without a connection.
   { doctype: 'LCS Project', fullDocs: 25 },
   { doctype: 'LCS Offer', fullDocs: 25 },
+  // Chances back BOTH the Chancen funnel and the Pilot scout page (unrated hits
+  // are LCS Chance, source Pilot-Scout) — pre-warm so both open offline.
+  { doctype: 'LCS Chance', fullDocs: 25 },
   { doctype: 'LCS Sales Territory', fullDocs: 0 },
   { doctype: 'LCS Segment', fullDocs: 0 },
   { doctype: 'ToDo', fullDocs: 0 },
@@ -69,7 +72,25 @@ export async function prefetchOfflineData(force = false) {
       console.warn(`offlinePrefetch: ${doctype} failed`, e)
     }
   }
+
+  // Warm the custom list-method endpoints too: the service worker caches every
+  // get_* response, so calling them here makes the Pilot / Chancen / Sales
+  // Meeting pages open offline even without a prior visit.
+  for (const m of METHOD_WARM) {
+    try {
+      await call(m)
+    } catch (e) {
+      /* not permitted / not configured — skip */
+    }
+  }
 }
+
+const METHOD_WARM = [
+  'lcs_integrations.projects.api.get_pilot_hits',
+  'lcs_integrations.projects.api.get_chances',
+  'lcs_integrations.projects.api.get_sales_meeting_lists',
+  'lcs_integrations.projects.api.get_sales_dashboard',
+]
 
 /** Wire once from App.vue — initial warm-up + refresh on reconnect. */
 export function startOfflinePrefetch() {

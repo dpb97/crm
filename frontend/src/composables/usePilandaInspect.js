@@ -16,6 +16,11 @@
 // exclusive — setting one clears the others.
 import { ref, markRaw } from 'vue'
 import { useTaskContext } from './useTaskContext'
+import { useViewport } from './useViewport'
+
+// On phones the inspector is a full-screen overlay — don't auto-open it when a
+// page pushes default content; the user taps the burger to open it.
+const { isMobile } = useViewport()
 
 const spec = ref(null)  // nav-item spec object (built-in panel), or null
 const view = ref(null)  // rich node view (custom slot), or null
@@ -38,7 +43,7 @@ export function usePilandaInspect() {
       spec.value = item
       view.value = null
       panel.value = null
-      collapsed.value = false
+      collapsed.value = isMobile.value
     } else {
       spec.value = null
       collapsed.value = true
@@ -51,7 +56,7 @@ export function usePilandaInspect() {
       view.value = v
       spec.value = null
       panel.value = null
-      collapsed.value = false
+      collapsed.value = isMobile.value
       _syncTaskRef(v.ref)
     } else {
       view.value = null
@@ -66,7 +71,7 @@ export function usePilandaInspect() {
       panel.value = { ...p, component: markRaw(p.component) }
       spec.value = null
       view.value = null
-      collapsed.value = false
+      collapsed.value = isMobile.value
       _syncTaskRef(p.ref)
     } else {
       panel.value = null
@@ -87,12 +92,12 @@ export function usePilandaInspect() {
         spec.value = d.item
         view.value = null
         panel.value = null
-        collapsed.value = false
+        collapsed.value = isMobile.value
       } else if (d.kind === 'node' && d.view) {
         view.value = d.view
         spec.value = null
         panel.value = null
-        collapsed.value = false
+        collapsed.value = isMobile.value
       } else if (d.kind === 'close') {
         spec.value = null
         view.value = null

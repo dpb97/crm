@@ -87,6 +87,20 @@
           </div>
         </div>
 
+        <!-- Opportunity-Matrix: Radar + Schätz-Schieber (einfach hinschätzen) -->
+        <div class="rounded-lg border p-3">
+          <div class="mb-2 text-[10px] font-bold uppercase tracking-wider text-gray-400">{{ __('Opportunity matrix') }}</div>
+          <LcsRadar :axes="MATRIX_AXES" :model-value="matrixModel" />
+          <div class="mt-2 flex flex-col gap-2">
+            <label v-for="a in MATRIX_AXES" :key="a.key" class="flex flex-col gap-0.5">
+              <span class="flex items-baseline justify-between text-[11px] text-gray-500">
+                {{ a.label }}<b class="font-semibold tabular-nums text-lcs-secondary">{{ draft[a.key] || 0 }}</b>
+              </span>
+              <input type="range" min="0" max="100" step="5" v-model.number="draft[a.key]" class="w-full" style="accent-color: var(--pp-brand-primary)" />
+            </label>
+          </div>
+        </div>
+
         <!-- Primary contact + comms -->
         <div class="rounded-lg border p-3">
           <div class="mb-2 text-[10px] font-bold uppercase tracking-wider text-gray-400">{{ __('Primary contact') }}</div>
@@ -137,6 +151,17 @@ import { ref, reactive, computed, watch } from 'vue'
 import { call, Button, FeatherIcon, FormControl, toast } from 'frappe-ui'
 import Link from '@/components/Controls/Link.vue'
 import QuickContactActions from '@/components/lcs/QuickContactActions.vue'
+import LcsRadar from '@/components/lcs/LcsRadar.vue'
+
+// Opportunity-Matrix (Radar): 5 Dimensionen 0–100, am Projekt schätzbar.
+const MATRIX_AXES = [
+  { key: 'technical_fit', label: __('Technical fit') },
+  { key: 'commercial_fit', label: __('Commercial fit') },
+  { key: 'relationship_strength', label: __('Relationship') },
+  { key: 'competition_level', label: __('Competition') },
+  { key: 'strategic_importance', label: __('Strategic value') },
+]
+const MATRIX_KEYS = MATRIX_AXES.map((a) => a.key)
 
 const props = defineProps({ project: { type: Object, default: null } })
 const emit = defineEmits(['open', 'updated'])
@@ -150,8 +175,9 @@ const tagList = computed(() => (props.project?.tags || '').split(',').map((s) =>
 
 // Edits collect in a local draft; the footer Save button writes all
 // changed fields in one set_value call.
-const FIELDS = ['phase', 'status', 'estimated_value', 'probability', 'organization', 'country', 'salesperson']
+const FIELDS = ['phase', 'status', 'estimated_value', 'probability', 'organization', 'country', 'salesperson', ...MATRIX_KEYS]
 const draft = reactive({})
+const matrixModel = computed(() => Object.fromEntries(MATRIX_KEYS.map((k) => [k, Number(draft[k]) || 0])))
 const saving = ref(false)
 
 watch(
@@ -165,7 +191,7 @@ watch(
 
 function normalized(f) {
   if (f === 'estimated_value') return Number(draft[f]) || 0
-  if (f === 'probability') return Math.min(100, Math.max(0, Number(draft[f]) || 0))
+  if (f === 'probability' || MATRIX_KEYS.includes(f)) return Math.min(100, Math.max(0, Number(draft[f]) || 0))
   return draft[f]
 }
 const changedFields = computed(() => {

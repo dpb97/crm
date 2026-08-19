@@ -375,8 +375,11 @@ function onNavigate(payload) {
 
   if (target.startsWith('/crm')) {
     router.push(target.replace(/^\/crm/, '') || '/') // stay in the SPA
+  } else if (/^\/(app|desk)(\/|$)/.test(target)) {
+    // Desk-Bundle-Ziele immer in die CRM-SPA umleiten — nie in den Desk.
+    router.push('/')
   } else {
-    window.location.href = target // hand off to the Pilanda Desk
+    window.location.href = target // externe/echte Nicht-SPA-Ziele
   }
 }
 

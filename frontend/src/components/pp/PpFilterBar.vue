@@ -1,4 +1,4 @@
-<!-- PP_REV: PpFilterBar@1 -->
+<!-- PP_REV: PpFilterBar@2 -->
 <!--
   PpFilterBar.vue — the filter strip that sits above a CRM table: a "FILTER"
   caption, one or more pill segment groups, a search field and room for extra
@@ -7,6 +7,12 @@
   Extracted from LCSCallLogs.vue (`.crmc-filter`), the design master for the
   CRM tables, so every list page gets the identical strip instead of its own
   near-copy.
+
+  @2 (Smartphone): on mobile (< 768) the strip collapses to a single "Filter"
+  trigger that shows the active segment; tapping opens a modal holding the
+  segments, the search field and the #actions slot. Desktop is unchanged.
+  Rule (Marco, Pilanda-weit): on the phone filters are collapsed by default and
+  only expand as a central modal — never inline where they eat the list.
 
   Props:
     segments   Array<{ key, label }> — the segment pills
@@ -22,7 +28,12 @@
   STRICT --pp-* tokens, light + dark. Scoped, prefix `pp-filterbar`.
 -->
 <script setup>
-defineProps({
+import { ref, computed } from 'vue'
+import { FeatherIcon } from 'frappe-ui'
+import { useViewport } from '@/composables/useViewport'
+import PpModal from '@/components/pp/PpModal.vue'
+
+const props = defineProps({
   segments: { type: Array, default: () => [] },
   modelValue: { type: String, default: '' },
   search: { type: String, default: '' },
@@ -30,10 +41,17 @@ defineProps({
   caption: { type: String, default: '' },
 })
 defineEmits(['update:modelValue', 'update:search'])
+
+const { isMobile } = useViewport()
+const modalOpen = ref(false)
+
+// Label of the currently active segment — shown on the collapsed mobile trigger.
+const activeSegLabel = computed(() => props.segments.find((s) => s.key === props.modelValue)?.label || '')
 </script>
 
 <template>
-  <section class="pp-filterbar">
+  <!-- Desktop: the full inline strip -->
+  <section v-if="!isMobile" class="pp-filterbar">
     <span class="pp-filterbar__cap">{{ caption || __('Filter') }}</span>
 
     <slot name="segments">
@@ -62,6 +80,52 @@ defineEmits(['update:modelValue', 'update:search'])
 
     <slot name="actions" />
   </section>
+
+  <!-- Mobile: collapsed trigger + modal (filters are closed by default here) -->
+  <template v-else>
+    <div class="pp-filterbar pp-filterbar--mobile">
+      <button type="button" class="pp-filterbar__trigger" @click="modalOpen = true">
+        <FeatherIcon name="filter" class="pp-filterbar__trigger-ic" />
+        <span class="pp-filterbar__trigger-lbl">{{ activeSegLabel || caption || __('Filter') }}</span>
+        <span v-if="search" class="pp-filterbar__trigger-dot" aria-hidden="true" />
+        <FeatherIcon name="chevron-down" class="pp-filterbar__trigger-ch" />
+      </button>
+    </div>
+
+    <PpModal v-model:open="modalOpen" :title="caption || __('Filter')" :width="520">
+      <div class="pp-filterbar__sheet">
+        <slot name="segments">
+          <div v-if="segments.length" class="pp-filterbar__seg pp-filterbar__seg--stack" role="tablist">
+            <button
+              v-for="s in segments"
+              :key="s.key"
+              type="button"
+              class="pp-filterbar__seg-btn"
+              :class="{ 'is-active': modelValue === s.key }"
+              :aria-pressed="modelValue === s.key"
+              @click="$emit('update:modelValue', s.key)"
+            >{{ s.label }}</button>
+          </div>
+        </slot>
+
+        <div v-if="placeholder" class="pp-filterbar__search pp-filterbar__search--full">
+          <input
+            :value="search"
+            type="search"
+            class="pp-filterbar__input"
+            :placeholder="placeholder"
+            @input="$emit('update:search', $event.target.value)"
+          />
+        </div>
+
+        <div class="pp-filterbar__sheet-actions"><slot name="actions" /></div>
+      </div>
+
+      <template #footer>
+        <button type="button" class="pp-filterbar__done" @click="modalOpen = false">{{ __('Done') }}</button>
+      </template>
+    </PpModal>
+  </template>
 </template>
 
 <style scoped>
@@ -117,5 +181,32 @@ defineEmits(['update:modelValue', 'update:search'])
 .pp-filterbar__input:focus {
   outline: none; border-color: var(--pp-brand-primary);
   box-shadow: 0 0 0 3px rgb(var(--pp-brand-primary-rgb) / 0.15);
+}
+
+/* --- Mobile: collapsed trigger + modal sheet -------------------------------- */
+.pp-filterbar--mobile { padding: var(--pp-space-2) var(--pp-space-2); }
+.pp-filterbar__trigger {
+  appearance: none; cursor: pointer; font-family: inherit; width: 100%;
+  display: flex; align-items: center; gap: var(--pp-space-2);
+  padding: 9px var(--pp-space-3);
+  font-size: var(--pp-fs-13, 13px); color: var(--pp-text-primary);
+  background: var(--pp-bg-base); border: 1px solid var(--pp-border-default);
+  border-radius: var(--pp-radius-ui);
+}
+.pp-filterbar__trigger-ic { width: 15px; height: 15px; color: var(--pp-text-tertiary); flex: 0 0 auto; }
+.pp-filterbar__trigger-lbl { flex: 1; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: var(--pp-weight-medium); }
+.pp-filterbar__trigger-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--pp-brand-primary); flex: 0 0 auto; }
+.pp-filterbar__trigger-ch { width: 15px; height: 15px; color: var(--pp-text-tertiary); flex: 0 0 auto; }
+
+.pp-filterbar__sheet { display: flex; flex-direction: column; gap: var(--pp-space-4); }
+.pp-filterbar__seg--stack { display: flex; flex-wrap: wrap; gap: 4px; overflow: visible; }
+.pp-filterbar__seg--stack .pp-filterbar__seg-btn { flex: 1 1 auto; padding: 8px 14px; }
+.pp-filterbar__search--full { flex: none; min-width: 0; }
+.pp-filterbar__sheet-actions { display: flex; flex-wrap: wrap; gap: var(--pp-space-2); }
+.pp-filterbar__sheet-actions:empty { display: none; }
+.pp-filterbar__done {
+  appearance: none; cursor: pointer; font-family: inherit; font-size: 13px; font-weight: var(--pp-weight-medium);
+  padding: 8px 18px; border: 1px solid var(--pp-brand-primary); border-radius: var(--pp-radius-ui);
+  background: var(--pp-brand-primary); color: var(--pp-text-on-accent);
 }
 </style>

@@ -172,8 +172,8 @@
 
           <!-- Angebote in Bearbeitung / Aufträge / Angebote in Evidenz -->
           <template v-else-if="tab === 'offers' || tab === 'orders' || tab === 'evidenz'">
-            <PpTableCard :title="tabTitle" :note="__('Row = edit classification · Chance = LCS% × Kunde%')">
-              <PpDataGrid v-if="pipeRows.length" :columns="pipeCols" :rows="pipeRows" :page-size="25" @row-click="editOffer">
+            <PpTableCard :title="tabTitle" :note="__('Row = edit classification · double click = open sales project · Chance = LCS% × Kunde%')">
+              <PpDataGrid v-if="pipeRows.length" :columns="pipeCols" :rows="pipeRows" :page-size="25" @row-click="editOffer" @row-dblclick="openProject">
                 <template #cell-chance="{ row }"><b>{{ row.chance }}%</b></template>
                 <template #cell-value="{ value }">{{ money(value) }}</template>
                 <template #cell-weighted="{ value }">{{ money(value) }}</template>
@@ -264,6 +264,8 @@
         </div>
 
         <div class="crmsm-decide-foot">
+          <button type="button" class="crmsm-btn crmsm-btn--link" @click="openProject(offerDraft.name || offerDraft.id)">{{ __('Open sales project') }} →</button>
+          <span class="crmsm-foot-spacer" />
           <button type="button" class="crmsm-btn" @click="offerOpen = false">{{ __('Cancel') }}</button>
           <button type="button" class="crmsm-btn is-primary" :disabled="offerSaving" @click="saveOffer">{{ __('Save') }}</button>
         </div>
@@ -639,6 +641,12 @@ function editOffer(id) {
   const r = pipeRows.value.find((x) => x.id === id)
   if (r) { offerDraft.value = { ...r }; offerOpen.value = true; loadComments('LCS Project', r.name) }
 }
+// Verknüpfung Sales Meeting → Vertriebsprojekt: die Angebots-/Auftrags-/Evidenz-
+// Zeile IST ein LCS Project; öffnen führt direkt ins Vertriebsprojekt.
+function openProject(id) {
+  const name = typeof id === 'string' ? id : (id?.name || id?.id)
+  if (name) router.push({ name: 'LCS Project', params: { id: name } })
+}
 const offerSaver = createResource({ url: 'lcs_integrations.projects.api.save_project_meeting_fields' })
 function saveOffer() {
   offerSaving.value = true
@@ -926,7 +934,10 @@ function fmtDate(d) {
   padding: var(--pp-space-2) var(--pp-space-3); background: var(--pp-bg-sunken); border-radius: var(--pp-radius-ui); }
 .crmsm-decide-meta dt { font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--pp-text-tertiary); }
 .crmsm-decide-meta dd { margin: 2px 0 0; font-size: var(--pp-fs-13, 13px); color: var(--pp-text-primary); }
-.crmsm-decide-foot { display: flex; justify-content: flex-end; gap: var(--pp-space-2); margin-top: var(--pp-space-2); }
+.crmsm-decide-foot { display: flex; align-items: center; justify-content: flex-end; gap: var(--pp-space-2); margin-top: var(--pp-space-2); }
+.crmsm-foot-spacer { flex: 1; }
+.crmsm-btn--link { border: 0; background: none; color: var(--pp-brand-primary); padding: 4px 6px; }
+.crmsm-btn--link:hover { text-decoration: underline; background: none; border: 0; }
 
 /* Protokoll */
 .crmsm-minutes { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--pp-space-2); }

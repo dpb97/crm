@@ -91,7 +91,7 @@
               :people="cardPeople"
               view="cards"
               :searchable="false"
-              :action-label="__('Open')"
+              :action-label="__('Open record')"
               @select="(p) => openContact(p.id)"
               @action="(p) => openDetail(p.id)"
             />
@@ -382,7 +382,14 @@ onBeforeUnmount(() => {
 
 .crmc-firma-link { color: var(--pp-brand-primary); cursor: pointer; text-decoration: none; }
 .crmc-firma-link:hover { text-decoration: underline; }
-.crmc-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--pp-space-3); }
+.crmc-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--pp-space-3); flex-shrink: 0; }
+
+/* Scroll-Fix: auf kurzen Viewports fressen die KPI-Kacheln die Tabellenhöhe →
+   die Seite scrollt jetzt, die Tabelle behält eine nutzbare Mindesthöhe
+   (interner Datagrid-Scroll mit fixem Kopf bleibt). Scrollbalken versteckt. */
+.pp-listpage__inner { overflow-y: auto; scrollbar-width: none; }
+.pp-listpage__inner::-webkit-scrollbar { width: 0; height: 0; }
+:deep(.pp-tablecard) { min-height: 360px; }
 
 /* KPI-Karten als klickbare Segment-Filter (Regel 9) */
 .crmc-kpi { appearance: none; border: none; background: none; padding: 0; margin: 0; cursor: pointer;
@@ -415,5 +422,11 @@ onBeforeUnmount(() => {
 
 @media (max-width: 1080px) {
   .crmc-kpis { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* Kleiner Bildschirm (kurz oder schmal): KPI-Kacheln ausblenden, damit die
+   Tabelle die volle Höhe bekommt (Zählungen stehen weiter in der Karten-Kopfzeile). */
+@media (max-height: 820px), (max-width: 900px) {
+  .crmc-kpis { display: none; }
 }
 </style>

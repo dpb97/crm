@@ -73,6 +73,7 @@
 <script setup>
 import { ref, computed, watch, onBeforeUnmount } from "vue";
 import { useProfileSetting } from "@/composables/useProfileSetting";
+import { useViewport } from "@/composables/useViewport";
 import ChevronUp    from "~icons/lucide/chevron-up";
 import ChevronDown  from "~icons/lucide/chevron-down";
 import ChevronsUpDown from "~icons/lucide/chevrons-up-down";
@@ -91,6 +92,7 @@ const props = defineProps({
   chooserKeys:{ type: Array,   default: null },  // @4: Chooser auf diese keys begrenzen (null = alle Spalten)
   reorderable:{ type: Boolean, default: true },  // @7: Spaltenreihenfolge per Drag and Drop — jetzt STANDARD AN
   resizable:  { type: Boolean, default: false }, // Spaltenbreite per Ziehen am Rand
+  multiline:  { type: Boolean, default: false }, // Zellen umbrechen statt abschneiden
   filterable: { type: Boolean, default: true },  // @7: Spaltenfilter je Spalte (Filterzeile) — STANDARD AN
   pickable:   { type: Boolean, default: false }, // @5: kontrollierte Picker-Spalte links (v-model:picked)
   picked:     { type: Array,   default: () => [] }, // @5: ausgewaehlte ids (kontrolliert)
@@ -303,12 +305,40 @@ const filterableKeys = computed(() => {
   }
   return keys;
 });
+// Auto-Dropdown: kategoriale Spalten (wenige, kurze Distinct-Werte) bekommen
+// einen Auswahl-Filter statt Freitext. Explizite column.filterOptions haben Vorrang.
+const AUTO_FILTER_MAX = 25;
+const autoFilterOptions = computed(() => {
+  const out = {};
+  for (const c of cols.value) {
+    if (c.filterOptions || !filterableKeys.value.has(c.key)) continue;
+    const seen = new Set();
+    let ok = true;
+    for (const r of props.rows) {
+      const v = r[c.key];
+      if (v == null || v === "") continue;
+      const s = String(v);
+      if (s.length > 40) { ok = false; break; }
+      seen.add(s);
+      if (seen.size > AUTO_FILTER_MAX) { ok = false; break; }
+    }
+    if (ok && seen.size >= 2) out[c.key] = [...seen].sort((a, b) => a.localeCompare(b));
+  }
+  return out;
+});
+function filterChoices(key) {
+  const c = cols.value.find((x) => x.key === key);
+  return (c && c.filterOptions) || autoFilterOptions.value[key] || null;
+}
 const filteredRows = computed(() => {
   if (!activeFilters.value.length) return props.rows;
   return props.rows.filter((r) =>
-    activeFilters.value.every(([k, v]) =>
-      String(r[k] ?? "").toLowerCase().includes(String(v).toLowerCase()),
-    ),
+    activeFilters.value.every(([k, v]) => {
+      const cell = String(r[k] ?? "").toLowerCase();
+      const needle = String(v).toLowerCase();
+      // Dropdown-Filter (Auswahl) exakt, Freitext als Teilstring.
+      return filterChoices(k) ? cell === needle : cell.includes(needle);
+    }),
   );
 });
 
@@ -449,6 +479,30 @@ function fmt(v) {
   return v;
 }
 
+/* ---- Mobile card mode (< 768) ----------------------------------- *
+ * On the phone the wide table is replaced by a stacked card list: the
+ * first two columns stay visible (e.g. person + company), the rest live
+ * behind a per-card expand toggle, and a right-chevron opens the detail
+ * page on a single tap (no double-clicks on touch). */
+const { isMobile } = useViewport();
+// Columns shown collapsed on a card (title + subtitle). The remainder is
+// revealed by the expand toggle.
+const cardLeadCols = computed(() => cols.value.slice(0, 2));
+const cardExtraCols = computed(() => cols.value.slice(2));
+const cardOpen = ref(new Set());
+function toggleCard(id) {
+  if (cardOpen.value.has(id)) cardOpen.value.delete(id);
+  else cardOpen.value.add(id);
+  cardOpen.value = new Set(cardOpen.value);
+}
+// Open the detail page. Consumers wire "open" inconsistently — most lists
+// open on row-click, Chancen/Pilot open on row-dblclick — so the mobile
+// open-arrow fires both; whichever the page listens to navigates first.
+function onRowOpen(id) {
+  emit("row-dblclick", id);
+  emit("row-click", id);
+}
+
 function sortState(key) {
   if (sortKey.value !== key) return "none";
   return sortDir.value === "asc" ? "ascending" : "descending";
@@ -457,8 +511,10 @@ function sortState(key) {
 
 <template>
   <div class="pp-datagrid">
-    <!-- Spalten-Toolbar: Sichtbarkeit (PpColChooser, EIN Baustein) / Hinweis Reorder+Resize -->
-    <div v-if="columnTools || reorderable || resizable || filterable" class="pp-datagrid__toolbar">
+    <!-- Spalten-Toolbar: Sichtbarkeit (PpColChooser, EIN Baustein) / Hinweis Reorder+Resize.
+         Auf dem Smartphone ausgeblendet — Spalten/Reorder/Resize sind Desktop-Werkzeuge; die
+         Karten-Ansicht braucht sie nicht. -->
+    <div v-if="!isMobile && (columnTools || reorderable || resizable || filterable)" class="pp-datagrid__toolbar">
       <PpColChooser
         v-if="columnTools"
         v-model:open="chooserOpen"
@@ -492,8 +548,73 @@ function sortState(key) {
       </button>
     </div>
 
-    <div class="pp-datagrid__scroll">
-      <table class="pp-datagrid__table" :class="{ 'is-fixed': cols.some((c) => c.width) }">
+    <!-- Smartphone: Karten-Liste statt scrollender Tabelle -->
+    <div v-if="isMobile" class="pp-datagrid__cards">
+      <template v-for="(sec, si) in sectioned" :key="'mc' + si">
+        <div v-if="sec.label !== null" class="pp-datagrid__cards-sec">
+          {{ sec.label }}<span class="pp-datagrid__cards-sec-n">{{ sec.rows.length }}</span>
+        </div>
+        <div
+          v-for="row in sec.rows"
+          :key="row.id"
+          class="pp-datagrid__card"
+          :class="{ 'is-picked': showPick && pickedSet.has(row.id), 'is-open': cardOpen.has(row.id) }"
+        >
+          <div class="pp-datagrid__card-head">
+            <input
+              v-if="showPick"
+              type="checkbox"
+              class="pp-datagrid__check"
+              :checked="pickedSet.has(row.id)"
+              @change="togglePick(row.id)"
+              @click.stop
+              :aria-label="'Zeile ' + row.id + ' auswählen'"
+            />
+            <button
+              v-if="cardExtraCols.length"
+              type="button"
+              class="pp-datagrid__card-exp"
+              :class="{ 'is-open': cardOpen.has(row.id) }"
+              :aria-expanded="cardOpen.has(row.id)"
+              aria-label="Details ein-/ausklappen"
+              @click.stop="toggleCard(row.id)"
+            ><ChevronDown /></button>
+
+            <div class="pp-datagrid__card-main" @click="onRowOpen(row.id)">
+              <div class="pp-datagrid__card-title">
+                <slot :name="'cell-' + cardLeadCols[0].key" :row="row" :value="row[cardLeadCols[0].key]" :col="cardLeadCols[0]">{{ fmt(row[cardLeadCols[0].key]) }}</slot>
+              </div>
+              <div v-if="cardLeadCols[1]" class="pp-datagrid__card-sub">
+                <span class="pp-datagrid__card-sub-lbl">{{ cardLeadCols[1].label }}:</span>
+                <slot :name="'cell-' + cardLeadCols[1].key" :row="row" :value="row[cardLeadCols[1].key]" :col="cardLeadCols[1]">{{ fmt(row[cardLeadCols[1].key]) }}</slot>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              class="pp-datagrid__card-open"
+              aria-label="Detailseite öffnen"
+              @click.stop="onRowOpen(row.id)"
+            ><ChevronRight /></button>
+          </div>
+
+          <dl v-if="cardOpen.has(row.id) && cardExtraCols.length" class="pp-datagrid__card-body">
+            <div v-for="c in cardExtraCols" :key="c.key" class="pp-datagrid__card-row">
+              <dt>{{ c.label }}</dt>
+              <dd :class="{ 'is-num': c.align === 'right' }">
+                <slot :name="'cell-' + c.key" :row="row" :value="row[c.key]" :col="c">{{ fmt(row[c.key]) }}</slot>
+              </dd>
+            </div>
+          </dl>
+        </div>
+      </template>
+      <div v-if="!sortedRows.length" class="pp-datagrid__cards-empty">
+        {{ rows.length ? "Keine Treffer für den Filter" : "Keine Daten" }}
+      </div>
+    </div>
+
+    <div v-else class="pp-datagrid__scroll">
+      <table class="pp-datagrid__table" :class="{ 'is-fixed': cols.some((c) => c.width), 'is-multiline': multiline }">
         <thead class="pp-datagrid__head">
           <!-- Uebergruppen-Kopf (zweizeilig) -->
           <tr v-if="hasGroups" class="pp-datagrid__group">
@@ -594,8 +715,18 @@ function sortState(key) {
               class="pp-datagrid__cell pp-datagrid__filtercell"
               :class="{ 'pp-datagrid__pin': c.pin }"
             >
+              <select
+                v-if="filterableKeys.has(c.key) && filterChoices(c.key)"
+                class="pp-datagrid__filterinput"
+                :value="colFilters[c.key] || ''"
+                @change="setFilter(c.key, $event.target.value)"
+                @click.stop
+              >
+                <option value="">{{ __('All') }}</option>
+                <option v-for="o in filterChoices(c.key)" :key="o" :value="o">{{ o }}</option>
+              </select>
               <input
-                v-if="filterableKeys.has(c.key)"
+                v-else-if="filterableKeys.has(c.key)"
                 type="text"
                 class="pp-datagrid__filterinput"
                 :value="colFilters[c.key] || ''"
@@ -870,6 +1001,43 @@ function sortState(key) {
 /* ---- Scroll-Container ----------------------------------------- */
 .pp-datagrid__scroll { flex: 1 1 auto; min-height: 0; overflow: auto; }
 
+/* ---- Smartphone card list ------------------------------------------------ */
+.pp-datagrid__cards { flex: 1 1 auto; min-height: 0; overflow-y: auto; overflow-x: hidden;
+  display: flex; flex-direction: column; gap: var(--pp-space-2); padding: var(--pp-space-1) 0; }
+.pp-datagrid__cards-sec { display: flex; align-items: center; gap: var(--pp-space-2);
+  font-size: 10px; font-weight: var(--pp-weight-bold); letter-spacing: 0.04em; text-transform: uppercase;
+  color: var(--pp-text-tertiary); padding: var(--pp-space-2) var(--pp-space-1) 0; }
+.pp-datagrid__cards-sec-n { color: var(--pp-text-quaternary, var(--pp-text-tertiary)); font-weight: var(--pp-weight-semibold); }
+.pp-datagrid__card { background: var(--pp-bg-surface); border: 1px solid var(--pp-border-subtle);
+  border-radius: var(--pp-radius-ui); box-shadow: var(--pp-shadow-xs); overflow: hidden; }
+.pp-datagrid__card.is-picked { border-color: var(--pp-brand-primary); box-shadow: 0 0 0 1px var(--pp-brand-primary); }
+.pp-datagrid__card-head { display: flex; align-items: center; gap: var(--pp-space-2); padding: 10px 10px 10px 12px; }
+.pp-datagrid__card-exp { appearance: none; cursor: pointer; flex: 0 0 auto; display: inline-flex;
+  align-items: center; justify-content: center; width: 28px; height: 28px; padding: 0;
+  border: 1px solid var(--pp-border-default); border-radius: var(--pp-radius-ui);
+  background: var(--pp-bg-base); color: var(--pp-text-tertiary); }
+.pp-datagrid__card-exp :deep(svg) { width: 16px; height: 16px; transition: transform var(--pp-duration-fast, .15s) var(--pp-ease-standard, ease); }
+.pp-datagrid__card-exp.is-open :deep(svg) { transform: rotate(180deg); }
+.pp-datagrid__card-main { flex: 1 1 auto; min-width: 0; cursor: pointer; }
+.pp-datagrid__card-title { font-size: var(--pp-fs-14, 14px); font-weight: var(--pp-weight-semibold);
+  color: var(--pp-text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pp-datagrid__card-sub { margin-top: 2px; font-size: var(--pp-fs-12, 12px); color: var(--pp-text-secondary);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pp-datagrid__card-sub-lbl { color: var(--pp-text-tertiary); margin-right: 4px; }
+.pp-datagrid__card-open { appearance: none; cursor: pointer; flex: 0 0 auto; display: inline-flex;
+  align-items: center; justify-content: center; width: 32px; height: 32px; padding: 0;
+  border: 0; border-radius: var(--pp-radius-ui); background: transparent; color: var(--pp-text-tertiary); }
+.pp-datagrid__card-open:hover { color: var(--pp-brand-primary); }
+.pp-datagrid__card-open :deep(svg) { width: 20px; height: 20px; }
+.pp-datagrid__card-body { margin: 0; padding: 4px 12px 12px; border-top: 1px solid var(--pp-border-subtle);
+  display: flex; flex-direction: column; gap: 6px; }
+.pp-datagrid__card-row { display: flex; align-items: baseline; justify-content: space-between; gap: var(--pp-space-3); }
+.pp-datagrid__card-row dt { flex: 0 0 auto; color: var(--pp-text-tertiary); font-size: 12px; }
+.pp-datagrid__card-row dd { margin: 0; flex: 1 1 auto; min-width: 0; text-align: right; color: var(--pp-text-primary); font-size: 12px;
+  overflow-wrap: anywhere; }
+.pp-datagrid__card-row dd.is-num { font-variant-numeric: tabular-nums; }
+.pp-datagrid__cards-empty { padding: var(--pp-space-8) var(--pp-space-4); text-align: center; color: var(--pp-text-tertiary); font-size: 13px; }
+
 .pp-datagrid__table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: var(--pp-fs-14); }
 .pp-datagrid__table.is-fixed { table-layout: fixed; }
 
@@ -881,6 +1049,11 @@ function sortState(key) {
   border-bottom: 1px solid var(--pp-border-subtle);
   text-align: left; vertical-align: middle;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+/* Multiline: Body-Zellen umbrechen statt mit … abschneiden (Kopf bleibt einzeilig). */
+.pp-datagrid__table.is-multiline tbody .pp-datagrid__cell {
+  white-space: normal; overflow: visible; text-overflow: clip;
+  overflow-wrap: anywhere; word-break: break-word; vertical-align: top;
 }
 .pp-datagrid__cell--right  { text-align: right; }
 .pp-datagrid__cell--center { text-align: center; }

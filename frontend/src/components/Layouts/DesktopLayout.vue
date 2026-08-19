@@ -7,11 +7,12 @@
       class="shrink-0"
       :brand-src="BRAND_MARK"
       brand-label="Pilanda"
-      :search="false"
+      :search="true"
       :window-controls="false"
       :actions="isMobile && funcbarAvailable"
       :user="appbarUser"
       @home="goHome"
+      @search="onSearch"
       @user-select="onUserSelect"
       @actions="funcbarOpen = !funcbarOpen"
     />
@@ -209,8 +210,12 @@ const appbarUser = computed(() => {
 })
 
 function goHome() {
-  // Marke → Pilanda-Startseite (Desk-Home), wie im Desk.
-  window.location.href = '/app/pilanda-home'
+  // Marke → CRM-Startseite (nie in den Desk).
+  router.push({ name: 'Dashboard' })
+}
+// Lupe/Strg-K in der Topbar öffnet das globale Such-Overlay (Desktop + Mobile).
+function onSearch() {
+  window.dispatchEvent(new Event('lcs-open-search'))
 }
 function onUserSelect(key) {
   if (key === 'abmelden') session.logout.submit()

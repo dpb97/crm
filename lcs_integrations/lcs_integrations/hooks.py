@@ -176,6 +176,9 @@ after_migrate = [
     "lcs_integrations.erpnext_sync.compat.remove_conflicting_property_setters",
     # BSM Project link only exists where the bsm app is installed.
     "lcs_integrations.cross_module.bsm_field.ensure_bsm_field",
+    # The env-configured default admin (LCS_DEFAULT_ADMIN) always keeps full
+    # rights — no-op unless configured. See bootstrap/default_admin.py.
+    "lcs_integrations.bootstrap.default_admin.ensure_default_admin",
 ]
 
 # Teams Outgoing Webhook: HMAC-signierte POSTs authentifizieren, bevor

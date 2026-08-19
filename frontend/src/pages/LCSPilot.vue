@@ -36,6 +36,25 @@
           :placeholder="__('Search hit or buyer') + ' …'"
         />
 
+        <!-- Relevanz-Filter + Sortierung (gelten für Karten UND Tabelle) -->
+        <div class="plt-controls">
+          <label class="plt-ctrl">
+            <span class="plt-ctrl-cap">{{ __('Relevance') }}</span>
+            <select v-model="relevanceFilter" class="plt-ctrl-sel">
+              <option v-for="r in RELEVANCES" :key="r.key" :value="r.key">{{ r.label }}</option>
+            </select>
+          </label>
+          <label class="plt-ctrl">
+            <span class="plt-ctrl-cap">{{ __('Sort by') }}</span>
+            <select v-model="sortKey" class="plt-ctrl-sel">
+              <option v-for="s in SORT_KEYS" :key="s.key" :value="s.key">{{ s.label }}</option>
+            </select>
+          </label>
+          <button type="button" class="plt-dir" :title="__('Toggle direction')" @click="toggleDir">
+            {{ sortDir === 'desc' ? '↓' : '↑' }}
+          </button>
+        </div>
+
         <div class="plt-scroll">
         <div class="plt-head">
           <span class="plt-head-title">{{ __('Scout hits · only the salespersons rating turns one into a chance') }}</span>
@@ -44,12 +63,14 @@
 
         <!-- Tabellen-Ansicht -->
         <PpTableCard v-if="viewMode === 'table' && filtered.length" :grow="false" :title="__('Pilot hits')" :note="''">
-          <PpDataGrid table-key="lcs_pilot_tbl" :columns="tableCols" :rows="filtered" :page-size="50" @row-click="onRowClickId" @row-dblclick="openDetail">
+          <PpDataGrid table-key="lcs_pilot_tbl" :columns="tableCols" :rows="sorted" :page-size="50" resizable multiline @row-click="onRowClickId" @row-dblclick="openDetail">
             <template #cell-hit="{ row }">
               <span class="pp-cell-strong">{{ row.title }}</span>
-              <span class="pp-cell-sub">{{ row.chance_no }}<template v-if="row.company || row.client"> · {{ row.company || row.client }}</template></span>
+              <span class="pp-cell-sub">
+                {{ row.chance_no }}<template v-if="row.company || row.client"> · {{ row.company || row.client }}</template>
+                <a v-if="row.source_url" class="plt-srclink" :href="row.source_url" target="_blank" rel="noopener" @click.stop> · {{ __('Original tender') }} ↗</a>
+              </span>
             </template>
-            <template #cell-order_value="{ value }">{{ eur(value) }}</template>
             <template #cell-deadline="{ value }">
               <span v-if="value" :class="dueClass(value)">{{ fmtDate(value) }}</span>
               <span v-else class="pp-cell-muted">—</span>
@@ -74,7 +95,7 @@
         <!-- Karten-Ansicht -->
         <div v-else-if="viewMode === 'cards' && filtered.length" class="plt-cards">
           <article
-            v-for="r in filtered"
+            v-for="r in sorted"
             :key="r.id"
             class="plt-card"
             :class="{ 'is-sel': selId === r.id }"
@@ -88,7 +109,7 @@
             </header>
 
             <div class="plt-card-body">
-              <div class="plt-map" @click.stop>
+              <div class="plt-map">
                 <LcsMiniMap :lat="r.latitude" :lon="r.longitude" @open="openDetail(r.id)" />
               </div>
 
@@ -97,7 +118,6 @@
                 <p v-if="r.description_original" class="plt-desc">{{ r.description_original }}</p>
                 <div class="plt-pills">
                   <span class="plt-pill"><i class="pd" /><template v-if="flag(r.country)">{{ flag(r.country) }} </template>{{ r.country || '—' }}</span>
-                  <span class="plt-pill"><i class="pd" />{{ eur(r.order_value) }}</span>
                   <span class="plt-pill" :class="dueClass(r.deadline)"><i class="pd" />{{ deadlineText(r) }}</span>
                   <span v-if="r.category" class="plt-pill plt-pill--cat"><i class="pd" />{{ r.category }}</span>
                   <span v-if="r.geo_confidence" class="plt-pill plt-pill--geo"><i class="pd" />{{ __('Geo') }}: {{ r.geo_confidence }}</span>
@@ -105,13 +125,14 @@
                 <div v-if="r.reasoning" class="plt-reason">{{ r.reasoning }}</div>
               </div>
 
-              <div class="plt-actions" @click.stop>
+              <div class="plt-actions">
                 <div class="plt-score" :class="scoreClass(r.score)">
                   <span class="plt-score-bar"><i :style="{ width: Math.min(100, r.score) + '%' }" /></span>
                   <b>{{ r.score }}</b>
                 </div>
-                <button type="button" class="plt-btn is-primary" :disabled="busy === r.id" @click="rate(r)">{{ __('Rate as chance') }}</button>
-                <button type="button" class="plt-btn" :disabled="busy === r.id" @click="dismiss(r)">{{ __('No chance') }}</button>
+                <button type="button" class="plt-btn is-primary" :disabled="busy === r.id" @click.stop="rate(r)">{{ __('Rate as chance') }}</button>
+                <button type="button" class="plt-btn" :disabled="busy === r.id" @click.stop="dismiss(r)">{{ __('No chance') }}</button>
+                <a v-if="r.source_url" class="plt-srclink" :href="r.source_url" target="_blank" rel="noopener" @click.stop>{{ __('Original tender') }} ↗</a>
               </div>
             </div>
           </article>
@@ -121,7 +142,7 @@
           v-else
           :icon="IconRadar"
           :title="board.loading ? __('Loading hits …') : __('No open hits')"
-          :hint="board.loading ? '' : (q || statusFilter !== 'Alle' ? __('No matches for the current filter/search.') : __('New tenders from the scout appear here. Run “Pilot sync” to pull the latest.'))"
+          :hint="board.loading ? '' : (q || statusFilter !== 'Alle' || relevanceFilter !== 'Alle' ? __('No matches for the current filter/search.') : __('New tenders from the scout appear here. Run “Pilot sync” to pull the latest.'))"
         />
 
         <!-- Archiv: verworfene Treffer, endgültiges Löschen nur hier -->
@@ -143,6 +164,27 @@
         </div>
       </div>
     </div>
+
+    <!-- „Als Chance werten": Opportunity-Matrix (Pflicht) als Radar + Schieber -->
+    <PpModal v-model:open="rateOpen" :title="__('Rate as chance')" :width="620">
+      <div v-if="rateItem" class="plr">
+        <div class="plr-title">{{ rateItem.title }}</div>
+        <p class="plr-hint">{{ __('Fill in all five factors — this qualifies the hit as a chance.') }}</p>
+        <div class="plr-grid">
+          <div class="plr-radar"><LcsRadar :axes="MATRIX_AXES" :model-value="matrix" /></div>
+          <div class="plr-sliders">
+            <label v-for="a in MATRIX_AXES" :key="a.key" class="plr-fld">
+              <span class="plr-fld-cap">{{ a.label }}<b :class="{ 'is-unset': !(matrix[a.key] > 0) }">{{ matrix[a.key] || 0 }}</b></span>
+              <input type="range" min="0" max="100" step="5" v-model.number="matrix[a.key]" class="plr-range" />
+            </label>
+          </div>
+        </div>
+      </div>
+      <template #footer>
+        <Button :label="__('Cancel')" @click="rateOpen = false" />
+        <Button variant="solid" :label="__('Rate as chance')" :loading="rateSaving" :disabled="!allFilled" @click="confirmRate" />
+      </template>
+    </PpModal>
   </div>
 </template>
 
@@ -156,7 +198,9 @@ import PpFilterBar from '@/components/pp/PpFilterBar.vue'
 import PpTableCard from '@/components/pp/PpTableCard.vue'
 import PpDataGrid from '@/components/pp/PpDataGrid.vue'
 import PpPill from '@/components/pp/PpPill.vue'
+import PpModal from '@/components/pp/PpModal.vue'
 import LcsMiniMap from '@/components/lcs/LcsMiniMap.vue'
+import LcsRadar from '@/components/lcs/LcsRadar.vue'
 import PilotHitInspector from '@/components/lcs/PilotHitInspector.vue'
 import IconRadar from '~icons/lucide/radar'
 import { usePilandaInspect } from '@/composables/usePilandaInspect'
@@ -179,11 +223,10 @@ watch(viewMode, (v) => localStorage.setItem('lcs_pilot_view', v))
 const tableCols = [
   { key: 'hit', label: __('Hit'), pin: true, width: 260 },
   { key: 'country', label: __('Country'), width: 70 },
-  { key: 'order_value', label: __('Value'), align: 'right', width: 90 },
   { key: 'deadline', label: __('Deadline'), width: 120 },
   { key: 'score', label: __('Score'), width: 120 },
-  { key: 'relevance', label: __('Relevance'), width: 100 },
-  { key: 'status', label: __('Status'), width: 120 },
+  { key: 'relevance', label: __('Relevance'), width: 100, filterOptions: ['hoch', 'mittel', 'niedrig'] },
+  { key: 'status', label: __('Status'), width: 120, filterOptions: ['Neu', 'In Bearbeitung', 'Relevant'] },
   { key: 'entscheid', label: __('Sales decision'), width: 240 },
 ]
 function onRowClickId(id) {
@@ -206,12 +249,54 @@ const STATUSES = [
 ]
 const statusFilter = ref('Alle')
 const q = ref('')
+
+// Relevanz-Filter + Sortierung gelten für BEIDE Ansichten (Karten + Tabelle);
+// pro Nutzer gemerkt.
+const RELEVANCES = [
+  { key: 'Alle', label: __('All') },
+  { key: 'hoch', label: __('high') },
+  { key: 'mittel', label: __('medium') },
+  { key: 'niedrig', label: __('low') },
+]
+const relevanceFilter = ref('Alle')
+const SORT_KEYS = [
+  { key: 'score', label: __('Score') },
+  { key: 'deadline', label: __('Deadline') },
+  { key: 'relevance', label: __('Relevance') },
+  { key: 'country', label: __('Country') },
+  { key: 'title', label: __('Hit') },
+]
+const sortKey = ref(localStorage.getItem('lcs_pilot_sortkey') || 'score')
+const sortDir = ref(localStorage.getItem('lcs_pilot_sortdir') || 'desc')
+watch(sortKey, (v) => localStorage.setItem('lcs_pilot_sortkey', v))
+watch(sortDir, (v) => localStorage.setItem('lcs_pilot_sortdir', v))
+function toggleDir() { sortDir.value = sortDir.value === 'desc' ? 'asc' : 'desc' }
+
 const filtered = computed(() => {
   const needle = q.value.trim().toLowerCase()
   return rows.value.filter((r) => {
     if (statusFilter.value !== 'Alle' && r.status !== statusFilter.value) return false
+    if (relevanceFilter.value !== 'Alle' && r.relevance !== relevanceFilter.value) return false
     if (!needle) return true
     return [r.title, r.company, r.client, r.country, r.chance_no].some((v) => (v || '').toLowerCase().includes(needle))
+  })
+})
+
+const REL_RANK = { hoch: 3, mittel: 2, niedrig: 1 }
+const sorted = computed(() => {
+  const k = sortKey.value
+  const dir = sortDir.value === 'asc' ? 1 : -1
+  const val = (r) => {
+    if (k === 'score') return Number(r.score) || 0
+    if (k === 'relevance') return REL_RANK[r.relevance] || 0
+    if (k === 'deadline') return r.deadline ? new Date(String(r.deadline).replace(' ', 'T')).getTime() : (dir === 1 ? Infinity : -Infinity)
+    return String(r[k] || '').toLowerCase()
+  }
+  return [...filtered.value].sort((a, b) => {
+    const av = val(a), bv = val(b)
+    if (av < bv) return -dir
+    if (av > bv) return dir
+    return 0
   })
 })
 
@@ -229,14 +314,40 @@ function flag(cc) {
   return String.fromCodePoint(...[...c].map((ch) => 0x1f1e6 + ch.charCodeAt(0) - 65))
 }
 
-// --- Aktionen: Als Chance werten / Keine Chance / Löschen ------------------
+// --- Aktionen: Als Chance werten (mit Opportunity-Matrix) / Keine Chance ----
 const busy = ref(null)
+
+// Opportunity-Matrix: die 5 Dimensionen, die eine Chance qualifizieren
+// (klickdummy). Beim Werten müssen alle gefüllt werden → Radar.
+const MATRIX_AXES = [
+  { key: 'technical_fit', label: __('Technical fit') },
+  { key: 'commercial_fit', label: __('Commercial fit') },
+  { key: 'relationship_strength', label: __('Relationship') },
+  { key: 'competition_level', label: __('Competition') },
+  { key: 'strategic_importance', label: __('Strategic value') },
+]
+const rateOpen = ref(false)
+const rateItem = ref(null)
+const matrix = ref({})
+const rateSaving = ref(false)
+const allFilled = computed(() => MATRIX_AXES.every((a) => Number(matrix.value[a.key]) > 0))
+
 function rate(row) {
-  busy.value = row.id
-  call('lcs_integrations.projects.api.pilot_rate_as_chance', { name: row.id })
-    .then(() => { toast({ title: `${__('Rated as chance')} — ${row.title}`, icon: 'check-circle', iconClasses: 'text-green-500' }); board.reload() })
+  rateItem.value = row
+  matrix.value = Object.fromEntries(MATRIX_AXES.map((a) => [a.key, Number(row[a.key]) || 0]))
+  rateOpen.value = true
+}
+function confirmRate() {
+  if (!allFilled.value || !rateItem.value) return
+  rateSaving.value = true
+  call('lcs_integrations.projects.api.pilot_rate_as_chance', { name: rateItem.value.id, matrix: JSON.stringify(matrix.value) })
+    .then(() => {
+      toast({ title: `${__('Rated as chance')} — ${rateItem.value.title}`, icon: 'check-circle', iconClasses: 'text-green-500' })
+      rateOpen.value = false
+      board.reload()
+    })
     .catch((e) => toast({ title: __('Could not save.'), text: e?.messages?.[0] || e?.message || '', icon: 'alert-circle', iconClasses: 'text-red-500' }))
-    .finally(() => { busy.value = null })
+    .finally(() => { rateSaving.value = false })
 }
 function dismiss(row) {
   busy.value = row.id
@@ -268,7 +379,9 @@ function onSelect(r) {
   })
 }
 function openDetail(id) {
-  router.push({ name: 'LCS Chance', params: { id } })
+  // LCS: pilot hits open in their own detail view (not the chance framing),
+  // so a hit reads as "pilot result with AI evaluation", not a committed chance.
+  router.push({ name: 'LCS Pilot Detail', params: { id } })
 }
 
 // --- Archiv-Aufklappen -----------------------------------------------------
@@ -320,12 +433,6 @@ onMounted(() => { registerFuncbar(buildGroups(), onFuncAction); showDefaultInspe
 onBeforeUnmount(() => { inspectPanel(null); inspectNode(null); clearFuncbar() })
 
 // --- Formathelfer ----------------------------------------------------------
-function eur(v) {
-  const n = Number(v) || 0
-  if (n >= 1_000_000) return (n / 1_000_000).toLocaleString('de-DE', { maximumFractionDigits: 1 }) + ' M€'
-  if (n >= 1_000) return Math.round(n / 1_000).toLocaleString('de-DE') + ' k€'
-  return '€' + Math.round(n)
-}
 function fmtDate(v) {
   if (!v) return '—'
   const d = new Date(String(v).replace(' ', 'T'))
@@ -361,6 +468,20 @@ function dueClass(v) {
 .plt-toggle-btn + .plt-toggle-btn { border-left: 1px solid var(--pp-border-default); }
 .plt-toggle-btn.on { background: var(--pp-brand-primary); color: var(--pp-text-on-accent); }
 
+/* Relevanz-Filter + Sortier-Controls */
+.plt-controls { display: flex; align-items: center; gap: var(--pp-space-3); flex-wrap: wrap; padding: 0 var(--pp-space-1); }
+.plt-ctrl { display: inline-flex; align-items: center; gap: 6px; }
+.plt-ctrl-cap { font-size: 11px; font-weight: var(--pp-weight-bold); letter-spacing: 0.04em; text-transform: uppercase;
+  color: var(--pp-text-tertiary); }
+.plt-ctrl-sel { appearance: none; font-family: inherit; font-size: var(--pp-fs-13, 13px); color: var(--pp-text-primary);
+  padding: 5px 26px 5px 10px; border: 1px solid var(--pp-border-default); border-radius: var(--pp-radius-ui);
+  background: var(--pp-bg-surface) linear-gradient(45deg, transparent 50%, var(--pp-text-tertiary) 50%) no-repeat right 12px center / 5px 5px,
+    linear-gradient(135deg, var(--pp-text-tertiary) 50%, transparent 50%) no-repeat right 7px center / 5px 5px; cursor: pointer; }
+.plt-ctrl-sel:focus { outline: none; border-color: var(--pp-brand-primary); }
+.plt-dir { appearance: none; cursor: pointer; width: 30px; height: 30px; font-size: 15px; line-height: 1;
+  border: 1px solid var(--pp-border-default); border-radius: var(--pp-radius-ui); background: var(--pp-bg-surface); color: var(--pp-text-secondary); }
+.plt-dir:hover { border-color: var(--pp-brand-primary); color: var(--pp-brand-primary); }
+
 /* Scroll-Container: EINZIGER Scroll-Besitzer der Seite (Karten liefen sonst über
    das overflow:hidden von .pp-listpage hinaus und ließen sich nicht scrollen).
    Scrollbalken versteckt (Klickdummy: keine sichtbaren Balken, Funktion bleibt). */
@@ -371,6 +492,21 @@ function dueClass(v) {
 /* Tabellen-Aktionen + Inline-Score in der Tabellenzelle */
 .plt-decide { display: inline-flex; gap: 6px; }
 .plt-score--tbl { min-width: 90px; }
+
+/* „Als Chance werten" — Opportunity-Matrix-Dialog */
+.plr { display: flex; flex-direction: column; gap: var(--pp-space-3); }
+.plr-title { font-size: var(--pp-fs-14, 14px); font-weight: var(--pp-weight-semibold); color: var(--pp-text-primary); }
+.plr-hint { margin: 0; font-size: 12px; color: var(--pp-text-tertiary); }
+.plr-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--pp-space-4); align-items: center; }
+.plr-radar { display: flex; justify-content: center; }
+.plr-sliders { display: flex; flex-direction: column; gap: var(--pp-space-3); }
+.plr-fld { display: flex; flex-direction: column; gap: 4px; }
+.plr-fld-cap { display: flex; justify-content: space-between; align-items: baseline; font-size: 11.5px;
+  font-weight: var(--pp-weight-medium); color: var(--pp-text-secondary); }
+.plr-fld-cap b { font-variant-numeric: tabular-nums; color: var(--pp-brand-primary); }
+.plr-fld-cap b.is-unset { color: var(--pp-state-danger); }
+.plr-range { width: 100%; accent-color: var(--pp-brand-primary); cursor: pointer; }
+@media (max-width: 640px) { .plr-grid { grid-template-columns: 1fr; } }
 
 /* Kopfzeile über den Karten */
 .plt-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--pp-space-4);
@@ -432,6 +568,9 @@ function dueClass(v) {
 .plt-btn.is-primary:hover:not(:disabled) { color: var(--pp-text-on-accent); filter: brightness(1.05); }
 .plt-btn--danger:hover:not(:disabled) { border-color: var(--pp-state-danger); color: var(--pp-state-danger); }
 .plt-btn:disabled { opacity: .5; cursor: default; }
+.plt-srclink { margin-top: 2px; font-size: 11px; color: var(--pp-brand-primary); text-decoration: none;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.plt-srclink:hover { text-decoration: underline; }
 
 /* Archiv */
 .plt-arch { margin-top: var(--pp-space-3); border: 1px solid var(--pp-border-subtle); border-radius: var(--pp-radius-ui);
@@ -454,5 +593,18 @@ function dueClass(v) {
   .plt-card-body { grid-template-columns: 1fr; }
   .plt-map { min-height: 150px; border-right: 0; border-bottom: 1px solid var(--pp-border-subtle); }
   .plt-actions { border-left: 0; border-top: 1px solid var(--pp-border-subtle); }
+}
+/* Mobile: größere Touch-Ziele, umbrechende Köpfe, Aktionen nebeneinander. */
+@media (max-width: 767px) {
+  .plt-btn { min-height: 42px; display: inline-flex; align-items: center; justify-content: center; flex: 1; }
+  .plt-actions { flex-direction: row; flex-wrap: wrap; align-items: center; }
+  .plt-actions .plt-score { flex-basis: 100%; }
+  .plt-card-head { flex-wrap: wrap; }
+  .plt-card-src { max-width: 100%; margin-left: 0; }
+  .plt-controls { gap: var(--pp-space-2); }
+  .plt-ctrl-sel { min-height: 40px; }
+  .plt-toggle-btn { min-height: 38px; padding: 8px 14px; }
+  .plr-range { height: 30px; }
+  .plr-grid { grid-template-columns: 1fr; }
 }
 </style>

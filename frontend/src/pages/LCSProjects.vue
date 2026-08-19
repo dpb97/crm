@@ -91,6 +91,20 @@
             </button>
           </Tooltip>
         </div>
+        <!-- Won toggle — the list hides won projects by default; this reveals
+             them (an explicit Phase=Won filter also overrides the default). -->
+        <Tooltip :text="hideWon ? __('Show won projects') : __('Hide won projects')">
+          <button
+            type="button"
+            class="flex items-center gap-1 rounded-lg border px-3 py-1 text-xs font-medium transition"
+            :class="hideWon ? 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50' : 'border-lcs-primary bg-lcs-primary text-white'"
+            :aria-pressed="!hideWon"
+            @click="hideWon = !hideWon"
+          >
+            <FeatherIcon :name="hideWon ? 'eye-off' : 'eye'" class="h-3 w-3" />
+            {{ __('Won') }}
+          </button>
+        </Tooltip>
         <!-- Filter bar — H6: Recognition rather than recall -->
         <FormControl
           type="select"
@@ -608,6 +622,10 @@ watch(
 )
 // User preference persists across reloads
 const onlyMine = useProfileSetting('lcs_projects', 'only_mine', false)
+// Default view hides won projects from the LIST (the KPI strip still counts
+// them). Persisted per user; the toggle in the filter bar or an explicit
+// Phase=Won filter brings them back.
+const hideWon = useProfileSetting('lcs_projects', 'hide_won', true)
 const showNewDialog = ref(false)
 const creating = ref(false)
 const selectedIndex = ref(-1)
@@ -668,9 +686,11 @@ async function onProjectMove({ cardId, fromCol, toCol }) {
   }
 }
 
-// KPI overview strip over the list
+// KPI overview strip — computed over the FULL fetched set (baseList), not the
+// visible list, so the "Won" tile keeps its count even while won projects are
+// hidden from the list below.
 const overview = computed(() => {
-  const list = projectList.value || []
+  const list = baseList.value || []
   const by = (ph) => list.filter((p) => p.phase === ph).length
   const total = list.reduce((s, p) => s + (Number(p.estimated_value) || 0), 0)
   return { execution: by('Execution'), won: by('Won'), completed: by('Completed'), total }
@@ -684,7 +704,7 @@ const overviewMoney = computed(() => {
 // Lost this quarter — count + summed value (design master header stat).
 const lostQuarter = computed(() => {
   const q = new Date(); q.setMonth(q.getMonth() - 3)
-  const lost = (projectList.value || []).filter((p) => {
+  const lost = (baseList.value || []).filter((p) => {
     if (p.phase !== 'Lost') return false
     const d = new Date(String(p.modified || '').replace(' ', 'T'))
     return isNaN(d) ? true : d >= q
@@ -786,6 +806,7 @@ const orderBy = computed(() =>
 const COLUMN_CATALOG = [
   { key: 'project_number', label: __('Project number'), sortable: true },
   { key: 'project_name', label: __('Sales project'), sortable: true },
+  { key: 'lcs_abas_desc', label: __('abas description') },
   { key: 'organization', label: __('Company') },
   { key: 'phase', label: __('Phase') },
   { key: 'estimated_value', label: __('Value'), sortable: true, align: 'right' },
@@ -800,7 +821,7 @@ const COLUMN_CATALOG = [
   { key: 'modified', label: __('Last Modified'), date: true },
 ]
 const DEFAULT_COLUMNS = [
-  'project_number', 'project_name', 'organization', 'phase',
+  'project_number', 'project_name', 'lcs_abas_desc', 'organization', 'phase',
   'estimated_value', 'probability', 'weighted', 'expected_close_date', 'last_contact', 'salesperson',
 ]
 const selectedColumns = ref([...DEFAULT_COLUMNS])
@@ -877,10 +898,12 @@ const {
 } = useOfflineList({
   doctype: 'LCS Project',
   fields: [
-    'name', 'project_name', 'project_number', 'project_type',
+    'name', 'project_name', 'lcs_abas_desc', 'project_number', 'project_type',
     'country', 'phase', 'status', 'salesperson', 'organization',
     'probability', 'estimated_value', 'notes', 'modified', 'creation',
     'expected_close_date', 'is_important',
+    'technical_fit', 'commercial_fit', 'relationship_strength',
+    'competition_level', 'strategic_importance',
   ],
   filters: activeFilters,
   orderBy: orderBy,
@@ -896,7 +919,9 @@ const lastContactRes = createResource({
 const lastContact = computed(() => lastContactRes.data || {})
 
 const totalCount = computed(() => projectsData.value?.length || 0)
-const projectList = computed(() => {
+// Full fetched set (mapped + client-sorted) — the KPI strip counts over THIS so
+// won projects still show up in the numbers even when hidden from the list.
+const baseList = computed(() => {
   const list = (projectsData.value || []).map((p) => ({
     ...p,
     last_contact: lastContact.value[p.name] || '',
@@ -912,6 +937,12 @@ const projectList = computed(() => {
     })
   }
   return list
+})
+// The visible list. Won projects are hidden by default (hideWon); an explicit
+// Phase=Won filter overrides that so they can still be reviewed on demand.
+const projectList = computed(() => {
+  if (!hideWon.value || filters.phase === 'Won') return baseList.value
+  return baseList.value.filter((p) => p.phase !== 'Won')
 })
 
 useListFuncbar({ title: __('Projects'), meaning: __('Sales projects (Deal = Project).'), count: () => projectList.value.length, reload: reloadProjects,

@@ -98,6 +98,13 @@
         </div>
       </template>
     </FileUploader>
+    <!-- LCS: primary contact actions (Call · SMS · WhatsApp · Teams) right at the
+         top on the phone, so they are thumb-reachable before the tabs. -->
+    <QuickContactActions
+      class="shrink-0 px-4 pb-3"
+      :email="contact.doc.email_id"
+      :phone="contact.doc.mobile_no"
+    />
     <Tabs
       v-model="tabIndex"
       as="div"
@@ -106,13 +113,13 @@
     >
       <template #tab-item="{ tab, selected }">
         <button
-          v-if="tab.name == 'Deals'"
-          class="group flex items-center gap-2 border-b border-transparent py-2.5 text-base text-ink-gray-5 duration-300 ease-in-out hover:text-ink-gray-9 !px-4"
+          class="group flex items-center gap-2 border-b border-transparent py-2.5 text-base text-ink-gray-5 duration-300 ease-in-out hover:text-ink-gray-9 data-[state=active]:text-ink-gray-9 !px-4"
           :class="{ 'text-ink-gray-9': selected }"
         >
           <component :is="tab.icon" v-if="tab.icon" class="h-5" />
           {{ __(tab.label) }}
           <Badge
+            v-if="tab.count !== undefined"
             class="group-hover:bg-surface-gray-7"
             :class="[selected ? 'bg-surface-gray-7' : 'bg-gray-600']"
             variant="solid"
@@ -124,7 +131,13 @@
         </button>
       </template>
       <template #tab-panel="{ tab }">
-        <div v-if="tab.name == 'Details'">
+        <!-- LCS: mailbox-synced emails (mirror of desktop Contact.vue) -->
+        <OrgEmailsTab
+          v-if="tab.name == 'Emails'"
+          class="px-4"
+          :emails="contactEmails.data"
+        />
+        <div v-else-if="tab.name == 'Details'">
           <div
             v-if="sections.data"
             class="flex flex-1 flex-col justify-between overflow-hidden"
@@ -160,12 +173,15 @@
 
 <script setup>
 import Icon from '@/components/Icon.vue'
+import QuickContactActions from '@/components/lcs/QuickContactActions.vue'
+import OrgEmailsTab from '@/components/lcs/OrgEmailsTab.vue'
 import SidePanelLayout from '@/components/SidePanelLayout.vue'
 import LayoutHeader from '@/components/LayoutHeader.vue'
 import DetailsIcon from '@/components/Icons/DetailsIcon.vue'
 import PhoneIcon from '@/components/Icons/PhoneIcon.vue'
 import CameraIcon from '@/components/Icons/CameraIcon.vue'
 import DealsIcon from '@/components/Icons/DealsIcon.vue'
+import EmailIcon from '@/components/Icons/EmailIcon.vue'
 import DealsListView from '@/components/ListViews/DealsListView.vue'
 import { formatDate, timeAgo, validateIsImageFile } from '@/utils'
 import { getView } from '@/utils/view'
@@ -302,11 +318,25 @@ const tabs = [
     icon: h(DealsIcon, { class: 'h-4 w-4' }),
     count: computed(() => deals.data?.length),
   },
+  // LCS: mailbox-synced emails linked to this contact (mirror of desktop Contact.vue)
+  {
+    name: 'Emails',
+    label: __('Emails'),
+    icon: h(EmailIcon, { class: 'h-4 w-4' }),
+    count: computed(() => contactEmails.data?.length),
+  },
 ]
 
 const deals = createResource({
   url: 'crm.api.contact.get_linked_deals',
   cache: ['deals', props.contactId],
+  params: { contact: props.contactId },
+  auto: true,
+})
+
+// LCS: emails linked to this contact for the Emails tab
+const contactEmails = createResource({
+  url: 'lcs_integrations.projects.api.get_contact_emails',
   params: { contact: props.contactId },
   auto: true,
 })

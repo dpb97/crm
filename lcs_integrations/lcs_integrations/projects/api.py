@@ -1952,12 +1952,24 @@ def get_pilot_hits(relevance=None):
 
 
 @frappe.whitelist()
-def pilot_rate_as_chance(name):
+def pilot_rate_as_chance(name, matrix=None):
     """The salesperson rated a scout hit as worth pursuing → promote it from an
-    open hit (Neu / In Bearbeitung) to a real Chance ('Relevant'). It then shows
-    up in the Chancen list and drops off the Pilot page."""
+    open hit (Neu / In Bearbeitung) to a real Chance ('Relevant'). The opportunity
+    matrix (5 dimensions, 0–100) captured in the rating dialog is stored on the
+    chance. It then shows up in the Chancen list and drops off the Pilot page."""
     doc = frappe.get_doc("LCS Chance", name)
     if doc.source == "Pilot-Scout" and doc.status in _PILOT_OPEN:
+        if matrix:
+            m = matrix
+            if isinstance(m, str):
+                try:
+                    m = frappe.parse_json(m)
+                except Exception:
+                    m = {}
+            if isinstance(m, dict):
+                for f in _CHANCE_MATRIX_FIELDS:
+                    if m.get(f) is not None:
+                        doc.set(f, frappe.utils.cint(m[f]))
         doc.status = "Relevant"
         doc.save(ignore_permissions=True)
     return {"name": doc.name, "status": doc.status}
@@ -1985,6 +1997,19 @@ def get_pilot_users():
         fields=["name", "full_name"], order_by="full_name", limit_page_length=0,
     )
     return [{"value": r["name"], "label": r.get("full_name") or r["name"]} for r in rows]
+
+
+@frappe.whitelist()
+def pilot_set_score(name, score):
+    """Manually override a Pilot hit's scout score (0–100). The salesperson can
+    correct the automated Claude score from the inspector."""
+    try:
+        val = max(0, min(100, int(round(float(score)))))
+    except (ValueError, TypeError):
+        frappe.throw(_("Invalid score."))
+    frappe.db.set_value("LCS Chance", name, "score", val)
+    frappe.db.commit()
+    return {"name": name, "score": val}
 
 
 @frappe.whitelist()

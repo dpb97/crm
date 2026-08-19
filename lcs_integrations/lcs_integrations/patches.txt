@@ -63,3 +63,7 @@ lcs_integrations.patches.install_sales_meeting_fields
 lcs_integrations.patches.install_conversation_id
 # Turn Contact.previous_companies free text into a CRM Organization picker.
 lcs_integrations.patches.convert_previous_company_to_link
+# abas project description (Sucherweiterung) as its own field on LCS Project.
+lcs_integrations.patches.install_abas_desc
+# Opportunity-Matrix (5 dimensions) on LCS Project for the inspector radar.
+lcs_integrations.patches.install_project_matrix
