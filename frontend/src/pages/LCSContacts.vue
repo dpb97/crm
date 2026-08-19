@@ -34,7 +34,8 @@
           :placeholder="__('Search / filter by company') + ' …'"
         >
           <template #actions>
-            <div class="crmc-viewtoggle">
+            <!-- On the phone the card view is always used, so the toggle is hidden. -->
+            <div v-if="!isMobile" class="crmc-viewtoggle">
               <button type="button" class="crmc-vt-btn" :class="{ 'is-active': viewMode === 'list' }" :title="__('List')" @click="viewMode = 'list'"><IconList /></button>
               <button type="button" class="crmc-vt-btn" :class="{ 'is-active': viewMode === 'cards' }" :title="__('Cards')" @click="viewMode = 'cards'"><IconGrid /></button>
             </div>
@@ -58,7 +59,7 @@
 
         <!-- Tabelle ODER Leerzustand -->
         <PpTableCard :title="__('Contacts')" :shown="filtered.length" :total="contacts.length">
-          <PpDataGrid table-key="lcs_contacts" v-if="rows.length && viewMode === 'list'" :columns="columns" :rows="rows" :page-size="25" pickable v-model:pick-mode="selectMode" v-model:picked="picked" @row-click="openContact">
+          <PpDataGrid table-key="lcs_contacts" v-if="rows.length && effectiveView === 'list'" :columns="columns" :rows="rows" :page-size="25" pickable v-model:pick-mode="selectMode" v-model:picked="picked" @row-click="openContact">
             <template #cell-name="{ row }">
               <span class="pp-cell-strong">{{ row.name }}</span>
               <span class="pp-cell-sub">{{ row.email || '—' }}</span>
@@ -115,7 +116,7 @@
           />
 
           <!-- Card view keeps the external pager; the list view paginates inside PpDataGrid. -->
-          <template v-if="viewMode === 'cards' && rows.length && rowTotal > 25" #footer>
+          <template v-if="effectiveView === 'cards' && rows.length && rowTotal > 25" #footer>
             <LcsPagination
               :from="pgFrom" :to="pgTo" :total="rowTotal"
               :page="page" :page-count="pageCount" :page-size="pageSize"
@@ -152,6 +153,7 @@ import { usePilandaInspect } from '@/composables/usePilandaInspect'
 import { useListFuncbar } from '@/composables/useListFuncbar'
 import { usePagination } from '@/composables/usePagination'
 import { useProfileSetting } from '@/composables/useProfileSetting'
+import { useViewport } from '@/composables/useViewport'
 
 const router = useRouter()
 const { pilandaMode } = usePilandaMode()
@@ -323,6 +325,10 @@ const {
 // Listen-/Karten-Umschalter (Karten via PpContactCards, gefüttert aus den
 // paginierten Zeilen — KPI-Filter + Pagination gelten in beiden Ansichten).
 const viewMode = useProfileSetting('lcs_contacts', 'view', 'cards')
+// On the phone always show the cards (regardless of the saved preference);
+// the list/table view stays available on desktop.
+const { isMobile } = useViewport()
+const effectiveView = computed(() => (isMobile.value ? 'cards' : viewMode.value))
 const cardPeople = computed(() =>
   pagedRows.value.map((r) => ({
     id: r.id,
