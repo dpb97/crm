@@ -61,7 +61,7 @@
           <FeatherIcon name="external-link" class="h-3.5 w-3.5 text-lcs-primary" />
           <span class="text-sm font-medium text-gray-900">{{ __('Open Team in Microsoft Teams') }}</span>
         </div>
-        <span class="text-[10px] uppercase tracking-wider text-gray-400">{{ info.project_name }}</span>
+        <span class="text-[10px] uppercase tracking-wider text-gray-400">{{ stripV(info.project_name) }}</span>
       </a>
 
       <!-- Notifications channel summary -->
@@ -143,6 +143,8 @@ import { call, FeatherIcon } from 'frappe-ui'
 const props = defineProps({
   project: { type: String, required: true },
 })
+// Displayed project code without the "V_" Vertrieb prefix (V_SB-… → SB-…).
+function stripV(s) { return String(s || '').replace(/^V_/i, '') }
 
 const loading = ref(false)
 const info = ref({

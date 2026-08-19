@@ -21,7 +21,7 @@
             <button type="button" :title="__('Mark important')" @click="toggleImportant">
               <FeatherIcon name="star" class="h-4 w-4 transition" :class="project.is_important ? 'text-amber-400' : 'text-gray-300 hover:text-amber-300'" />
             </button>
-            <h3 class="truncate text-sm font-semibold text-gray-900">{{ project.project_name }}</h3>
+            <h3 class="truncate text-sm font-semibold text-gray-900">{{ stripV(project.project_name) }}</h3>
           </div>
           <p class="font-mono text-xs text-gray-400">{{ project.project_number }}</p>
         </div>
@@ -164,6 +164,8 @@ const MATRIX_AXES = [
 const MATRIX_KEYS = MATRIX_AXES.map((a) => a.key)
 
 const props = defineProps({ project: { type: Object, default: null } })
+// Displayed project code without the "V_" Vertrieb prefix (V_SB-… → SB-…).
+function stripV(s) { return String(s || '').replace(/^V_/i, '') }
 const emit = defineEmits(['open', 'updated'])
 
 const PHASES = ['Qualified', 'Budget', 'Richtpreis', 'Offer', 'Negotiation', 'Won', 'Execution', 'Completed']

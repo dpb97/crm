@@ -69,7 +69,7 @@
         <!-- Kopf -->
         <PpPageHead
           :eyebrow="__('Sales / CRM · Project')"
-          :title="doc.project_name || projectId"
+          :title="projectTitle"
           :subtitle="headSubtitle"
         >
           <template #actions>
@@ -529,6 +529,9 @@ const { canShow } = useUserPreferences()
 const router = useRouter()
 const props = defineProps({ id: { type: String, required: true } })
 const projectId = computed(() => props.id)
+// Displayed project code without the "V_" Vertrieb prefix (V_SB-… → SB-…).
+function stripV(s) { return String(s || '').replace(/^V_/i, '') }
+const projectTitle = computed(() => stripV(doc.value.project_name) || projectId.value)
 
 const project = createDocumentResource({
   doctype: 'LCS Project',
@@ -544,14 +547,14 @@ const doc = computed(() => project.doc || {})
 
 const { setTaskContext } = useTaskContext()
 // Feed the shell task context so „Neue Aufgabe" links back to this project.
-watch(doc, (d) => setTaskContext(d && d.name ? { doctype: 'LCS Project', name: d.name, title: d.project_name || d.name } : null), { immediate: true })
+watch(doc, (d) => setTaskContext(d && d.name ? { doctype: 'LCS Project', name: d.name, title: stripV(d.project_name) || d.name } : null), { immediate: true })
 onUnmounted(() => setTaskContext(null))
 
-usePageMeta(() => ({ title: doc.value.project_name || projectId.value }))
+usePageMeta(() => ({ title: projectTitle.value }))
 
 const breadcrumbs = computed(() => [
   { label: __('Projects'), route: { name: 'LCS Projects' } },
-  { label: doc.value.project_name || projectId.value, route: { name: 'LCS Project', params: { id: projectId.value } } },
+  { label: projectTitle.value, route: { name: 'LCS Project', params: { id: projectId.value } } },
 ])
 
 const headSubtitle = computed(() => {
@@ -899,7 +902,7 @@ const templatesResource = createResource({
 const offerTemplates = computed(() => templatesResource.data || [])
 
 function applyTemplate(t) {
-  const projectName = doc.value.project_name || ''
+  const projectName = stripV(doc.value.project_name) || ''
   const projectNumber = doc.value.project_number || ''
   newOffer.value = {
     ...newOffer.value,

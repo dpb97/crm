@@ -67,6 +67,8 @@ const props = defineProps({
   // for a full-bleed map.
   heightClass: { type: String, default: 'h-96' },
 })
+// Displayed project code without the "V_" Vertrieb prefix (V_SB-… → SB-…).
+function stripV(s) { return String(s || '').replace(/^V_/i, '') }
 
 const mapContainer = ref(null)
 const loading = ref(true)
@@ -175,7 +177,7 @@ function renderMarkers(L) {
 
     marker.bindPopup(`
       <div style="font-family:Inter,system-ui,sans-serif;min-width:160px;padding:4px 0">
-        <div style="font-weight:600;font-size:13px;color:var(--pp-text-primary)">${p.project_name || ''}</div>
+        <div style="font-weight:600;font-size:13px;color:var(--pp-text-primary)">${stripV(p.project_name)}</div>
         <div style="font-size:11px;color:var(--pp-text-tertiary);margin-top:2px">${p.project_number || ''} &middot; ${p.project_type || ''}</div>
         <div style="margin-top:6px;display:flex;align-items:center;gap:4px">
           <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${color}"></span>

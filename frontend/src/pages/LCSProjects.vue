@@ -918,12 +918,17 @@ const lastContactRes = createResource({
 })
 const lastContact = computed(() => lastContactRes.data || {})
 
+// Display helper: strip the "V_" sales prefix from a project code.
+function stripV(s) { return String(s || '').replace(/^V_/i, '') }
+
 const totalCount = computed(() => projectsData.value?.length || 0)
 // Full fetched set (mapped + client-sorted) — the KPI strip counts over THIS so
 // won projects still show up in the numbers even when hidden from the list.
 const baseList = computed(() => {
   const list = (projectsData.value || []).map((p) => ({
     ...p,
+    // Drop the "V_" Vertrieb prefix from the displayed code (V_SB-… → SB-…).
+    project_name: stripV(p.project_name),
     last_contact: lastContact.value[p.name] || '',
   }))
   if (sortField.value === 'last_contact') {

@@ -73,7 +73,7 @@
             <span class="crms-cands-cap">{{ __('Suggested projects') }}</span>
             <button v-for="c in candidates" :key="c.name" type="button" class="crms-cand" :disabled="busy" @click="dispatchTo(c.name)">
               <div class="crms-cand-main">
-                <span class="crms-cand-name">{{ c.project_name }}<span v-if="c.project_type" class="crms-type" :data-type="c.project_type">{{ c.project_type }}</span></span>
+                <span class="crms-cand-name">{{ stripV(c.project_name) }}<span v-if="c.project_type" class="crms-type" :data-type="c.project_type">{{ c.project_type }}</span></span>
                 <span class="crms-cand-sub">
                   <span class="crms-mono">{{ c.project_number }}</span>
                   <template v-if="c.organization"> · {{ c.organization }}</template>
@@ -96,7 +96,7 @@
             <div v-if="manualResults.length" class="crms-manual-list">
               <button v-for="p in manualResults" :key="p.name" type="button" class="crms-cand" :disabled="busy" @click="dispatchTo(p.name)">
                 <div class="crms-cand-main">
-                  <span class="crms-cand-name">{{ p.project_name }}<span v-if="p.project_type" class="crms-type" :data-type="p.project_type">{{ p.project_type }}</span></span>
+                  <span class="crms-cand-name">{{ stripV(p.project_name) }}<span v-if="p.project_type" class="crms-type" :data-type="p.project_type">{{ p.project_type }}</span></span>
                   <span class="crms-cand-sub"><span class="crms-mono">{{ p.project_number }}</span><template v-if="p.organization"> · {{ p.organization }}</template></span>
                 </div>
               </button>
@@ -153,6 +153,9 @@ import PpSpeakOrType from '@/components/pp/PpSpeakOrType.vue'
 import PpEmptyState from '@/components/pp/PpEmptyState.vue'
 import IconStickyNote from '~icons/lucide/sticky-note'
 import { useUserPreferences } from '@/composables/useUserPreferences'
+
+// Displayed project code without the "V_" Vertrieb prefix (V_SB-… → SB-…).
+function stripV(s) { return String(s || '').replace(/^V_/i, '') }
 
 const LANGS = [
   { label: 'Deutsch (DE)', value: 'de-DE' },
