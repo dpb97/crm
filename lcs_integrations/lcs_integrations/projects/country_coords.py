@@ -164,12 +164,45 @@ COUNTRY_COORDS = {
     "yemen": (15.5527, 48.5164),
     "zambia": (-13.1339, 27.8493),
     "zimbabwe": (-19.0154, 29.1549),
+    # Centroids for countries that appear only via their 3-letter code below and
+    # were not otherwise in the table.
+    "faroe islands": (61.8926, -6.9118),
+    "seychelles": (-4.6796, 55.4920),
+    "dominica": (15.4150, -61.3710),
+}
+
+# The abas import stores `country` as a 3-letter code (a mix of IOC / ISO-3 /
+# FIFA), e.g. "GER", "SUI", "NEP", "FRA." — not the Frappe long name get_coords
+# expects. Map every code seen in the data (plus common ISO/IOC variants) to a
+# COUNTRY_COORDS key so the project map resolves them to a country centroid.
+COUNTRY_CODES = {
+    "ind": "india", "bra": "brazil", "can": "canada", "chl": "chile",
+    "nep": "nepal", "npl": "nepal", "ksa": "saudi arabia", "sau": "saudi arabia",
+    "uae": "united arab emirates", "are": "united arab emirates",
+    "usa": "united states", "aus": "australia", "col": "colombia",
+    "jpn": "japan", "jpy": "japan", "per": "peru", "png": "papua new guinea",
+    "ger": "germany", "deu": "germany", "sui": "switzerland", "che": "switzerland",
+    "kor": "south korea", "grc": "greece", "gre": "greece", "aut": "austria",
+    "fra": "france", "ita": "italy", "mex": "mexico", "khm": "cambodia",
+    "zaf": "south africa", "rsa": "south africa", "nze": "new zealand", "nzl": "new zealand",
+    "esp": "spain", "tha": "thailand", "uzb": "uzbekistan", "rom": "romania", "rou": "romania",
+    "btn": "bhutan", "nor": "norway", "mys": "malaysia", "mng": "mongolia",
+    "ukr": "ukraine", "uga": "uganda", "idn": "indonesia", "isl": "iceland",
+    "gtm": "guatemala", "mar": "morocco", "tur": "turkey", "ecu": "ecuador",
+    "lux": "luxembourg", "bur": "myanmar", "mmr": "myanmar",
+    "fro": "faroe islands", "syc": "seychelles", "dma": "dominica",
 }
 # fmt: on
 
 
 def get_coords(country: str | None) -> tuple[float, float] | None:
-    """Return (latitude, longitude) centroid for a Frappe country name."""
+    """Return (latitude, longitude) centroid for a Frappe country name OR a
+    3-letter country code (e.g. "GER", "NEP", "FRA.")."""
     if not country:
         return None
-    return COUNTRY_COORDS.get(country.strip().lower())
+    key = country.strip().lower().strip(". ")
+    hit = COUNTRY_COORDS.get(key)
+    if hit:
+        return hit
+    alias = COUNTRY_CODES.get(key)
+    return COUNTRY_COORDS.get(alias) if alias else None

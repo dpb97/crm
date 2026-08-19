@@ -91,7 +91,10 @@ def get_project_map_data():
 # until Order; Execution = building; Completed = operating.
 _GEO_STATE = {
     "Qualified": "akquise", "Budget": "akquise", "Richtpreis": "akquise",
-    "Offer": "akquise", "Negotiation": "akquise", "Won": "akquise",
+    "Offer": "akquise", "Negotiation": "akquise",
+    # Won = order booked → the project leaves acquisition and enters the
+    # delivery/construction lifecycle (never "akquise").
+    "Won": "bau",
     "Execution": "bau", "Completed": "betrieb", "Lost": "akquise",
 }
 # Project type → PpGeoMap marker shape (only the shapes it knows).
