@@ -25,11 +25,19 @@
           :subtitle="__('click a row to open the profile')"
         />
 
-        <!-- Filterleiste (Referenz: Calls) -->
+        <!-- Filterleiste (Referenz: Calls) + Listen-/Karten-Umschalter -->
         <PpFilterBar
           v-model:search="q"
           :placeholder="__('Search / filter by industry') + ' …'"
-        />
+        >
+          <template #actions>
+            <!-- On the phone the card view is always used, so the toggle is hidden. -->
+            <div v-if="!isMobile" class="crmo-viewtoggle">
+              <button type="button" class="crmo-vt-btn" :class="{ 'is-active': viewMode === 'list' }" :title="__('List')" @click="viewMode = 'list'"><IconList /></button>
+              <button type="button" class="crmo-vt-btn" :class="{ 'is-active': viewMode === 'cards' }" :title="__('Cards')" @click="viewMode = 'cards'"><IconGrid /></button>
+            </div>
+          </template>
+        </PpFilterBar>
 
         <!-- KPI-Karten = klickbare Segment-Filter (Master Regel 9). -->
         <section class="crmo-kpis">
@@ -46,7 +54,7 @@
         </section>
 
         <PpTableCard :title="__('Organizations')" :shown="filtered.length" :total="orgs.length">
-          <PpDataGrid table-key="lcs_organizations" v-if="rows.length" :columns="columns" :rows="rows" :page-size="25" pickable v-model:pick-mode="selectMode" v-model:picked="picked" @row-click="openOrg">
+          <PpDataGrid table-key="lcs_organizations" v-if="rows.length && effectiveView === 'list'" :columns="columns" :rows="rows" :page-size="25" pickable v-model:pick-mode="selectMode" v-model:picked="picked" @row-click="openOrg">
             <template #cell-name="{ row }">
               <span class="pp-cell-strong">{{ row.name }}</span>
               <span class="pp-cell-sub">{{ row.industry || '—' }}</span>
@@ -69,6 +77,19 @@
             </template>
           </PpDataGrid>
 
+          <!-- Karten-Ansicht (PpContactCards als reiner Renderer, wie bei Personen). -->
+          <div v-else-if="rows.length" class="crmo-scroll">
+            <PpContactCards
+              class="crmo-cards"
+              :people="cardOrgs"
+              view="cards"
+              :searchable="false"
+              :action-label="__('Open record')"
+              @select="(o) => openOrg(o.id)"
+              @action="(o) => openDetail(o.id)"
+            />
+          </div>
+
           <PpEmptyState
             v-else-if="hasFilter"
             :icon="IconSearchX"
@@ -85,6 +106,15 @@
             :title="loading ? __('Loading …') : __('No organizations yet')"
             :hint="loading ? '' : __('Companies created in the CRM will appear here.')"
           />
+
+          <!-- Card view keeps the external pager; the list view paginates inside PpDataGrid. -->
+          <template v-if="effectiveView === 'cards' && rows.length && rowTotal > 25" #footer>
+            <LcsPagination
+              :from="pgFrom" :to="pgTo" :total="rowTotal"
+              :page="page" :page-count="pageCount" :page-size="pageSize"
+              @prev="pgPrev" @next="pgNext" @page-size="setPageSize"
+            />
+          </template>
         </PpTableCard>
       </div>
     </div>
@@ -102,12 +132,19 @@ import PpDataGrid from '@/components/pp/PpDataGrid.vue'
 import PpEmptyState from '@/components/pp/PpEmptyState.vue'
 import PpFilterBar from '@/components/pp/PpFilterBar.vue'
 import PpTableCard from '@/components/pp/PpTableCard.vue'
+import PpContactCards from '@/components/pp/PpContactCards.vue'
+import LcsPagination from '@/components/lcs/LcsPagination.vue'
 import OrganizationInspector from '@/components/lcs/OrganizationInspector.vue'
 import IconSearchX from '~icons/lucide/search-x'
 import IconInbox from '~icons/lucide/inbox'
+import IconList from '~icons/lucide/list'
+import IconGrid from '~icons/lucide/layout-grid'
 import { usePilandaMode } from '@/composables/usePilandaMode'
 import { usePilandaInspect } from '@/composables/usePilandaInspect'
 import { useListFuncbar } from '@/composables/useListFuncbar'
+import { usePagination } from '@/composables/usePagination'
+import { useProfileSetting } from '@/composables/useProfileSetting'
+import { useViewport } from '@/composables/useViewport'
 
 const router = useRouter()
 const { pilandaMode } = usePilandaMode()
@@ -221,6 +258,27 @@ const rows = computed(() =>
   })),
 )
 
+// --- Pagination for the card view (list view paginates inside PpDataGrid) ---
+const {
+  paged: pagedRows, page, pageCount, total: rowTotal,
+  from: pgFrom, to: pgTo, pageSize, next: pgNext, prev: pgPrev, setPageSize,
+} = usePagination(rows)
+
+// List/cards toggle — cards by default; the phone always shows cards.
+const viewMode = useProfileSetting('lcs_organizations', 'view', 'cards')
+const { isMobile } = useViewport()
+const effectiveView = computed(() => (isMobile.value ? 'cards' : viewMode.value))
+// Feed PpContactCards (same renderer as Personen): name = company, industry as
+// the sub-line, territory as the location.
+const cardOrgs = computed(() =>
+  pagedRows.value.map((r) => ({
+    id: r.id,
+    name: r.name,
+    company: r.industry,
+    country: r.territory,
+  })),
+)
+
 // Pagination now lives inside PpDataGrid (page-size), so its column filter +
 // search run over the FULL dataset and only the page is rendered.
 
@@ -282,4 +340,16 @@ onBeforeUnmount(() => {
 @media (max-width: 1080px) {
   .crmo-kpis { grid-template-columns: repeat(2, 1fr); }
 }
+
+/* Listen-/Karten-Umschalter (wie Personen) */
+.crmo-viewtoggle { display: inline-flex; gap: 2px; padding: 2px; border-radius: var(--pp-radius-ui);
+  background: var(--pp-bg-base); border: 1px solid var(--pp-border-subtle); }
+.crmo-vt-btn { appearance: none; cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
+  width: 30px; height: 28px; border: none; border-radius: var(--pp-radius-ui); background: transparent; color: var(--pp-text-tertiary); }
+.crmo-vt-btn:hover { color: var(--pp-brand-primary); }
+.crmo-vt-btn.is-active { background: var(--pp-bg-surface); color: var(--pp-brand-primary); box-shadow: var(--pp-shadow-xs); }
+.crmo-vt-btn :deep(svg) { width: 15px; height: 15px; }
+.crmo-scroll { flex: 1; min-height: 0; overflow: auto; }
+/* PpContactCards als reiner Karten-Renderer: eigene Toolbar aus (wie Personen). */
+.crmo-cards :deep(.pp-contacts__bar) { display: none; }
 </style>

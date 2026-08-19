@@ -332,6 +332,7 @@ declare module 'vue' {
     ProjectInspector: typeof import('./src/components/lcs/ProjectInspector.vue')['default']
     ProjectMap: typeof import('./src/components/lcs/ProjectMap.vue')['default']
     ProjectPhaseInspector: typeof import('./src/components/lcs/ProjectPhaseInspector.vue')['default']
+    PullToRefresh: typeof import('./src/components/lcs/PullToRefresh.vue')['default']
     PwaInstallBanner: typeof import('./src/components/lcs/PwaInstallBanner.vue')['default']
     QuickContactActions: typeof import('./src/components/lcs/QuickContactActions.vue')['default']
     QuickEntryModal: typeof import('./src/components/Modals/QuickEntryModal.vue')['default']
