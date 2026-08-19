@@ -15,9 +15,21 @@
  * 30 minutes (localStorage timestamp) to stay cheap on mobile data.
  */
 
+import { reactive } from 'vue'
 import { call } from 'frappe-ui'
 import { cachePut } from './offlineDB'
 import { mirrorPut } from './swMirror'
+
+// Live progress for the offline download, surfaced in the OfflineIndicator so
+// the user can see how much is being cached / is available offline.
+export const prefetchProgress = reactive({
+  running: false,   // a warm-up is in progress
+  total: 0,         // number of doctypes to warm
+  done: 0,          // doctypes finished
+  current: '',      // doctype currently warming
+  records: 0,       // records written into IndexedDB so far
+  finishedAt: 0,    // ms timestamp of the last completed run
+})
 
 const CORE_DOCTYPES = [
   { doctype: 'CRM Deal', fullDocs: 50 },
@@ -67,7 +79,14 @@ export async function prefetchOfflineData(force = false) {
   localStorage.setItem(LS_KEY, String(Date.now()))
   localStorage.setItem(LS_VER, PREFETCH_VERSION)
 
+  prefetchProgress.running = true
+  prefetchProgress.total = CORE_DOCTYPES.length
+  prefetchProgress.done = 0
+  prefetchProgress.records = 0
+  prefetchProgress.current = ''
+
   for (const { doctype, fullDocs } of CORE_DOCTYPES) {
+    prefetchProgress.current = doctype
     try {
       const rows = await call('frappe.client.get_list', {
         doctype,
@@ -78,6 +97,7 @@ export async function prefetchOfflineData(force = false) {
       for (const row of rows || []) {
         await cachePut(doctype, row.name, row)
       }
+      prefetchProgress.records += (rows || []).length
       // Write the list rows straight into the service-worker IndexedDB store so
       // offline get_list reads (offlineListFallback) find them — no dependency
       // on the SW having intercepted this very fetch.
@@ -114,6 +134,7 @@ export async function prefetchOfflineData(force = false) {
     } catch (e) {
       console.warn(`offlinePrefetch: ${doctype} failed`, e)
     }
+    prefetchProgress.done += 1
   }
 
   // Warm the custom list-method endpoints too: the service worker caches every
@@ -129,6 +150,10 @@ export async function prefetchOfflineData(force = false) {
       /* not permitted / needs other args / not configured — skip */
     }
   }
+
+  prefetchProgress.current = ''
+  prefetchProgress.running = false
+  prefetchProgress.finishedAt = Date.now()
 }
 
 const P = 'lcs_integrations.projects.api.'

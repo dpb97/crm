@@ -155,11 +155,31 @@
         </div>
       </div>
 
+      <!-- Offline download progress (while the prefetch is running) -->
+      <div v-if="downloading" class="border-t bg-blue-50 px-4 py-2.5">
+        <div class="flex items-center justify-between text-xs font-medium text-blue-800">
+          <span class="flex items-center gap-1.5">
+            <FeatherIcon name="download-cloud" class="h-3.5 w-3.5 animate-pulse" />
+            {{ __('Saving for offline') }} …
+          </span>
+          <span>{{ prefetchProgress.records }} {{ __('records') }}</span>
+        </div>
+        <div class="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-blue-100">
+          <div class="h-full rounded-full bg-blue-500 transition-all duration-300" :style="{ width: dlPct + '%' }" />
+        </div>
+        <div class="mt-1 text-[10px] text-blue-600">
+          {{ dlArea }} · {{ prefetchProgress.done }} / {{ prefetchProgress.total }} {{ __('areas') }}
+        </div>
+      </div>
+
       <!-- Offline availability — how much data is cached for offline use -->
-      <div v-if="cacheTotal > 0" class="border-t bg-gray-50 px-4 py-2.5">
-        <div class="flex items-center gap-1.5 text-xs font-medium text-gray-600">
-          <FeatherIcon name="hard-drive" class="h-3.5 w-3.5 text-gray-400" />
-          <span>{{ cacheTotal }} {{ __('records available offline') }}</span>
+      <div v-if="cacheTotalDisplay > 0" class="border-t bg-gray-50 px-4 py-2.5">
+        <div class="flex items-center justify-between">
+          <span class="flex items-center gap-1.5 text-xs font-medium text-gray-600">
+            <FeatherIcon name="hard-drive" class="h-3.5 w-3.5 text-gray-400" />
+            {{ cacheTotalDisplay }} {{ __('records available offline') }}
+          </span>
+          <span v-if="lastUpdatedLabel" class="text-[10px] text-gray-400">{{ lastUpdatedLabel }}</span>
         </div>
         <div class="mt-1 flex flex-wrap gap-x-3 gap-y-0.5">
           <span v-for="s in visibleCacheStats" :key="s.dt" class="text-[10px] text-gray-400">
@@ -192,6 +212,7 @@ import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { FeatherIcon, Dialog, Button } from 'frappe-ui'
 import { listMutations, onQueueChange } from '@/utils/offlineDB'
 import { drain, retryMutation, discardMutation } from '@/utils/syncEngine'
+import { prefetchProgress } from '@/utils/offlinePrefetch'
 import ConflictResolver from '@/components/lcs/ConflictResolver.vue'
 
 const online = ref(navigator.onLine)
@@ -199,6 +220,22 @@ const mutations = ref([])
 const drawerOpen = ref(false)
 const syncing = ref(false)
 const resolverMutation = ref(null)
+
+// --- Offline download status -------------------------------------------------
+const downloading = computed(() => prefetchProgress.running)
+const dlPct = computed(() =>
+  prefetchProgress.total ? Math.round((prefetchProgress.done / prefetchProgress.total) * 100) : 0,
+)
+const dlArea = computed(() => prefetchProgress.current.replace(/^CRM |^LCS /, ''))
+// Show a short "offline ready" confirmation after a run finishes.
+const showReady = ref(false)
+watch(() => prefetchProgress.running, (running, was) => {
+  if (was && !running) {
+    loadCacheStats()
+    showReady.value = true
+    setTimeout(() => { showReady.value = false }, 8000)
+  }
+})
 
 function openResolver(mutation) {
   resolverMutation.value = mutation
@@ -221,25 +258,33 @@ const sortedMutations = computed(() =>
   [...mutations.value].sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))
 )
 
-const showBanner = computed(() => !online.value || pending.value.length > 0 || failed.value.length > 0 || conflicts.value.length > 0)
+const showBanner = computed(() =>
+  !online.value || pending.value.length > 0 || failed.value.length > 0 || conflicts.value.length > 0
+  || downloading.value || showReady.value,
+)
 
 const bannerClass = computed(() => {
   if (!online.value) return 'border-red-200 bg-red-50 text-red-800'
   if (conflicts.value.length) return 'border-orange-200 bg-orange-50 text-orange-800'
   if (failed.value.length) return 'border-red-200 bg-red-50 text-red-800'
   if (pending.value.length) return 'border-amber-200 bg-amber-50 text-amber-800'
+  if (downloading.value) return 'border-blue-200 bg-blue-50 text-blue-800'
   return 'border-green-200 bg-green-50 text-green-800'
 })
 
 const pingClass = computed(() => {
   if (!online.value || failed.value.length) return 'bg-red-400'
   if (conflicts.value.length) return 'bg-orange-400'
+  if (downloading.value) return 'bg-blue-400'
+  if (showReady.value) return 'bg-green-400'
   return 'bg-amber-400'
 })
 
 const dotClass = computed(() => {
   if (!online.value || failed.value.length) return 'bg-red-500'
   if (conflicts.value.length) return 'bg-orange-500'
+  if (downloading.value) return 'bg-blue-500'
+  if (showReady.value) return 'bg-green-500'
   return 'bg-amber-500'
 })
 
@@ -248,6 +293,8 @@ const bannerMessage = computed(() => {
   if (conflicts.value.length) return `${conflicts.value.length} ${__('conflict(s) — tap to resolve')}`
   if (failed.value.length) return `${failed.value.length} ${__('sync error(s)')}`
   if (pending.value.length) return `${__('Syncing')} ${pending.value.length} ${__('change(s)')}...`
+  if (downloading.value) return `${__('Saving offline')} … ${prefetchProgress.records} ${__('records')}`
+  if (showReady.value) return `${cacheTotalDisplay.value} ${__('records available offline')}`
   return __('All synced')
 })
 
@@ -308,6 +355,9 @@ const cacheTotal = computed(() =>
     0,
   ),
 )
+// Fall back to the prefetch's own tally when the SW stats aren't in yet.
+const cacheTotalDisplay = computed(() => Math.max(cacheTotal.value, prefetchProgress.records || 0))
+const lastUpdatedLabel = computed(() => (prefetchProgress.finishedAt ? timeAgo(prefetchProgress.finishedAt) : ''))
 const visibleCacheStats = computed(() =>
   Object.entries(cacheStats.value)
     .filter(([store, n]) => store !== '_methods' && n > 0)
