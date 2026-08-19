@@ -87,6 +87,7 @@
 -->
 <script setup>
 import { ref, computed, reactive, watch, onBeforeUnmount } from "vue";
+import { useViewport } from "@/composables/useViewport";
 import ChevronLeft from "~icons/lucide/chevron-left";
 import ChevronRight from "~icons/lucide/chevron-right";
 import ChevronDown from "~icons/lucide/chevron-down";
@@ -236,9 +237,17 @@ function normGeneral(list, prefix) {
 const allgemeinTree = computed(() => { _auto = 0; return normGeneral(props.allgemein, "a"); });
 const wissenTree    = computed(() => normGeneral(props.wissen, "w"));
 
-/* ---------- Chevron-Collapse (Standard eingeklappt) ---------- */
+/* ---------- Chevron-Collapse ----------
+   Desktop: groups start collapsed (open only when they hold the active route).
+   Phone: groups start EXPANDED so sub-items (e.g. Netzwerk → Firmen/Personen)
+   are directly tappable — collapsing is just an optional fallback there. */
+const { isMobile } = useViewport();
 const expanded = reactive({});
-function toggleGroup(key) { expanded[key] = !expanded[key]; }
+function toggleGroup(key) {
+  // On the phone groups are open by default, so the first tap collapses.
+  if (isMobile.value && !(key in expanded)) { expanded[key] = false; return; }
+  expanded[key] = !expanded[key];
+}
 const isExpanded = (key) => !!expanded[key];
 
 /* @7 (Regel 5): Gruppe ist offen, wenn sie manuell aufgeklappt wurde ODER der
@@ -248,7 +257,11 @@ function containsActive(node) {
   if (keyActive(node)) return true;
   return (node.children || []).some((c) => containsActive(c));
 }
-function groupOpen(node) { return isExpanded(node.key) || containsActive(node); }
+function groupOpen(node) {
+  // Phone: expanded by default; an explicit collapse (false) still wins.
+  if (isMobile.value) return node.key in expanded ? expanded[node.key] : true;
+  return isExpanded(node.key) || containsActive(node);
+}
 
 /* ---------- Auswahl / Navigation ---------- */
 function selectDashboard() {
