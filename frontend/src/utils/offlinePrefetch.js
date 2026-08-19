@@ -22,7 +22,9 @@ const CORE_DOCTYPES = [
   { doctype: 'CRM Deal', fullDocs: 50 },
   { doctype: 'CRM Lead', fullDocs: 50 },
   { doctype: 'CRM Organization', fullDocs: 25 },
-  { doctype: 'Contact', fullDocs: 25 },
+  // Contacts: cache EVERY contact fully (incl. child tables) — the user wants
+  // all contacts offline; the mail thread is skipped (see DETAIL_METHODS).
+  { doctype: 'Contact', fullDocs: 100000 },
   // LCS Vertrieb core — projects, offers and tasks must be readable offline
   // on site too (they back the project pipeline, the offer workflow and the
   // task lists). Full docs for projects/offers so detail pages incl. child
@@ -53,7 +55,7 @@ const THROTTLE_MS = 30 * 60 * 1000
 const LS_KEY = 'lcs-offline-prefetch-at'
 // Bump whenever CORE_DOCTYPES / METHOD_WARM change — a version mismatch forces
 // one full re-warm (ignoring the throttle) so a client picks up the wider set.
-const PREFETCH_VERSION = '3'
+const PREFETCH_VERSION = '4'
 const LS_VER = 'lcs-offline-prefetch-ver'
 
 export async function prefetchOfflineData(force = false) {
@@ -156,9 +158,8 @@ const DETAIL_METHODS = {
     { m: P + 'get_project_offers', args: (r) => ({ project: r.name }) },
     { m: P + 'get_opportunity_matrix', args: (r) => ({ project: r.name }) },
   ],
-  'Contact': [
-    { m: P + 'get_contact_emails', args: (r) => ({ contact: r.name }) },
-  ],
+  // Contacts: mail thread is intentionally NOT prewarmed (large, and not needed
+  // offline per request). All contacts are still fully cached via fullDocs below.
   'LCS Chance': [
     { m: P + 'get_chance', args: (r) => ({ name: r.name }) },
     { m: P + 'get_item_comments', args: (r) => ({ doctype: 'LCS Chance', name: r.name }) },
