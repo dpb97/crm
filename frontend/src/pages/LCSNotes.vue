@@ -90,7 +90,9 @@ const board = createResource({ url: 'lcs_integrations.projects.api.get_notes', a
 
 // Neue Notiz — nur per Button (Modal).
 const showNew = ref(false)
-function onNoteSaved() { showNew.value = false; board.reload() }
+// Keep the window open after saving so several notes can be written in one go
+// (the composer clears itself). The user closes it via the ✕ when finished.
+function onNoteSaved() { board.reload() }
 const rows = computed(() => board.data?.rows || [])
 
 // --- Filter: Art + Freitext ------------------------------------------------

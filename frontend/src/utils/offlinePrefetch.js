@@ -53,7 +53,7 @@ const THROTTLE_MS = 30 * 60 * 1000
 const LS_KEY = 'lcs-offline-prefetch-at'
 // Bump whenever CORE_DOCTYPES / METHOD_WARM change — a version mismatch forces
 // one full re-warm (ignoring the throttle) so a client picks up the wider set.
-const PREFETCH_VERSION = '2'
+const PREFETCH_VERSION = '3'
 const LS_VER = 'lcs-offline-prefetch-ver'
 
 export async function prefetchOfflineData(force = false) {
@@ -83,6 +83,21 @@ export async function prefetchOfflineData(force = false) {
           await cachePut(doctype, doc.name, doc)
         } catch (e) {
           // permission or race — skip this record, keep going
+        }
+      }
+      // Per-record detail sub-panels for the hottest records, so those detail
+      // pages open FULLY offline (a project's offers + opportunity matrix, a
+      // contact's mail thread, a chance's comments) — not just the main doc.
+      const detail = DETAIL_METHODS[doctype]
+      if (detail) {
+        for (const row of (rows || []).slice(0, DETAIL_LIMIT)) {
+          for (const d of detail) {
+            try {
+              await call(d.m, d.args(row))
+            } catch (e) {
+              /* permission / race — skip */
+            }
+          }
         }
       }
     } catch (e) {
@@ -131,6 +146,24 @@ const METHOD_WARM = [
   { m: P + 'get_last_contact_dates', args: { doctype: 'CRM Organization' } },
   { m: P + 'get_last_contact_dates', args: { doctype: 'LCS Project' } },
 ]
+
+// Per-record detail endpoints — warmed for the DETAIL_LIMIT most-recent records
+// of each doctype so their detail pages open fully offline (sub-panels too).
+// Bounded on purpose: warming every record's sub-data would be a huge download.
+const DETAIL_LIMIT = 60
+const DETAIL_METHODS = {
+  'LCS Project': [
+    { m: P + 'get_project_offers', args: (r) => ({ project: r.name }) },
+    { m: P + 'get_opportunity_matrix', args: (r) => ({ project: r.name }) },
+  ],
+  'Contact': [
+    { m: P + 'get_contact_emails', args: (r) => ({ contact: r.name }) },
+  ],
+  'LCS Chance': [
+    { m: P + 'get_chance', args: (r) => ({ name: r.name }) },
+    { m: P + 'get_item_comments', args: (r) => ({ doctype: 'LCS Chance', name: r.name }) },
+  ],
+}
 
 /** Wire once from App.vue — initial warm-up + refresh on reconnect. */
 export function startOfflinePrefetch() {
