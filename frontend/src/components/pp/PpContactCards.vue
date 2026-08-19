@@ -166,8 +166,11 @@ function setView(v) { emit("update:view", v); }
 .pp-contacts__empty { color: var(--pp-text-tertiary); font-size: var(--pp-fs-13, 13px); margin: var(--pp-space-2) 0; }
 
 /* Avatar (eckig, --pp-Radius, accent-soft) */
+/* !important: a global rule ([class*="avatar"]) forces every avatar to
+   --pp-radius-full (round) with !important — override it here so the contact
+   avatars render square (design wish), matching the squared detail avatar. */
 .pp-contacts__avatar { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center;
-  width: 40px; height: 40px; border-radius: var(--pp-radius-ui); background: var(--pp-accent-soft);
+  width: 40px; height: 40px; border-radius: var(--pp-radius-ui) !important; background: var(--pp-accent-soft);
   color: var(--pp-brand-primary-d, var(--pp-brand-primary)); font-size: var(--pp-fs-13, 13px);
   font-weight: var(--pp-weight-bold); letter-spacing: .02em; }
 .pp-contacts__avatar--sm { width: 30px; height: 30px; font-size: var(--pp-fs-12, 12px); }

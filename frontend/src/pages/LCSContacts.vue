@@ -322,7 +322,7 @@ const {
 
 // Listen-/Karten-Umschalter (Karten via PpContactCards, gefüttert aus den
 // paginierten Zeilen — KPI-Filter + Pagination gelten in beiden Ansichten).
-const viewMode = useProfileSetting('lcs_contacts', 'view', 'list')
+const viewMode = useProfileSetting('lcs_contacts', 'view', 'cards')
 const cardPeople = computed(() =>
   pagedRows.value.map((r) => ({
     id: r.id,
