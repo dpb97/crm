@@ -360,15 +360,19 @@ self.addEventListener('fetch', (event) => {
   if (GET_LIST_RE.test(url)) {
     event.respondWith(
       (async () => {
+        // Clone BEFORE fetch consumes the body — get_list is a POST whose
+        // doctype/filters live in the body, so both the IDB write and the
+        // offline fallback need an unconsumed copy (mirrors the get_* path).
+        const keyReq = request.clone()
         try {
           const res = await fetch(request)
           if (res && res.ok) {
             // fire-and-forget IDB write; don't make the SPA wait.
-            event.waitUntil(handleListResponse(request, res))
+            event.waitUntil(handleListResponse(keyReq, res))
           }
           return res
         } catch {
-          const fallback = await offlineListFallback(request)
+          const fallback = await offlineListFallback(keyReq)
           return (
             fallback ||
             new Response(JSON.stringify({ exc_type: 'OfflineError' }), {
@@ -386,14 +390,15 @@ self.addEventListener('fetch', (event) => {
   if (GET_ONE_RE.test(url)) {
     event.respondWith(
       (async () => {
+        const keyReq = request.clone() // BEFORE fetch consumes the body
         try {
           const res = await fetch(request)
           if (res && res.ok) {
-            event.waitUntil(handleSingleResponse(request, res))
+            event.waitUntil(handleSingleResponse(keyReq, res))
           }
           return res
         } catch {
-          const fallback = await offlineSingleFallback(request)
+          const fallback = await offlineSingleFallback(keyReq)
           return (
             fallback ||
             new Response(JSON.stringify({ exc_type: 'OfflineError' }), {

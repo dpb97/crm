@@ -205,7 +205,7 @@
     </div>
 
     <!-- Angebot-Klassifizierung bearbeiten -->
-    <PpModal v-model:open="offerOpen" :title="offerDraft.project_name || __('Offer')" :width="620">
+    <PpModal v-model:open="offerOpen" :title="stripV(offerDraft.project_name) || __('Offer')" :width="620">
       <div class="crmsm-form">
         <div class="crmsm-frow">
           <label class="crmsm-fld"><span class="crmsm-fld-cap">{{ __('Solution / Produkt') }}</span>
@@ -393,9 +393,11 @@ const agenda = computed(() => board.data?.agenda || [])
 const archivedCount = computed(() => board.data?.archived_count || 0)
 const chancen = computed(() => board.data?.chancen || [])
 const leads = computed(() => board.data?.leads || [])
-const projekte = computed(() => board.data?.projekte || [])
+// Display helper: strip the "V_" Vertrieb prefix from a project code.
+function stripV(s) { return String(s || '').replace(/^V_/i, '') }
+const projekte = computed(() => (board.data?.projekte || []).map((p) => ({ ...p, name: stripV(p.name) })))
 const decisions = computed(() => board.data?.decisions || [])
-const important = computed(() => board.data?.important || [])
+const important = computed(() => (board.data?.important || []).map((i) => ({ ...i, title: stripV(i.title) })))
 const frame = computed(() => board.data?.frame || {})
 const stageTotal = computed(() => chancen.value.length + leads.value.length + projekte.value.length)
 const meetingDateLabel = computed(() => board.data?.meeting_date ? fmtDate(board.data.meeting_date) : '')
@@ -552,7 +554,7 @@ function selectStage(kind, o) {
     badge: { label: cfg.badge, tone: cfg.tone },
     rows: cfg.rows,
     action: { label: __('Open'), onClick: () => openStage(kind, o) },
-    ref: { doctype: { deal: 'CRM Deal', lead: 'CRM Lead', project: 'LCS Project' }[kind], name: o.id, title: o.name },
+    ref: { doctype: { deal: 'CRM Deal', lead: 'CRM Lead', project: 'LCS Project' }[kind], name: o.id, title: stripV(o.name) },
   })
 }
 
@@ -604,8 +606,10 @@ const TABS = computed(() => {
   return readonly.value ? all.filter((t) => t.key === 'protokoll') : all
 })
 
-const pipeRows = computed(() =>
-  tab.value === 'orders' ? orders.value : tab.value === 'evidenz' ? evidenz.value : offers.value)
+const pipeRows = computed(() => {
+  const src = tab.value === 'orders' ? orders.value : tab.value === 'evidenz' ? evidenz.value : offers.value
+  return (src || []).map((r) => ({ ...r, project_name: stripV(r.project_name) }))
+})
 const tabTitle = computed(() =>
   tab.value === 'orders' ? __('Aufträge')
     : tab.value === 'evidenz' ? __('Angebote in Evidenz') : __('Angebote in Bearbeitung'))
