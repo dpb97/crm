@@ -133,6 +133,30 @@ class GraphClient:
         )
         return self._check(resp, 200)
 
+    def get_message_folder(self, mailbox: str, graph_id: str) -> str | None:
+        """parentFolderId of a message, or None if it no longer exists (404).
+        Used to tell a real deletion from a move when the Inbox delta reports an
+        item as @removed (removed-from-Inbox covers both delete and move-out)."""
+        resp = self._http.get(
+            f"/users/{mailbox}/messages/{graph_id}",
+            params={"$select": "parentFolderId"},
+            headers=self._headers(),
+        )
+        if resp.status_code == 404:
+            return None
+        return self._check(resp, 200).get("parentFolderId")
+
+    def well_known_folder_id(self, mailbox: str, name: str = "deleteditems") -> str | None:
+        """Resolve a well-known mail folder (e.g. 'deleteditems') to its id."""
+        resp = self._http.get(
+            f"/users/{mailbox}/mailFolders/{name}",
+            params={"$select": "id"},
+            headers=self._headers(),
+        )
+        if resp.status_code == 404:
+            return None
+        return self._check(resp, 200).get("id")
+
     def message_attachments(self, mailbox: str, graph_id: str) -> list[dict[str, Any]]:
         """All attachments of a message (fileAttachment carries `contentBytes`).
         Used on demand by the email reader to inline images and list files."""

@@ -50,22 +50,52 @@ def sync_all_bindings() -> None:
             frappe.log_error(title="outlook_sync", message=str(exc))
 
 
+def _delete_communication(message_id: str) -> bool:
+    """Remove the CRM copy of a mailbox message that was deleted in Outlook,
+    together with its timeline links. Returns True if one was deleted."""
+    name = frappe.db.get_value("Communication", {"message_id": message_id}, "name")
+    if not name:
+        return False
+    frappe.db.delete("Communication Link", {"parent": name})
+    frappe.delete_doc("Communication", name, ignore_permissions=True, delete_permanently=True, force=True)
+    return True
+
+
 def sync_one(binding_name: str) -> int:
-    """Run one delta sync cycle. Returns number of Communications created."""
+    """Run one delta sync cycle. Returns number of Communications created.
+    Also mirrors Outlook deletions into the CRM (see the @removed handling)."""
     binding = frappe.get_doc("Outlook Mailbox Binding", binding_name)
     client = GraphClient()
+    created = 0
+    deleted = 0
+    deleted_items_id = None  # resolved lazily, only if a removal shows up
     try:
         page = client.messages_delta(binding.graph_mailbox, binding.delta_token)
+        for message in page.get("value", []):
+            if message.get("@removed"):
+                # The Inbox delta flags an item @removed for BOTH a real deletion
+                # AND a move to another folder. Only mirror a real deletion: the
+                # message is gone from the mailbox (404) or now sits in Deleted
+                # Items. A move to any other folder keeps the CRM copy.
+                gid = message.get("id")
+                if not gid:
+                    continue
+                if deleted_items_id is None:
+                    deleted_items_id = client.well_known_folder_id(binding.graph_mailbox, "deleteditems") or ""
+                folder = client.get_message_folder(binding.graph_mailbox, gid)
+                if (folder is None or (deleted_items_id and folder == deleted_items_id)) and _delete_communication(gid):
+                    deleted += 1
+                continue
+            if _persist_message(
+                binding.user, message,
+                only_known=bool(binding.get("import_only_known_domains")),
+            ):
+                created += 1
     finally:
         client.close()
 
-    created = 0
-    for message in page.get("value", []):
-        if _persist_message(
-            binding.user, message,
-            only_known=bool(binding.get("import_only_known_domains")),
-        ):
-            created += 1
+    if deleted:
+        frappe.logger().info(f"outlook sync: mirrored {deleted} deletion(s) for {binding.graph_mailbox}")
 
     # Persist the new delta pointer so the next run is incremental.
     next_link = page.get("@odata.deltaLink") or page.get("@odata.nextLink")
