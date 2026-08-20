@@ -616,7 +616,6 @@ Open pipeline,Offene Pipeline
 Open points,Offene Punkte
 Open sales project,Vertriebsprojekt öffnen
 Install LCS CRM,LCS CRM installieren
-Call,Anrufen
 Install,Installieren
 "Tap Share, then “Add to Home Screen”.","Auf „Teilen" tippen, dann „Zum Home-Bildschirm"."
 Add to your home screen — full-screen and offline.,Zum Home-Bildschirm hinzufügen — Vollbild und offline.
@@ -1378,13 +1377,10 @@ read-only.,schreibgeschützt.
 Back to current meeting,Zurück zum aktuellen Meeting
 Pilot sync,Pilot-Sync
 Pilot sync failed,Pilot-Sync fehlgeschlagen
-new,neu
 updated,aktualisiert
-Pilot hits,Pilot-Treffer
 Hit,Treffer
 Rate as chance,Als Chance werten
 Rated as chance,Als Chance gewertet
-Relevance,Relevanz
 high,hoch
 medium,mittel
 low,niedrig
@@ -1396,42 +1392,26 @@ rated (quarter),gewertet (Quartal)
 Rated (quarter),Gewertet (Quartal)
 double click = open hit,Doppelklick = Treffer öffnen
 Open hit,Treffer öffnen
-Scout evaluation,Scoutbewertung
 "Search title, company or country","Titel, Firma oder Land suchen"
 New tenders from the scout appear here. Run “Pilot sync” to pull the latest.,Neue Ausschreibungen des Scouts erscheinen hier. „Pilot-Sync" holt die neuesten.
 Scout hits only. Rating a hit as a chance moves it into the sales flow (Chances → Leads → Sales projects) — nothing appears twice.,Nur Scout-Treffer. „Als Chance werten" hebt einen Treffer in den Vertriebsfluss (Chancen → Leads → Vertriebsprojekte) — nichts erscheint doppelt.
 scout,Scout
 unrated,ungewertet
-Filter,Filter
 Search hit or buyer,Treffer oder Auftraggeber suchen
 Scout hits · only the salespersons rating turns one into a chance,Scouttreffer · erst die Wertung des Verkäufers macht daraus eine Chance
 card = details in the inspector,Karte = Details im Inspektor
-In progress,In Bearbeitung
-New,Neu
 Buyer,Auftraggeber
-Deadline,Frist
-Geo,Geo
-Archive,Archiv
 entries,Einträge
 final deletion only here,endgültiges Löschen nur hier
 No archived hits.,Keine archivierten Treffer.
-Delete,Löschen
 Deleted,Gelöscht
 Could not delete.,Löschen fehlgeschlagen.
 No geodata,Keine Geodaten
-No open hits,Keine offenen Treffer
-Responsible,Verantwortlich
 remove,entfernen
 Assign to …,Zuweisen …
 Assigned,Zugewiesen
 Assignment cleared,Zuweisung entfernt
-Comments,Kommentare
 Add a comment …,Kommentar hinzufügen …
-No comments yet.,Noch keine Kommentare.
-Post,Senden
-Cards,Karten
-Table,Tabelle
-Sales decision,Entscheid
 Score saved,Score gespeichert
 Invalid score.,Ungültiger Score.
 The scout gave no reasoning for this score.,Der Scout hat keine Begründung für diesen Score angegeben.
@@ -1446,7 +1426,6 @@ Sort by,Sortieren nach
 Toggle direction,Richtung umschalten
 abas description,abas Bezeichnung
 Opportunity matrix,Opportunity-Matrix
-Open sales project,Vertriebsprojekt öffnen
 Row = edit classification · double click = open sales project · Chance = LCS% × Kunde%,Zeile = Klassifizierung bearbeiten · Doppelklick = Vertriebsprojekt öffnen · Chance = LCS% × Kunde%
 AI-generated,KI-generiert
 manually adjusted,manuell angepasst
@@ -1464,7 +1443,6 @@ Reply in Outlook,In Outlook antworten
 No Outlook link for this email.,Kein Outlook-Link für diese Mail.
 Only to me,Nur an mich
 Saved offline — will sync when back online,Offline gespeichert – wird synchronisiert sobald wieder online
-Share,Freigeben
 Make private,Privat setzen
 Private — only you,Privat – nur du
 Shared with the team,Fürs Team freigegeben
@@ -1472,3 +1450,4 @@ Set to private,Auf privat gesetzt
 Could not change sharing.,Freigabe konnte nicht geändert werden.
 Everyone,Für alle
 Visible to everyone,Für alle sichtbar
+Landline,Festnetz

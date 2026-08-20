@@ -8,17 +8,23 @@
 
 <template>
   <!-- Only actionable links are rendered (no greyed-out empty boxes).
-       Order = the primary quick actions first: Call · SMS · WhatsApp · Teams. -->
+       Order = the primary quick actions first: Call · SMS · WhatsApp · Teams.
+       With both a mobile and a landline the call action splits in two; the
+       mobile-only channels (SMS, WhatsApp) always use the mobile number. -->
   <div class="flex flex-wrap gap-2">
-    <!-- Plain callto: link — hands the number to the OS' registered dialer. -->
-    <a v-if="phone" :href="'callto:' + telNumber(phone)" :class="actionCls">
-      <FeatherIcon name="phone" class="h-4 w-4" /> {{ __('Call') }}
+    <!-- Call: mobile. Labelled "Mobile" only when a landline is also present. -->
+    <a v-if="mobileNo" :href="'callto:' + telNumber(mobileNo)" :class="actionCls">
+      <FeatherIcon name="smartphone" class="h-4 w-4" /> {{ landlineNo ? __('Mobile') : __('Call') }}
     </a>
-    <a v-if="phone" :href="'sms:' + telNumber(phone)" :class="actionCls">
+    <!-- Call: landline. Labelled "Landline" only when a mobile is also present. -->
+    <a v-if="landlineNo" :href="'callto:' + telNumber(landlineNo)" :class="actionCls">
+      <FeatherIcon name="phone" class="h-4 w-4" /> {{ mobileNo ? __('Landline') : __('Call') }}
+    </a>
+    <a v-if="mobileNo" :href="'sms:' + telNumber(mobileNo)" :class="actionCls">
       <FeatherIcon name="message-square" class="h-4 w-4" /> SMS
     </a>
-    <!-- wa.me opens the installed WhatsApp app (mobile app / desktop client). -->
-    <a v-if="phone" :href="`https://wa.me/${waNumber(phone)}`" target="_blank" rel="noopener" :class="actionCls">
+    <!-- wa.me opens the installed WhatsApp app — mobile number only. -->
+    <a v-if="mobileNo" :href="`https://wa.me/${waNumber(mobileNo)}`" target="_blank" rel="noopener" :class="actionCls">
       <FeatherIcon name="message-circle" class="h-4 w-4" /> WhatsApp
     </a>
     <!-- Teams chat deep link by e-mail (opens a Teams chat, not a call). -->
@@ -30,25 +36,33 @@
     </a>
     <!-- web.whatsapp.com opens WhatsApp Web in the browser — desktop only; on the
          phone the native WhatsApp app link above already covers it. -->
-    <a v-if="phone && !isMobile" :href="waWebLink(phone)" target="_blank" rel="noopener" :class="actionCls">
+    <a v-if="mobileNo && !isMobile" :href="waWebLink(mobileNo)" target="_blank" rel="noopener" :class="actionCls">
       <FeatherIcon name="message-circle" class="h-4 w-4" /> WhatsApp Web
     </a>
-    <span v-if="!phone && !email" class="px-1 py-2 text-xs text-gray-400">{{ __('No contact details yet') }}</span>
+    <span v-if="!mobileNo && !landlineNo && !email" class="px-1 py-2 text-xs text-gray-400">{{ __('No contact details yet') }}</span>
   </div>
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import { FeatherIcon } from 'frappe-ui'
 import { useViewport } from '@/composables/useViewport'
 
 const { isMobile } = useViewport()
 
-defineProps({
+const props = defineProps({
   email: { type: String, default: '' },
+  // Mobile number → Call/SMS/WhatsApp. `phone` is a backwards-compatible alias.
+  mobile: { type: String, default: '' },
   phone: { type: String, default: '' },
+  // Landline → its own Call button (no SMS/WhatsApp).
+  landline: { type: String, default: '' },
   // 4 = two-up on mobile, four-up on >=sm; otherwise always two-up.
   cols: { type: Number, default: 2 },
 })
+
+const mobileNo = computed(() => props.mobile || props.phone || '')
+const landlineNo = computed(() => props.landline || '')
 
 // callto: wants a clean number — keep digits and a single leading '+'.
 function telNumber(p) {

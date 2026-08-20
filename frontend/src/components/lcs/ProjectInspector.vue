@@ -108,7 +108,7 @@
           <template v-else-if="contact.data">
             <div class="text-sm font-medium text-gray-900">{{ contact.data.full_name }}</div>
             <div class="text-xs text-gray-400">{{ contact.data.email_id || '—' }} · {{ contact.data.mobile_no || '—' }}</div>
-            <QuickContactActions class="mt-3" :email="contact.data.email_id" :phone="contact.data.mobile_no" />
+            <QuickContactActions class="mt-3" :email="contact.data.email_id" :mobile="contact.data.mobile_no" :landline="contact.data.phone" />
           </template>
           <div v-else class="text-xs text-gray-400">{{ __('No contact linked.') }}</div>
         </div>

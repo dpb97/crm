@@ -94,7 +94,8 @@
               <QuickContactActions
                 class="w-full"
                 :email="contact.doc.email_id"
-                :phone="contact.doc.mobile_no"
+                :mobile="contact.doc.mobile_no"
+                :landline="contact.doc.phone"
               />
               <div class="flex gap-1.5">
                 <Button

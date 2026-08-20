@@ -121,7 +121,8 @@
     <QuickContactActions
       class="shrink-0 px-4 pb-3"
       :email="contact.doc.email_id"
-      :phone="contact.doc.mobile_no"
+      :mobile="contact.doc.mobile_no"
+      :landline="contact.doc.phone"
     />
     <Tabs
       v-model="tabIndex"
