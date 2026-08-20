@@ -77,47 +77,13 @@ def search_projects(query: str, limit: int = 20):
     )
 
 
-@frappe.whitelist()
-def dispatch_note(text: str, project: str = None, dry_run: bool = False, audio_file_url: str = None):
-    """
-    Rank visible LCS Projects against the note text and optionally log it.
+# Entities a note may be linked to (multi-link via the Dynamic Link child).
+ALLOWED_LINK_DOCTYPES = ("LCS Project", "CRM Lead", "LCS Chance", "Contact", "CRM Organization")
 
-    Parameters:
-      text     : str — the note body (typed or dictated)
-      project  : str — optional: caller already knows the target; skip matching
-      dry_run  : bool — if truthy, only return candidates; don't create the Comment
 
-    Returns:
-      {
-        "candidates": [ {name, project_name, project_number, organization,
-                         country, project_type, score, confidence} ],
-        "auto_dispatched": bool,
-        "comment": str | None,
-        "target_project": str | None
-      }
-    """
-    text = (text or "").strip()
-    if not text:
-        frappe.throw("Note text is empty")
-
-    # Coerce string params from HTTP form-urlencoded bodies
-    if isinstance(dry_run, str):
-        dry_run = dry_run.lower() in ("1", "true", "yes")
-
-    # If caller names an explicit project, skip matching
-    if project:
-        if not frappe.has_permission("LCS Project", ptype="write", doc=project):
-            frappe.throw("Not permitted to write to this project", frappe.PermissionError)
-        comment_name = _log_as_comment(project, text, audio_file_url) if not dry_run else None
-        return {
-            "candidates": [],
-            "auto_dispatched": not dry_run,
-            "comment": comment_name,
-            "target_project": project,
-        }
-
-    # Match against every project the user can see — frappe.get_all
-    # already honours our permission_query_conditions hook.
+def _rank_projects(text: str):
+    """Return (top_candidates, strong_project_names) for a note text. Strong =
+    score >= AUTO_DISPATCH_MIN and the user may write the project."""
     projects = frappe.get_all(
         "LCS Project",
         filters={"status": ["not in", ["Cancelled"]]},
@@ -125,46 +91,172 @@ def dispatch_note(text: str, project: str = None, dry_run: bool = False, audio_f
             "name", "project_name", "project_number", "project_abbr",
             "project_type", "organization", "country", "phase", "status",
         ],
-        limit=0,  # return all visible
+        limit=0,  # all visible (permission_query_conditions applies)
     )
-
-    scored = []
     hinted_type = _detect_type_hint(text)
     text_lower = text.lower()
     text_tokens = _tokenize(text_lower)
-
+    scored = []
     for p in projects:
         score, reasons = _score_project(p, text_lower, text_tokens, hinted_type)
         if score > 0:
             scored.append({**p, "score": round(score, 3), "reasons": reasons})
-
     scored.sort(key=lambda x: x["score"], reverse=True)
     top = [c for c in scored if c["score"] >= SUGGEST_MIN][:5]
-
     for c in top:
         c["confidence"] = _confidence_label(c["score"])
+    strong = [
+        c["name"] for c in top
+        if c["score"] >= AUTO_DISPATCH_MIN
+        and frappe.has_permission("LCS Project", ptype="write", doc=c["name"])
+    ]
+    return top, strong
 
-    # Every STRONG match (>= AUTO_DISPATCH_MIN) is auto-filed. A note that
-    # clearly names several projects (e.g. two project codes) therefore lands in
-    # EACH of them instead of being forced into a single — possibly wrong —
-    # bucket. A single strong match keeps the original one-project behaviour.
-    strong = [c for c in top if c["score"] >= AUTO_DISPATCH_MIN]
-    auto_targets = []
-    comments = []
-    if strong and not dry_run:
-        for c in strong:
-            if frappe.has_permission("LCS Project", ptype="write", doc=c["name"]):
-                comments.append(_log_as_comment(c["name"], text, audio_file_url))
-                auto_targets.append(c["name"])
 
+def _parse_links(links):
+    import json
+    if not links:
+        return []
+    if isinstance(links, str):
+        try:
+            links = json.loads(links)
+        except Exception:
+            return []
+    return links if isinstance(links, list) else []
+
+
+@frappe.whitelist()
+def dispatch_note(text: str, project: str = None, dry_run: bool = False,
+                  audio_file_url: str = None, links=None, note_type: str = None):
+    """Rank visible LCS Projects against the note text and (unless dry_run) file
+    the note as ONE `LCS Note`, auto-linked to EVERY strongly-matched project
+    plus any explicit `project` / `links`. Returns the candidates for the picker.
+    """
+    text = (text or "").strip()
+    if not text:
+        frappe.throw("Note text is empty")
+    if isinstance(dry_run, str):
+        dry_run = dry_run.lower() in ("1", "true", "yes")
+
+    top, strong = _rank_projects(text)
+    if dry_run:
+        return {"candidates": top, "auto_dispatched": False, "note": None, "target_projects": []}
+
+    # Assemble the link set: explicit project + explicit links + auto strong projects.
+    seen = set()
+    link_rows = []
+
+    def _add(dt, dn):
+        if dt in ALLOWED_LINK_DOCTYPES and dn and (dt, dn) not in seen:
+            seen.add((dt, dn))
+            link_rows.append({"link_doctype": dt, "link_name": dn})
+
+    if project:
+        _add("LCS Project", project)
+    for l in _parse_links(links):
+        _add(l.get("link_doctype"), l.get("link_name"))
+    for name in strong:
+        _add("LCS Project", name)
+
+    note = frappe.new_doc("LCS Note")
+    note.content = text
+    note.note_type = note_type or ("voice" if audio_file_url else "text")
+    if audio_file_url:
+        note.audio_file = audio_file_url
+    for l in link_rows:
+        note.append("links", l)
+    note.insert()
+    frappe.db.commit()
+
+    target_projects = [l["link_name"] for l in link_rows if l["link_doctype"] == "LCS Project"]
     return {
         "candidates": top,
-        "auto_dispatched": bool(comments),
-        "comment": comments[0] if comments else None,           # back-compat (single)
-        "comments": comments,
-        "target_project": auto_targets[0] if auto_targets else None,  # back-compat
-        "target_projects": auto_targets,
+        "auto_dispatched": bool(link_rows),
+        "note": note.name,
+        "target_projects": target_projects,
+        "target_project": target_projects[0] if target_projects else None,  # back-compat
+        "comments": [note.name] if link_rows else [],  # back-compat for the composer
     }
+
+
+# --------------------------------------------------------------------------- #
+#  Note CRUD + link management                                                 #
+# --------------------------------------------------------------------------- #
+def _assert_note_perm(name: str, ptype: str = "write"):
+    if not frappe.has_permission("LCS Note", ptype=ptype, doc=name):
+        frappe.throw(_("Not permitted"), frappe.PermissionError)
+
+
+_TITLE_FIELD = {
+    "LCS Project": "project_name", "CRM Lead": "lead_name", "LCS Chance": "title",
+    "Contact": "full_name", "CRM Organization": "organization_name",
+}
+
+
+def _link_row(l):
+    title = frappe.db.get_value(l.link_doctype, l.link_name, _TITLE_FIELD.get(l.link_doctype, "name"))
+    return {"link_doctype": l.link_doctype, "link_name": l.link_name, "title": title or l.link_name}
+
+
+@frappe.whitelist()
+def get_note(name: str):
+    _assert_note_perm(name, "read")
+    doc = frappe.get_doc("LCS Note", name)
+    return {
+        "name": doc.name, "content": doc.content, "note_type": doc.note_type,
+        "audio_file": doc.audio_file, "owner": doc.owner, "creation": str(doc.creation),
+        "links": [_link_row(l) for l in doc.links],
+    }
+
+
+@frappe.whitelist()
+def update_note(name: str, text: str):
+    """Edit a note's text and UNION-in any newly mentioned projects (existing
+    links are kept — removing a link is an explicit action)."""
+    _assert_note_perm(name, "write")
+    doc = frappe.get_doc("LCS Note", name)
+    doc.content = (text or "").strip()
+    if not doc.content:
+        frappe.throw(_("Note text is empty"))
+    existing = {(l.link_doctype, l.link_name) for l in doc.links}
+    _, strong = _rank_projects(doc.content)
+    for pn in strong:
+        if ("LCS Project", pn) not in existing:
+            doc.append("links", {"link_doctype": "LCS Project", "link_name": pn})
+    doc.save()
+    frappe.db.commit()
+    return get_note(name)
+
+
+@frappe.whitelist()
+def delete_note(name: str):
+    _assert_note_perm(name, "delete")
+    frappe.delete_doc("LCS Note", name)
+    frappe.db.commit()
+    return {"ok": True}
+
+
+@frappe.whitelist()
+def add_note_link(name: str, link_doctype: str, link_name: str):
+    _assert_note_perm(name, "write")
+    if link_doctype not in ALLOWED_LINK_DOCTYPES:
+        frappe.throw(_("Invalid link type"))
+    doc = frappe.get_doc("LCS Note", name)
+    if not any(l.link_doctype == link_doctype and l.link_name == link_name for l in doc.links):
+        doc.append("links", {"link_doctype": link_doctype, "link_name": link_name})
+        doc.save()
+        frappe.db.commit()
+    return get_note(name)
+
+
+@frappe.whitelist()
+def remove_note_link(name: str, link_doctype: str, link_name: str):
+    _assert_note_perm(name, "write")
+    doc = frappe.get_doc("LCS Note", name)
+    doc.set("links", [l for l in doc.links if not (l.link_doctype == link_doctype and l.link_name == link_name)])
+    doc.save()
+    frappe.db.commit()
+    return get_note(name)
 
 
 def _score_project(p: dict, text_lower: str, text_tokens: set, hinted_type: str | None):
@@ -375,4 +467,20 @@ def retranscribe_audio(file_url: str, language: str = "de-DE", priority: int = 5
         language=language,
         priority=int(priority) if priority else 5,
     )
-    return {"ok": True, "job": job_name}
+
+    # Unified note: a voice note is an LCS Note carrying the recording (to replay)
+    # and, once Hermes finishes (submit_transcription), the transcript to read/edit.
+    note_name = None
+    if job_name and not frappe.db.exists("LCS Note", {"source_ref": f"audiojob:{job_name}"}):
+        note = frappe.new_doc("LCS Note")
+        note.note_type = "voice"
+        note.audio_file = file_url
+        note.content = _("Transcription in progress …")
+        note.source_ref = f"audiojob:{job_name}"
+        if project:
+            note.append("links", {"link_doctype": "LCS Project", "link_name": project})
+        note.insert(ignore_permissions=True)
+        note_name = note.name
+        frappe.db.commit()
+
+    return {"ok": True, "job": job_name, "note": note_name}

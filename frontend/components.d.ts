@@ -217,6 +217,7 @@ declare module 'vue' {
     LCSBrandHeader: typeof import('./src/components/lcs/LCSBrandHeader.vue')['default']
     LcsMiniMap: typeof import('./src/components/lcs/LcsMiniMap.vue')['default']
     LcsNoteComposer: typeof import('./src/components/lcs/LcsNoteComposer.vue')['default']
+    LcsNoteEditor: typeof import('./src/components/lcs/LcsNoteEditor.vue')['default']
     LcsPagination: typeof import('./src/components/lcs/LcsPagination.vue')['default']
     LcsPhoneInput: typeof import('./src/components/lcs/LcsPhoneInput.vue')['default']
     LcsRadar: typeof import('./src/components/lcs/LcsRadar.vue')['default']

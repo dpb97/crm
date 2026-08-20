@@ -171,9 +171,33 @@ def submit_transcription(
     doc.save(ignore_permissions=True)
 
     _rewrite_comment(doc)
+    _update_lcs_note(doc)
 
     frappe.db.commit()
     return {"ok": True, "job": doc.name}
+
+
+def _update_lcs_note(job) -> None:
+    """Write the finished transcript into the voice note's LCS Note and auto-link
+    every project mentioned in it (same rule as a typed note)."""
+    note_name = frappe.db.get_value("LCS Note", {"source_ref": f"audiojob:{job.name}"}, "name")
+    if not note_name:
+        return
+    transcript = (job.new_transcript or job.original_transcript or "").strip()
+    if not transcript:
+        return
+    note = frappe.get_doc("LCS Note", note_name)
+    note.content = transcript
+    try:
+        from lcs_integrations.notes.api import _rank_projects
+        existing = {(l.link_doctype, l.link_name) for l in note.links}
+        _, strong = _rank_projects(transcript)
+        for pn in strong:
+            if ("LCS Project", pn) not in existing:
+                note.append("links", {"link_doctype": "LCS Project", "link_name": pn})
+    except Exception:
+        pass
+    note.save(ignore_permissions=True)
 
 
 @frappe.whitelist()

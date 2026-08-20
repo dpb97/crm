@@ -65,6 +65,9 @@
     <PpModal v-model:open="showNew" :title="__('New note')" :width="640" :fullscreen="isMobile">
       <LcsNoteComposer @saved="onNoteSaved" />
     </PpModal>
+
+    <!-- Open a note to read/edit, replay audio and manage its links -->
+    <LcsNoteEditor v-model:open="editorOpen" :note-id="editId" @changed="board.reload()" />
   </div>
 </template>
 
@@ -78,6 +81,7 @@ import PpEmptyState from '@/components/pp/PpEmptyState.vue'
 import PpFilterBar from '@/components/pp/PpFilterBar.vue'
 import PpTableCard from '@/components/pp/PpTableCard.vue'
 import LcsNoteComposer from '@/components/lcs/LcsNoteComposer.vue'
+import LcsNoteEditor from '@/components/lcs/LcsNoteEditor.vue'
 import PpModal from '@/components/pp/PpModal.vue'
 import PpPill from '@/components/pp/PpPill.vue'
 import IconStickyNote from '~icons/lucide/sticky-note'
@@ -122,9 +126,16 @@ const columns = [
 ]
 
 // --- Zeilen-Klick → angedockter Spec-Inspektor -----------------------------
+const editorOpen = ref(false)
+const editId = ref('')
 function openNote(id) {
   const r = rows.value.find((x) => x.id === id)
   if (!r) return
+  if (r.editable) {
+    editId.value = r.id
+    editorOpen.value = true
+    return
+  }
   inspectNode({
     title: r.title || __('Note'),
     badge: { label: r.art === 'voice' ? __('Voice note') : __('Text note'), tone: r.art === 'voice' ? 'brand' : 'success' },

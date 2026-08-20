@@ -1809,39 +1809,37 @@ def get_notes(limit=100000):
     lim = int(limit or 100000)
     rows = []
 
-    for n in frappe.get_all(
-        "FCRM Note",
-        fields=["name", "title", "content", "owner", "creation",
-                "reference_doctype", "reference_docname"],
-        order_by="creation desc", limit_page_length=lim,
-    ):
-        obj = ""
-        if n.reference_docname:
-            if n.reference_doctype == "LCS Project":
-                obj = frappe.db.get_value("LCS Project", n.reference_docname, "project_number") or n.reference_docname
-            else:
-                obj = n.reference_docname
-        rows.append({
-            "id": n.name, "doctype": "FCRM Note", "art": "text",
-            "title": n.title or (frappe.utils.strip_html(n.content or "")[:80]) or _("Untitled"),
-            "object": obj, "author": _user_name(n.owner), "time": str(n.creation),
-            "ref_doctype": n.reference_doctype or "", "ref_name": n.reference_docname or "",
-        })
+    _NOTE_TITLE = {
+        "LCS Project": "project_number", "CRM Lead": "lead_name", "LCS Chance": "title",
+        "Contact": "full_name", "CRM Organization": "organization_name",
+    }
 
-    for j in frappe.get_all(
-        "LCS Audio Transcription Job",
-        fields=["name", "comment", "new_transcript", "original_transcript",
-                "owner", "creation", "project"],
+    def _note_link_obj(dt, name):
+        label = frappe.db.get_value(dt, name, _NOTE_TITLE.get(dt, "name")) or name
+        return {"doctype": dt, "name": name, "label": label}
+
+    for n in frappe.get_all(
+        "LCS Note",
+        fields=["name", "content", "note_type", "audio_file", "owner", "creation"],
         order_by="creation desc", limit_page_length=lim,
     ):
-        transcript = j.new_transcript or j.original_transcript or ""
-        title = j.comment or (transcript[:80] if transcript else _("Voice note"))
-        obj = frappe.db.get_value("LCS Project", j.project, "project_number") or j.project if j.project else ""
+        links = frappe.get_all(
+            "Dynamic Link",
+            filters={"parenttype": "LCS Note", "parent": n.name},
+            fields=["link_doctype", "link_name"], order_by="idx",
+        )
+        link_objs = [_note_link_obj(l.link_doctype, l.link_name) for l in links]
+        primary = link_objs[0] if link_objs else None
+        title = (frappe.utils.strip_html(n.content or "")[:80]) or (
+            _("Voice note") if n.note_type == "voice" else _("Untitled"))
         rows.append({
-            "id": j.name, "doctype": "LCS Audio Transcription Job", "art": "voice",
-            "title": title, "object": obj or "", "author": _user_name(j.owner),
-            "time": str(j.creation),
-            "ref_doctype": "LCS Project" if j.project else "", "ref_name": j.project or "",
+            "id": n.name, "doctype": "LCS Note", "art": n.note_type or "text",
+            "title": title, "audio_file": n.audio_file or "",
+            "object": " · ".join(o["label"] for o in link_objs),
+            "author": _user_name(n.owner), "time": str(n.creation),
+            "ref_doctype": primary["doctype"] if primary else "",
+            "ref_name": primary["name"] if primary else "",
+            "links": link_objs, "editable": 1,
         })
 
     rows.sort(key=lambda r: r["time"], reverse=True)

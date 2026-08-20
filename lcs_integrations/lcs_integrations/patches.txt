@@ -75,3 +75,5 @@ lcs_integrations.patches.set_default_currency_eur
 lcs_integrations.patches.install_email_visibility_flags
 # Delete existing internal->internal noise mail (not shared) — user cleanup.
 lcs_integrations.patches.purge_internal_internal_mail
+# Unify notes: migrate FCRM Note + Quick-Note Comments into the LCS Note doctype.
+lcs_integrations.patches.migrate_notes_to_lcs_note
