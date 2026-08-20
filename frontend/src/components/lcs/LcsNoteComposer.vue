@@ -7,17 +7,24 @@
   Emits `saved` nach erfolgreicher Ablage.
 -->
 <template>
-  <div class="qn">
-    <p class="qn-banner">{{ __('Type — dictate additionally in the ERP (server-side transcription)') }}</p>
+  <div class="qn" :class="{ 'qn--mobile': isMobile }">
+    <p v-if="!isMobile" class="qn-banner">{{ __('Type — dictate additionally in the ERP (server-side transcription)') }}</p>
 
     <PpSpeakOrType
+      class="qn-composer"
       v-model="draft"
       :disabled="busy"
+      :rows="isMobile ? 10 : 3"
       :placeholder="__('e.g. “Grimsel: KWO wants to push the build phase to 2027, budget stays …”')"
       @audio="onAudio"
       @error="onError"
     />
 
+    <p v-if="lastError" class="qn-error" role="alert">
+      <FeatherIcon name="alert-triangle" class="qn-error-ico" />{{ lastError }}
+    </p>
+
+    <!-- Assignment + save. On the phone this is a fixed bottom bar (thumb zone). -->
     <div class="qn-assign">
       <label class="qn-assign-cap" for="qn-assign">{{ __('Assignment') }}</label>
       <select id="qn-assign" v-model="target" class="qn-select" :disabled="matching">
@@ -26,13 +33,10 @@
           {{ c.project_number }} · {{ stripV(c.project_name) }} ({{ Math.min(100, Math.round((c.score || 0) * 100)) }} % {{ __('match') }})
         </option>
       </select>
-      <Button variant="solid" :label="__('Save note')" :loading="busy" :disabled="!draft.trim()" @click="save" />
+      <Button class="qn-save" variant="solid" :label="__('Save note')" :loading="busy" :disabled="!draft.trim()" @click="save" />
     </div>
 
-    <p v-if="lastError" class="qn-error" role="alert">
-      <FeatherIcon name="alert-triangle" class="qn-error-ico" />{{ lastError }}
-    </p>
-    <p class="qn-note">
+    <p v-if="!isMobile" class="qn-note">
       {{ __('ONE filing: the note hangs on the chosen project/lead, travels with it (Chance → Lead → Projekt) and appears in the list at once.') }}
     </p>
   </div>
@@ -43,6 +47,9 @@ import { ref, watch } from 'vue'
 import { FeatherIcon, Button, call, toast } from 'frappe-ui'
 import PpSpeakOrType from '@/components/pp/PpSpeakOrType.vue'
 import { useUserPreferences } from '@/composables/useUserPreferences'
+import { useViewport } from '@/composables/useViewport'
+
+const { isMobile } = useViewport()
 
 const emit = defineEmits(['saved'])
 
@@ -172,4 +179,18 @@ function extensionFor(mime) {
 .qn-error { margin: 0; display: inline-flex; align-items: center; gap: 6px; font-size: var(--pp-fs-12, 12px); color: var(--pp-state-danger); }
 .qn-error-ico { width: 14px; height: 14px; }
 .qn-note { margin: 0; font-size: 11px; color: var(--pp-text-tertiary); line-height: 1.5; }
+
+/* --- Mobile: full-height "note page" — the text field fills the screen and the
+   assignment + save sit in a bottom bar (thumb zone). ------------------------ */
+.qn--mobile { height: 100%; padding: var(--pp-space-3); gap: var(--pp-space-2); }
+.qn--mobile .qn-composer { flex: 1 1 auto; min-height: 0; }
+.qn--mobile .qn-composer :deep(.pp-sot) { height: 100%; }
+.qn--mobile .qn-composer :deep(.pp-sot__composer) { flex: 1 1 auto; min-height: 0; align-items: stretch; }
+.qn--mobile .qn-composer :deep(.pp-sot__input) { flex: 1 1 auto; min-height: 0; resize: none; font-size: var(--pp-fs-16, 16px); }
+.qn--mobile .qn-composer :deep(.pp-sot__actions) { align-items: flex-end; }
+.qn--mobile .qn-assign { flex: 0 0 auto; flex-direction: column; align-items: stretch;
+  gap: 6px; padding-top: var(--pp-space-2); border-top: 1px solid var(--pp-border-subtle); }
+.qn--mobile .qn-select { min-width: 0; width: 100%; padding: 10px var(--pp-space-3); font-size: var(--pp-fs-14, 14px); }
+.qn--mobile .qn-save { width: 100%; }
+.qn--mobile .qn-save :deep(button) { width: 100%; height: 44px; font-size: var(--pp-fs-14, 14px); }
 </style>

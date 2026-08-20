@@ -62,7 +62,7 @@
     </div>
 
     <!-- Neue Notiz (nur per Button) -->
-    <PpModal v-model:open="showNew" :title="__('New note')" :width="640">
+    <PpModal v-model:open="showNew" :title="__('New note')" :width="640" :fullscreen="isMobile">
       <LcsNoteComposer @saved="onNoteSaved" />
     </PpModal>
   </div>
@@ -82,9 +82,11 @@ import PpModal from '@/components/pp/PpModal.vue'
 import PpPill from '@/components/pp/PpPill.vue'
 import IconStickyNote from '~icons/lucide/sticky-note'
 import { usePilandaInspect } from '@/composables/usePilandaInspect'
+import { useViewport } from '@/composables/useViewport'
 
 const router = useRouter()
 const { inspectNode } = usePilandaInspect()
+const { isMobile } = useViewport()
 
 const board = createResource({ url: 'lcs_integrations.projects.api.get_notes', auto: true })
 

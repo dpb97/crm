@@ -42,6 +42,9 @@ const props = defineProps({
   width:           { type: [String, Number], default: 640 },
   closeOnBackdrop: { type: Boolean, default: true },
   closeOnEsc:      { type: Boolean, default: true },
+  // Full-viewport sheet (e.g. on phones) — fills the screen, square corners,
+  // body becomes a flex column so content can fill the height.
+  fullscreen:      { type: Boolean, default: false },
 });
 const emit = defineEmits(["update:open", "close"]);
 
@@ -70,9 +73,9 @@ onBeforeUnmount(() => { document.removeEventListener("keydown", onKey); document
 
 <template>
   <transition name="pp-modal-t">
-    <div v-if="open" class="pp-modal-scrim" @click.self="onBackdrop">
-      <div class="pp-modal" role="dialog" aria-modal="true"
-           :aria-label="title || undefined" :style="{ maxWidth }">
+    <div v-if="open" class="pp-modal-scrim" :class="{ 'is-fullscreen': fullscreen }" @click.self="onBackdrop">
+      <div class="pp-modal" :class="{ 'is-fullscreen': fullscreen }" role="dialog" aria-modal="true"
+           :aria-label="title || undefined" :style="fullscreen ? null : { maxWidth }">
         <div class="pp-modal__head">
           <span class="pp-modal__title"><slot name="title">{{ title }}</slot></span>
           <button ref="closeBtn" type="button" class="pp-modal__x"
@@ -93,6 +96,13 @@ onBeforeUnmount(() => { document.removeEventListener("keydown", onKey); document
 .pp-modal { display: flex; flex-direction: column; width: 100%; max-height: 86%;
   background: var(--pp-bg-surface); border: 1px solid var(--pp-border-default);
   border-radius: var(--pp-radius-ui); box-shadow: var(--pp-shadow-xl); overflow: hidden; }
+
+/* Full-viewport sheet: fills the screen; the body becomes a flex column so a
+   child can flex:1 to the full height (mobile note page). */
+.pp-modal-scrim.is-fullscreen { padding: 0; }
+.pp-modal.is-fullscreen { width: 100vw; max-width: 100vw; height: 100vh; height: 100dvh;
+  max-height: 100vh; max-height: 100dvh; border: 0; border-radius: 0; }
+.pp-modal.is-fullscreen .pp-modal__body { display: flex; flex-direction: column; padding: 0; }
 
 .pp-modal__head { display: flex; align-items: center; justify-content: space-between; gap: var(--pp-space-2);
   flex: 0 0 auto; padding: var(--pp-space-3) var(--pp-space-4);
