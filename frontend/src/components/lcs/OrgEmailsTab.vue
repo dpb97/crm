@@ -42,6 +42,11 @@
           <option value="Received">{{ __('Received') }}</option>
           <option value="Sent">{{ __('Sent') }}</option>
         </select>
+        <select v-model="fVisibility" class="emf-ctrl rounded-md px-2 py-1.5 text-sm outline-none">
+          <option value="">{{ __('Any visibility') }}</option>
+          <option value="shared">{{ __('Visible to everyone') }}</option>
+          <option value="private">{{ __('Private — only you') }}</option>
+        </select>
         <label class="flex items-center gap-1 text-xs text-ink-gray-5">{{ __('From') }}
           <input v-model="fFrom" type="date" class="emf-ctrl rounded-md px-2 py-1.5 text-sm outline-none" />
         </label>
@@ -240,10 +245,11 @@ const fSender = ref('')
 const fRecipient = ref('')
 const fSubject = ref('')
 const fDirection = ref('')
+const fVisibility = ref('') // '' = any, 'shared' = visible to all, 'private' = only me
 const fFrom = ref('')
 const fTo = ref('')
 const anyFilter = computed(() =>
-  !!(fSender.value || fRecipient.value || fSubject.value || fDirection.value || fFrom.value || fTo.value),
+  !!(fSender.value || fRecipient.value || fSubject.value || fDirection.value || fVisibility.value || fFrom.value || fTo.value),
 )
 // Dropdown options: the distinct senders / recipients actually present in the list.
 const senderOptions = computed(() => {
@@ -269,6 +275,7 @@ function clearFilters() {
   fRecipient.value = ''
   fSubject.value = ''
   fDirection.value = ''
+  fVisibility.value = ''
   fFrom.value = ''
   fTo.value = ''
 }
@@ -290,6 +297,8 @@ const filtered = computed(() => {
     if (r && !(e.recipients || '').toLowerCase().includes(r)) return false
     if (subj && !(e.subject || '').toLowerCase().includes(subj)) return false
     if (dir && e.sent_or_received !== dir) return false
+    if (fVisibility.value === 'shared' && !e.lcs_shared) return false
+    if (fVisibility.value === 'private' && e.lcs_shared) return false
     if (from != null || to != null) {
       const d = e.communication_date ? new Date(String(e.communication_date).replace(' ', 'T')).getTime() : NaN
       if (isNaN(d)) return false
