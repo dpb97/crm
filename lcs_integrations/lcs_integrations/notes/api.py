@@ -21,7 +21,11 @@ import frappe
 # tiebreaker between otherwise equal candidates.
 WEIGHT_PROJECT_NUMBER = 1.0
 WEIGHT_PROJECT_ABBR = 0.6
-WEIGHT_PROJECT_NAME = 0.5
+# An EXACT, complete project-name token (e.g. "CAPU" for SB-CAPU) is a strong,
+# unambiguous mention → it must clear AUTO_DISPATCH_MIN (0.8) on its own so the
+# note auto-links to every project named in the text. Fuzzy name matches carry a
+# 0.8 penalty (→ 0.68) and stay below the auto threshold (suggestion only).
+WEIGHT_PROJECT_NAME = 0.85
 WEIGHT_ORGANIZATION = 0.3
 WEIGHT_COUNTRY = 0.15
 WEIGHT_TYPE_PHRASE = 0.1
