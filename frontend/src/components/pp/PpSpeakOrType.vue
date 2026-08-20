@@ -54,6 +54,7 @@ const props = defineProps({
   mimeType:    { type: String,  default: "" },
   maxSeconds:  { type: Number,  default: 0 },
   disabled:    { type: Boolean, default: false },
+  lang:        { type: String,  default: "de-DE" },  // dictation language
 });
 const emit = defineEmits(["update:modelValue", "text", "audio", "error", "state"]);
 
@@ -70,10 +71,10 @@ watch(mode, (m) => emit("state", m));
 
 const hasText = computed(() => (props.modelValue || "").trim().length > 0);
 const hintText = computed(() => {
-  if (mode.value === "recording") return "Aufnahme läuft… Stop-Knopf zum Beenden.";
+  if (mode.value === "recording") return "Diktat läuft… sprich, der Text erscheint live. Stop zum Beenden.";
   return isMobile.value
-    ? "Tippen — Pfeil zum Senden (Enter = neue Zeile) — oder Mikrofon."
-    : "Tippen und Enter zum Senden — oder Mikrofon für eine Sprachnotiz.";
+    ? "Tippen — Pfeil zum Senden (Enter = neue Zeile) — oder Mikrofon zum Diktieren."
+    : "Tippen und Enter zum Senden — oder Mikrofon zum Live-Diktieren.";
 });
 function fmtTime(s) {
   const m = Math.floor(s / 60), r = s % 60;
@@ -93,67 +94,75 @@ function submitText() {
   emit("update:modelValue", "");
 }
 
-/* ---- Audio-Weg (echte MediaRecorder-Integration) ---------------- */
-let recorder = null;
-let stream = null;
-let chunks = [];
+/* ---- Sprach-Weg: LIVE-Diktat über die Web Speech API ------------------
+   Kein Audio-Upload, kein Backend/Hermes — der erkannte Text wird direkt und
+   live ins Textfeld (modelValue) geschrieben, final + interim. -------------- */
+let recognition = null;
+let base = "";      // Text im Feld bei Diktat-Start (davor wird angehängt)
+let finalBuf = "";  // in dieser Sitzung endgültig erkannter Text
 let timer = null;
 
 function stopTimer() { if (timer) { clearInterval(timer); timer = null; } }
-function releaseStream() {
-  if (stream) { stream.getTracks().forEach((t) => t.stop()); stream = null; }
-}
 function fail(msg) {
   stopTimer();
-  releaseStream();
-  recorder = null;
-  chunks = [];
+  recognition = null;
   seconds.value = 0;
   errorMsg.value = msg;
   mode.value = "error";
   emit("error", msg);
 }
 
-async function startRecording() {
+function emitLive(interim) {
+  const sep = base && !/[\s\n]$/.test(base) ? " " : "";
+  emit("update:modelValue", base + sep + finalBuf + interim);
+}
+
+function startRecording() {
   if (props.disabled || mode.value === "recording") return;
   errorMsg.value = "";
-
-  const md = typeof navigator !== "undefined" ? navigator.mediaDevices : null;
-  if (!md || typeof md.getUserMedia !== "function" || typeof window.MediaRecorder === "undefined") {
-    fail("Audioaufnahme wird in dieser Umgebung nicht unterstützt (MediaRecorder/getUserMedia fehlt).");
+  const SR = typeof window !== "undefined"
+    ? (window.SpeechRecognition || window.webkitSpeechRecognition)
+    : null;
+  if (!SR) {
+    fail("Live-Spracherkennung wird in diesem Browser nicht unterstützt (Chrome/Edge nutzen).");
     return;
   }
-
+  base = props.modelValue || "";
+  finalBuf = "";
+  recognition = new SR();
+  recognition.lang = props.lang || "de-DE";
+  recognition.continuous = true;
+  recognition.interimResults = true;
+  recognition.onresult = (e) => {
+    let interim = "";
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      const t = e.results[i][0].transcript;
+      if (e.results[i].isFinal) finalBuf += t;
+      else interim += t;
+    }
+    emitLive(interim);
+  };
+  recognition.onerror = (e) => {
+    if (e.error === "no-speech" || e.error === "aborted") return;
+    if (e.error === "not-allowed" || e.error === "service-not-allowed") {
+      fail("Mikrofonzugriff verweigert.");
+      return;
+    }
+    fail("Spracherkennung: " + (e.error || "Fehler"));
+  };
+  recognition.onend = () => {
+    emitLive("");           // interim verwerfen, finalen Text festschreiben
+    stopTimer();
+    if (mode.value === "recording") mode.value = "idle";
+    recognition = null;
+    seconds.value = 0;
+  };
   try {
-    stream = await md.getUserMedia({ audio: true });
+    recognition.start();
   } catch (err) {
-    fail("Mikrofonzugriff nicht möglich: " + (err && err.name ? err.name : String(err)));
+    fail("Diktat konnte nicht gestartet werden: " + (err && err.message ? err.message : String(err)));
     return;
   }
-
-  try {
-    const opts = props.mimeType && window.MediaRecorder.isTypeSupported(props.mimeType)
-      ? { mimeType: props.mimeType } : {};
-    recorder = new window.MediaRecorder(stream, opts);
-  } catch (err) {
-    releaseStream();
-    fail("Aufnahme-Initialisierung fehlgeschlagen: " + (err && err.message ? err.message : String(err)));
-    return;
-  }
-
-  chunks = [];
-  recorder.ondataavailable = (ev) => { if (ev.data && ev.data.size) chunks.push(ev.data); };
-  recorder.onerror = (ev) => fail("Aufnahmefehler: " + (ev.error && ev.error.name ? ev.error.name : "unbekannt"));
-  recorder.onstop = finalize;
-
-  try {
-    recorder.start();
-  } catch (err) {
-    releaseStream();
-    fail("Aufnahme konnte nicht gestartet werden: " + (err && err.message ? err.message : String(err)));
-    return;
-  }
-
   mode.value = "recording";
   seconds.value = 0;
   timer = setInterval(() => {
@@ -164,33 +173,12 @@ async function startRecording() {
 
 function stopRecording() {
   stopTimer();
-  if (recorder && recorder.state !== "inactive") {
-    try { recorder.stop(); } catch { finalize(); }
-  }
-}
-
-function finalize() {
-  const type = (recorder && recorder.mimeType) || (chunks[0] && chunks[0].type) || "audio/webm";
-  const ms = seconds.value * 1000;
-  const captured = chunks;
-  chunks = [];
-  releaseStream();
-  recorder = null;
-  mode.value = "idle";
-  const total = captured.reduce((a, c) => a + (c.size || 0), 0);
-  seconds.value = 0;
-  if (!total) {
-    fail("Aufnahme leer — keine Audiodaten empfangen.");
-    return;
-  }
-  const blob = new Blob(captured, { type });
-  const url = URL.createObjectURL(blob);
-  emit("audio", { blob, url, mimeType: type, ms });
+  if (recognition) { try { recognition.stop(); } catch { /* ignore */ } }
 }
 
 function retry() { errorMsg.value = ""; mode.value = "idle"; }
 
-onBeforeUnmount(() => { stopTimer(); if (recorder && recorder.state !== "inactive") { try { recorder.stop(); } catch { /* ignore */ } } releaseStream(); });
+onBeforeUnmount(() => { stopTimer(); if (recognition) { try { recognition.abort(); } catch { /* ignore */ } } });
 </script>
 
 <template>

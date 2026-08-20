@@ -1469,3 +1469,5 @@ Could not remove the link.,Verknüpfung konnte nicht entfernt werden.
 Auto-linked,Automatisch verknüpft
 Project already exists,Projekt existiert bereits
 Could not create the project.,Projekt konnte nicht erstellt werden.
+Type a quick note — mention project number / name / customer / location. Or dictate live with the microphone…,Notiz tippen — Projektnummer / Name / Kunde / Ort nennen. Oder live per Mikrofon diktieren…
+Notes are matched to the right project automatically. The microphone dictates live into the text (language: {0}) — no upload.,Notizen werden automatisch dem richtigen Projekt zugeordnet. Das Mikrofon diktiert live in den Text (Sprache: {0}) — kein Upload.

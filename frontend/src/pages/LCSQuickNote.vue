@@ -45,13 +45,13 @@
           <PpSpeakOrType
             v-model="draft"
             :disabled="busy"
-            :placeholder="__('Type a quick note about the project — mention the project number, name, customer, or location. Or use the microphone for a voice note…')"
+            :lang="language"
+            :placeholder="__('Type a quick note — mention project number / name / customer / location. Or dictate live with the microphone…')"
             @text="onText"
-            @audio="onAudio"
             @error="onError"
           />
           <p class="crms-hint">
-            {{ __('Typed notes are automatically matched to the right project. Voice notes are uploaded and transcribed on the server (language: {0}) — matching happens afterwards.', [langLabel]) }}
+            {{ __('Notes are matched to the right project automatically. The microphone dictates live into the text (language: {0}) — no upload.', [langLabel]) }}
           </p>
           <p v-if="lastError" class="crms-error" role="alert">
             <FeatherIcon name="alert-triangle" class="crms-error-ico" />{{ lastError }}

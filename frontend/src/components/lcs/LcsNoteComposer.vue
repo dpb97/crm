@@ -15,8 +15,8 @@
       v-model="draft"
       :disabled="busy"
       :rows="isMobile ? 10 : 3"
+      :lang="language"
       :placeholder="__('e.g. “Grimsel: KWO wants to push the build phase to 2027, budget stays …”')"
-      @audio="onAudio"
       @error="onError"
     />
 
