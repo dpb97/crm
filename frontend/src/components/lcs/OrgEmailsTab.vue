@@ -138,7 +138,7 @@
                 v-if="current?.can_release"
                 variant="subtle"
                 :iconLeft="current?.lcs_shared ? 'lock' : 'users'"
-                :label="current?.lcs_shared ? __('Make private') : __('Share with everyone')"
+                :label="current?.lcs_shared ? __('Make private') : __('Release')"
                 :loading="releasing"
                 @click="toggleRelease(current)"
               />
