@@ -102,6 +102,7 @@
               <div class="mt-0.5 text-xs text-ink-gray-4">{{ current && formatDate(current.communication_date) }}</div>
             </div>
             <div class="flex shrink-0 items-center gap-1">
+              <Button variant="subtle" iconLeft="external-link" :label="__('Open in Outlook')" :disabled="!current?.message_id" @click="openInOutlook(current)" />
               <Button variant="subtle" iconLeft="corner-up-left" :label="__('Reply')" @click="replyOpen = !replyOpen" />
               <Button variant="ghost" icon="trash-2" :title="__('Delete email')" @click="showReader = false; askRemove(current)" />
               <Button variant="ghost" icon="x" @click="showReader = false" />
@@ -117,7 +118,7 @@
                 <div class="mt-2 flex flex-wrap items-center gap-2">
                   <label class="flex items-center gap-1 text-xs text-ink-gray-6"><input type="checkbox" v-model="replyAll" /> {{ __('Reply all') }}</label>
                   <span class="ml-auto"></span>
-                  <Button variant="ghost" :label="__('Open in Outlook')" @click="replyMailto(current)" />
+                  <Button variant="ghost" :label="__('Reply in Outlook')" @click="replyMailto(current)" />
                   <Button variant="ghost" :label="__('Cancel')" @click="replyOpen = false" />
                   <Button variant="solid" :label="__('Send')" :loading="replySending" :disabled="!replyBody.trim()" @click="sendReply" />
                 </div>
@@ -306,6 +307,14 @@ function sendReply() {
     .then(() => { toast.success(__('Reply sent')); replyOpen.value = false; replyBody.value = '' })
     .catch((e) => { toast.error(e?.messages?.[0] || __('Could not send the reply.')) })
     .finally(() => { replySending.value = false })
+}
+// LCS: open the ORIGINAL message in Outlook on the web (OWA deep link by the
+// stored Graph message id). Opens in the viewer's own Outlook — works when the
+// message is in their mailbox; otherwise Outlook falls back to a search view.
+function openInOutlook(m) {
+  if (!m?.message_id) { toast.error(__('No Outlook link for this email.')); return }
+  const url = `https://outlook.office.com/mail/deeplink/read/${encodeURIComponent(m.message_id)}`
+  window.open(url, '_blank', 'noopener')
 }
 function replyMailto(m) {
   if (!m) return

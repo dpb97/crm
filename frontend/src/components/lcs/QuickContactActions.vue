@@ -21,9 +21,9 @@
     <a v-if="phone" :href="`https://wa.me/${waNumber(phone)}`" target="_blank" rel="noopener" :class="actionCls">
       <FeatherIcon name="message-circle" class="h-4 w-4" /> WhatsApp
     </a>
-    <!-- Teams call/chat deep link by e-mail. -->
+    <!-- Teams chat deep link by e-mail (opens a Teams chat, not a call). -->
     <a v-if="email" :href="teamsLink(email)" target="_blank" rel="noopener" :class="actionCls">
-      <FeatherIcon name="video" class="h-4 w-4" /> Teams
+      <FeatherIcon name="message-square" class="h-4 w-4" /> Teams
     </a>
     <a v-if="email" :href="`mailto:${email}`" :class="actionCls">
       <FeatherIcon name="mail" class="h-4 w-4" /> {{ __('Mail') }}
@@ -69,9 +69,10 @@ function waNumber(p) {
 function waWebLink(p) {
   return `https://web.whatsapp.com/send/?phone=${waNumber(p)}&text&type=phone_number&app_absent=0`
 }
-// Teams deep link — starts a Teams call/chat with the person by e-mail address.
+// Teams deep link — opens a Teams CHAT with the person by e-mail address
+// (was l/call → started a call; l/chat opens the chat window instead).
 function teamsLink(mail) {
-  return `https://teams.microsoft.com/l/call/0/0?users=${encodeURIComponent(mail)}`
+  return `https://teams.microsoft.com/l/chat/0/0?users=${encodeURIComponent(mail)}`
 }
 const actionCls =
   'flex min-h-[40px] flex-1 basis-[calc(50%-0.25rem)] min-w-[110px] items-center justify-center gap-1.5 rounded-md border border-gray-200 px-2.5 py-2 text-xs font-medium text-gray-700 transition hover:border-lcs-secondary hover:text-lcs-secondary'
