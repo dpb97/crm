@@ -12,7 +12,8 @@ from typing import Any
 
 import frappe
 
-from lcs_integrations.email_domain_autolink.hooks import _contact_for_email, match_reference_for_sender
+from lcs_integrations.email_domain_autolink.hooks import match_reference_for_sender
+from lcs_integrations.visibility import email_visibility
 
 from .graph_client import GraphClient, GraphClientError
 
@@ -100,22 +101,7 @@ def _persist_message(user: str, message: dict[str, Any], only_known: bool = True
     sender = frappe.utils.validate_email_address(sender_raw) or ""
     if not sender:
         return False
-    # Skip mail sent from our own company domain — internal correspondence is
-    # noise in a customer-facing CRM. "Own domain" = the mailbox owner's domain.
-    # EXCEPTION: an internal sender who is an explicit CRM Contact (a colleague
-    # deliberately tracked — e.g. an internal salesperson) is NOT noise; their
-    # mail belongs on that contact's timeline. Exact-email match only, so general
-    # internal chatter (colleagues not in the CRM) still stays out.
-    own_domain = user.rsplit("@", 1)[-1].lower() if "@" in (user or "") else ""
-    if own_domain and sender.lower().endswith("@" + own_domain):
-        if not _contact_for_email(sender):
-            return False
-    # Import filter: skip mail whose sender domain is not linked to any CRM
-    # contact/deal — keeps private and unrelated mail out of the CRM entirely
-    # (same matching rule the auto-link hook applies after insert).
-    if only_known and not match_reference_for_sender(sender):
-        return False
-    # Keep only recipients that are valid SMTP addresses; distribution-list
+    # Keep only recipients / CC that are valid SMTP addresses; distribution-list
     # display names and X.500 recipients would otherwise fail validation.
     recipients = ", ".join(
         addr for addr in (
@@ -123,6 +109,22 @@ def _persist_message(user: str, message: dict[str, Any], only_known: bool = True
             for r in message.get("toRecipients", [])
         ) if addr and frappe.utils.validate_email_address(addr)
     )
+    cc = ", ".join(
+        addr for addr in (
+            (r.get("emailAddress", {}) or {}).get("address", "")
+            for r in message.get("ccRecipients", [])
+        ) if addr and frappe.utils.validate_email_address(addr)
+    )
+    subject = message.get("subject") or "(no subject)"
+    # Visibility / noise rules (see visibility.email_visibility):
+    #   * `P` = project number/name in subject OR crm@lcs-group.com in CC → shared
+    #   * internal → internal mail is dropped entirely unless `P`
+    #   * a `P` mail is always relevant → it bypasses the only_known sender filter
+    flags = email_visibility.compute_flags(sender, subject, recipients, cc)
+    if flags["lcs_internal"] and not flags["lcs_shared"]:
+        return False
+    if not flags["lcs_shared"] and only_known and not match_reference_for_sender(sender):
+        return False
     # LCS: honor the per-contact Mail-Sync opt-out (lcs_mail_sync=0).
     _parts = [sender] + [a.strip() for a in recipients.split(",") if a.strip()]
     if _mail_sync_disabled(_parts):
@@ -141,12 +143,15 @@ def _persist_message(user: str, message: dict[str, Any], only_known: bool = True
         "sent_or_received": sent_or_received,
         "sender": sender,
         "recipients": recipients,
-        "subject": message.get("subject") or "(no subject)",
+        "cc": cc,
+        "subject": subject,
         "content": message.get("body", {}).get("content") or "",
         "message_id": graph_id,
         "user": user,
         "communication_date": comm_date,
         "lcs_conversation_id": message.get("conversationId"),
+        "lcs_internal": flags["lcs_internal"],
+        "lcs_shared": flags["lcs_shared"],
     })
     comm.insert(ignore_permissions=True)
     return True

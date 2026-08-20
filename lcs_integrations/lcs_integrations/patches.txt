@@ -71,3 +71,5 @@ lcs_integrations.patches.install_project_matrix
 lcs_integrations.patches.install_contact_title_and_salutations
 # Default currency EUR (empty default fell back to INR → ₹) + relabel stray INR.
 lcs_integrations.patches.set_default_currency_eur
+# E-mail visibility flags (lcs_shared/lcs_internal) on Communication + backfill.
+lcs_integrations.patches.install_email_visibility_flags

@@ -70,7 +70,8 @@
           <div class="min-w-0 flex-1">
             <div class="flex items-center gap-2">
               <span class="truncate text-sm font-medium text-ink-gray-9">{{ e.subject || __('(no subject)') }}</span>
-              <span class="ml-auto shrink-0 text-xs text-ink-gray-4">{{ formatDate(e.communication_date) }}</span>
+              <FeatherIcon v-if="!e.lcs_shared" name="lock" class="ml-auto h-3 w-3 shrink-0 text-ink-gray-4" :title="__('Private — only you')" />
+              <span class="shrink-0 text-xs text-ink-gray-4" :class="{ 'ml-auto': e.lcs_shared }">{{ formatDate(e.communication_date) }}</span>
             </div>
             <div class="truncate text-xs text-ink-gray-6">{{ e.sender }}</div>
             <div class="mt-1 line-clamp-2 text-xs text-ink-gray-5">{{ e.preview }}</div>
@@ -107,6 +108,14 @@
             <div class="flex shrink-0 items-center gap-1">
               <Button variant="subtle" iconLeft="external-link" :label="__('Open in Outlook')" :disabled="!current?.message_id" @click="openInOutlook(current)" />
               <Button variant="subtle" iconLeft="corner-up-left" :label="__('Reply')" @click="replyOpen = !replyOpen" />
+              <Button
+                v-if="current?.can_release"
+                variant="subtle"
+                :iconLeft="current?.lcs_shared ? 'lock' : 'users'"
+                :label="current?.lcs_shared ? __('Make private') : __('Share')"
+                :loading="releasing"
+                @click="toggleRelease(current)"
+              />
               <Button variant="ghost" icon="trash-2" :title="__('Delete email')" @click="showReader = false; askRemove(current)" />
               <Button variant="ghost" icon="x" @click="showReader = false" />
             </div>
@@ -320,6 +329,26 @@ function sendReply() {
     .catch((e) => { toast.error(e?.messages?.[0] || __('Could not send the reply.')) })
     .finally(() => { replySending.value = false })
 }
+// LCS: release (share) my own mail with the team, or take it back to private.
+const releasing = ref(false)
+async function toggleRelease(m) {
+  if (!m?.name) return
+  releasing.value = true
+  try {
+    const method = m.lcs_shared ? 'unrelease_email' : 'release_email'
+    const res = await call(`lcs_integrations.visibility.email_visibility.${method}`, { name: m.name })
+    const shared = res?.shared ? 1 : 0
+    m.lcs_shared = shared
+    const row = (props.emails || []).find((e) => e.name === m.name)
+    if (row) row.lcs_shared = shared
+    toast.success(shared ? __('Shared with the team') : __('Set to private'))
+  } catch (e) {
+    toast.error(e?.messages?.[0] || __('Could not change sharing.'))
+  } finally {
+    releasing.value = false
+  }
+}
+
 // LCS: open the ORIGINAL message in Outlook on the web (OWA deep link by the
 // stored Graph message id). Opens in the viewer's own Outlook — works when the
 // message is in their mailbox; otherwise Outlook falls back to a search view.

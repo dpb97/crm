@@ -112,11 +112,24 @@ def list_communications(
             "content",
             "reference_doctype",
             "reference_name",
+            "user",
+            "lcs_shared",
+            "lcs_internal",
         ],
         order_by="communication_date desc, creation desc",
         limit=limit,
     )
-    return rows
+    # Visibility: shared to all, or my own non-internal mail (see email_visibility).
+    me = frappe.session.user
+    admin = me == "Administrator"
+    out = []
+    for r in rows:
+        if not (admin or r.get("lcs_shared") or (r.get("user") == me and not r.get("lcs_internal"))):
+            continue
+        r.pop("lcs_internal", None)
+        r["can_release"] = 1 if r.get("user") == me else 0
+        out.append(r)
+    return out
 
 
 @frappe.whitelist()

@@ -1091,16 +1091,26 @@ def get_organization_emails(organization: str) -> list[dict]:
     rows = frappe.get_all(
         "Communication",
         filters={"reference_doctype": "CRM Organization", "reference_name": organization},
-        fields=["name", "sender", "recipients", "subject", "sent_or_received", "communication_date", "content", "lcs_conversation_id"],
+        fields=["name", "sender", "recipients", "cc", "subject", "sent_or_received",
+                "communication_date", "content", "lcs_conversation_id", "user", "lcs_shared", "lcs_internal"],
         order_by="communication_date desc",
         limit=100000,  # load all so the tab's filters/dropdowns cover the full history
     )
+    me = frappe.session.user
+    admin = me == "Administrator"
     import html as _html
+    out = []
     for r in rows:
+        # Visibility: shared to all, or my own non-internal mail (see email_visibility).
+        if not (admin or r.get("lcs_shared") or (r.get("user") == me and not r.get("lcs_internal"))):
+            continue
         text = _html.unescape(frappe.utils.strip_html(r.get("content") or ""))
         r["preview"] = " ".join(text.split())[:160]
         r.pop("content", None)
-    return rows
+        r.pop("lcs_internal", None)
+        r["can_release"] = 1 if r.get("user") == me else 0
+        out.append(r)
+    return out
 
 
 @frappe.whitelist()
@@ -1109,12 +1119,20 @@ def get_communication_email(name: str) -> dict:
     c = frappe.db.get_value(
         "Communication",
         name,
-        ["subject", "sender", "recipients", "sent_or_received", "communication_date",
-         "content", "reference_doctype", "reference_name", "message_id", "user"],
+        ["subject", "sender", "recipients", "cc", "sent_or_received", "communication_date",
+         "content", "reference_doctype", "reference_name", "message_id", "user",
+         "lcs_shared", "lcs_internal"],
         as_dict=True,
     )
     if not c:
         frappe.throw(_("Email not found"))
+    # Visibility guard: shared to all, or my own non-internal mail (see email_visibility).
+    _me = frappe.session.user
+    if not (_me == "Administrator" or c.get("lcs_shared")
+            or (c.get("user") == _me and not c.get("lcs_internal"))):
+        frappe.throw(_("Not permitted"), frappe.PermissionError)
+    c["can_release"] = 1 if c.get("user") == _me else 0
+    c.pop("lcs_internal", None)
     if c.reference_doctype == "CRM Organization" and c.reference_name:
         if not frappe.has_permission("CRM Organization", doc=c.reference_name):
             frappe.throw(_("Not permitted"), frappe.PermissionError)
@@ -1212,19 +1230,21 @@ def get_contact_emails(contact) -> list[dict]:
     if not frappe.has_permission("Contact", doc=contact):
         frappe.throw(_("Not permitted"), frappe.PermissionError)
 
+    from lcs_integrations.visibility import email_visibility
+    vis = email_visibility.sql_visibility("c")
     rows = frappe.db.sql(
-        """
+        f"""
         SELECT DISTINCT comm FROM (
             SELECT cl.parent AS comm
             FROM `tabCommunication Link` cl
             JOIN `tabCommunication` c ON c.name = cl.parent
             WHERE cl.link_doctype = 'Contact' AND cl.link_name = %(c)s
-              AND c.communication_medium = 'Email'
+              AND c.communication_medium = 'Email' AND {vis}
             UNION
             SELECT c.name AS comm
             FROM `tabCommunication` c
             WHERE c.reference_doctype = 'Contact' AND c.reference_name = %(c)s
-              AND c.communication_medium = 'Email'
+              AND c.communication_medium = 'Email' AND {vis}
         ) t
         """,
         {"c": contact},
@@ -1237,16 +1257,19 @@ def get_contact_emails(contact) -> list[dict]:
     emails = frappe.get_all(
         "Communication",
         filters={"name": ["in", ids]},
-        fields=["name", "sender", "recipients", "subject", "sent_or_received",
-                "communication_date", "content", "lcs_conversation_id"],
+        fields=["name", "sender", "recipients", "cc", "subject", "sent_or_received",
+                "communication_date", "content", "lcs_conversation_id",
+                "user", "lcs_shared"],
         order_by="communication_date desc",
         limit=100000,  # load all so the tab's filters/dropdowns cover the full history
     )
+    me = frappe.session.user
     import html as _html
     for e in emails:
         text = _html.unescape(frappe.utils.strip_html(e.get("content") or ""))
         e["preview"] = " ".join(text.split())[:160]
         e.pop("content", None)
+        e["can_release"] = 1 if e.get("user") == me else 0
     return emails
 
 
@@ -1264,19 +1287,21 @@ def get_contact_email_counts(contacts) -> dict:
     if not contacts:
         return {}
 
+    from lcs_integrations.visibility import email_visibility
+    vis = email_visibility.sql_visibility("c")
     rows = frappe.db.sql(
-        """
+        f"""
         SELECT contact, COUNT(*) AS n FROM (
             SELECT cl.link_name AS contact, c.name AS comm
             FROM `tabCommunication Link` cl
             JOIN `tabCommunication` c ON c.name = cl.parent
             WHERE cl.link_doctype = 'Contact' AND cl.link_name IN %(contacts)s
-              AND c.communication_medium = 'Email'
+              AND c.communication_medium = 'Email' AND {vis}
             UNION
             SELECT c.reference_name AS contact, c.name AS comm
             FROM `tabCommunication` c
             WHERE c.reference_doctype = 'Contact' AND c.reference_name IN %(contacts)s
-              AND c.communication_medium = 'Email'
+              AND c.communication_medium = 'Email' AND {vis}
         ) t GROUP BY contact
         """,
         {"contacts": tuple(contacts)},
