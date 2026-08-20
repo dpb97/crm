@@ -1126,6 +1126,7 @@ def get_communication_email(name: str) -> dict:
     )
     if not c:
         frappe.throw(_("Email not found"))
+    c["name"] = name  # so the reader can act on it (share / delete / reply)
     # Visibility guard: shared to all, or my own non-internal mail (see email_visibility).
     _me = frappe.session.user
     if not (_me == "Administrator" or c.get("lcs_shared")

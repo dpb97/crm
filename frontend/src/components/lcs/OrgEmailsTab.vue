@@ -318,10 +318,13 @@ async function open(e) {
   showReader.value = true
   loading.value = true
   try {
-    current.value = await call(
+    // Merge over the list row so name / can_release / lcs_shared survive even if
+    // the backend payload omits them (name is needed for share/delete/reply).
+    const full = await call(
       'lcs_integrations.projects.api.get_communication_email',
       { name: e.name },
     )
+    current.value = { ...e, ...full }
   } catch (err) {
     current.value = { ...e, content: `<p>${__('Could not load the email.')}</p>` }
   } finally {
