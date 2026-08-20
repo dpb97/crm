@@ -61,7 +61,7 @@ def get_project_map_data():
     """Get project data with coordinates for map display."""
     projects = frappe.get_all(
         "LCS Project",
-        filters={"status": ["!=", "Cancelled"]},
+        filters={"status": ["not in", ["Cancelled", "Archived"]]},
         fields=[
             "name",
             "project_name",
@@ -173,7 +173,7 @@ def get_project_geo():
     the phase-derived lifecycle state; the span label is computed client-side."""
     projects = frappe.get_all(
         "LCS Project",
-        filters={"status": ["!=", "Cancelled"]},
+        filters={"status": ["not in", ["Cancelled", "Archived"]]},
         fields=[
             "name", "project_name", "project_number", "project_type", "phase",
             "organization", "salesperson", "estimated_value", "country",
@@ -494,7 +494,7 @@ def get_source_analytics():
             fn.Sum(LCSProject.estimated_value).as_("value"),
             fn.Avg(LCSProject.probability).as_("avg_probability"),
         )
-        .where(LCSProject.status != "Cancelled")
+        .where(LCSProject.status.notin(["Cancelled", "Archived"]))
         .groupby(LCSProject.source)
         .run(as_dict=True)
     )
@@ -517,7 +517,7 @@ def get_forecast(period="month", months_ahead=12):
         "LCS Project",
         filters={
             "phase": ["not in", ["Completed", "Lost"]],
-            "status": ["!=", "Cancelled"],
+            "status": ["not in", ["Cancelled", "Archived"]],
         },
         fields=[
             "name", "project_name", "project_number", "project_type",

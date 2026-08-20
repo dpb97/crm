@@ -779,7 +779,9 @@ const hasActiveFilters = computed(() =>
 )
 
 const activeFilters = computed(() => {
-  const f = {}
+  // Archived projects (hidden in the sales-meeting protocol) never show in the
+  // active list.
+  const f = { status: ['!=', 'Archived'] }
   if (filters.project_type) f.project_type = filters.project_type
   if (filters.phase) f.phase = filters.phase
   if (filters.country) f.country = ['like', `%${filters.country}%`]
