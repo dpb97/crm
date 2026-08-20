@@ -101,7 +101,13 @@ let recognition = null;
 let base = "";      // Text im Feld bei Diktat-Start (davor wird angehängt)
 let finalBuf = "";  // in dieser Sitzung endgültig erkannter Text
 let timer = null;
+let stopping = false;  // true = Nutzer hat gestoppt (kein Auto-Neustart)
 
+function speechCtor() {
+  return typeof window !== "undefined"
+    ? (window.SpeechRecognition || window.webkitSpeechRecognition)
+    : null;
+}
 function stopTimer() { if (timer) { clearInterval(timer); timer = null; } }
 function fail(msg) {
   stopTimer();
@@ -117,18 +123,11 @@ function emitLive(interim) {
   emit("update:modelValue", base + sep + finalBuf + interim);
 }
 
-function startRecording() {
-  if (props.disabled || mode.value === "recording") return;
-  errorMsg.value = "";
-  const SR = typeof window !== "undefined"
-    ? (window.SpeechRecognition || window.webkitSpeechRecognition)
-    : null;
-  if (!SR) {
-    fail("Live-Spracherkennung wird in diesem Browser nicht unterstützt (Chrome/Edge nutzen).");
-    return;
-  }
-  base = props.modelValue || "";
-  finalBuf = "";
+// One recognition session. Safari (and Chrome) end a session on a longer pause,
+// so onend restarts a FRESH session while the user is still dictating — that is
+// what makes continuous dictation work across browsers.
+function startSession() {
+  const SR = speechCtor();
   recognition = new SR();
   recognition.lang = props.lang || "de-DE";
   recognition.continuous = true;
@@ -143,22 +142,42 @@ function startRecording() {
     emitLive(interim);
   };
   recognition.onerror = (e) => {
-    if (e.error === "no-speech" || e.error === "aborted") return;
+    if (e.error === "no-speech" || e.error === "aborted") return; // onend handles restart
     if (e.error === "not-allowed" || e.error === "service-not-allowed") {
+      stopping = true;
       fail("Mikrofonzugriff verweigert.");
       return;
     }
+    stopping = true;
     fail("Spracherkennung: " + (e.error || "Fehler"));
   };
   recognition.onend = () => {
+    if (!stopping && mode.value === "recording") {
+      // Session endete durch Pause — mit frischer Session weiterdiktieren.
+      try { startSession(); return; } catch (_) { /* fall through to finish */ }
+    }
     emitLive("");           // interim verwerfen, finalen Text festschreiben
     stopTimer();
     if (mode.value === "recording") mode.value = "idle";
     recognition = null;
     seconds.value = 0;
+    stopping = false;
   };
+  recognition.start();
+}
+
+function startRecording() {
+  if (props.disabled || mode.value === "recording") return;
+  errorMsg.value = "";
+  if (!speechCtor()) {
+    fail("Live-Spracherkennung wird in diesem Browser nicht unterstützt.");
+    return;
+  }
+  base = props.modelValue || "";
+  finalBuf = "";
+  stopping = false;
   try {
-    recognition.start();
+    startSession();
   } catch (err) {
     fail("Diktat konnte nicht gestartet werden: " + (err && err.message ? err.message : String(err)));
     return;
@@ -172,13 +191,14 @@ function startRecording() {
 }
 
 function stopRecording() {
+  stopping = true;
   stopTimer();
   if (recognition) { try { recognition.stop(); } catch { /* ignore */ } }
 }
 
 function retry() { errorMsg.value = ""; mode.value = "idle"; }
 
-onBeforeUnmount(() => { stopTimer(); if (recognition) { try { recognition.abort(); } catch { /* ignore */ } } });
+onBeforeUnmount(() => { stopping = true; stopTimer(); if (recognition) { try { recognition.abort(); } catch { /* ignore */ } } });
 </script>
 
 <template>
