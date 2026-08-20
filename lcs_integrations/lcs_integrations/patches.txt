@@ -69,3 +69,5 @@ lcs_integrations.patches.install_abas_desc
 lcs_integrations.patches.install_project_matrix
 # Contact honorific title field (lcs_title) + seed the usual salutations (Anrede).
 lcs_integrations.patches.install_contact_title_and_salutations
+# Default currency EUR (empty default fell back to INR → ₹) + relabel stray INR.
+lcs_integrations.patches.set_default_currency_eur
