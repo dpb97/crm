@@ -1,17 +1,15 @@
-"""Auto-create a SharePoint page per LCS Project (for file upload).
+"""Auto-create a SharePoint upload FOLDER per LCS Project.
 
-Runs on project creation AND on every update (idempotent — it only acts while
-the project has no page yet, so it also covers phase changes). FAIL-SAFE: it
-never blocks or breaks a project save, and is a complete no-op until activated.
+Creates a folder '<project number> <name>' in the target site's default document
+library and stores its URL on the project (lcs_sharepoint_url). Runs on project
+creation AND on every update (idempotent — it only acts while the project has no
+folder yet, so it also covers phase changes). FAIL-SAFE: never blocks/breaks a
+save, and is a complete no-op until activated.
 
-ACTIVATION (both are the customer's / admin's job — the CRM cannot do them):
-  1. Grant the Entra app 'LCS CRM Integration' the Graph permission
-     Sites.ReadWrite.All  with admin consent.
+ACTIVATION:
+  1. Grant the Entra app the Graph permission Sites.ReadWrite.All (admin consent).
   2. Set site_config `lcs_sharepoint_site` to the target site, e.g.
-     "lcs-group.sharepoint.com:/sites/Projekte"  (or its full https URL).
-
-The page-creation Graph call (graph_client.create_page) still needs one
-validation pass against the real tenant once activated.
+     "lcscable.sharepoint.com:/sites/<Site>"  (or its full https URL).
 """
 
 from __future__ import annotations
@@ -27,7 +25,7 @@ def _enqueue(project: str) -> None:
     if not _site():
         return
     frappe.enqueue(
-        "lcs_integrations.sharepoint.hooks.ensure_project_page",
+        "lcs_integrations.sharepoint.hooks.ensure_project_folder",
         queue="short",
         project=project,
         enqueue_after_commit=True,
@@ -39,14 +37,14 @@ def on_project_after_insert(doc, method=None) -> None:
 
 
 def on_project_on_update(doc, method=None) -> None:
-    # Ensure the page exists on any change (covers "also on phase change").
+    # Ensure the folder exists on any change (covers "also on phase change").
     if not doc.get("lcs_sharepoint_url"):
         _enqueue(doc.name)
 
 
-def ensure_project_page(project: str) -> None:
-    """Create + publish the project's SharePoint page and store its URL. Idempotent
-    and fail-safe."""
+def ensure_project_folder(project: str) -> None:
+    """Create the project's upload folder in the SharePoint document library and
+    store its URL on the project. Idempotent and fail-safe."""
     try:
         site = _site()
         if not site:
@@ -65,13 +63,16 @@ def ensure_project_page(project: str) -> None:
             sid = gc.site_id(site)
             if not sid:
                 return
-            title = f"{doc.project_number or ''} {doc.project_name or ''}".strip() or doc.name
-            page = gc.create_page(sid, doc.project_number or doc.name, title)
-            url = page.get("webUrl")
+            drive_id = gc.default_drive_id(sid)
+            if not drive_id:
+                return
+            name = f"{doc.project_number or ''} {doc.project_name or ''}".strip() or doc.name
+            item = gc.ensure_folder(drive_id, name)
+            url = item.get("webUrl")
             if url:
                 frappe.db.set_value("LCS Project", project, "lcs_sharepoint_url", url, update_modified=False)
                 frappe.db.commit()
         finally:
             gc.close()
     except Exception as e:  # noqa: BLE001 — SharePoint must never break a save
-        frappe.log_error(f"SharePoint page for {project}: {e}", "sharepoint")
+        frappe.log_error(f"SharePoint folder for {project}: {e}", "sharepoint")

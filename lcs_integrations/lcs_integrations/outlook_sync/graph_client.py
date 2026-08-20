@@ -173,28 +173,29 @@ class GraphClient:
             return None
         return self._check(resp, 200).get("id")
 
-    def create_page(self, site_id: str, name: str, title: str | None = None) -> dict[str, Any]:
-        """Create AND publish a modern SharePoint page on the site. Needs
-        Sites.ReadWrite.All. Returns the page (incl. webUrl)."""
-        safe = "".join(c if (c.isalnum() or c in " -_") else "-" for c in name).strip() or "project"
-        body = {
-            "@odata.type": "#microsoft.graph.sitePage",
-            "name": safe + ".aspx",
-            "title": title or name,
-            "pageLayout": "article",
-        }
-        resp = self._http.post(f"/sites/{site_id}/pages", json=body, headers=self._headers())
-        created = self._check(resp, 201, 200)
-        pid = created.get("id")
-        if pid:
-            pub = self._http.post(
-                f"/sites/{site_id}/pages/{pid}/microsoft.graph.sitePage/publish",
-                headers=self._headers(),
-            )
-            # publish returns 204; ignore non-fatal publish errors
-            if pub.status_code not in (200, 202, 204):
-                pass
-        return created
+    def default_drive_id(self, site_id: str) -> str | None:
+        """The site's default document library (drive) id. Needs Sites.Read.All."""
+        resp = self._http.get(f"/sites/{site_id}/drive", headers=self._headers())
+        if resp.status_code == 404:
+            return None
+        return self._check(resp, 200).get("id")
+
+    def ensure_folder(self, drive_id: str, name: str) -> dict[str, Any]:
+        """Return the drive-root folder `name`, creating it if missing. Idempotent.
+        Needs Sites.ReadWrite.All. Returns the driveItem (incl. webUrl)."""
+        from urllib.parse import quote
+
+        safe = "".join(c if (c.isalnum() or c in " -_.&()") else "-" for c in name).strip().strip("/") or "project"
+        got = self._http.get(f"/drives/{drive_id}/root:/{quote(safe)}", headers=self._headers())
+        if got.status_code == 200:
+            return got.json()
+        body = {"name": safe, "folder": {}, "@microsoft.graph.conflictBehavior": "fail"}
+        resp = self._http.post(f"/drives/{drive_id}/root/children", json=body, headers=self._headers())
+        if resp.status_code == 409:  # created concurrently — fetch it
+            got = self._http.get(f"/drives/{drive_id}/root:/{quote(safe)}", headers=self._headers())
+            if got.status_code == 200:
+                return got.json()
+        return self._check(resp, 201, 200)
 
     def message_attachments(self, mailbox: str, graph_id: str) -> list[dict[str, Any]]:
         """All attachments of a message (fileAttachment carries `contentBytes`).
