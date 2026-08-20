@@ -109,7 +109,8 @@
                         <LcsPhoneInput
                           v-else-if="field.fieldtype === 'PhoneInput'"
                           :modelValue="doc[field.fieldname]"
-                          @change="(v) => fieldChange(v, field)"
+                          :contact="doc.name"
+                          @saved="emit('reload')"
                         />
                         <FormControl
                           v-else-if="field.fieldtype == 'Check'"

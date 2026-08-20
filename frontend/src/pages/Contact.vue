@@ -125,7 +125,7 @@
           :sections="parsedSections"
           doctype="Contact"
           :docname="contact.doc.name"
-          @reload="sections.reload"
+          @reload="() => { contact.reload(); sections.reload() }"
         />
       </div>
     </Resizer>
