@@ -11,7 +11,7 @@
 
 import { ref, computed, watch, unref, toRaw } from 'vue'
 import { createListResource } from 'frappe-ui'
-import { cacheListGet, cacheListPut } from '@/utils/offlineDB'
+import { cacheListGet, cacheListPut, cacheGetByDoctype } from '@/utils/offlineDB'
 
 /**
  * Deeply unref + toRaw a value so JSON.stringify doesn't walk into
@@ -81,10 +81,20 @@ export function useOfflineList(config) {
   async function loadFromCache() {
     try {
       const cached = await cacheListGet(cacheKey.value)
-      if (cached) {
+      if (cached && cached.data && cached.data.length) {
         data.value = cached.data
         fromCache.value = true
         lastCachedAt.value = cached.cached_at
+        error.value = null
+        return
+      }
+      // Fallback: everything the offline prefetch cached for this doctype, even
+      // if THIS exact query was never run online. Keeps lists populated offline
+      // without depending on the service worker's get_list mirror.
+      const byDoctype = await cacheGetByDoctype(config.doctype)
+      if (byDoctype && byDoctype.length) {
+        data.value = byDoctype
+        fromCache.value = true
         error.value = null
       }
     } catch (e) {

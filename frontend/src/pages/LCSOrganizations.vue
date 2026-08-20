@@ -145,30 +145,29 @@ import { useListFuncbar } from '@/composables/useListFuncbar'
 import { usePagination } from '@/composables/usePagination'
 import { useProfileSetting } from '@/composables/useProfileSetting'
 import { useViewport } from '@/composables/useViewport'
+import { useOfflineList } from '@/composables/useOfflineList'
 
 const router = useRouter()
 const { pilandaMode } = usePilandaMode()
 const { inspectPanel } = usePilandaInspect()
 
-const orgsRes = createResource({
-  url: 'frappe.client.get_list',
-  params: {
-    doctype: 'CRM Organization',
-    fields: [
-      'name', 'organization_name', 'website', 'industry', 'territory',
-      'no_of_employees', 'annual_revenue', 'modified',
-    ],
-    order_by: 'modified desc',
-    limit_page_length: 0,
-  },
-  auto: true,
+// useOfflineList: serves the last cached data offline (and, via the doctype
+// fallback, everything the prefetch cached) so Firmen render without a network.
+const { data: orgsData, loading: orgsLoading, reload: reloadOrgs } = useOfflineList({
+  doctype: 'CRM Organization',
+  fields: [
+    'name', 'organization_name', 'website', 'industry', 'territory',
+    'no_of_employees', 'annual_revenue', 'modified',
+  ],
+  orderBy: 'modified desc',
+  pageLength: 99999,
 })
-const orgs = computed(() => orgsRes.data || [])
+const orgs = computed(() => orgsData.value || [])
 // Last contact (latest synced mail) per organization, for the sortable column.
 const lastContactRes = createResource({ url: 'lcs_integrations.projects.api.get_last_contact_dates', params: { doctype: 'CRM Organization' }, auto: true })
 const lastContact = computed(() => lastContactRes.data || {})
-const loading = computed(() => orgsRes.loading)
-function reload() { orgsRes.reload() }
+const loading = computed(() => orgsLoading.value)
+function reload() { reloadOrgs() }
 
 const selectMode = ref(false)
 const picked = ref([])

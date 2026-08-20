@@ -142,6 +142,18 @@ export async function cacheDelete(doctype, name) {
   await awaitTx(t)
 }
 
+// All cached documents of a doctype (keys are `${doctype}:${name}`). Lets the
+// offline list fall back to everything the prefetch cached for that doctype,
+// even when the exact query was never run online.
+export async function cacheGetByDoctype(doctype) {
+  if (!doctype) return []
+  const db = await getDB()
+  const t = tx(db, 'cache')
+  const range = IDBKeyRange.bound(`${doctype}:`, `${doctype}:￿`)
+  const entries = await awaitReq(t.objectStore('cache').getAll(range))
+  return (entries || []).map((e) => e.doc).filter(Boolean)
+}
+
 // --- LIST CACHE ---
 
 export async function cacheListGet(key) {

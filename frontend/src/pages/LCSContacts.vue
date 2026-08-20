@@ -154,28 +154,27 @@ import { useListFuncbar } from '@/composables/useListFuncbar'
 import { usePagination } from '@/composables/usePagination'
 import { useProfileSetting } from '@/composables/useProfileSetting'
 import { useViewport } from '@/composables/useViewport'
+import { useOfflineList } from '@/composables/useOfflineList'
 
 const router = useRouter()
 const { pilandaMode } = usePilandaMode()
 const { inspectPanel } = usePilandaInspect()
 
 // --- Daten: echte CRM-Kontakte --------------------------------------------
-const contactsRes = createResource({
-  url: 'frappe.client.get_list',
-  params: {
-    doctype: 'Contact',
-    fields: [
-      'name', 'full_name', 'first_name', 'last_name', 'company_name',
-      'email_id', 'mobile_no', 'phone', 'modified',
-    ],
-    order_by: 'modified desc',
-    limit_page_length: 0,
-  },
-  auto: true,
+// useOfflineList: serves cached data offline (and the full prefetched set via
+// the doctype fallback) so contacts render without a network.
+const { data: contactsData, loading: contactsLoading, reload: reloadContacts } = useOfflineList({
+  doctype: 'Contact',
+  fields: [
+    'name', 'full_name', 'first_name', 'last_name', 'company_name',
+    'email_id', 'mobile_no', 'phone', 'modified',
+  ],
+  orderBy: 'modified desc',
+  pageLength: 99999,
 })
-const contacts = computed(() => contactsRes.data || [])
-const loading = computed(() => contactsRes.loading)
-function reload() { contactsRes.reload() }
+const contacts = computed(() => contactsData.value || [])
+const loading = computed(() => contactsLoading.value)
+function reload() { reloadContacts() }
 
 const selectMode = ref(false)
 const picked = ref([])
