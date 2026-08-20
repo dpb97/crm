@@ -26,7 +26,6 @@
 import {
   precacheAndRoute,
   cleanupOutdatedCaches,
-  createHandlerBoundToURL,
 } from 'workbox-precaching'
 import { registerRoute, NavigationRoute } from 'workbox-routing'
 import { clientsClaim } from 'workbox-core'
@@ -34,14 +33,31 @@ import { clientsClaim } from 'workbox-core'
 precacheAndRoute(self.__WB_MANIFEST || [])
 cleanupOutdatedCaches()
 
-// SPA navigation fallback: serve the precached app shell for ANY in-scope
-// page navigation so deep links and hard refreshes boot fully offline (the
-// SPA then routes client-side). Without this, an offline reload on e.g.
-// /crm/projects/PROJ-1 hits the network and white-screens. Backend paths
-// (Frappe desk, API, static assets, files) are denylisted so only real SPA
-// navigations fall back to index.html.
+// SPA navigation: NETWORK-FIRST (not the precached static shell!). Frappe
+// serves crm.html server-side and injects the boot data + CSRF token via a
+// Jinja block (`{% for key in boot %}` …). The precached build index.html has
+// that Jinja UNRENDERED — serving it breaks the page ("Unexpected token '%'"),
+// leaves no CSRF token, and every API POST fails → "Access Denied". So online
+// we always fetch the server-rendered shell (and cache it); only OFFLINE do we
+// fall back to the last cached rendered shell, so deep links / reloads still
+// boot. Backend paths are denylisted so only real SPA navigations are handled.
+const SHELL_CACHE = 'lcs-shell-v1'
+const SHELL_KEY = '/__lcs_app_shell__'
+
+async function navigationHandler({ request }) {
+  const cache = await caches.open(SHELL_CACHE)
+  try {
+    const res = await fetch(request)
+    if (res && res.ok) cache.put(SHELL_KEY, res.clone()) // cache the RENDERED shell
+    return res
+  } catch {
+    const cached = await cache.match(SHELL_KEY)
+    return cached || Response.error()
+  }
+}
+
 registerRoute(
-  new NavigationRoute(createHandlerBoundToURL('index.html'), {
+  new NavigationRoute(navigationHandler, {
     denylist: [
       /^\/app(\/|$)/,
       /^\/api\//,
@@ -235,8 +251,10 @@ async function handleListResponse(req, res) {
     const body = await safeJsonClone(req)
     const doctype = readArg(url, body, 'doctype')
     if (!doctype) return
-    const cloned = res.clone()
-    const payload = await cloned.json()
+    // `res` is already a dedicated clone (see the fetch handler) — read it
+    // directly; cloning it again after the page consumed the original would
+    // throw "Response body is already used".
+    const payload = await res.json()
     const records = payload?.message
     if (Array.isArray(records)) {
       await putMany(doctype, records)
@@ -253,8 +271,7 @@ async function handleSingleResponse(req, res) {
     const body = await safeJsonClone(req)
     const doctype = readArg(url, body, 'doctype')
     if (!doctype) return
-    const cloned = res.clone()
-    const payload = await cloned.json()
+    const payload = await res.json() // res is a dedicated clone (fetch handler)
     const record = payload?.message
     if (record && record.name) {
       await putMany(doctype, [record])
@@ -332,7 +349,7 @@ async function methodCacheKey(req) {
 async function cacheMethodResponse(keyReq, res) {
   try {
     const key = await methodCacheKey(keyReq)
-    const payload = await res.clone().json()
+    const payload = await res.json() // res is a dedicated clone (fetch handler)
     // Store the full Frappe-shaped payload ({message: ...}) under `name`=key
     // so the existing `name`-keyed store machinery can hold it.
     await putMany('_methods', [{ name: key, payload }])
@@ -367,8 +384,9 @@ self.addEventListener('fetch', (event) => {
         try {
           const res = await fetch(request)
           if (res && res.ok) {
-            // fire-and-forget IDB write; don't make the SPA wait.
-            event.waitUntil(handleListResponse(keyReq, res))
+            // Clone BEFORE returning: returning `res` consumes its body, so the
+            // cache writer gets a dedicated clone. fire-and-forget IDB write.
+            event.waitUntil(handleListResponse(keyReq, res.clone()))
           }
           return res
         } catch {
@@ -394,7 +412,7 @@ self.addEventListener('fetch', (event) => {
         try {
           const res = await fetch(request)
           if (res && res.ok) {
-            event.waitUntil(handleSingleResponse(keyReq, res))
+            event.waitUntil(handleSingleResponse(keyReq, res.clone())) // clone before return
           }
           return res
         } catch {
@@ -422,7 +440,7 @@ self.addEventListener('fetch', (event) => {
         try {
           const res = await fetch(request)
           if (res && res.ok) {
-            event.waitUntil(cacheMethodResponse(keyReq, res))
+            event.waitUntil(cacheMethodResponse(keyReq, res.clone())) // clone before return
           }
           return res
         } catch {
