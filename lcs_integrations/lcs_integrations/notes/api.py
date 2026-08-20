@@ -14,6 +14,7 @@ feedback_frappe_doc_compliance.md in agent memory):
 import re
 import difflib
 import frappe
+from frappe import _
 
 
 # Scoring weights — tuned so that a project-number mention always wins,
