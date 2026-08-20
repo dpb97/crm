@@ -67,3 +67,5 @@ lcs_integrations.patches.convert_previous_company_to_link
 lcs_integrations.patches.install_abas_desc
 # Opportunity-Matrix (5 dimensions) on LCS Project for the inspector radar.
 lcs_integrations.patches.install_project_matrix
+# Contact honorific title field (lcs_title) + seed the usual salutations (Anrede).
+lcs_integrations.patches.install_contact_title_and_salutations

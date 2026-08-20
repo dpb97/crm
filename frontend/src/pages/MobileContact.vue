@@ -420,12 +420,14 @@ function getParsedSections(_sections) {
               })
             },
           }
-        } else if (field.name === 'mobile_no') {
+        } else if (field.fieldname === 'mobile_no') {
           // LCS: same simple phone field as the desktop contact — a dial-code
           // dropdown + a plain number input. The old multi-value dropdown hid the
           // number on the phone ("seh ich garnicht"); this shows AND edits it.
-          return { ...field, read_only: false, hidden: false, fieldtype: 'PhoneInput' }
-        } else if (field.name === 'address') {
+          // NOTE: match on fieldname — `field.name` is a random docfield hash and
+          // never equalled 'mobile_no', so the old override silently did nothing.
+          return { ...field, read_only: false, hidden: false, fieldtype: 'PhoneInput', phoneKind: 'mobile', label: __('Mobile Number') }
+        } else if (field.fieldname === 'address') {
           return {
             ...field,
             create: (value, close) => {
@@ -438,6 +440,14 @@ function getParsedSections(_sections) {
           return field
         }
       })
+      // LCS: inject a landline "Telefon" (2nd phone) after the mobile field and
+      // an honorific "Titel" after the salutation — mirrors the desktop contact.
+      const injectAfter = (fname, entry) => {
+        const i = column.fields.findIndex((f) => f.fieldname === fname)
+        if (i !== -1 && !column.fields.some((f) => f.fieldname === entry.fieldname)) column.fields.splice(i + 1, 0, entry)
+      }
+      injectAfter('mobile_no', { fieldname: 'phone', label: __('Phone'), fieldtype: 'PhoneInput', phoneKind: 'phone', read_only: false, hidden: false })
+      injectAfter('salutation', { fieldname: 'lcs_title', label: __('Title'), fieldtype: 'Data', read_only: false, hidden: false, placeholder: __('e.g. Dr., Mag., DI') })
       return column
     })
     return section

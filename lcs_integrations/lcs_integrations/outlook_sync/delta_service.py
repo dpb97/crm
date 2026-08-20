@@ -12,7 +12,7 @@ from typing import Any
 
 import frappe
 
-from lcs_integrations.email_domain_autolink.hooks import match_reference_for_sender
+from lcs_integrations.email_domain_autolink.hooks import _contact_for_email, match_reference_for_sender
 
 from .graph_client import GraphClient, GraphClientError
 
@@ -102,9 +102,14 @@ def _persist_message(user: str, message: dict[str, Any], only_known: bool = True
         return False
     # Skip mail sent from our own company domain — internal correspondence is
     # noise in a customer-facing CRM. "Own domain" = the mailbox owner's domain.
+    # EXCEPTION: an internal sender who is an explicit CRM Contact (a colleague
+    # deliberately tracked — e.g. an internal salesperson) is NOT noise; their
+    # mail belongs on that contact's timeline. Exact-email match only, so general
+    # internal chatter (colleagues not in the CRM) still stays out.
     own_domain = user.rsplit("@", 1)[-1].lower() if "@" in (user or "") else ""
     if own_domain and sender.lower().endswith("@" + own_domain):
-        return False
+        if not _contact_for_email(sender):
+            return False
     # Import filter: skip mail whose sender domain is not linked to any CRM
     # contact/deal — keeps private and unrelated mail out of the CRM entirely
     # (same matching rule the auto-link hook applies after insert).

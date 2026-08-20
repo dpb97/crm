@@ -408,9 +408,8 @@ const parsedSections = computed(() => {
   if (!sections.data) return []
   return sections.data.map((section) => ({
     ...section,
-    columns: section.columns.map((column) => ({
-      ...column,
-      fields: column.fields.map((field) => {
+    columns: section.columns.map((column) => {
+      const _fields = column.fields.map((field) => {
         field.label = fieldLabelMap[field.fieldname] || field.label
         field.placeholder =
           fieldPlaceholderMap[field.fieldname] || field.placeholder
@@ -459,7 +458,7 @@ const parsedSections = computed(() => {
         }
         if (field.fieldname === 'mobile_no') {
           // LCS: simple phone field — country dial-code dropdown + number input.
-          return { ...field, read_only: false, hidden: false, fieldtype: 'PhoneInput' }
+          return { ...field, read_only: false, hidden: false, fieldtype: 'PhoneInput', phoneKind: 'mobile' }
         }
         if (field.fieldname === 'address') {
           return {
@@ -472,8 +471,17 @@ const parsedSections = computed(() => {
           }
         }
         return field
-      }),
-    })),
+      })
+      // LCS: inject a landline "Telefon" (2nd phone) after the mobile field and
+      // an honorific "Titel" after the salutation — both in the Details column.
+      const injectAfter = (fname, entry) => {
+        const i = _fields.findIndex((f) => f.fieldname === fname)
+        if (i !== -1 && !_fields.some((f) => f.fieldname === entry.fieldname)) _fields.splice(i + 1, 0, entry)
+      }
+      injectAfter('mobile_no', { fieldname: 'phone', label: __('Phone'), fieldtype: 'PhoneInput', phoneKind: 'phone', read_only: false, hidden: false })
+      injectAfter('salutation', { fieldname: 'lcs_title', label: __('Title'), fieldtype: 'Data', read_only: false, hidden: false, placeholder: __('e.g. Dr., Mag., DI') })
+      return { ...column, fields: _fields }
+    }),
   }))
 })
 

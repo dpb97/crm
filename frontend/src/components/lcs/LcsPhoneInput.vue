@@ -69,6 +69,8 @@ const props = defineProps({
   modelValue: { type: String, default: '' },
   // Contact name — when set, the control saves itself into phone_nos.
   contact: { type: String, default: '' },
+  // Which primary number this field edits: "mobile" (mobile_no) or "phone" (landline).
+  kind: { type: String, default: 'mobile' },
 })
 const emit = defineEmits(['update:modelValue', 'change', 'saved'])
 
@@ -177,7 +179,7 @@ async function commit() {
   }
   saving.value = true
   try {
-    await call('lcs_integrations.contacts.api.set_primary_phone', { contact: props.contact, value: val })
+    await call('lcs_integrations.contacts.api.set_primary_phone', { contact: props.contact, value: val, kind: props.kind })
     emit('saved')
   } catch (err) {
     committed = '' // let the next blur retry

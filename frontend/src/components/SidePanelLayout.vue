@@ -110,6 +110,7 @@
                           v-else-if="field.fieldtype === 'PhoneInput'"
                           :modelValue="doc[field.fieldname]"
                           :contact="doc.name"
+                          :kind="field.phoneKind || 'mobile'"
                           @saved="emit('reload')"
                         />
                         <FormControl
