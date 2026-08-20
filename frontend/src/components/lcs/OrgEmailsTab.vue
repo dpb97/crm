@@ -34,6 +34,9 @@
           class="emf-ctrl min-w-[140px] flex-1 rounded-md px-3 py-1.5 text-sm outline-none" />
       </div>
       <div class="mb-3 flex flex-wrap items-center gap-2">
+        <label class="flex items-center gap-1.5 rounded-md border border-lcs-secondary/40 px-2 py-1.5 text-xs text-ink-gray-7">
+          <input type="checkbox" v-model="onlyToMe" /> {{ __('Only to me') }}
+        </label>
         <select v-model="fDirection" class="emf-ctrl rounded-md px-2 py-1.5 text-sm outline-none">
           <option value="">{{ __('All') }}</option>
           <option value="Received">{{ __('Received') }}</option>
@@ -191,10 +194,16 @@
 import { ref, computed, watch } from 'vue'
 import { FeatherIcon, Dialog, Button, call, toast, createResource } from 'frappe-ui'
 import { formatDate } from '@/utils'
+import { sessionStore } from '@/stores/session'
 
 const props = defineProps({
   emails: { type: Array, default: () => [] },
 })
+
+// LCS: current user's e-mail — used by the "only to me" default view filter.
+const session = sessionStore()
+// Default: show only mail where the current user is a recipient (togglable).
+const onlyToMe = ref(true)
 
 // LCS: filter the mail list (sender / recipient / subject / direction / date range)
 const fSender = ref('')
@@ -242,8 +251,11 @@ const filtered = computed(() => {
   const dir = fDirection.value
   const from = fFrom.value ? new Date(fFrom.value + 'T00:00:00').getTime() : null
   const to = fTo.value ? new Date(fTo.value + 'T23:59:59').getTime() : null
+  const me = (session.user || '').toLowerCase()
   return (props.emails || []).filter((e) => {
     if (removed.value.has(e.name)) return false
+    // LCS default view: only mail where I am among the recipients (togglable).
+    if (onlyToMe.value && me && !(e.recipients || '').toLowerCase().includes(me)) return false
     if (s && !(e.sender || '').toLowerCase().includes(s)) return false
     if (r && !(e.recipients || '').toLowerCase().includes(r)) return false
     if (subj && !(e.subject || '').toLowerCase().includes(subj)) return false

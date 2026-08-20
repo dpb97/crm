@@ -6,7 +6,7 @@ import { showSettings, activeSettingsPage } from '@/composables/settings'
 import { runSequentially, parseAssignees, sanitizeText } from '@/utils'
 import { findMissingMandatory } from '@/utils/fieldTransforms'
 import { createDocumentResource, createResource, toast } from 'frappe-ui'
-import { cacheGet, cachePut } from '@/utils/offlineDB'
+import { cacheGet, cachePut, queueMutation } from '@/utils/offlineDB'
 import { ref, reactive, getCurrentInstance } from 'vue'
 
 const documentsCache = {}
@@ -125,6 +125,14 @@ export function useDocument(doctype, docname, resourceOverrides = {}) {
         }
         const mandatory = checkMandatory(documentsCache[doctype][docname].doc)
         if (mandatory) return
+        // OFFLINE: the frappe-ui save is a live network call that just fails with
+        // no connection — the edit was lost. Instead queue the changed fields as
+        // a mutation the sync engine replays on reconnect, and apply optimistically.
+        // Strictly offline-only: the online path below is completely unchanged.
+        if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+          const queued = await queueOfflineUpdate(doctype, docname)
+          if (queued) return
+        }
         return _originalSubmit.apply(_save, args)
       }
     } else {
@@ -211,6 +219,54 @@ export function useDocument(doctype, docname, resourceOverrides = {}) {
 
     triggerOnLoad()
     triggerOnRender()
+  }
+
+  // OFFLINE save: diff the current doc against the last-fetched copy and queue
+  // just the changed scalar fields as an 'update' mutation (syncEngine replays
+  // via set_value on reconnect, with conflict detection from baseValues). Child
+  // tables / nested objects are skipped — those edit through their own APIs.
+  async function queueOfflineUpdate(dt, dn) {
+    const res = documentsCache[dt]?.[dn]
+    if (!res || !res.doc) return false
+    const cur = res.doc
+    const orig = res.originalDoc || {}
+    const SKIP = new Set([
+      'doctype', 'name', 'modified', 'creation', 'owner', 'modified_by',
+      'idx', 'docstatus', '__islocal', '__unsaved',
+    ])
+    const params = {}
+    const baseValues = {}
+    for (const k of Object.keys(cur)) {
+      if (k.startsWith('__') || SKIP.has(k)) continue
+      const v = cur[k]
+      if (v !== null && typeof v === 'object') continue // child tables handled elsewhere
+      const ov = orig[k]
+      const same = v === ov || ((v == null || v === '') && (ov == null || ov === ''))
+      if (!same) {
+        params[k] = v
+        baseValues[k] = ov ?? null
+      }
+    }
+    if (!Object.keys(params).length) return true // nothing changed → treat as saved
+    try {
+      await queueMutation({
+        doctype: dt,
+        name: dn,
+        method: 'update',
+        params,
+        description: `Update ${Object.keys(params).join(', ')}`,
+        baseValues,
+        baseModified: cur.modified,
+      })
+      res.originalDoc = JSON.parse(JSON.stringify(cur)) // clears isDirty
+      try { await cachePut(dt, dn, cur) } catch (_) {}
+      triggerOnSave()
+      toast.success(__('Saved offline — will sync when back online'))
+      return true
+    } catch (err) {
+      console.error('offline queue failed', err)
+      return false
+    }
   }
 
   function getControllers(row = null) {
