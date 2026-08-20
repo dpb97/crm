@@ -136,26 +136,26 @@ def has_permission(doc: Any, ptype: str = "read", user: str | None = None) -> bo
 
 
 # --- release actions -------------------------------------------------------
-def _recompute_shared(doc) -> int:
-    return 1 if (subject_has_project(doc.subject) or crm_in_cc(doc.get("cc"), doc.recipients)) else 0
+# The automatic P rule (project ref / crm CC) sets the INITIAL shared state at
+# import; from then on the owner's manual choice wins in BOTH directions. So
+# "Share" forces visible-to-all and "Make private" forces private-to-me even for
+# a mail that structurally qualifies as shared.
+def _set_shared(name: str, value: int) -> dict:
+    doc = frappe.get_doc("Communication", name)
+    if doc.user != frappe.session.user and frappe.session.user != "Administrator":
+        frappe.throw(_("Nur der Postfach-Eigentümer kann die Sichtbarkeit ändern."), frappe.PermissionError)
+    doc.db_set("lcs_shared", value, update_modified=False)
+    return {"ok": True, "shared": bool(value)}
 
 
 @frappe.whitelist()
 def release_email(name: str) -> dict:
-    """Release one of MY e-mails so the team can see it. Owner (or admin) only."""
-    doc = frappe.get_doc("Communication", name)
-    if doc.user != frappe.session.user and frappe.session.user != "Administrator":
-        frappe.throw(_("Nur der Postfach-Eigentümer kann diese Mail freigeben."), frappe.PermissionError)
-    doc.db_set("lcs_shared", 1, update_modified=False)
-    return {"ok": True, "shared": True}
+    """Force one of MY e-mails visible to the whole team. Owner (or admin) only."""
+    return _set_shared(name, 1)
 
 
 @frappe.whitelist()
 def unrelease_email(name: str) -> dict:
-    """Take back a manual release. Falls back to the automatic P rule, so a mail
-    that is structurally shared (project ref / crm CC) stays shared."""
-    doc = frappe.get_doc("Communication", name)
-    if doc.user != frappe.session.user and frappe.session.user != "Administrator":
-        frappe.throw(_("Nur der Postfach-Eigentümer kann die Freigabe zurücknehmen."), frappe.PermissionError)
-    doc.db_set("lcs_shared", _recompute_shared(doc), update_modified=False)
-    return {"ok": True, "shared": bool(doc.lcs_shared)}
+    """Force one of MY e-mails private to me — overrides the automatic share rule
+    (project ref / crm CC). Owner (or admin) only."""
+    return _set_shared(name, 0)
