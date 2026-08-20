@@ -5,7 +5,7 @@
 -->
 <template>
   <div class="flex items-center gap-1.5">
-    <select v-model="code" class="lcs-phone-code" @change="emitVal">
+    <select v-model="code" class="lcs-phone-code" @change="emitChange">
       <option v-for="c in CODES" :key="c.iso" :value="c.dial">{{ c.flag }} {{ c.dial }}</option>
     </select>
     <input
@@ -13,8 +13,8 @@
       type="tel"
       class="lcs-phone-num"
       :placeholder="__('Number')"
-      @input="emitVal"
-      @blur="emitVal"
+      @input="emitInput"
+      @blur="emitChange"
     />
   </div>
 </template>
@@ -70,12 +70,17 @@ function parse(v) {
 parse(props.modelValue)
 watch(() => props.modelValue, (v) => parse(v))
 
-function emitVal() {
+function currentVal() {
   const digits = String(num.value || '').replace(/[^\d]/g, '')
-  const val = digits ? code.value + digits : ''
-  emit('update:modelValue', val)
-  emit('change', val)
+  return digits ? code.value + digits : ''
 }
+// Keystrokes only update the model live — cheap, no save. The COMMIT (`change`,
+// which SidePanelLayout turns into a full `document.save.submit`) fires ONLY on
+// blur or a dial-code change. Emitting `change` per keystroke fired one full
+// document save per digit; those race with the same base `modified`, so the
+// first wins and the rest fail with "modified after you have opened it".
+function emitInput() { emit('update:modelValue', currentVal()) }
+function emitChange() { const val = currentVal(); emit('update:modelValue', val); emit('change', val) }
 </script>
 
 <style scoped>

@@ -42,16 +42,21 @@ export function useDocument(doctype, docname, resourceOverrides = {}) {
           },
           onError: async (err) => {
             // Offline / network failure → serve the last cached copy so the
-            // detail page still opens. Only fall through to error toasts when
-            // there is genuinely nothing cached.
-            try {
-              const cached = await cacheGet(doctype, docname)
-              if (cached) {
-                documentsCache[doctype][docname].doc = cached
-                error.value = ''
-                return
-              }
-            } catch (_) {}
+            // detail page still opens. Guard on navigator.onLine: an ONLINE
+            // fetch error (permission, conflict, transient) must NOT replace the
+            // live doc with a stale cached copy — that reintroduces an old
+            // `modified` timestamp and makes the next save fail with
+            // "modified after you have opened it". Only fall back when offline.
+            if (!navigator.onLine) {
+              try {
+                const cached = await cacheGet(doctype, docname)
+                if (cached) {
+                  documentsCache[doctype][docname].doc = cached
+                  error.value = ''
+                  return
+                }
+              } catch (_) {}
+            }
             error.value = err
             if (err.exc_type === 'DoesNotExistError') {
               toast.error(__(err.messages[0] || 'Document does not exist'))
