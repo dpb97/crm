@@ -36,7 +36,14 @@
           <PpDataGrid table-key="lcs_notes" v-if="filtered.length" :columns="columns" :rows="filtered" :page-size="25" @row-click="openNote">
             <template #cell-title="{ row }">
               <span class="pp-cell-strong">{{ row.title }}</span>
-              <span v-if="row.object" class="pp-cell-sub crmn-object">{{ row.object }}</span>
+            </template>
+            <template #cell-references="{ row }">
+              <div v-if="row.links?.length" class="flex flex-wrap gap-1">
+                <span v-for="l in row.links" :key="l.doctype + l.name" class="crmn-ref" :title="l.doctype + ': ' + l.label">
+                  {{ l.label }}
+                </span>
+              </div>
+              <span v-else class="pp-cell-muted">—</span>
             </template>
             <template #cell-art="{ value }">
               <PpPill :tone="value === 'voice' ? 'brand' : 'success'">
@@ -120,9 +127,10 @@ const filtered = computed(() => {
 
 const columns = [
   { key: 'title', label: __('Note'), pin: true, width: 340 },
-  { key: 'art', label: __('Type'), width: 160 },
-  { key: 'author', label: __('Author'), width: 200 },
-  { key: 'time', label: __('Time'), width: 140 },
+  { key: 'references', label: __('Linked to'), width: 280 },
+  { key: 'art', label: __('Type'), width: 140 },
+  { key: 'author', label: __('Author'), width: 180 },
+  { key: 'time', label: __('Time'), width: 120 },
 ]
 
 // --- Zeilen-Klick → angedockter Spec-Inspektor -----------------------------
@@ -176,6 +184,13 @@ function relTime(v) {
 </script>
 
 <style scoped>
-/* Object reference under the note title — tabular digits on top of pp-cell-sub. */
-.crmn-object { font-variant-numeric: tabular-nums; }
+/* Linked-entity chips in the references column. */
+.crmn-ref {
+  display: inline-flex; align-items: center;
+  padding: 2px 8px; border-radius: var(--pp-radius-full, 999px);
+  border: 1px solid var(--pp-border-subtle); background: var(--pp-bg-base);
+  font-size: 11px; font-weight: var(--pp-weight-medium, 500);
+  color: var(--pp-text-secondary); white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
 </style>

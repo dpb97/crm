@@ -1810,7 +1810,7 @@ def get_notes(limit=100000):
     rows = []
 
     _NOTE_TITLE = {
-        "LCS Project": "project_number", "CRM Lead": "lead_name", "LCS Chance": "title",
+        "LCS Project": "project_name", "CRM Lead": "lead_name", "LCS Chance": "title",
         "Contact": "full_name", "CRM Organization": "organization_name",
     }
 
