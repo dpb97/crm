@@ -67,6 +67,24 @@
                 </span>
                 <span>{{ contact.doc.full_name }}</span>
               </div>
+              <!-- LCS: show the actual number + email at a glance on the phone
+                   (previously only a "Call" button, the number was hidden in the
+                   Details tab). Tappable: number dials, email opens the mailer. -->
+              <div
+                v-if="contact.doc.mobile_no || contact.doc.email_id"
+                class="flex flex-col gap-0.5 text-sm text-ink-gray-6"
+              >
+                <a
+                  v-if="contact.doc.mobile_no"
+                  :href="`tel:${contact.doc.mobile_no}`"
+                  class="truncate hover:text-ink-gray-9"
+                >{{ contact.doc.mobile_no }}</a>
+                <a
+                  v-if="contact.doc.email_id"
+                  :href="`mailto:${contact.doc.email_id}`"
+                  class="truncate hover:text-ink-gray-9"
+                >{{ contact.doc.email_id }}</a>
+              </div>
               <div class="flex items-center gap-1.5">
                 <Button
                   v-if="callEnabled && contact.doc.mobile_no"
@@ -403,48 +421,10 @@ function getParsedSections(_sections) {
             },
           }
         } else if (field.name === 'mobile_no') {
-          return {
-            ...field,
-            read_only: false,
-            fieldtype: 'dropdown',
-            options:
-              contact.doc?.phone_nos?.map((phone) => {
-                return {
-                  name: phone.name,
-                  value: phone.phone,
-                  selected: phone.phone === contact.doc.mobile_no,
-                  onClick: () => {
-                    setAsPrimary('mobile_no', phone.phone)
-                  },
-                  onSave: (option, isNew) => {
-                    if (isNew) {
-                      createNew('phone', option.value)
-                    } else {
-                      editOption(
-                        'Contact Phone',
-                        option.name,
-                        'phone',
-                        option.value,
-                      )
-                    }
-                  },
-                  onDelete: async (option, isNew) => {
-                    contact.doc.phone_nos = contact.doc.phone_nos.filter(
-                      (phone) => phone.name !== option.name,
-                    )
-                    if (!isNew) await deleteOption('Contact Phone', option.name)
-                  },
-                }
-              }) || [],
-            create: () => {
-              contact.doc?.phone_nos?.push({
-                name: 'new-1',
-                value: '',
-                selected: false,
-                isNew: true,
-              })
-            },
-          }
+          // LCS: same simple phone field as the desktop contact — a dial-code
+          // dropdown + a plain number input. The old multi-value dropdown hid the
+          // number on the phone ("seh ich garnicht"); this shows AND edits it.
+          return { ...field, read_only: false, hidden: false, fieldtype: 'PhoneInput' }
         } else if (field.name === 'address') {
           return {
             ...field,

@@ -180,16 +180,26 @@ function extensionFor(mime) {
 .qn-error-ico { width: 14px; height: 14px; }
 .qn-note { margin: 0; font-size: 11px; color: var(--pp-text-tertiary); line-height: 1.5; }
 
-/* --- Mobile: full-height "note page" — the text field fills the screen and the
-   assignment + save sit in a bottom bar (thumb zone). ------------------------ */
-.qn--mobile { height: 100%; padding: var(--pp-space-3); gap: var(--pp-space-2); }
+/* --- Mobile: full-height Notion-clean "note page" — a calm, borderless writing
+   surface fills the screen; the assignment + save sit in a bottom bar (thumb
+   zone). The mic (speak-to-text) stays reachable at the bottom-right. --------- */
+.qn--mobile { height: 100%; padding: 0; gap: 0; }
 .qn--mobile .qn-composer { flex: 1 1 auto; min-height: 0; }
-.qn--mobile .qn-composer :deep(.pp-sot) { height: 100%; }
+/* Strip the boxed control chrome so the note reads as a plain page, not a form
+   field: no border/background/shadow, roomy padding, larger body text. */
+.qn--mobile .qn-composer :deep(.pp-sot) { height: 100%; border: 0; background: transparent;
+  box-shadow: none; padding: var(--pp-space-4) var(--pp-space-4) var(--pp-space-2); gap: var(--pp-space-2); }
+.qn--mobile .qn-composer :deep(.pp-sot.is-recording) { box-shadow: none; }
 .qn--mobile .qn-composer :deep(.pp-sot__composer) { flex: 1 1 auto; min-height: 0; align-items: stretch; }
-.qn--mobile .qn-composer :deep(.pp-sot__input) { flex: 1 1 auto; min-height: 0; resize: none; font-size: var(--pp-fs-16, 16px); }
+.qn--mobile .qn-composer :deep(.pp-sot__input) { flex: 1 1 auto; min-height: 0; resize: none;
+  border: 0; background: transparent; padding: 0; font-size: var(--pp-fs-17, 17px); line-height: 1.6; }
+.qn--mobile .qn-composer :deep(.pp-sot__input:focus) { box-shadow: none; }
+/* Notion has no helper line under the field — drop it on the phone to declutter. */
+.qn--mobile .qn-composer :deep(.pp-sot__hint) { display: none; }
 .qn--mobile .qn-composer :deep(.pp-sot__actions) { align-items: flex-end; }
 .qn--mobile .qn-assign { flex: 0 0 auto; flex-direction: column; align-items: stretch;
-  gap: 6px; padding-top: var(--pp-space-2); border-top: 1px solid var(--pp-border-subtle); }
+  gap: 6px; padding: var(--pp-space-3) var(--pp-space-4) var(--pp-space-4);
+  border-top: 1px solid var(--pp-border-subtle); background: var(--pp-bg-surface); }
 .qn--mobile .qn-select { min-width: 0; width: 100%; padding: 10px var(--pp-space-3); font-size: var(--pp-fs-14, 14px); }
 .qn--mobile .qn-save { width: 100%; }
 .qn--mobile .qn-save :deep(button) { width: 100%; height: 44px; font-size: var(--pp-fs-14, 14px); }
