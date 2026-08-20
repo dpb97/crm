@@ -58,7 +58,7 @@
               :placeholder="__('Search to link') + ' …'"
               @input="search"
             />
-            <div v-if="results.length" class="absolute z-10 mt-1 max-h-56 w-full overflow-y-auto rounded-md border border-ink-gray-2 bg-surface-white shadow-lg">
+            <div v-if="results.length" class="absolute bottom-full left-0 z-50 mb-1 max-h-56 w-full overflow-y-auto rounded-md border border-ink-gray-2 bg-surface-white shadow-lg">
               <button
                 v-for="r in results"
                 :key="r.name"
