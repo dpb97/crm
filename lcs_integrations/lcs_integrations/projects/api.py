@@ -1915,6 +1915,39 @@ def chance_to_lead(name):
 
 
 @frappe.whitelist()
+def chance_to_project(name):
+    """Convert a Chance DIRECTLY into an LCS Project (skip the Lead). Maps the
+    chance's client/company → organization, title → project name, order value →
+    estimated value, country and responsible. Idempotent: returns the existing
+    project if already converted."""
+    doc = frappe.get_doc("LCS Chance", name)
+    if doc.get("lcs_project") and frappe.db.exists("LCS Project", doc.lcs_project):
+        return {"project": doc.lcs_project, "status": doc.status, "created": False}
+    if not frappe.has_permission("LCS Project", ptype="create"):
+        frappe.throw("Not permitted to create projects", frappe.PermissionError)
+
+    project = frappe.new_doc("LCS Project")
+    project.project_name = doc.title or doc.company or doc.client or doc.name
+    org = doc.company or doc.client
+    if org and frappe.db.exists("CRM Organization", org):
+        project.organization = org
+    if doc.country:
+        project.country = doc.country
+    project.estimated_value = doc.order_value
+    if doc.responsible:
+        project.salesperson = doc.responsible
+    project.phase = "Qualified"
+    project.status = "Open"
+    project.insert(ignore_permissions=True)
+
+    doc.lcs_project = project.name
+    doc.status = "Vertriebsprojekt"
+    doc.save(ignore_permissions=True)
+    frappe.db.commit()
+    return {"project": project.name, "status": doc.status, "created": True}
+
+
+@frappe.whitelist()
 def chance_dismiss(name):
     """Mark a Chance as 'Keine Chance' (drops out of the live list; still counted)."""
     doc = frappe.get_doc("LCS Chance", name)

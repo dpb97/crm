@@ -17,8 +17,8 @@
         ]" />
       </template>
       <template #right-header>
-        <Button v-if="c && !c.crm_lead" variant="solid" :label="`${__('Contact made')} → Lead`" iconLeft="user-plus" :loading="converting" @click="toLead" />
-        <Button v-else-if="c?.crm_lead" :label="__('Open lead')" iconLeft="external-link" @click="$router.push({ name: 'Lead', params: { leadId: c.crm_lead } })" />
+        <Button v-if="c && !c.lcs_project" variant="solid" :label="`${__('Contact made')} → ${__('Project')}`" iconLeft="briefcase" :loading="converting" @click="toProject" />
+        <Button v-else-if="c?.lcs_project" :label="__('Open project')" iconLeft="external-link" @click="$router.push({ name: 'LCS Project', params: { id: c.lcs_project } })" />
       </template>
     </LayoutHeader>
 
@@ -114,15 +114,15 @@ const coords = computed(() => (
 ))
 
 const converting = ref(false)
-function toLead() {
+function toProject() {
   if (converting.value) return
   converting.value = true
-  call('lcs_integrations.projects.api.chance_to_lead', { name: props.id })
+  call('lcs_integrations.projects.api.chance_to_project', { name: props.id })
     .then((res) => {
-      toast({ title: res?.created ? __('Lead created') : __('Lead already exists'), icon: 'check-circle', iconClasses: 'text-green-500' })
-      if (res?.lead) router.push({ name: 'Lead', params: { leadId: res.lead } })
+      toast({ title: res?.created ? __('Project created') : __('Project already exists'), icon: 'check-circle', iconClasses: 'text-green-500' })
+      if (res?.project) router.push({ name: 'LCS Project', params: { id: res.project } })
     })
-    .catch((e) => toast({ title: __('Could not create the lead.'), text: e?.messages?.[0] || e?.message || '', icon: 'alert-circle', iconClasses: 'text-red-500' }))
+    .catch((e) => toast({ title: __('Could not create the project.'), text: e?.messages?.[0] || e?.message || '', icon: 'alert-circle', iconClasses: 'text-red-500' }))
     .finally(() => { converting.value = false })
 }
 

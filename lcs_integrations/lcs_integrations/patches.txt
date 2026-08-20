@@ -79,3 +79,5 @@ lcs_integrations.patches.purge_internal_internal_mail
 lcs_integrations.patches.migrate_notes_to_lcs_note
 # Add an 'Archived' status value to LCS Project (protocol cleanup).
 lcs_integrations.patches.add_project_archived_status
+# Chance -> Project: link field + status value on LCS Chance.
+lcs_integrations.patches.add_chance_project_link
