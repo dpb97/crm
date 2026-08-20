@@ -24,6 +24,13 @@
       <FeatherIcon name="alert-triangle" class="qn-error-ico" />{{ lastError }}
     </p>
 
+    <!-- All strongly-matched projects (auto-linked on save) — so the user sees
+         every project the note will hang on, not only the one in the dropdown. -->
+    <div v-if="autoLinked.length" class="qn-autolinks">
+      <span class="qn-assign-cap">{{ __('Auto-linked') }}</span>
+      <span v-for="c in autoLinked" :key="c.name" class="qn-chip">{{ stripV(c.project_name) }}</span>
+    </div>
+
     <!-- Assignment + save. On the phone this is a fixed bottom bar (thumb zone). -->
     <div class="qn-assign">
       <label class="qn-assign-cap" for="qn-assign">{{ __('Assignment') }}</label>
@@ -43,7 +50,7 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { FeatherIcon, Button, call, toast } from 'frappe-ui'
 import PpSpeakOrType from '@/components/pp/PpSpeakOrType.vue'
 import { useUserPreferences } from '@/composables/useUserPreferences'
@@ -62,6 +69,10 @@ const matching = ref(false)
 const lastError = ref('')
 const candidates = ref([])
 const target = ref('') // '' = auto (best match)
+
+// Every strong match (>= 0.8) is auto-linked on save — show them all so the
+// user sees exactly which projects the note will hang on (not just one).
+const autoLinked = computed(() => candidates.value.filter((c) => (c.score || 0) >= 0.8))
 
 // Display helper: drop the "V_" sales-prefix from a project code (V_SB-… → SB-…).
 function stripV(s) { return String(s || '').replace(/^V_/i, '') }
@@ -173,6 +184,11 @@ function extensionFor(mime) {
 .qn-assign { display: flex; align-items: center; gap: var(--pp-space-3); flex-wrap: wrap; }
 .qn-assign-cap { font-size: 10px; font-weight: var(--pp-weight-bold); letter-spacing: 0.04em;
   text-transform: uppercase; color: var(--pp-text-tertiary); }
+.qn-autolinks { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.qn-chip { display: inline-flex; align-items: center; padding: 2px 9px;
+  border-radius: var(--pp-radius-full, 999px); border: 1px solid var(--pp-accent-soft, #cdeaea);
+  background: var(--pp-accent-soft, #e6f6f6); color: var(--pp-brand-primary, #008b8b);
+  font-size: 11px; font-weight: var(--pp-weight-semibold, 600); white-space: nowrap; }
 .qn-select { flex: 1; min-width: 220px; appearance: none; font-family: inherit; font-size: var(--pp-fs-13, 13px);
   color: var(--pp-text-primary); padding: 7px var(--pp-space-3); border: 1px solid var(--pp-border-default);
   border-radius: var(--pp-radius-ui); background: var(--pp-bg-base); }
