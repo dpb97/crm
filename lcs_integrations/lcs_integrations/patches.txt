@@ -81,3 +81,5 @@ lcs_integrations.patches.migrate_notes_to_lcs_note
 lcs_integrations.patches.add_project_archived_status
 # Chance -> Project: link field + status value on LCS Chance.
 lcs_integrations.patches.add_chance_project_link
+# Store the auto-created SharePoint page URL on LCS Project.
+lcs_integrations.patches.add_project_sharepoint_field

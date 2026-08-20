@@ -157,6 +157,45 @@ class GraphClient:
             return None
         return self._check(resp, 200).get("id")
 
+    # ----------------------------------------------------------- SharePoint
+    def site_id(self, site_path: str) -> str | None:
+        """Resolve a SharePoint site to its id. `site_path` is either
+        'host.sharepoint.com:/sites/Name' or a full site URL. Needs the app
+        permission Sites.Read.All / Sites.ReadWrite.All."""
+        path = site_path.strip()
+        if path.startswith("http://") or path.startswith("https://"):
+            # https://host/sites/Name -> host:/sites/Name
+            rest = path.split("://", 1)[1]
+            host, _, tail = rest.partition("/")
+            path = f"{host}:/{tail}".rstrip("/")
+        resp = self._http.get(f"/sites/{path}", headers=self._headers())
+        if resp.status_code == 404:
+            return None
+        return self._check(resp, 200).get("id")
+
+    def create_page(self, site_id: str, name: str, title: str | None = None) -> dict[str, Any]:
+        """Create AND publish a modern SharePoint page on the site. Needs
+        Sites.ReadWrite.All. Returns the page (incl. webUrl)."""
+        safe = "".join(c if (c.isalnum() or c in " -_") else "-" for c in name).strip() or "project"
+        body = {
+            "@odata.type": "#microsoft.graph.sitePage",
+            "name": safe + ".aspx",
+            "title": title or name,
+            "pageLayout": "article",
+        }
+        resp = self._http.post(f"/sites/{site_id}/pages", json=body, headers=self._headers())
+        created = self._check(resp, 201, 200)
+        pid = created.get("id")
+        if pid:
+            pub = self._http.post(
+                f"/sites/{site_id}/pages/{pid}/microsoft.graph.sitePage/publish",
+                headers=self._headers(),
+            )
+            # publish returns 204; ignore non-fatal publish errors
+            if pub.status_code not in (200, 202, 204):
+                pass
+        return created
+
     def message_attachments(self, mailbox: str, graph_id: str) -> list[dict[str, Any]]:
         """All attachments of a message (fileAttachment carries `contentBytes`).
         Used on demand by the email reader to inline images and list files."""

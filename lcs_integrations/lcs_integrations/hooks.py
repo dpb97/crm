@@ -74,6 +74,7 @@ doc_events = {
     },
     "LCS Project": {
         "before_insert": "lcs_integrations.territory.auto_assign.on_lcs_project_before_insert",
+        "after_insert": "lcs_integrations.sharepoint.hooks.on_project_after_insert",
         "validate": [
             # Business-process-flow gates: block advancing a phase until its
             # prerequisites are met (questionaire / budget / Richtpreis).
@@ -87,7 +88,10 @@ doc_events = {
         # Spawn an ERPNext Project as soon as the project enters Order/
         # Execution so resource planning has somewhere to live during the
         # active phase, not just after closure.
-        "on_update": "lcs_integrations.cross_module.erpnext_project_sync.on_lcs_project_update",
+        "on_update": [
+            "lcs_integrations.cross_module.erpnext_project_sync.on_lcs_project_update",
+            "lcs_integrations.sharepoint.hooks.on_project_on_update",
+        ],
     },
     "LCS Opportunity Matrix": {
         "validate": "lcs_integrations.projects.notifications.on_high_probability",
