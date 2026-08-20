@@ -520,7 +520,7 @@ import PpDataGrid from '@/components/pp/PpDataGrid.vue'
 import PpPill from '@/components/pp/PpPill.vue'
 import PpDocList from '@/components/pp/PpDocList.vue'
 import PpEmptyState from '@/components/pp/PpEmptyState.vue'
-import { queueMutation, cachePut, listMutations, onQueueChange } from '@/utils/offlineDB'
+import { queueMutation, cachePut, cacheGet, listMutations, onQueueChange } from '@/utils/offlineDB'
 import { copyToClipboard, timeAgo } from '@/utils'
 import { useUserPreferences } from '@/composables/useUserPreferences'
 
@@ -536,7 +536,12 @@ const projectTitle = computed(() => stripV(doc.value.project_name) || projectId.
 const project = createDocumentResource({
   doctype: 'LCS Project',
   name: projectId.value,
-  onError: (err) => {
+  onError: async (err) => {
+    // Offline / network failure → serve the cached copy so the page opens.
+    try {
+      const c = await cacheGet('LCS Project', projectId.value)
+      if (c) { project.doc = c; return }
+    } catch (_) {}
     if (err.exc_type === 'DoesNotExistError') {
       toast({ title: __('Project not found'), icon: 'alert-circle', iconClasses: 'text-red-500' })
     }

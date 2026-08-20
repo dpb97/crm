@@ -31,22 +31,24 @@ export const prefetchProgress = reactive({
   finishedAt: 0,    // ms timestamp of the last completed run
 })
 
+// fullDocs: how many records to additionally fetch as FULL documents (incl.
+// child tables) so their detail pages are 100% offline. 100000 ≈ "all". The
+// list rows (cached for EVERY record) already let detail pages OPEN offline via
+// the useDocument cache fallback; full docs add the child-table completeness.
 const CORE_DOCTYPES = [
-  { doctype: 'CRM Deal', fullDocs: 50 },
-  { doctype: 'CRM Lead', fullDocs: 50 },
-  { doctype: 'CRM Organization', fullDocs: 25 },
+  { doctype: 'CRM Deal', fullDocs: 100000 },
+  { doctype: 'CRM Lead', fullDocs: 100000 },
+  { doctype: 'CRM Organization', fullDocs: 100000 },
   // Contacts: cache EVERY contact fully (incl. child tables) — the user wants
   // all contacts offline; the mail thread is skipped (see DETAIL_METHODS).
   { doctype: 'Contact', fullDocs: 100000 },
-  // LCS Vertrieb core — projects, offers and tasks must be readable offline
-  // on site too (they back the project pipeline, the offer workflow and the
-  // task lists). Full docs for projects/offers so detail pages incl. child
-  // tables (approvals, relations, versions) open without a connection.
-  { doctype: 'LCS Project', fullDocs: 50 },
-  { doctype: 'LCS Offer', fullDocs: 50 },
+  // LCS Vertrieb core — full docs so detail pages incl. child tables (approvals,
+  // relations, versions, matrix) open without a connection.
+  { doctype: 'LCS Project', fullDocs: 100000 },
+  { doctype: 'LCS Offer', fullDocs: 100000 },
   // Chances back BOTH the Chancen funnel and the Pilot scout page (unrated hits
   // are LCS Chance, source Pilot-Scout) — pre-warm so both open offline.
-  { doctype: 'LCS Chance', fullDocs: 50 },
+  { doctype: 'LCS Chance', fullDocs: 100000 },
   { doctype: 'LCS Sales Territory', fullDocs: 0 },
   { doctype: 'LCS Segment', fullDocs: 0 },
   { doctype: 'ToDo', fullDocs: 0 },
@@ -68,7 +70,7 @@ const THROTTLE_MS = 30 * 60 * 1000
 const LS_KEY = 'lcs-offline-prefetch-at'
 // Bump whenever CORE_DOCTYPES / METHOD_WARM change — a version mismatch forces
 // one full re-warm (ignoring the throttle) so a client picks up the wider set.
-const PREFETCH_VERSION = '5'
+const PREFETCH_VERSION = '6'
 const LS_VER = 'lcs-offline-prefetch-ver'
 
 export async function prefetchOfflineData(force = false) {
@@ -186,7 +188,7 @@ const METHOD_WARM = [
 // Per-record detail endpoints — warmed for the DETAIL_LIMIT most-recent records
 // of each doctype so their detail pages open fully offline (sub-panels too).
 // Bounded on purpose: warming every record's sub-data would be a huge download.
-const DETAIL_LIMIT = 60
+const DETAIL_LIMIT = 200
 const DETAIL_METHODS = {
   'LCS Project': [
     { m: P + 'get_project_offers', args: (r) => ({ project: r.name }) },

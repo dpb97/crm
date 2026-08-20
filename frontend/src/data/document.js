@@ -6,6 +6,7 @@ import { showSettings, activeSettingsPage } from '@/composables/settings'
 import { runSequentially, parseAssignees, sanitizeText } from '@/utils'
 import { findMissingMandatory } from '@/utils/fieldTransforms'
 import { createDocumentResource, createResource, toast } from 'frappe-ui'
+import { cacheGet, cachePut } from '@/utils/offlineDB'
 import { ref, reactive, getCurrentInstance } from 'vue'
 
 const documentsCache = {}
@@ -34,8 +35,23 @@ export function useDocument(doctype, docname, resourceOverrides = {}) {
           realtime: Boolean(vm?.$socket),
           doctype: doctype,
           name: docname,
-          onSuccess: async () => await setupFormScript(),
-          onError: (err) => {
+          onSuccess: async () => {
+            // Cache every opened document so it can be reopened offline.
+            try { await cachePut(doctype, docname, documentsCache[doctype][docname].doc) } catch (_) {}
+            await setupFormScript()
+          },
+          onError: async (err) => {
+            // Offline / network failure → serve the last cached copy so the
+            // detail page still opens. Only fall through to error toasts when
+            // there is genuinely nothing cached.
+            try {
+              const cached = await cacheGet(doctype, docname)
+              if (cached) {
+                documentsCache[doctype][docname].doc = cached
+                error.value = ''
+                return
+              }
+            } catch (_) {}
             error.value = err
             if (err.exc_type === 'DoesNotExistError') {
               toast.error(__(err.messages[0] || 'Document does not exist'))

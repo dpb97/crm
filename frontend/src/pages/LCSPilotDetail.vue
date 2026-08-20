@@ -105,13 +105,15 @@
 import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { createResource, call, toast, Breadcrumbs, Button } from 'frappe-ui'
+import { cacheGet } from '@/utils/offlineDB'
 import LayoutHeader from '@/components/LayoutHeader.vue'
 import PpPill from '@/components/pp/PpPill.vue'
 
 const props = defineProps({ id: { type: String, required: true } })
 const router = useRouter()
 
-const chance = createResource({ url: 'lcs_integrations.projects.api.get_chance', makeParams: () => ({ name: props.id }), auto: true })
+const chance = createResource({ url: 'lcs_integrations.projects.api.get_chance', makeParams: () => ({ name: props.id }), auto: true,
+  onError: async () => { try { const c = await cacheGet('LCS Chance', props.id); if (c) chance.data = c } catch (_) {} } })
 const c = computed(() => chance.data || {})
 
 // --- Score (KI) editierbar ------------------------------------------------
