@@ -73,3 +73,5 @@ lcs_integrations.patches.install_contact_title_and_salutations
 lcs_integrations.patches.set_default_currency_eur
 # E-mail visibility flags (lcs_shared/lcs_internal) on Communication + backfill.
 lcs_integrations.patches.install_email_visibility_flags
+# Delete existing internal->internal noise mail (not shared) — user cleanup.
+lcs_integrations.patches.purge_internal_internal_mail

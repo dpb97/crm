@@ -70,8 +70,17 @@
           <div class="min-w-0 flex-1">
             <div class="flex items-center gap-2">
               <span class="truncate text-sm font-medium text-ink-gray-9">{{ e.subject || __('(no subject)') }}</span>
-              <FeatherIcon v-if="!e.lcs_shared" name="lock" class="ml-auto h-3 w-3 shrink-0 text-ink-gray-4" :title="__('Private — only you')" />
-              <span class="shrink-0 text-xs text-ink-gray-4" :class="{ 'ml-auto': e.lcs_shared }">{{ formatDate(e.communication_date) }}</span>
+              <span class="ml-auto flex shrink-0 items-center gap-2">
+                <span
+                  v-if="e.lcs_shared"
+                  class="inline-flex items-center gap-1 rounded bg-green-50 px-1.5 py-0.5 text-[10px] font-medium text-green-700"
+                  :title="__('Visible to everyone')"
+                >
+                  <FeatherIcon name="users" class="h-3 w-3" /> {{ __('Everyone') }}
+                </span>
+                <FeatherIcon v-else name="lock" class="h-3 w-3 text-ink-gray-4" :title="__('Private — only you')" />
+                <span class="text-xs text-ink-gray-4">{{ formatDate(e.communication_date) }}</span>
+              </span>
             </div>
             <div class="truncate text-xs text-ink-gray-6">{{ e.sender }}</div>
             <div class="mt-1 line-clamp-2 text-xs text-ink-gray-5">{{ e.preview }}</div>
@@ -104,6 +113,18 @@
                 <span class="font-medium">{{ __('To') }}:</span> {{ current?.recipients }}
               </div>
               <div class="mt-0.5 text-xs text-ink-gray-4">{{ current && formatDate(current.communication_date) }}</div>
+              <span
+                v-if="current?.lcs_shared"
+                class="mt-1.5 inline-flex items-center gap-1 rounded bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700"
+              >
+                <FeatherIcon name="users" class="h-3.5 w-3.5" /> {{ __('Visible to everyone') }}
+              </span>
+              <span
+                v-else
+                class="mt-1.5 inline-flex items-center gap-1 rounded bg-surface-gray-2 px-2 py-0.5 text-xs font-medium text-ink-gray-6"
+              >
+                <FeatherIcon name="lock" class="h-3.5 w-3.5" /> {{ __('Private — only you') }}
+              </span>
             </div>
             <div class="flex shrink-0 items-center gap-1">
               <Button variant="subtle" iconLeft="external-link" :label="__('Open in Outlook')" :disabled="!current?.message_id" @click="openInOutlook(current)" />
